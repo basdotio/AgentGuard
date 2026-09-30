@@ -213,7 +213,7 @@ fixture：4 个 skill，其中 `dataviz` / `docx` / `pptx` 的名字出现在真
 
 这是宽松判据最干净的一个反例：工具自己的输出成了自己的证据。
 
-**没有在代码里修，只在 [`clean-guide.md`](../clean-guide.md) 里给了规避（在普通终端跑）。**
+**没有在代码里修，只在 [`clean-guide.zh-CN.md`](../clean-guide.zh-CN.md) 里给了规避（在普通终端跑）。**
 想到的几条修法方向都是错的：
 
 | 想法 | 为什么不行 |

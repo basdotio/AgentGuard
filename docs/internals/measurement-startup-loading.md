@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: MIT -->
 # Measurement: what Claude Code actually loads at startup
 
 Every claim in this file was measured, not read. Where a measurement contradicts something we

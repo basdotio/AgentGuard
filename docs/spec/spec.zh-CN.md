@@ -1,9 +1,7 @@
+<!-- SPDX-License-Identifier: MIT -->
 # AgentGuard 技术规格(Spec)
 
-> **这是规格源头。** 源码注释里的 `spec §N` 全部指向本文件的对应小节。2026-09-15 起它住在本仓库
-> `docs/spec/spec.zh-CN.md`;此前在独立的 agent-guard-design 仓库,那个仓库不再维护,其余五份设计文档
-> (产品规划、pitch、执行计划、LLM 判官设计、信誉库设计,均为 2026-07 的决策记录)作历史归档放在
-> `docs/decisions/archive/design-2026-07/`(2026-09-20 删除,见该日期前的 git 历史),**不再是任何东西的源头**。
+> **这是规格源头。** 源码注释里的 `spec §N` 全部指向本文件的对应小节。
 > 代码现状看 [../docs/architecture.md](../architecture.md),规则条数以 [../docs/rules.md](../rules.md) 头部计数块为准,
 > 已排期与已放弃的方向看 [../../ROADMAP.md](../../ROADMAP.md)。
 > 状态:**v1.2**(v1.1 = LLM 单向升级修订;v1.2 = 2026-09-15 追平代码:补 §3/§4/§5/§8/§9/§11/§12 里

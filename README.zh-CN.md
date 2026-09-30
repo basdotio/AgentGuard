@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: MIT -->
 # AgentGuard(`aguard`)
 
 [English](README.md) | **中文**
@@ -99,7 +100,7 @@ claude plugin install agentguard@AgentGuard
 就是同一个开关)。二进制是另一回事,它从不自动更新;`aguard version` 会说它是否落后于插件。
 
 
-分发仓库是公开的,插件就在它的默认分支上,所以直接用上面那条命令即可 —— 不需要 `#…` 后缀,
+仓库是公开的,插件就在 `main` 上,所以直接用上面那条命令即可 —— 不需要 `#…` 后缀,
 不需要仓库访问权,也不需要配 git 凭证。
 
 然后重启 Claude Code(扩展里是 reload window),再跑 `/aguard-setup`。它会在二进制缺失时装好、
@@ -187,7 +188,7 @@ aguard version
 `--zombie`("装了但没用过")需要显式开启,而且**置信度永远到不了 high**:
 它只看得见这台机器的历史,并且会告诉你那是**几次会话**。
 
-完整说明(含安全边界与它刻意不做的事)见 [`docs/clean-guide.md`](docs/clean-guide.md);
+完整说明(含安全边界与它刻意不做的事)见 [`docs/clean-guide.zh-CN.md`](docs/clean-guide.zh-CN.md);
 实现与"不变量 ↔ 钉住它的测试"对照表见 [`docs/internals/clean-internals.md`](docs/internals/clean-internals.md)。
 
 ## 加载时闸门(`aguard hook`)

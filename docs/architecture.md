@@ -7,15 +7,15 @@ what it should do — that distinction decides which document wins when they dis
 
 | Document | Authority | Lives in |
 |---|---|---|
-| [`docs/spec/spec.zh-CN.md`](spec/spec.zh-CN.md) | **Normative.** What must be true. Code comments cite it as `spec §N`; clauses tagged `[M6]` are deliberately ahead of the code. | design repo |
+| [`docs/spec/spec.zh-CN.md`](spec/spec.zh-CN.md) | **Normative.** What must be true. Code comments cite it as `spec §N`. | here |
 | [`README.md`](../README.md) | User-facing: install, commands, what gets scanned, capability boundary. | here |
 | [`ROADMAP.md`](../ROADMAP.md) | What shipped, what is deferred, and the **honest known limitations** (including confirmed evasions). | here |
 | [`rules.md`](rules.md) | **Generated** from the engine's rule set (`make docs`, CI-verified): every rule ID, its dimension, severity and why it fires. | here |
 | **this file** | Descriptive: the as-built map. Update it in the same PR that changes the structure it describes. | here |
 
-Scale, for calibration: ~6.8k lines of non-test Go across 14 `internal` packages plus the CLI,
-~7.0k lines of tests (223 test functions plus 2 fuzz targets), two direct dependencies
-(`spf13/cobra`, `gopkg.in/yaml.v3`), one static binary, no CGO.
+Scale, for calibration: about 20k lines of non-test Go across 16 `internal` packages plus the
+CLI, about 20k lines of tests (596 test functions plus 2 fuzz targets), three direct dependencies
+(`spf13/cobra`, `gopkg.in/yaml.v3`, `golang.org/x/term`), one static binary, no CGO.
 
 ## The one-paragraph mental model
 
@@ -254,15 +254,14 @@ structure only; and the report names the worst artifact beside the mean.
   is no `GOOS` branch in the code, and the symlink containment behind invariant 2 rests on
   primitives that differ there. Source builds work; published artifacts are darwin/linux until
   a CI matrix runs the suite on Windows.
-- **Per-(event, command) auditing of a plugin's bundled hooks.** A plugin is scanned as one
-  tree; `settings.json` hooks get the finer split.
 
 **Confirmed evasions** are asserted *inverted* in
 [`cmd/aguard/adversarial_test.go`](../cmd/aguard/adversarial_test.go) — closing one makes a
-test fail, so a gap cannot be forgotten the way a checklist item can. Currently: contents of a
-an `ExcludeFromScan` directory, files whose extension is unknown, homoglyph command names (invisible characters
-are stripped, but folding confusables needs a Unicode table that is not compiled in), and a
-top-level directory under a root that no collector owns and nothing references.
+test fail, so a gap cannot be forgotten the way a checklist item can. Currently one: the contents
+of an `ExcludeFromScan` directory (a vendored or generated tree) are not scanned — its findings
+would be about somebody else's dependency — while the artifact that directs the agent into it is
+(`SUP-004`). Unknown extensions, unowned top-level files and homoglyph command names were once on
+this list and are now caught; the ROADMAP's "Known limitations" keeps the longer story.
 
 ## Working on it
 
@@ -281,8 +280,8 @@ Conventions that reviewers will hold you to:
   invariants it owns in one file's package doc comment.
 - **Code and all user-visible strings are English only.** Docs come in bilingual pairs
   (`README.md`/`README.zh-CN.md`, this file and its `.zh-CN.md`) — change one, change the other.
-- Comments cite the spec (`spec §16.3`) and past review conclusions (`review B-1`, `F2`, `M5.2`).
-  Continue that: a non-obvious guard should say which requirement it implements.
+- Comments cite the spec (`spec §16.3`). Continue that: a non-obvious guard should say which
+  requirement it implements.
 - Tests are table-driven with `t.TempDir()` fixtures (there is no `testdata/`); the judge uses
   `httptest`. **The valuable tests are the invariant tests** — nothing executed, boundaries
   hold, secrets redacted, LLM findings don't move the score, `--fail-on` contract. Any change

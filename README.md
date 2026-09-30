@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: MIT -->
 # AgentGuard (`aguard`)
 
 **English** | [中文](README.zh-CN.md)
@@ -109,8 +110,8 @@ auto-update** (the desktop app's "Sync automatically" toggle is the same thing).
 separate and never updates itself; `aguard version` says when it has fallen behind the plugin.
 
 
-The distribution repository is public and the plugin ships from its default branch, so the
-plain form above is the one to use — no `#…` suffix, no repo access, no git credentials.
+The repository is public and the plugin ships from `main`, so the plain form above is the one to
+use — no `#…` suffix, no repo access, no git credentials.
 
 Then restart Claude Code (the extension: reload the window) and run `/aguard-setup`. It
 brings up the `aguard` binary if it is missing, runs the first scan, triages the findings
@@ -206,7 +207,7 @@ that will gate your build.
 this machine's history, and it says how many sessions that was.
 
 Full guide, including the safety boundary and what it deliberately does not do:
-[`docs/clean-guide.md`](docs/clean-guide.md). Implementation and the invariant/test table:
+[`docs/clean-guide.zh-CN.md`](docs/clean-guide.zh-CN.md). Implementation and the invariant/test table:
 [`docs/internals/clean-internals.md`](docs/internals/clean-internals.md).
 
 ## Load-time gate (`aguard hook`)
