@@ -1,0 +1,6 @@
+{"fixture":"deeply-nested","status":"pass","detail":"terminated within 1m0s, exit 0 or 1, 1 artifact(s) reported"}
+{"fixture":"fifo-as-skill","status":"pass","detail":"terminated within 1m0s, exit 0 or 1, 1 artifact(s) reported"}
+{"fixture":"sparse-huge-config","status":"pass","detail":"terminated within 1m0s, exit 0 or 1, 1 artifact(s) reported. NOTE: this fixture asserts a bounded READ, and this runner can only observe termination — peak memory is not measured here"}
+{"fixture":"symlink-cycle","status":"pass","detail":"terminated within 1m0s, exit 0 or 1, 1 artifact(s) reported"}
+{"fixture":"symlink-escape","status":"pass","detail":"terminated within 1m0s, exit 0 or 1, 1 artifact(s) reported"}
+{"fixture":"traverse-only-dir","status":"pass","detail":"disclosed the unreadable subdirectory: COV-000"}

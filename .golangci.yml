@@ -1,0 +1,37 @@
+version: "2"
+linters:
+  enable:
+    - misspell
+  settings:
+    staticcheck:
+      # v2 merged the former stylecheck (ST*) and quickfix (QF*) linters INTO staticcheck, so
+      # migrating the config wholesale would silently add two check families this repo never
+      # opted into; adopt them deliberately, where the diff is reviewable as a decision. What the
+      # two exclusions currently say, so that decision is informed rather than deferred forever:
+      #   ST1018 — the adversarial fixtures embed literal zero-width / bidi / control
+      #            characters, which is their entire point; it wants \u200b-style escapes.
+      #            Worth adopting: an invisible character in source is unreviewable, and
+      #            escaping is byte-identical.
+      #   QF1001 — De Morgan on two `if !(a && b)` tests. "Not both" reads better as written.
+      checks: ["all", "-ST1018", "-QF1001"]
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

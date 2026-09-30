@@ -1,0 +1,76 @@
+# Written BY HAND from the run's raw output, not by baselines/cmd/baseline: the driver (P-021)
+# records the flags and the upload claim but folds verdicts from deterministic findings only, so
+# its own verdicts.jsonl is the static column (still recoverable from ledger.jsonl); the files here
+# are re-folded from raw/ at the judge's predicate. Read baselines/README.md "Measuring the judge"
+# before citing any figure produced alongside this file. THIS IS NOT A BASELINE: the verdicts
+# depend on a model, a day and the sampling.
+#
+# WHAT THIS RUN IS FOR: the P-035 checkpoint. It repeats ../2026-09-29-llm-gpt-4.1-mini-s3/ — the
+# same 224 samples (samples.jsonl and strata.json are byte-identical copies) and the same judge
+# config — with one change: the binary is P-035 W2, which writes every agreeing vote's severity
+# into the reason ("[k of n samples agreed] [severities: …]"). That makes two comparisons possible:
+#   - on THIS raw, the finding's severity as tally sets it (first agreeing vote) against the
+#     severity a majority reached — compare.txt sections 1-3: 2 escalating findings change
+#     severity, 0 of 224 verdicts change;
+#   - against the earlier run, two samples:3 runs on identical inputs — compare.txt section 4,
+#     the "same sample, several rounds" variance plan §3.1 step 5 gate ② asks for.
+# Nothing in the finding's severity, the vote bar or the fold changed between the two binaries.
+#
+# measured by agent-guard's own adapter (agent-guard baselines/adapter/aguard) with --llm passed through, threshold "high" chosen by us, placement: by content, into a fake home; unplaceable trees are handed to `check` directly (the judge does not run on that path)
+
+tool: aguard
+tool_version: aguard v0.14.0-12-gfc6b179 (commit fc6b179, built 2026-09-29T08:39:22Z) · reputation entries=18
+threshold: high
+tool_extra_args:
+    - --llm
+    - --config
+    - <judge config, not committed; the same file as ../2026-09-29-llm-gpt-4.1-mini-s3/, reproduced under `judge:` below>
+tool_extra_env:                       # passed by NAME with -aguard-env; values never on a command line
+    - OPENAI_API_KEY
+    - HTTPS_PROXY
+    - HTTP_PROXY
+    - NO_PROXY
+uploads_samples: true
+uploads_samples_basis: >-
+    this run passed --llm to aguard: redacted excerpts of every judged artifact (skills, CLAUDE.md,
+    subagents, commands, hooks, MCP configs; at most 6,000 bytes per skill) were sent to the endpoint
+    under `judge:`, three times per question. No sample in this work list goes through `check`.
+corpus_commit: 97e5af00
+started_at: 2026-09-29T08:43:40Z
+finished_at: 2026-09-29T08:57:08Z   # mtime of the last raw/ file written; about 13.5 min wall clock at -j 2
+adapter: agent-guard baselines/adapter/aguard
+placement: by content, into a fake home; unplaceable trees are handed to `check` directly
+provisional: false
+work_list: samples.jsonl              # the same 224 as ../2026-09-29-llm-gpt-4.1-mini-s3/, same two strata
+strata: >-
+    see strata.json and ../2026-09-29-llm-gpt-4.1-mini-s3/run.yaml. random = 200 drawn at seed 20260929
+    (the headline; scorecard.random.txt), targeted = 24 chosen (biased by construction). Never pooled.
+judge:
+    provider: openai_compatible
+    endpoint: https://api.openai.com/v1
+    model: gpt-4.1-mini
+    samples: 3                        # majority = 2; each question asked 3 times at temperature 0.8
+    authority: advisory
+    concurrency: 8
+    timeout: 120s
+    total_timeout: 20m
+    max_retries: 4
+    calls: 1769
+    failed: 3                         # 0.2%, on 3 samples; each failure is an LLM-000 note on that sample
+    skipped: 0
+fold: >-
+    identical to ../2026-09-29-llm-gpt-4.1-mini-s3/run.yaml `fold:` — the finding's severity is its
+    FIRST agreeing vote's, as tally sets it. judge.jsonl's `votes` entries here also carry
+    `severities`: every agreeing vote's self-assessed severity in sample order, parsed from the
+    reason. compare.txt re-folds with "the highest severity at least majority(n) votes reached" in
+    place of the first vote's, for comparison only; nothing in verdicts.jsonl uses it.
+    Regenerate from raw/ — nothing here is hand-typed except this file.
+counts:
+    scored: 224
+    no_verdict: 0
+    error: 0
+work_list_size: 224
+raw_archive:                          # raw/ left the tree in P-039: 6.2 MB of model output quoting malicious samples,
+    asset: aguard-judge-raw-2026-09.tar.gz   # attached as a release asset; holds the raw/ of all four judge runs
+    sha256: 10a7ba6eb7e70f336da4616cfb7ff02a0e59749f8868e7ffb1e84ea2faa4eafd
+    note: the fold above is reproducible from the archive alone; judge.jsonl here is derived from it

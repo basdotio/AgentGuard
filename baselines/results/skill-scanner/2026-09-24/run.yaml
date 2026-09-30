@@ -1,0 +1,23 @@
+# Written by baselines/cmd/baseline. Read baselines/README.md before citing any
+# figure produced alongside this file.
+#
+# measured by agent-guard's own adapter (agent-guard baselines/adapter/skill-scanner), threshold "high" chosen by us, placement: the sample tree is passed to `scan` as-is in strict mode (no --lenient): a tree without SKILL.md is refused by the loader and recorded as no-verdict/unsupported-input, which is why mcp, hooks, permission, instruction and connector surfaces read as uncovered. PROVISIONAL: agent-artifact-corpus is public and skill-scanner can measure itself against it; until it does, this figure is our best available guess and not the vendor's number
+
+tool: skill-scanner
+tool_version: skill-scanner 2.1.0
+threshold: high
+policy_hash: sha256:22609f6a2f4c14a28a8e3011e17d6ea898179e7539a960da6b2e1b0126019ddf
+uploads_samples: false
+uploads_samples_basis: 'NOT MEASURED. Read at 2.1.0 and confirmed by `list-analyzers` on the installed binary: the default analyzers are static, bytecode and pipeline; the ones that leave the machine (virustotal, aidefense, LLM) are opt-in flags this rig never passes. The run that would settle it — the corpus under `--network none` — needs a containerised execution path this repository does not have yet (P-017 open question 9). Until then this is the expectation, not the finding.'
+corpus_commit: 4f964622
+started_at: 2026-09-24T17:18:33.976298Z
+adapter: agent-guard baselines/adapter/skill-scanner
+placement: 'the sample tree is passed to `scan` as-is in strict mode (no --lenient): a tree without SKILL.md is refused by the loader and recorded as no-verdict/unsupported-input, which is why mcp, hooks, permission, instruction and connector surfaces read as uncovered'
+provisional: true
+surfaces_declared_uncovered:
+    mcp: 'strict mode requires SKILL.md; 0 of 487 mcp trees carry one, all refused with "Error loading skill: SKILL.md not found" (2026-09-24, v2.1.0, default policy).'
+counts:
+    scored: 2642
+    no_verdict: 897
+    error: 0
+work_list_size: 3539

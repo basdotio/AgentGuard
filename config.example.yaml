@@ -1,0 +1,114 @@
+# AgentGuard config — OPTIONAL. Only the LLM intent judge and the load-time gate read it;
+# the static scan, permission audit, cleanup, and reputation list all work with NO config
+# at all.
+#
+# `aguard llm setup` writes this file for you at ~/.config/aguard/config.yaml (read whenever
+# --config is not given). To do it by hand: copy to that path, edit, run `aguard scan --llm`.
+# The judge runs ONLY when BOTH llm.enabled: true AND --llm are set. `check`/`clean` are
+# always static-only and ignore this file.
+
+llm:
+  # Master switch. Must be true AND you must pass --llm on the command line.
+  enabled: true
+
+  # A preset name (deepseek, openai, qwen — `aguard llm setup --list`) fills in base_url and a
+  # default model. "openai_compatible" targets any OpenAI-style /chat/completions endpoint
+  # (Ollama, vLLM, LM Studio, a proxy) and needs base_url + model spelled out.
+  provider: openai_compatible
+
+  # Endpoint root; the tool appends /chat/completions. Optional with a preset.
+  base_url: http://localhost:11434/v1
+
+  # Which model to use — write the name your endpoint actually serves. Optional with a preset.
+  model: llama3.1
+
+  # Where the API key comes from, checked in this order. Never the key itself in this file.
+  #  - api_key_env:  NAME of an env var holding it (CI, or if you prefer it)
+  #  - api_key_file: a file holding it, readable by its owner ONLY (0600) — `aguard llm setup`
+  #    writes ~/.config/aguard/llm.key; a file others can read is refused.
+  # Local endpoints usually need no key at all.
+  api_key_env: AGUARD_LLM_KEY
+  # api_key_file: ~/.config/aguard/llm.key
+
+  # --- Pace and cost. All optional; the values below are the defaults. ------------------
+  # A judge run makes several calls per skill, so on a metered endpoint these are the knobs
+  # that decide how long a scan takes and what it costs.
+
+  # How many calls may be in flight at once. Results are merged in a fixed order, so this
+  # changes the speed of a scan and nothing about its output.
+  concurrency: 4
+
+  # Timeout for ONE call. This is the one that matters: without it, a handful of slow
+  # answers starve every remaining check.
+  timeout: 60s
+
+  # Backstop for the whole judge phase — for an endpoint that neither answers nor fails.
+  # Calls it cuts short are reported (LLM-000), never silently dropped.
+  total_timeout: 10m
+
+  # Ceiling on calls per scan; 0 = no limit (the default: truncated coverage should be a
+  # choice you make, not a surprise). Over-budget calls are skipped AND reported, naming the
+  # artifacts left unchecked. This is a courtesy self-limit for your own time and bill — it
+  # is a client-side setting, so it is not a security or spend control.
+  max_calls: 0
+
+  # Retries for a rate-limited (429) or 5xx response, honouring Retry-After. A retry is the
+  # same question re-sent, so it does not count against max_calls. A 4xx (bad key, bad
+  # model) is a real answer and is never retried.
+  max_retries: 2
+
+  # How many times each question is asked. 1 asks once and every grounded verdict carries
+  # weight. Raise it (3 is the useful minimum) to require a MAJORITY before a finding may
+  # affect the effective score — a finding below the bar is still reported, it just doesn't
+  # count. Sampling multiplies the call count by this number, so it is opt-in; it also runs
+  # at a non-zero temperature, because asking the same question 3 times at temperature 0
+  # returns the same answer 3 times and the "agreement" would measure nothing.
+  samples: 1
+
+  # Whether this endpoint's opinion may have CONSEQUENCES.
+  #   advisory (default) — the judge informs; no gate can act on it
+  #   escalate           — additionally permits the --fail-on-llm gate
+  # This does NOT change what the effective score says; that number stays readable either way,
+  # because you need to see it before deciding whether to grant this. Passing --fail-on-llm
+  # without granting authority is refused, not ignored — a gate that silently never fires is
+  # worse than no gate.
+  authority: advisory
+
+# ---------------------------------------------------------------------------------------
+# Alternatives (replace the block above):
+#
+# Self-hosted vLLM / LM Studio (local or LAN):
+#   llm:
+#     enabled: true
+#     provider: openai_compatible
+#     base_url: http://localhost:8000/v1
+#     model: Qwen/Qwen2.5-7B-Instruct
+#
+# OpenAI cloud  (⚠️ NON-LOCAL: best-effort-redacted skill excerpts leave your machine;
+#                the report adds an LLM-002 privacy warning):
+#   llm:
+#     enabled: true
+#     provider: openai_compatible
+#     base_url: https://api.openai.com/v1
+#     model: gpt-4o-mini
+#     api_key_env: OPENAI_API_KEY        # then: export OPENAI_API_KEY=sk-...
+
+# ---------------------------------------------------------------------------------------
+# Load-time gate (`aguard hook`). Optional — the defaults below are what you get without a
+# config file at all. This section does NOT enable the gate; registering the hook does
+# (`aguard hook install`, see docs/install-gate.md).
+#
+# Neither knob can make the gate consult a model or reach the network. It runs the same
+# deterministic static path `aguard check` runs, for the same reason: a prompt that means
+# something different depending on whether an endpoint answered is not a gate.
+gate:
+  # How much has to be wrong before a load stops for review. Same default as
+  # `check --fail-on`, deliberately — one threshold that means the same thing in CI and at
+  # load time is one an operator can reason about.
+  fail_on: high          # low | medium | high | critical
+
+  # What stopping looks like.
+  #   ask (default) — hand the decision to the operator at the prompt. Right for a static
+  #                   verdict, which can show a suspicious shape but never prove malice.
+  #   deny          — refuse outright. For machines nobody is sitting at.
+  action: ask

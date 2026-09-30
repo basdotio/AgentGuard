@@ -1,0 +1,88 @@
+# Written BY HAND from the run's raw output, not by baselines/cmd/baseline: the driver (P-021)
+# records the flags and the upload claim but folds verdicts from deterministic findings only, so
+# its own verdicts.jsonl is the static column (still recoverable from ledger.jsonl); the files here
+# are re-folded from raw/ at the judge's predicate. Read baselines/README.md "Measuring the judge"
+# before citing any figure produced alongside this file. THIS IS NOT A BASELINE: the verdicts
+# depend on a model, a day and the sampling.
+#
+# WHAT THIS RUN IS FOR: plan §3.1 step 5 gate ② — does the same question, asked three times,
+# get the same answer? It is the samples:3 counterpart of ../2026-09-28-llm-gpt-4.1-mini/
+# (samples:1), on 224 of those same 819 samples, so the two judge.jsonl files line up sample by
+# sample. Two things changed at once and must not be read as one: consensus (2 of 3 must agree)
+# AND temperature (0 at samples:1, 0.8 at samples:3, internal/judge/run.go samplingTemperature).
+# The binary also moved (v0.12.0-2 → v0.14.0-6), so the static column differs from that run's.
+#
+# measured by agent-guard's own adapter (agent-guard baselines/adapter/aguard) with --llm passed through, threshold "high" chosen by us, placement: by content, into a fake home; unplaceable trees are handed to `check` directly (the judge does not run on that path)
+
+tool: aguard
+tool_version: aguard v0.14.0-6-g4d878bc (commit 4d878bc, built 2026-09-29T07:06:34Z) · reputation entries=18
+threshold: high
+tool_extra_args:
+    - --llm
+    - --config
+    - <judge config, not committed; contents reproduced under `judge:` below>
+tool_extra_env:                       # passed by NAME with -aguard-env; values never on a command line
+    - OPENAI_API_KEY
+    - HTTPS_PROXY                     # the driver isolates aguard's env and Go ignores the macOS system
+    - HTTP_PROXY                      # proxy; without these the first attempt (07:20Z) died in dial on
+    - NO_PROXY                        # a poisoned DNS answer, 0 calls answered, and was discarded
+uploads_samples: true
+uploads_samples_basis: >-
+    this run passed --llm to aguard: redacted excerpts of every judged artifact (skills, CLAUDE.md,
+    subagents, commands, hooks, MCP configs; at most 6,000 bytes per skill) were sent to the endpoint
+    under `judge:`, three times per question. No sample in this work list goes through `check`
+    (mal-mcp-ci-* were excluded from the draw), so every sample was judged.
+corpus_commit: 97e5af00
+started_at: 2026-09-29T07:46:13Z
+finished_at: 2026-09-29T08:00:54Z   # mtime of the last raw/ file written; about 15 min wall clock at -j 2
+adapter: agent-guard baselines/adapter/aguard
+placement: by content, into a fake home; unplaceable trees are handed to `check` directly
+provisional: false
+work_list: samples.jsonl              # 224, in two strata listed in strata.json — NEVER pool them:
+strata:
+    random: >-
+        200, the headline. Drawn with Python random.Random(20260929) from the 819 of
+        ../2026-09-28-llm-gpt-4.1-mini/samples.jsonl: 100 of the 173 malicious the judge can reach
+        (mal-mcp-ci-* excluded: they go through `check`), 100 of the 500 benign stratified by surface
+        in the 500's proportions (skills 66, mcp 14, connector 8, hooks 8, permission 4).
+        scorecard.random.txt is scored over these 200 only.
+    targeted: >-
+        24, chosen, not drawn: the 5 benign that either samples:1 run's judge flagged and the draw
+        missed, and all 19 hard negatives. They answer "does consensus remove a known judge flag",
+        which 100 random benign cannot (the draw held 1 of gpt's 6). Any rate over them is biased
+        by construction; scorecard.txt covers all 224 and is NOT a flag-rate estimate for that reason.
+judge:
+    provider: openai_compatible
+    endpoint: https://api.openai.com/v1
+    model: gpt-4.1-mini
+    samples: 3                        # majority = 2; each question asked 3 times at temperature 0.8
+    authority: advisory
+    concurrency: 8                    # per process; two driver workers, so about 16 in flight
+    timeout: 120s
+    total_timeout: 20m
+    max_retries: 4
+    calls: 1769                       # triage is asked once (it votes on nothing); every other question 3 times
+    failed: 10                        # 0.6%, on 9 samples; each failure is an LLM-000 note on that sample
+    skipped: 0
+fold: >-
+    verdict = malicious when a deterministic finding is >= high, OR an LLM finding that ESCALATED
+    (grounded AND at least 2 of 3 samples agreed) is >= high and its rule is not LLM-009 (P-019,
+    v0.12.0: advisory-only). severity is the highest severity among the findings that count;
+    dimensions come from the findings that carried the flag, static and escalated alike — the same
+    predicate as the two samples:1 runs, and the fold reproduces both of their judge.jsonl and
+    verdicts.jsonl exactly (819 of 819 rows, every field). judge.jsonl adds three fields: `votes`
+    (every vote-carrying LLM finding: rule, k of n agreeing, severity, escalates), `triage_calls`
+    (one unvoted call per artifact with a static finding) and `questions` = (calls − triage) / 3,
+    from which a question no sample flagged (k = 0, which leaves no finding) is recovered. The
+    severity an escalated finding carries is its FIRST agreeing sample's (internal/judge/run.go
+    tally), so at temperature 0.8 it is itself a draw; the other samples' severities are not in raw/.
+    Regenerate from raw/ — nothing here is hand-typed except this file.
+counts:
+    scored: 224
+    no_verdict: 0
+    error: 0
+work_list_size: 224
+raw_archive:                          # raw/ left the tree in P-039: 6.2 MB of model output quoting malicious samples,
+    asset: aguard-judge-raw-2026-09.tar.gz   # attached as a release asset; holds the raw/ of all four judge runs
+    sha256: 10a7ba6eb7e70f336da4616cfb7ff02a0e59749f8868e7ffb1e84ea2faa4eafd
+    note: the fold above is reproducible from the archive alone; judge.jsonl here is derived from it

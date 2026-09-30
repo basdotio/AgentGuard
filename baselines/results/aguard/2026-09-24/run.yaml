@@ -1,0 +1,20 @@
+# Written by baselines/cmd/baseline. Read baselines/README.md before citing any
+# figure produced alongside this file.
+#
+# measured by agent-guard's own adapter (agent-guard baselines/adapter/aguard), threshold "high" chosen by us, placement: by content, into a fake home; unplaceable trees are handed to `check` directly
+
+tool: aguard
+tool_version: aguard v0.11.0-56-gb0858a4 (commit b0858a4, built 2026-09-24T07:23:24Z) · reputation entries=18
+threshold: high
+uploads_samples: false
+uploads_samples_basis: 'invariant #1, enforced by tests in this repository: aguard never connects out except for the explicitly opted-in LLM judge, which a baseline run does not enable.'
+corpus_commit: 5c3db6ee
+started_at: 2026-09-24T07:25:01.039293Z
+adapter: agent-guard baselines/adapter/aguard
+placement: by content, into a fake home; unplaceable trees are handed to `check` directly
+provisional: false
+counts:
+    scored: 3539
+    no_verdict: 0
+    error: 0
+work_list_size: 3539

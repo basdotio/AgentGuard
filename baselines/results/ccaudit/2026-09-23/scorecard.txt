@@ -1,0 +1,68 @@
+# `corpus score` output, verbatim. Do not paraphrase it: the scorer's
+# refusals (a count where a rate would mislead, collected kept apart from constructed,
+# the uncovered tally) are the point, and retyping loses them.
+#
+# measured by agent-guard's own adapter (agent-guard baselines/adapter/ccaudit), threshold "default" chosen by us, placement: none: the sample tree is passed to `check` as-is, which recurses by default. PROVISIONAL: agent-artifact-corpus is public and ccaudit can measure itself against it; until it does, this figure is our best available guess and not the vendor's number
+# tool=ccaudit version=cc-audit 3.23.9 threshold=default corpus=5c3db6ee at 2026-09-24T06:45:24Z
+
+corpus     3539 labels — 300 malicious, 3220 benign, 19 hard-negative
+coverage   3539 of 3539 scored; 0 had no verdict
+
+detection — recall per dimension, split by what the samples rest on:
+  wild        the artifact existed because somebody made it for real. ONLY these
+              can back a claim about the world.
+  fixture     a third party wrote it as a test case — coverage of THEIR shapes.
+  constructed we wrote it — coverage of OURS.
+  The three never merge. Adding them produces a number that means nothing.
+  dimension        evidence          n   result
+  backdoor         constructed       4   caught 3 of 4 (coverage of chosen shapes, not a rate)
+  backdoor         fixture          19   caught 18 of 19 (n too small for a rate; ±19 pts)
+  execution        constructed       6   caught 6 of 6 (coverage of chosen shapes, not a rate)
+  execution        fixture          52   52%  [39, 65]  (27/52)
+  execution        wild              9   caught 7 of 9 (n too small for a rate; ±33 pts)
+  exfiltration     constructed      10   caught 9 of 10 (coverage of chosen shapes, not a rate)
+  exfiltration     fixture          48   71%  [57, 82]  (34/48)
+  exfiltration     wild              7   caught 5 of 7 (n too small for a rate; ±36 pts)
+  filesystem       fixture          27   caught 15 of 27 (n too small for a rate; ±18 pts)
+  injection        constructed       5   caught 4 of 5 (coverage of chosen shapes, not a rate)
+  injection        fixture          64   55%  [43, 66]  (35/64)
+  injection        wild              5   caught 4 of 5 (n too small for a rate; ±42 pts)
+  permission       constructed       5   caught 3 of 5 (coverage of chosen shapes, not a rate)
+  permission       fixture           8   caught 6 of 8 (n too small for a rate; ±34 pts)
+  permission       wild              2   caught 1 of 2 (n too small for a rate; ±41 pts)
+  reconnaissance   fixture          28   caught 16 of 28 (n too small for a rate; ±18 pts)
+  resource-abuse   fixture          16   caught 2 of 16 (n too small for a rate; ±24 pts)
+  supply-chain     fixture          17   caught 12 of 17 (n too small for a rate; ±24 pts)
+  supply-chain     wild              2   caught 1 of 2 (n too small for a rate; ±41 pts)
+
+  per source — a rate over one source is a rate ABOUT that source, not the world:
+  NVIDIA/SkillSpector               5   caught 1 of 5 (n too small for a rate; ±42 pts)
+  cisco-mcp-scanner-evals         127   58%  [50, 66]  (74/127)
+  datadog-ai-skills                22   caught 15 of 22 (n too small for a rate; ±21 pts)
+  reconstruction:connector          5   caught 3 of 5 (n too small for a rate; ±37 pts)
+  reconstruction:hooks              5   caught 4 of 5 (n too small for a rate; ±42 pts)
+  reconstruction:instruction        1   caught 1 of 1 (n too small for a rate; ±79 pts)
+  reconstruction:mcp                3   caught 3 of 3 (n too small for a rate; ±56 pts)
+  reconstruction:permission         6   caught 4 of 6 (n too small for a rate; ±37 pts)
+  reconstruction:skills             2   caught 2 of 2 (n too small for a rate; ±66 pts)
+  skill-safety-bench                9   caught 4 of 9 (n too small for a rate; ±29 pts)
+  skillcraft-audit                 42   81%  [67, 90]  (34/42)
+  skillsgoat                       65   49%  [37, 61]  (32/65)
+  synthetic-malicious               8   caught 8 of 8 (n too small for a rate; ±32 pts)
+
+flag rate on the benign pool — an estimate, reported per source:
+  benign here means `somebody runs this`, on an `assumed` basis — these are flags,
+  not confirmed false positives. Read one before you count it as an error.
+  automatelab-mcp-tools           353   76%  [71, 80]  (268/353)
+  harvested                       387   29%  [25, 34]  (114/387)
+  skillet-wild                    474   43%  [38, 47]  (203/474)
+  skillmd-138k                   1996   30%  [28, 32]  (602/1996)
+  skillsgoat                       10   caught 4 of 10 (n too small for a rate; ±29 pts)
+  reviewed subset: 15 of the benign pool has been read by a person; 11 flag(s) landed there.
+  those 11 ARE confirmed false positives. The rest of the flags above remain unadjudicated.
+
+hard negatives — the precision probe, a census, never pooled with the estimate above:
+  flagged 14 of 19 (74%) — each one a confirmed false positive: these were read
+
+attribution — of caught malicious with a read-basis dimension, was the KIND named:
+  72 of 185 correct (39%, [32, 46])

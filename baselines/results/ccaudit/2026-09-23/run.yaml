@@ -1,0 +1,21 @@
+# Written by baselines/cmd/baseline. Read baselines/README.md before citing any
+# figure produced alongside this file.
+#
+# measured by agent-guard's own adapter (agent-guard baselines/adapter/ccaudit), threshold "default" chosen by us, placement: none: the sample tree is passed to `check` as-is, which recurses by default. PROVISIONAL: agent-artifact-corpus is public and ccaudit can measure itself against it; until it does, this figure is our best available guess and not the vendor's number
+
+tool: ccaudit
+tool_version: cc-audit 3.23.9
+threshold: default
+policy_hash: sha256:03fa4186ee30709264f9e00ebf3e63fc2c61c108eb489369e1ff6b571050c67c
+uploads_samples: false
+uploads_samples_basis: 'NOT MEASURED. Read at v3.23.9: the only outbound path found in source is --report-fp, which shells out to `gh issue create`, and this rig never passes it. But nobody read all 300 KB of it, and a --no-telemetry flag existing at all says the default is not total silence. The run that would settle it — the full corpus under `--network none` — needs a containerised execution path this repository does not have yet (P-017 open question 9). Until then this value is the expectation, not the finding.'
+corpus_commit: 5c3db6ee
+started_at: 2026-09-24T06:45:24.242585Z
+adapter: agent-guard baselines/adapter/ccaudit
+placement: 'none: the sample tree is passed to `check` as-is, which recurses by default'
+provisional: true
+counts:
+    scored: 3539
+    no_verdict: 0
+    error: 0
+work_list_size: 3539

@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# commit-msg hook (process.md §3): on a proposal branch every commit names its proposal.
+# Install:  make hooks        (copies this file to .git/hooks/commit-msg)
+#
+# Branches matching p/* are proposal branches; a commit there must carry "(P-NNN)" somewhere in
+# its message — that token is how `git log --grep` and `git blame` lead back to docs/proposals/.
+# Any other branch is left alone: the trunk takes chores under the exception clause, and a
+# detached HEAD (mid-rebase) is not a branch.
+#
+# This is a per-machine hook. A clone that never ran `make hooks` is not protected by it.
+set -euo pipefail
+
+msg_file="$1"
+branch="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || echo '')"
+
+case "$branch" in
+  p/*) ;;
+  *) exit 0 ;;
+esac
+
+if grep -qE '\(P-[0-9]{3,}\)' "$msg_file"; then
+  exit 0
+fi
+
+cat >&2 <<MSG
+commit-msg: $branch is a proposal branch, but the message has no proposal id.
+  Append the id in the form (P-NNN), e.g.
+
+    detect: exclude never-loaded tree files from scoring (P-024)
+
+  See docs/process.md §3.
+MSG
+exit 1

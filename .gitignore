@@ -1,0 +1,46 @@
+/bin/
+/dist/
+*.out
+*.test
+coverage.*
+.DS_Store
+report.html
+
+# personal LLM endpoint config (config.example.yaml is the shared one)
+aguard.yaml
+.env.local
+
+# local scan output staged for review (never committed: it carries real paths and code)
+/.scan-out/
+
+# leftovers of the remote-tool delete workaround (it cannot unlink; it moves files here)
+/_to_delete/
+/_sync/
+# stale git lock files moved aside for the same reason: on this mount git can create
+# .git/index.lock but cannot remove it, so a lock has to be moved out of the way rather
+# than deleted. These are scratch, never content — committing them would put a dozen dead
+# index.lock files in the history.
+/_gitlocks/
+
+# stray build output: the Makefile writes to bin/ and dist/, both ignored above.
+# A 14MB binary committed at the repo root was an accident, and it kept dirtying
+# the tree on every build.
+/aguard
+
+# source tarballs staged for handing code to an external reviewer. Untracked but NOT
+# ignored until now, so a single `git add -A` would have put a 1MB snapshot of the tree
+# into the history — and a stale copy of the source is exactly what this repo's own
+# grep-based checks must never find.
+/_audit/
+
+# Claude Code per-machine settings; .claude/rules/ is tracked on purpose
+.claude/settings.local.json
+# raw/ is never committed. A judge run's raw output is kept as a release asset instead (see the
+# run.yaml `raw_archive:` block); it is model output quoting malicious samples, not for the tree.
+/baselines/results/*/*/raw/
+/baselines/results/*/*/samples.jsonl
+# A judge subset is a random stratified draw, not `corpus samples` output, so those are kept.
+!/baselines/results/aguard/2026-09-25-llm-glm-5.3-flash/samples.jsonl
+!/baselines/results/aguard/2026-09-28-llm-gpt-4.1-mini/samples.jsonl
+!/baselines/results/aguard/2026-09-29-llm-gpt-4.1-mini-s3/samples.jsonl
+!/baselines/results/aguard/2026-09-29-llm-gpt-4.1-mini-s3-votes/samples.jsonl

@@ -1,0 +1,819 @@
+{"sample":"mal-conn-mcp-autorun-bypass","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"mal-conn-mcp-command-payload","outcome":"scored","attempted":true,"verdict":"malicious","surface":["connector"],"severity":"high","dimensions":["execution"],"rules":["EXEC-001"]}
+{"sample":"mal-conn-mcpoison-post-approval-swap","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"],"severity":"low"}
+{"sample":"mal-conn-self-register-mcp","outcome":"scored","attempted":true,"verdict":"malicious","surface":["connector"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-conn-tool-rugpull","outcome":"scored","attempted":true,"verdict":"malicious","surface":["connector"],"severity":"high","dimensions":["injection"],"rules":["LLM-003","MCP-001"]}
+{"sample":"mal-hook-authorized-keys-persist","outcome":"scored","attempted":true,"verdict":"malicious","surface":["hooks"],"severity":"high","dimensions":["filesystem","injection"],"rules":["FS-001","LLM-003"]}
+{"sample":"mal-hook-git-config-exec-hook","outcome":"scored","attempted":true,"verdict":"malicious","surface":["hooks"],"severity":"high","dimensions":["execution","injection","permission"],"rules":["EXEC-001","LLM-003","LLM-008"]}
+{"sample":"mal-hook-pretooluse-autoapprove","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks"],"severity":"medium"}
+{"sample":"mal-hook-sessionstart-rce","outcome":"scored","attempted":true,"verdict":"malicious","surface":["hooks"],"severity":"high","dimensions":["execution","injection","permission"],"rules":["EXEC-001","LLM-003","LLM-008"]}
+{"sample":"mal-hook-userpromptsubmit-perm-rewrite","outcome":"scored","attempted":true,"verdict":"malicious","surface":["hooks"],"severity":"high","dimensions":["permission"],"rules":["PERM-007"]}
+{"sample":"mal-instr-injection-literal","outcome":"scored","attempted":true,"verdict":"malicious","surface":["instruction"],"severity":"high","dimensions":["injection"],"rules":["INJ-001","LLM-003","LLM-007"]}
+{"sample":"mal-mcp-ci-act_as_role_injection","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-admin_privilege_escalation","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-api_key_harvesting_environment","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-api_token_config_exfiltration","outcome":"scored","attempted":true,"verdict":"malicious","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"high","dimensions":["exfiltration"],"rules":["EXFIL-001"]}
+{"sample":"mal-mcp-ci-arbitrary_file_copy_sensitive_data","outcome":"scored","attempted":true,"verdict":"malicious","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"high","dimensions":["filesystem"],"rules":["FS-001"]}
+{"sample":"mal-mcp-ci-arbitrary_file_deletion_recursive","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-arbitrary_file_write_system_overwrite","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-archive_extraction_zip_slip_attack","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-base64_decode_execute_obfuscation","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-behavior_redirection_endpoint_manipulation","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-browser_history_exfiltration","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-cache_poisoning_result_manipulation","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-cheetah_template_injection","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-clipboard_monitoring_exfiltration","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-cloud_metadata_credential_extraction","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-command_injection_grep","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-compile_execute_bytecode_manipulation","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"low"}
+{"sample":"mal-mcp-ci-conditional_behavior_privileged_users","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-context_poisoning_privilege_injection","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-contradictory_description_validation_bypass","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-cpu_exhaustion_attack","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"low"}
+{"sample":"mal-mcp-ci-credential_harvesting_local_storage","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-cron_job_multiple_schedules","outcome":"scored","attempted":true,"verdict":"malicious","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"high","dimensions":["execution"],"rules":["EXEC-001"]}
+{"sample":"mal-mcp-ci-curl_command_injection","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-database_exfiltration_chunking","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-directory_traversal_write_path_manipulation","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-disk_space_exhaustion_attack","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-django_template_injection_custom_tags","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-dns_rebinding_attack","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-dns_tunneling_c2_communication","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-docker_secrets_registry_exfiltration","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-dynamic_import_arbitrary_module","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-dynamic_lambda_function_execution","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"low"}
+{"sample":"mal-mcp-ci-environment_secrets_exfiltration","outcome":"scored","attempted":true,"verdict":"malicious","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"high","dimensions":["exfiltration"],"rules":["EXFIL-003"]}
+{"sample":"mal-mcp-ci-environment_variable_enumeration","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-environment_variable_trigger_multi_condition","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-file_descriptor_exhaustion","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-file_exfiltration_with_encoding","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-file_permission_manipulation_privilege_escalation","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-file_permissions_suid_bit_manipulation","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-file_protocol_ssrf_local_file","outcome":"scored","attempted":true,"verdict":"malicious","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"high","dimensions":["exfiltration","filesystem"],"rules":["EXFIL-001","FS-001"]}
+{"sample":"mal-mcp-ci-filesystem_mount_information_access","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-fork_bomb_process_exhaustion","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-format_method_injection_attribute_access","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-format_string_injection","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-fstring_injection_dynamic_eval","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"low"}
+{"sample":"mal-mcp-ci-git_repository_data_exfiltration","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-goal_subversion_objective_replacement","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-hidden_metadata_filter_bypass","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-hidden_system_instructions","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-importlib_dynamic_module_loading","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-instruction_override_safety_bypass","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-internal_service_port_scanning","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-jailbreak_mode_context_manipulation","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-jinja2_autoescape_disabled","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"low"}
+{"sample":"mal-mcp-ci-jinja2_ssti_dynamic_template","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-ldap_injection_dynamic_filter","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-localhost_metadata_service_access","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-log_tampering_evidence_removal","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-magic_string_backdoor","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-mako_template_injection_email","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-malicious_tool_registration_auto_invoke","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-memory_exhaustion_attack","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-multi_cloud_credentials_exfiltration","outcome":"scored","attempted":true,"verdict":"malicious","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"high","dimensions":["exfiltration"],"rules":["EXFIL-001"]}
+{"sample":"mal-mcp-ci-multi_feature_web_shell","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"low"}
+{"sample":"mal-mcp-ci-multi_layer_obfuscated_backdoor","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-multi_mechanism_persistence","outcome":"scored","attempted":true,"verdict":"malicious","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"high","dimensions":["execution"],"rules":["EXEC-001"]}
+{"sample":"mal-mcp-ci-multi_method_container_escape","outcome":"scored","attempted":true,"verdict":"malicious","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"high","dimensions":["execution"],"rules":["EXEC-001"]}
+{"sample":"mal-mcp-ci-multi_method_reverse_shell","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-multi_technique_sandbox_escape","outcome":"scored","attempted":true,"verdict":"malicious","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"high","dimensions":["execution"],"rules":["EXEC-001"]}
+{"sample":"mal-mcp-ci-mustache_template_injection_partials","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"low"}
+{"sample":"mal-mcp-ci-nested_ignore_trust_escalation","outcome":"scored","attempted":true,"verdict":"malicious","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"high","dimensions":["injection"],"rules":["INJ-001"]}
+{"sample":"mal-mcp-ci-network_bandwidth_exhaustion","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"low"}
+{"sample":"mal-mcp-ci-network_configuration_access","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-nosql_injection_mongodb","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-os_system_injection_archives","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-output_manipulation_system_mods","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-override_instruction_injection","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-path_traversal_directory_enumeration","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-postmark_bcc_exfiltration","outcome":"scored","attempted":true,"verdict":"malicious","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"high","dimensions":["exfiltration"],"rules":["EXFIL-001"]}
+{"sample":"mal-mcp-ci-private_ip_range_scanning","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-privilege_escalation_system_file_mod","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-process_information_access","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-redirect_chain_internal_service","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-redirect_following_open_redirect","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-regex_dos_redos_attack","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-response_poisoning_content_injection","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-result_poisoning_data_injection","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-rootkit_installation","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-routing_table_arp_cache_access","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-safety_bypass_emergency_access","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-security_feature_disabling","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-security_policy_bypass_rule_manipulation","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-session_hijacking_token_manipulation","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-shell_injection_network_diagnostics","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-sql_injection_dynamic_query","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-ssh_key_certificate_exfiltration","outcome":"scored","attempted":true,"verdict":"malicious","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"high","dimensions":["exfiltration","filesystem"],"rules":["EXFIL-003","FS-001"]}
+{"sample":"mal-mcp-ci-ssh_key_injection_multi_user","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-ssrf_url_manipulation_internal_network","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-stack_exhaustion_infinite_recursion","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-state_persistence_malicious_config","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-stealth_logging_interaction_tracking","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-string_template_injection_config","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-subprocess_shell_command_injection","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-symlink_attack_file_access_bypass","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-symlink_manipulation_privilege_escalation","outcome":"scored","attempted":true,"verdict":"malicious","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"high","dimensions":["filesystem"],"rules":["FS-001"]}
+{"sample":"mal-mcp-ci-system_file_access_enumeration","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-system_hardware_information_access","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-system_log_access","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-system_prompt_manipulation_override","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-system_prompt_override","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-template_command_injection","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-thread_exhaustion_attack","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-time_based_conditional_activation","outcome":"scored","attempted":true,"verdict":"malicious","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"high","dimensions":["execution"],"rules":["EXEC-001"]}
+{"sample":"mal-mcp-ci-timestamp_manipulation_anti_forensics","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-tornado_template_injection_web","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-trigger_based_malicious_behavior","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-unix_socket_docker_exploitation","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-unrestricted_eval_code_injection","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"low"}
+{"sample":"mal-mcp-ci-unrestricted_exec_arbitrary_code","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"low"}
+{"sample":"mal-mcp-ci-unsafe_pickle_deserialization","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"],"severity":"medium"}
+{"sample":"mal-mcp-ci-user_account_enumeration","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-user_database_access","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-workflow_tampering_step_injection","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-xpath_injection_dynamic_query","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-yaml_unsafe_load_code_execution","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-ci-zip_bomb_decompression_attack","outcome":"scored","attempted":true,"verdict":"benign","detail":"server source (.py) has no load path aguard reads; scored by `check` on the bare tree instead","flags":["secondary-surface"],"surface":["mcp"]}
+{"sample":"mal-mcp-mcptox-explicit-hijack","outcome":"scored","attempted":true,"verdict":"malicious","surface":["mcp"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-mcp-mcptox-implicit-ambient","outcome":"scored","attempted":true,"verdict":"malicious","surface":["mcp"],"severity":"high","dimensions":["injection"],"rules":["LLM-003","MCP-001"]}
+{"sample":"mal-mcp-mcptox-parameter-tamper","outcome":"scored","attempted":true,"verdict":"malicious","surface":["mcp"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-perm-agent-bypass-permissions","outcome":"scored","attempted":true,"verdict":"malicious","surface":["permission"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-perm-allowed-tools-backtick","outcome":"scored","attempted":true,"verdict":"malicious","surface":["permission"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-perm-baseurl-redirect","outcome":"scored","attempted":true,"verdict":"benign","surface":["permission"],"severity":"medium"}
+{"sample":"mal-perm-disable-own-guardrail","outcome":"scored","attempted":true,"verdict":"malicious","surface":["permission"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-perm-mcp-env-hijack","outcome":"scored","attempted":true,"verdict":"malicious","surface":["permission"],"severity":"high","dimensions":["execution"],"rules":["EXEC-010"]}
+{"sample":"mal-perm-wildcard-autoapprove","outcome":"scored","attempted":true,"verdict":"malicious","surface":["permission"],"severity":"high","dimensions":["permission"],"rules":["PERM-005"]}
+{"sample":"mal-skill-dd-3bkader-gpt-malicious-skill-poc","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-dd-ZackKorman-skills-openclaw-admin-security-breakglass","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-dd-arjenschwarz-agentic-coding-claude-skills-project-init","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["execution"],"rules":["EXEC-001"]}
+{"sample":"mal-skill-dd-arlenagreer-claude_configuration_docs-skills-email","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"mal-skill-dd-boomsystel-code-openclaw-workspace-skills-nanopdf","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-dd-boomsystel-code-openclaw-workspace-skills-yahoo-finance-who","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-dd-clawsights-clawsights-dot-agents-skills-clawsights","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"mal-skill-dd-clawsights-clawsights-skills-clawsights","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"mal-skill-dd-cybertechajju-productivity-boost-skills-productivity-boost","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"mal-skill-dd-cybertechajju-version-demo-helper","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","filesystem","injection"],"rules":["EXFIL-003","FS-001","LLM-001","LLM-003"]}
+{"sample":"mal-skill-dd-escapewu-skills-skills-CPA-antigravity-RT-exract","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"mal-skill-dd-gchan-bad-humanizer","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-001","LLM-003","LLM-007"]}
+{"sample":"mal-skill-dd-h1paastha-test-skill","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003","LLM-007"]}
+{"sample":"mal-skill-dd-netcode-openclaw-skills-old-fork-base-agent","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","injection"],"rules":["EXFIL-001","LLM-001","LLM-003"]}
+{"sample":"mal-skill-dd-netcode-openclaw-skills-old-fork-bybit-agent","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","injection"],"rules":["EXFIL-001","LLM-001","LLM-003"]}
+{"sample":"mal-skill-dd-nickoc-clawscan-malicious-skill","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","filesystem","injection"],"rules":["EXFIL-003","FS-001","INJ-001","LLM-001","LLM-003","LLM-007"]}
+{"sample":"mal-skill-dd-riba2534-feishu-cli-skills-feishu-cli-create","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"mal-skill-dd-ronyparra-fake-dep-check-skill","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","injection"],"rules":["EXFIL-001","LLM-003"]}
+{"sample":"mal-skill-dd-syncause-debug-skill-skills-syncause-debugger","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"mal-skill-dd-zackkorman-skills-skills-audit","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"mal-skill-dd-zackkorman-skills-skills-pdf-helper","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["execution","injection"],"rules":["EXEC-001","LLM-003"]}
+{"sample":"mal-skill-dd-zackkorman-skills-skills-security-review-4","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["execution","injection"],"rules":["EXEC-001","LLM-003"]}
+{"sample":"mal-skill-env-exfil","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration"],"rules":["EXFIL-001","LLM-001"]}
+{"sample":"mal-skill-evmx-base64-wrapper","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-evmx-blank-padding","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","injection"],"rules":["EXFIL-001","LLM-003"]}
+{"sample":"mal-skill-evmx-line-continuation","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","injection"],"rules":["EXFIL-001","LLM-003"]}
+{"sample":"mal-skill-evmx-plain","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","injection"],"rules":["EXFIL-001","LLM-003"]}
+{"sample":"mal-skill-evmx-quote-splitting","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","injection"],"rules":["EXFIL-001","LLM-003"]}
+{"sample":"mal-skill-evmx-split-across-files","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","rules":["LLM-001"]}
+{"sample":"mal-skill-evmx-unicode-confusable","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","injection"],"rules":["EXFIL-001","LLM-003"]}
+{"sample":"mal-skill-evmx-zero-width","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","injection"],"rules":["EXFIL-001","LLM-003"]}
+{"sample":"mal-skill-ns-mcp-poisoned-tool","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["INJ-001","LLM-007"]}
+{"sample":"mal-skill-ns-ssd-narrative-deception","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-ns-ssd-nl-exfiltration","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-ns-ssd-novel-phrasing","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-ns-ssd-semantic-injection","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-revshell-python-dup2","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","rules":["LLM-001"]}
+{"sample":"mal-skill-sc-T1-direct-injection-easy","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","filesystem","injection"],"rules":["EXFIL-001","FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T1-direct-injection-hard","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","filesystem","injection"],"rules":["EXFIL-003","FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T1-direct-injection-medium","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","filesystem","injection"],"rules":["EXFIL-003","FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T10-mcp-hijack-easy","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-sc-T10-mcp-hijack-hard","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-sc-T10-mcp-hijack-medium","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-sc-T11-hook-weaponize-easy","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"mal-skill-sc-T11-hook-weaponize-hard","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["filesystem","injection"],"rules":["FS-001","LLM-001","LLM-003"]}
+{"sample":"mal-skill-sc-T11-hook-weaponize-medium","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["filesystem","injection"],"rules":["FS-001","LLM-001","LLM-003"]}
+{"sample":"mal-skill-sc-T12-implicit-poison-easy","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-sc-T12-implicit-poison-hard","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["filesystem","injection"],"rules":["FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T12-implicit-poison-medium","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","filesystem","injection"],"rules":["EXFIL-003","FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T13-permission-bypass-easy","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-sc-T13-permission-bypass-hard","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","filesystem","injection"],"rules":["EXFIL-001","FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T13-permission-bypass-medium","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-sc-T14-memory-injection-easy","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["filesystem","injection"],"rules":["FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T14-memory-injection-hard","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["filesystem","injection"],"rules":["FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T14-memory-injection-medium","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["filesystem","injection"],"rules":["FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T2-semantic-obfuscation-easy","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["filesystem","injection"],"rules":["FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T2-semantic-obfuscation-hard","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["filesystem","injection"],"rules":["FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T2-semantic-obfuscation-medium","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["filesystem","injection"],"rules":["FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T3-context-hijack-easy","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["filesystem","injection"],"rules":["FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T3-context-hijack-hard","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","filesystem","injection"],"rules":["EXFIL-001","FS-001","LLM-003","LLM-007"]}
+{"sample":"mal-skill-sc-T3-context-hijack-medium","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","filesystem","injection"],"rules":["EXFIL-001","FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T4-conditional-trigger-easy","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["filesystem","injection"],"rules":["FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T4-conditional-trigger-hard","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["filesystem","injection"],"rules":["FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T4-conditional-trigger-medium","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["filesystem","injection"],"rules":["FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T5-instruction-fragment-easy","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["filesystem","injection"],"rules":["FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T5-instruction-fragment-hard","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["filesystem","injection"],"rules":["FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T5-instruction-fragment-medium","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["filesystem","injection"],"rules":["FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T6-obfuscated-exec-easy","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","rules":["LLM-001","LLM-004"]}
+{"sample":"mal-skill-sc-T6-obfuscated-exec-hard","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["filesystem","injection"],"rules":["FS-001","LLM-001","LLM-003"]}
+{"sample":"mal-skill-sc-T6-obfuscated-exec-medium","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","rules":["LLM-001"]}
+{"sample":"mal-skill-sc-T7-multi-stage-easy","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-sc-T7-multi-stage-hard","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","filesystem","injection"],"rules":["EXFIL-001","FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T7-multi-stage-medium","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"mal-skill-sc-T8-env-aware-easy","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","filesystem","injection"],"rules":["EXFIL-001","FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T8-env-aware-hard","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","filesystem","injection"],"rules":["EXFIL-001","FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T8-env-aware-medium","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","filesystem","injection"],"rules":["EXFIL-001","FS-001","LLM-003"]}
+{"sample":"mal-skill-sc-T9-supply-chain-easy","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","rules":["LLM-001"]}
+{"sample":"mal-skill-sc-T9-supply-chain-hard","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["filesystem"],"rules":["FS-001","LLM-001"]}
+{"sample":"mal-skill-sc-T9-supply-chain-medium","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["filesystem"],"rules":["FS-001","LLM-001"]}
+{"sample":"mal-skill-sg-adapter-cache-harvest","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"mal-skill-sg-archive-indirection-docx","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-sg-base64-obvious","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-sg-bcc-exfil","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-sg-benign-caller-malicious-callee","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"mal-skill-sg-bytecode-poisoning","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["supply-chain"],"rules":["SUP-005"]}
+{"sample":"mal-skill-sg-charcode-exec","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","rules":["LLM-001"]}
+{"sample":"mal-skill-sg-clawhub-listing","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["execution","exfiltration","injection"],"rules":["EXEC-001","EXFIL-001","LLM-003"]}
+{"sample":"mal-skill-sg-clean-manifest-nested","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","rules":["LLM-001"]}
+{"sample":"mal-skill-sg-codeword-activation","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-sg-config-url-fetch","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"mal-skill-sg-confused-deputy-readme","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-sg-corporate-narrative","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["supply-chain"],"rules":["LLM-001","SUP-006"]}
+{"sample":"mal-skill-sg-cover-link-offload","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-001","LLM-003"]}
+{"sample":"mal-skill-sg-definition-of-done-push","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-sg-description-understate","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","rules":["LLM-001"]}
+{"sample":"mal-skill-sg-dns-label-exfil","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["filesystem"],"rules":["FS-001","LLM-001"]}
+{"sample":"mal-skill-sg-env-gated-behavior","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","filesystem"],"rules":["EXFIL-001","FS-001","LLM-001"]}
+{"sample":"mal-skill-sg-env-harvest-loop","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","rules":["LLM-001"]}
+{"sample":"mal-skill-sg-error-message-leak","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","rules":["LLM-001"]}
+{"sample":"mal-skill-sg-extension-disguise","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"mal-skill-sg-git-hook-backdoor","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","rules":["LLM-001"]}
+{"sample":"mal-skill-sg-gitignore-hide","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"mal-skill-sg-helper-sourced-payload","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["execution"],"rules":["EXEC-001"]}
+{"sample":"mal-skill-sg-hidden-html-comment-instruction","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-sg-homoglyph-imports","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-sg-ide-native-impersonation","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["execution"],"rules":["EXEC-001"]}
+{"sample":"mal-skill-sg-ignore-previous-instructions","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["INJ-001","LLM-001","LLM-007"]}
+{"sample":"mal-skill-sg-image-metadata-payload","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","rules":["LLM-001"]}
+{"sample":"mal-skill-sg-indirect-resource-injection","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"mal-skill-sg-judge-self-injection","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","injection"],"rules":["EXFIL-003","LLM-003","LLM-007"]}
+{"sample":"mal-skill-sg-lockfile-divergence","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"mal-skill-sg-mcp-json-directives","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-007"]}
+{"sample":"mal-skill-sg-memory-file-write","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-sg-minimal-interaction-allowlist","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"mal-skill-sg-missing-required-fields","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-sg-nested-bundle-recursion","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","rules":["LLM-001"]}
+{"sample":"mal-skill-sg-newline-canyon","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","injection"],"rules":["EXFIL-003","LLM-003"]}
+{"sample":"mal-skill-sg-overbroad-permissions","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"mal-skill-sg-password-zip-drop","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-sg-pep723-deferred-dep","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"mal-skill-sg-plain-curl-bash","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["execution"],"rules":["EXEC-001"]}
+{"sample":"mal-skill-sg-plain-exec-eval","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","rules":["LLM-001"]}
+{"sample":"mal-skill-sg-plain-exfil-post","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration"],"rules":["EXFIL-003","LLM-001"]}
+{"sample":"mal-skill-sg-plausibility-comments","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["filesystem"],"rules":["FS-001","LLM-001"]}
+{"sample":"mal-skill-sg-reverse-shell-netcat","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","rules":["LLM-001"]}
+{"sample":"mal-skill-sg-rm-rf-no-confirm","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"low"}
+{"sample":"mal-skill-sg-rtl-override-labels","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003","LLM-007"]}
+{"sample":"mal-skill-sg-runtime-instruction-fetch","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-sg-self-rewrite-update","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["execution","injection"],"rules":["EXEC-001","LLM-003"]}
+{"sample":"mal-skill-sg-settings-json-hook","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"mal-skill-sg-sfs-xor-pack","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"mal-skill-sg-shell-splice-concat","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","rules":["LLM-001"]}
+{"sample":"mal-skill-sg-shellrc-persistence","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","rules":["LLM-001"]}
+{"sample":"mal-skill-sg-soul-identity-hijack","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-sg-split-across-files","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","rules":["LLM-001"]}
+{"sample":"mal-skill-sg-sudo-install","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"mal-skill-sg-symlink-escape","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"mal-skill-sg-typosquat-name","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["execution","injection"],"rules":["EXEC-001","LLM-003"]}
+{"sample":"mal-skill-sg-unsafe-yaml-frontmatter","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"mal-skill-sg-vercel-skills-sh-pack","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration"],"rules":["EXFIL-001"]}
+{"sample":"mal-skill-sg-vibe-coded-plugin","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["execution","exfiltration"],"rules":["EXEC-001","EXFIL-001"]}
+{"sample":"mal-skill-sg-wallet-exhaustion-loop","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"mal-skill-sg-whitespace-below-fold","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-sg-zero-width-directives","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-ssb-docker-socket-repro","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-ssb-metadata-service-probe","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"mal-skill-ssb-organize-audit-log-erasure","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"mal-skill-ssb-organize-intake-manifest","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"mal-skill-ssb-requery-loop","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"mal-skill-ssb-tfidf-budget-drain","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["injection"],"rules":["LLM-003"]}
+{"sample":"mal-skill-ssb-training-sweep-drain","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"mal-skill-ssb-travel-fanout-explosion","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"mal-skill-ssb-video-rescan-loop","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"hn-conn-starrocks","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"hn-hook-anneheartrecord","outcome":"scored","attempted":true,"verdict":"malicious","surface":["hooks","permission"],"severity":"high","dimensions":["permission"],"rules":["PERM-005"]}
+{"sample":"hn-hook-imcvampire","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks"],"severity":"medium"}
+{"sample":"hn-hook-rubree-deny-list","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks","permission"],"severity":"medium"}
+{"sample":"hn-instr-defensive-refusal","outcome":"scored","attempted":true,"verdict":"benign","surface":["instruction"]}
+{"sample":"hn-instr-fz-data-exfiltration","outcome":"scored","attempted":true,"verdict":"benign","surface":["instruction"]}
+{"sample":"hn-instr-fz-direct-injection","outcome":"scored","attempted":true,"verdict":"malicious","surface":["instruction"],"severity":"high","dimensions":["injection"],"rules":["INJ-001"]}
+{"sample":"hn-instr-fz-indirect-injection","outcome":"scored","attempted":true,"verdict":"malicious","surface":["instruction"],"severity":"high","dimensions":["injection"],"rules":["INJ-001"]}
+{"sample":"hn-instr-fz-jailbreak-persona","outcome":"scored","attempted":true,"verdict":"benign","surface":["instruction"]}
+{"sample":"hn-instr-fz-turkish-morphological","outcome":"scored","attempted":true,"verdict":"malicious","surface":["instruction"],"severity":"high","dimensions":["injection"],"rules":["INJ-001"]}
+{"sample":"hn-mcp-agentcash","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"hn-mcp-alibabacloud","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"hn-mcp-am","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"hn-mcp-ateai","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"hn-perm-feiskyer","outcome":"scored","attempted":true,"verdict":"benign","surface":["permission"]}
+{"sample":"hn-perm-unity-credential-deny-list","outcome":"scored","attempted":true,"verdict":"benign","surface":["permission"],"severity":"medium"}
+{"sample":"hn-skill-environ-copy","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"hn-skill-ns-ssd-clean","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"hn-skill-socket-client-plain","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"low"}
+{"sample":"ben-skill-md-aiskillstore-marketplace-synthesis","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-electron__electron__.claude__skills__electron-node-upgrade","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-gptomics-bioskills-strain-tracking","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-hashi-demo-lab__claude-skill-hcp-terraform__terraform-style-guide","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-kcwoodfield__LifeOS-OSS__.claude__skills__weekly-review","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-brmbobo-web2podcast-clay-advanced-troubleshooting","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration"],"rules":["EXFIL-001"]}
+{"sample":"ben-skill-md-tachyon-beep-skillpacks-using-ux-designer","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-neversight-skills-feed-controller-testing","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-poindexter12-waypoint-plugin-validator","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-tkzzzzzz6-baoyan-info-tracker","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-clawdbot__clawdinators__clawdinator__workspace__skills__lurk","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-openclaw-skills-auto-updater-gateway","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-openclaw-skills-openbroker","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-tianjianjiang-smith-smith-ralph","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-codename-co__devs__.github__skills__zustand-store-development","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-mayurrathi-awesome-agent-skills-rust-pro","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-brmbobo-web2podcast-scanning-for-vulnerabilities","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-nakaj1214-nakaj-claude-e2e-runner","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-justlookatnow-pt-mate-release","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-narumiruna-telegram-bot-aiogram-framework","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-aviflombaum-claude-code-in-avinyc-business","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-cuioss-plan-marshall-plugin-plan-implement","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-subframe7536__kysely-sqlite-builder__skills__kysely-sqlite-builder","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"low"}
+{"sample":"ben-skill-md-posit-dev-team-operator-team-operator-config","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-wonjangcloud9-claude-tree-code-review","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-oalkabouss-fullstack-agent-skills-react-compound-components","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-clawdbot-skills-pocket-casts-yt","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["execution"],"rules":["EXEC-001"]}
+{"sample":"ben-skill-md-mikall-factoryx-sprint-planning","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-wallbit-wallbit-skills-skills","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration"],"rules":["EXFIL-001"]}
+{"sample":"ben-skill-md-labeehive-standards-aso-review","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-EricGrill__agents-skills-plugins__plugins__developer-essentials__skills__nx-workspace-patterns","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-unfrgivn__wilds-of-cloverhollow__.opencode__skill__godot-autonomous-iteration","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-AsyrafHussin__agent-skills__skills__laravel-database-optimization","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-vipulgupta2048-codex-skills-frontend-design","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-uukuguy-regreader-wengui-dc-limit","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-thangchung-agent-engineering-experiment-markitdown","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-tommymorgan-claude-plugins-verification-sweep","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-neversight-skills-feed-code-reviewer","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-bbgnsurftech-claude-skills-collection-api-documentation-generato","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-hashi-demo-lab__claude-skill-hcp-terraform__terraform-mcp-as-code","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-iclaudioo-marketing-science-skills-churn-prevention","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-eous__dotclaude__skills__sql-patterns","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-ryanbreen-breenix-breenix-systematic-debugging","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-zchee__coding-agents__.codex__skills__openrouter-model-catalog","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration"],"rules":["EXFIL-001"]}
+{"sample":"ben-skill-md-sludging-idleon-efficiency-testing","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-enisa200467-enisahealingandmassage-edit-page-content","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-GondaDaikon__tri-ssd__skills__gen-doc","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-neversight-skills-feed-brand-style","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-ipixeldust-apryse-pdf-skills-apryse-redact","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-vdesjardins-nix-config-skill-timewarrior-efficient-entry","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-SHAJAR5110__Hackathon-II-phase2__.claude__skills__frontend-expert","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration"],"rules":["EXFIL-003"]}
+{"sample":"ben-skill-sk-nextblock-cms__nextblock__.agent__skills__frontend-design","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-steadfastasart-geoscience-skills-pyrolite","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-Ketomihine__my_skills__giottosuite-local","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-masayan1126-masayan-uni-code-plugins-review","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-amnadtaowsoam-cerebraskills-feature-toggles","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sg-admin-installer","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"ben-skill-md-leather-io-mono-monorepo-navigation","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-small-java-world__todo-manage__todo-api-client-sample__.claude__skills__api.task-listing.minimal-v1","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-neversight-skills-feed-minecraft-fabric-dev","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-socketdev-skills-socket-dep-replace","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-domjtalbot-homelab-env-hygiene","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-ferdiangunawan-rpi-stack-audit-security","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-genmcp-gevals-create-eval","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-andershalo-halo-ai-dev-tools-plan-refinement","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-aiskillstore-marketplace-playwright-browser-automation","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-neversight-skills-feed-wallet-security","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"ben-skill-md-shinpr-ai-coding-project-boilerplate-typescript-testing","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-jeremylongshore-claude-code-plugins-plus-skills-skill-adapter-c12c75eb","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-rankjay-ai-code-review","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-gunderwonder__bleikoya-2023__.claude__skills__obsidian","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-openclaw-skills-solarpunk-evidence-logger","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-otrebu__all-agents__.claude__skills__setup-lint-staged","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-zmre-nix-pai-example-skill","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-kuingsmile-word-gpt-plus-skills","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-46ki75__skills__skills__prompt-evaluation","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-l0g1x-bcc-bcc","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-pythoninthegrasses-lunchjs-fastlane","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-brownbull-taskflow-tier-advisor","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-akornmeier__claude-config__skills__nuxt-ui","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-neversight-skills-feed-tailscale-runpod","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["execution"],"rules":["EXEC-001"]}
+{"sample":"ben-skill-md-raintree-technology-claude-starter-stripe","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration"],"rules":["EXFIL-001"]}
+{"sample":"ben-skill-sk-nbarthel__claudy__plugins__rails-workflow__skills__rails-pattern-finder","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-almogkm-vs-code-terminal-tab-title-name-ext-deterministic-comman","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-duizendstra-antigravity-sandbox-code-style-checker","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-melodic-software-claude-code-plugins-gap-analysis","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sg-cjk-documentation","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-nfbs2000-vibe-with-phrack-skill-developer","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-se04-aizu-2025-se04project-team-read-all-docs","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-profbernardoj-everclaw-community-branches-three-shifts","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-Jaisrinivasan23__CSV-Standalone__.claude__skills__email-html-engine","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-0x3ef8-moltbook-ai-agent-docs","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-gw-ai-security-ats-cv-scorer-project-phase-planner","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-neversight-skills-feed-premium-frontend-design","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-amarbel-llc-dodder-design-patterns-hamster-style","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-daymade-claude-code-skills-macos-cleaner","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["filesystem"],"rules":["FS-003"]}
+{"sample":"ben-skill-md-neversight-skills-feed-mcp-supabase","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-keemsy-fastapi-playground-new-domain","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-dvcrn-openclaw-skills-marketplace-gcloud","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-RIMTHAN-LAB__rimthan-plugins__nodejs__skills__api-controller","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-frankxai-frankx-ai-vercel-website-7-pillars","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-brownfinesecurity-iothackbot-iotnet","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-fellyph__ai-instructions__claude__skills__blueprint-maker","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-anortham-sherpa-tdd-cycle","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-neversight-skills-feed-send-email","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration"],"rules":["EXFIL-001"]}
+{"sample":"ben-skill-md-openclaw-skills-protom-bridge-email","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-chunkytortoise-enterprisehub-web-artifacts-builder","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-bbgnsurftech-claude-skills-collection-overnight-dev","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"ben-skill-sk-EricGrill__agents-skills-plugins__plugins__awesome-claude-skills__composio-skills__neverbounce-automation","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-daniele21-role-fit-scanner-deploy-readiness-checker","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-krwenholz-adventofcode-2025-aoc-solution-review","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-skyosev__agent-skills__hunter-party-py__security-hunter-py","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"ben-skill-md-mootbing-clawshi","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-jagreehal__baldrick__skills__spec-vibe","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-jeremylongshore-claude-code-plugins-plus-skills-skill-adapter-0ebf354d","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-djankies-claude-configs-migrating-from-v3","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-cnwzhu-gpui-skills-gpui-fundamentals","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-aadilmallick__claude-skills__plan-preview-skill","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-small-java-world__todo-manage__todo-api-client-sample__.claude__skills__tdd.red-case.write-v1","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-brmbobo-web2podcast-analyzing-liquidity-pools","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-Goldziher__ai-rulez__internal__builtins__languages__r__skills__r-conventions","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"low"}
+{"sample":"ben-skill-md-neversight-skills-feed-legacy-to-ai-ready","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-ahmedasmar-devops-claude-skills-skills","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-openclaw-skills-tg-miniapp","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sg-git-hooks-legit","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"ben-skill-md-raytj0114-football-tracker-api-patterns","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration"],"rules":["EXFIL-001"]}
+{"sample":"ben-skill-md-dsifry-metaswarm-external-tools","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-urjitbhatia-tpm-mcp-tpm-report","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-thebushidocollective-han-csharp-linq","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-th0rgal-sandboxed-library-template-github-cli","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-roaming-panda-llc-claude-plugins-narrated-demo","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-paymog-skill-builder","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-Andeveling__glasify-lite__.qwen__skills__openspec-propose","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-iammarkps-eqapo-gui-rust-code-reviewer","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-ubterzioglu-desiremap-verification-mastery","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-brennacodes-brenna-plugs-capture-discussion","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-rm2thaddeus-aitor-skills-git-pushing","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-nspady-google-calendar-mcp-gcal-api-research","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-manastalukdar-claude-devstudio-webpack-optimize","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-neversight-skills-feed-confluence-cli","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-openclaw-skills-fluxa-x402-payment","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-ewe-studios-agentic-coding-starter-dangerous-operations","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-viniciussouzax-visa-ds160map-reference","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-harrytran998-sword-art-online-review-module","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-dave-007-solid-rotary-phone-implement","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-hellochar-godot-sketches-roguelike-progression","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sg-ssh-config-reader","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["filesystem"],"rules":["FS-001"]}
+{"sample":"ben-skill-sk-leonardocouy__obsidian-personal-pkm__.claude__skills__weekly","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-tkhongsap__llama-index-rag-pipeline__.claude__skills__implementing-rag","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"low"}
+{"sample":"ben-skill-md-conorluddy-ios-simulator-skill-ios-simulator-skill","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-miethe-meatymusic-planning","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-terrylica-cc-skills-asciinema-converter","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-justEstif__sv-100-hours-tracker__.opencode__skill__brand-guidelines","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-neversight-skills-feed-insforge","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-neversight-skills-feed-ship-it","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-shogookamoto-officialsitefinder-skills-google-search-skill","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-nihiyama-ffq-codegen-test","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-ilkeozi-skills-proxy-pattern-typescript","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-aiskillstore-marketplace-rmcp-quickstart","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-alanlee0323-investment-dashboard-brand-identity","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-nextblock-cms__nextblock__.agent__skills__agent-guidelines","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-aiskillstore-marketplace-jira-safe","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration"],"rules":["EXFIL-003"]}
+{"sample":"ben-skill-md-gges5110-austinbusgo-cloud-run-logs","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-mcclowes__weavr-data-generator__.claude__skills__vague","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-jerome-benoit-freqai-strategies-openspec-ff-change","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-dexploarer-claudius-skills-translation-key-extractor","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"low"}
+{"sample":"ben-skill-sk-retsohuang__retso-marketplace__plugins__code-review-tools__skills__code-review","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"ben-skill-md-nmime-infra-skills-skill-v4","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-rb-mm-skillmaxxer-3000","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-smoreg-bilanggen-finish-es-latam-audiobook","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-neversight-skills-feed-enforcing-typescript-standards","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"low"}
+{"sample":"ben-skill-md-the-ai-engineer-ai-engineer-tutorials-veo3-image-prompt","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-buildatscale-tv-claude-code-plugins-promo-video","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-johng-openclaw-skills-example-skill","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-lowranceworks-dotfiles-ansible-dev","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","filesystem"],"rules":["EXFIL-001","FS-001"]}
+{"sample":"ben-skill-md-personamanagmentlayer-pcl-databricks-expert","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-jeremylongshore-claude-code-plugins-plus-skills-storybrand-messa","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-xorbitsai-xagent-presentation-generator","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-speniti-neovim-lua-plugin","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-edwardmonteiro__Aiskillinpractice__skills__optimization__metric_review","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-letta-ai-skills-letta-configuration","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-cfoster5-simply-water-app-store-optimization","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-thegreatl-ojt-time-tracker-mobile-developer","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-marswang42-orbitos-kickoff","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-niznik-dev-cruijff-kit-create-meeting-agenda","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-openclaw-skills-agent-task-manager","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-legacybridge-tech-claude-plugins-memory-recall","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-dicklesworthstone-beads-rust-bd-to-br-migration","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-robynnai__robynn-claude-cmo__skills__cmo","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-AsyrafHussin__agent-skills__skills__git-workflow","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"ben-skill-md-pmarashian-cursor-agent-skills-localstorage-patterns","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-spillwavesolutions-developing-with-docker-agentic-skill-developi","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-openclaw-skills-doubao-api-open-tts","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-vm0-ai-vm0-skills-zapsign","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration"],"rules":["EXFIL-003"]}
+{"sample":"ben-skill-md-jero2rome-compounder-init","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-khalidelborai-claude-skills-parallel-worktree-orchestrator","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-marcbadiam-git-check","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-chongdashu__threejs-forest-census__.claude__skills__threejs-builder","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-cmnemoi-intrusion-debug","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-antoniolg__agent-skills__skills__cloudflared-tunnel","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-emaginebr-nnews-nnews-guide","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-sfeir-open-source-sfeir-school-vuejs-test","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-8954sood-overwatch-civilwar-ask","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-agneym__agneym-claude-marketplace__plugins__explore-with-illustrations__skills__gemini-imagen","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration"],"rules":["EXFIL-001"]}
+{"sample":"ben-skill-sk-tomnagengast__revurb__.claude__skills__codex","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"low"}
+{"sample":"ben-skill-md-neversight-skills-feed-risk-management","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-victorgpt-vibeusage-backend-mvp-guardrails","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-benchflow-ai-skillsbench-data-reconciliation","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-iamandrewpeters-claude-skills-beaver-builder","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-openclaw-skills-headless-vault-cli","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration","filesystem"],"rules":["EXFIL-003","FS-001"]}
+{"sample":"ben-skill-md-zwlcoding-skills-ssr-tanstack-strapi","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-roshunsunder-filesift-search-codebase","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-amodkala-dotfiles-idiomatic-rust","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-neversight-skills-feed-xiaohongshu-cover-generator","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-home-assistant-core-integrations","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-SHAJAR5110__Hackathon-II-phase2__.claude__skills__firebase-specialist","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-cloudposse-docs-developing-stacks","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-dj02-a-dotfiles-add-triton-to-rayworker","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-Yeachan-Heo__My-Jogyo__skills__ml-rigor","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-aiskillstore-marketplace-shadcn-aesthetic","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-diet103-claude-code-infrastructure-showcase-route-tester","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-tahatms12-chargeback-seo-content","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-fontezbrooks-react-native-testing-react-native-testing","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-inclusionai-areal-add-reward","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-ChrisWiles__claude-code-showcase__.claude__skills__graphql-schema","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-nbarthel__claudy__plugins__rails-workflow__skills__rails-docs-search","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-discreteds__competition-scout__skills__comp-scout-persist","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-silbaram-artifact-driven-agent-template","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-zsh2401-vibeacademy-latex-tikz-debug","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-jamie-bitflight-claude-skills-the-rewrite-room","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-ShareX__ShareX.Avalonia__.ai__skills__create-uploader-plugin","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"low"}
+{"sample":"ben-skill-md-0xabrar-skills-ios-hig-rn-basics","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-helixdevelopment-helixagent-excel-variance-analyzer","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-Goldziher__ai-rulez__internal__builtins__bindings__vite-plus__skills__vite-plus-conventions","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-Azeem-2__final-docusarus__.claude__skills__research-methodology","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-rileyhilliard-claude-essentials-refactoring-code","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-neversight-skills-feed-wcag-audit-perceivable-color-contrast","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-darkroomengineering-cc-settings-ask","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-jeremylongshore-claude-code-plugins-plus-skills-skill-adapter-04ee6dc5","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-letta-ai-skills-yelp-search","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"ben-skill-sk-rohunvora__cool-claude-skills__skills__ai-loading-ux","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-jezweb-claude-skills-wordpress-elementor","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-alysonhower-dupcheck-clavix-plan","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-sergio-bershadsky-ai-django-dev-unfold","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"low"}
+{"sample":"ben-skill-md-pixel-process-ug-superkit-agents-email-composer","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-MUmerRazzaq__claude-code-skills-lab__.claude__skills__prebuilt__browsing-with-playwright","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"ben-skill-md-numman-ali-n-skills-zai-cli","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-blueif16-claude-code-with-telegram-tel-start","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-claudio-mas-solo-cc-migration-vbnet","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-mkelam-pdflab-skills","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration"],"rules":["EXFIL-001"]}
+{"sample":"ben-skill-sk-Jaisrinivasan23__CSV-Standalone__.claude__skills__email-design-system","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-wordflowlab-agentsdk-pdfmd","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-cskiro-claudex-skill-isolation-tester","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-luckyegg168-rust-skill-rust-error-handling","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-tmustier-heypocket-reader","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-neversight-skills-feed-findall-api","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"low"}
+{"sample":"ben-skill-md-elct9620-claude-ruby-plugin-ri","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-leiyang2003-research-bot-public-financial-analysis","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-jamesprial-claudefiles-vet","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-cliangdev-specflux-ui-patterns","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-bendrucker-claude-fix","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-nblog-my-fridajs-example-frida-script-assistant","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-ue-too-ue-too-typedoc","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-jellylala1220-brp-benchmarking-eaai-benchmark-paper","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-bbgnsurftech-claude-skills-collection-synthetic-monitoring-setup","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-gtmagents-gtm-agents-provider-scorecard","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-surfinzap-bikkuri-theme-vscode-add-missing-theme-vars","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-brmbobo-web2podcast-validating-ai-ethics-and-fairness","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-takwaratec-mulheres-tecem-amazonia-annals","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-thebushidocollective-han-sip-authentication-security","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"low"}
+{"sample":"ben-skill-md-neversight-skills-feed-se-dev-game-code","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-peopleforrester-claude-dotfiles-debugging-assistant","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-wordpress-php-mcp-schema-skill","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-byteflare-co-magic-switch-deploy","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"ben-skill-md-xmcp-dev-skills-widget-design","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-civitai-civitai-clickup","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-ahtavarasmus-lightfriend-lightfriend-add-frontend-page","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-openclaw-skills-review-summarizer","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-raintree-technology-claude-starter-claude-hook-builder","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration"],"rules":["EXFIL-001"]}
+{"sample":"ben-skill-md-openclaw-skills-bidclub-ai","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-marcos-vinicius-mafei-liferay-obj-sdk-gsd-new-project","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-BlueEventHorizon__Swift-Selena__.claude__skills__xcode-build","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"ben-skill-md-blencorp-claude-code-kit-tailwindcss","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-hazat-poe-item-search-testing-verification","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-rinti-dotfiles-settings-audit","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration"],"rules":["EXFIL-001"]}
+{"sample":"ben-skill-md-noirj0e-tsrpc-ecommerce-admin-example-tsrpc-flow","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-nprbst__speck__plugins__reviewer__skills__pr-review","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-jmerta-codex-skills-docs-sync","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-hacket__AICodingGuide__.claude__skills__internal-comms","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-openclaw-skills-easyverein-api","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration"],"rules":["EXFIL-001"]}
+{"sample":"ben-skill-md-fierzone-agent-skills-standard-language","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-artsy-positron-querying-positron","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-guinardelli-sheet-guardian-planning","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-neversight-skills-feed-otel-instrumentation","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-nguyenhuuca-assessment-test-driven-development","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-aiskillstore-marketplace-workhub","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-neversight-skills-feed-json-canvas","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-imaimai17468-custom-asmr-coding-guidelines","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-kubony-openclaw-gcp-setup-gcp-vm-create","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-hxk622-tokendance-cosmic-database","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"medium"}
+{"sample":"ben-skill-md-neversight-skills-feed-linear-workflow-manager","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sg-registry-mirror-documented","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["supply-chain"],"rules":["SUP-006"]}
+{"sample":"ben-skill-md-z-soulx-ai-toolkit-note-outline-checklist","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-mikepsinn-disease-eradication-plan-peer-review","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-secondsky-claude-skills-mobile-offline-support","outcome":"scored","attempted":true,"verdict":"malicious","surface":["skills"],"severity":"high","dimensions":["exfiltration"],"rules":["EXFIL-001"]}
+{"sample":"ben-skill-md-jmbluhm-b2b-sales-skills-chris-voss-framework","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-kay-ou-claudeskills-md-to-json-parser","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-44-pixels-chief-of-staff-notification-delivery","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-neversight-skills-feed-infographic-item-creator","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-masplett-native-consultant","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-zephyrwang6-myskill-topic-collector","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-ahstn-dotfiles-markdown-converter","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-neversight-skills-feed-inspecting-skills","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-secondsky-claude-skills-responsive-web-design","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-sk-GondaDaikon__tri-ssd__skills__review-tri-ssd","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-patniko-skills-meeting-to-issues","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-brmbobo-web2podcast-tracking-token-launches","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-openclaw-skills-obsidian-plugin-dev","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-kuniwak-homebrew-tap-update-homebrew-tap","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-patrickperes-volcano-agents-va-agente-sm","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-ydnikolaev-antigravity-factory-hello-world","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-kishoredr-terraform-drift-explaine","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-neversight-skills-feed-gmail-multi-inbox","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-pinkpixel-dev-sorbet-architecture-patterns","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-neversight-skills-feed-visual-hierarchy-refactoring","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-acidsound-acidapps-screenshot-generator","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"low"}
+{"sample":"ben-skill-md-robbyt-claude-skills-reflect","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-neversight-skills-feed-codemap","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"],"severity":"low"}
+{"sample":"ben-skill-md-noice1909-test-agent-token-fuzzy-search","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-gndys-loomai2-ai-provider-integration","outcome":"scored","attempted":true,"verdict":"benign","surface":["skills"]}
+{"sample":"ben-mcp-am-codex-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-12306-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-chinchillaenterprises-mcp-stripe","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-professional-wiki-mediawiki-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-softeria-ms-365-mcp-server","outcome":"scored","attempted":true,"verdict":"malicious","surface":["mcp"],"severity":"high","dimensions":["injection"],"rules":["MCP-001"]}
+{"sample":"ben-mcp-am-mobilenext-mobile-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-velvetmonkey-flywheel-memory","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-ohah-react-native-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-mistflow-ai-mcp","outcome":"scored","attempted":true,"verdict":"malicious","surface":["mcp"],"severity":"high","dimensions":["injection"],"rules":["MCP-001"]}
+{"sample":"ben-mcp-am-linktr-ee-arbor-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-puppeteer-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-staticn0va-wigolo","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-bitbonsai-mcpvault","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-ue-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-skillsmith-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-openephemeris-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-codacy-codacy-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-wikipedia-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-remotion-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-eternalai-org-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-automatelab-ai-seo-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-nexusforgetools-eu-finance","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-elliotding-ai-agent-mcp","outcome":"scored","attempted":true,"verdict":"malicious","surface":["mcp"],"severity":"high","dimensions":["injection"],"rules":["MCP-001"]}
+{"sample":"ben-mcp-am-mapbox-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-gcp-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-ttpears-gitlab-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-mui-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-tosspayments-integration-guide-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-mcpbrowser","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-igniteui-theming","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"],"severity":"medium"}
+{"sample":"ben-mcp-am-k8ika0s-mcp-tmux","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-seldonframe-mcp","outcome":"scored","attempted":true,"verdict":"malicious","surface":["mcp"],"severity":"high","dimensions":["injection"],"rules":["MCP-001"]}
+{"sample":"ben-mcp-am-ng-primitives-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-agent-hansa-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-sinco-lab-mcp-youtube-transcript","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-markitdown-mcp-npx","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-phantom-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-cyanheads-calculator-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-buywhere-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-narrarium-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-heroku-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-perplexity-ai-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-weppy-roblox-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-efficient-gitlab-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-garrettheath4-sendgrid-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-npm-search-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-kosyak-evm-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-langsmith-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-structured-world-gitlab-mcp","outcome":"scored","attempted":true,"verdict":"malicious","surface":["mcp"],"severity":"high","dimensions":["injection"],"rules":["MCP-001"]}
+{"sample":"ben-mcp-am-agentmail-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-browsermcp-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-ehrocks-fe-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-modelcontextprotocol-server-filesystem","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-octocode-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-notionhq-notion-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-sap-ux-fiori-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-kirkdeam-puppeteer-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-winor30-mcp-server-datadog","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-sveltejs-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-mcp-grafana-npx","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-modelcontextprotocol-server-github","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-mcp-server-sqlite","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-mcp-server-madeonsol","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-sbb-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-socraticode","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-notprolands-ast-grep-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-chrome-devtools-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-european-parliament-mcp-server","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-just-every-mcp-screenshot-website-fast","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-jtalk22-slack-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["mcp"]}
+{"sample":"ben-conn-agiflow-claude-instrument-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-ng-galien-maket-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-doist-todoist-mcp-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-tobilg-duckdb-tileserver-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-lowtidebuild-public-equity-research-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-lucy971326-edith-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-haru-redmine-ai-helper-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-superamped-ai-marketing-skills-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-hydai-ff14-tw-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-paypal-ai-toolkit-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-kotlin-kotlinx-rpc-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-paldom-databricks-apps-fastapi-starter-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-replicate-skills-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-ryoppippi-chatgpt-heatmap-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-chef-chef-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-faw01-create-mf2-app-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-navikt-sykepengesoknad-frontend-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-jakemannix-yaucca-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-duhu2000-financial-services-qcc-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-spacehendrix-clauder-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-johndpope-vasa-1-hack-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-xh-hoist-react-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-georgekhananaev-claude-skills-vault-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-motleyai-motleycrew-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-taurheim-scrobblify-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-bradtraversy-devstash-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-writer-cerebro-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-markifact-markifact-mcp-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-oneprojectorg-common-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-catalystbyzoho-agent-skills-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-ernestoespinosajr-claude-context-engine-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-opendcai-dataflow-webui-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-pioneershub-pyconde-talks-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-hzrd149-nostrudel-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-betagouv-anssi-portail-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-akiojin-unity-editor-mcp-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-akiojin-unity-mcp-server-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-phantom-phantom-agent-kit-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-growerp-growerp-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-conn-khan-wonder-blocks-mcp","outcome":"scored","attempted":true,"verdict":"benign","surface":["connector"]}
+{"sample":"ben-hook-jordanhubbard-nanolang-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks"],"severity":"medium"}
+{"sample":"ben-hook-bh213-hx-multianim-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks","permission"],"severity":"medium"}
+{"sample":"ben-hook-commercetools-ui-kit-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks"],"severity":"medium"}
+{"sample":"ben-hook-jiyuan-tan-causalsmith-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks","permission"],"severity":"medium"}
+{"sample":"ben-hook-listener-he-java-harness-agent-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks","permission"],"severity":"medium"}
+{"sample":"ben-hook-m-xlsea-ruoyi-plus-soybean-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks","permission"],"severity":"medium"}
+{"sample":"ben-hook-willdady-platypus-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks"],"severity":"medium"}
+{"sample":"ben-hook-opencue-gitguardex-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks"],"severity":"medium"}
+{"sample":"ben-hook-jlevy-rust-porting-playbook-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks"]}
+{"sample":"ben-hook-daniloc-mnemion-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks"]}
+{"sample":"ben-hook-indexedlabs-pydantic-ai-gepa-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks"]}
+{"sample":"ben-hook-10legs-freelance-developer-harness-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks","permission"],"severity":"medium"}
+{"sample":"ben-hook-unclejobs-ai-blog-posting-auto-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks","permission"]}
+{"sample":"ben-hook-julep-ai-steadytext-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks","permission"],"severity":"medium"}
+{"sample":"ben-hook-shanraisshan-codex-cli-best-practice-settings","outcome":"scored","attempted":true,"verdict":"malicious","surface":["hooks","permission"],"severity":"high","dimensions":["permission"],"rules":["PERM-005"]}
+{"sample":"ben-hook-tomdwipo-claude-soul-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks"],"severity":"medium"}
+{"sample":"ben-hook-daniloc-coherence-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks"]}
+{"sample":"ben-hook-mrwaip-svelte-rs-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks","permission"],"severity":"medium"}
+{"sample":"ben-hook-proffesor-for-testing-agentic-qe-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks","permission"],"severity":"medium"}
+{"sample":"ben-hook-spacehendrix-clauder-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks","permission"]}
+{"sample":"ben-hook-mrocklin-dask-array-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks"]}
+{"sample":"ben-hook-ianscott313-miniverse-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks"],"severity":"medium"}
+{"sample":"ben-hook-drona23-claude-token-efficient-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks"],"severity":"medium"}
+{"sample":"ben-hook-gunnarguy-openintelligence-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks"]}
+{"sample":"ben-hook-aizenvoltprime-damocles-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks","permission"]}
+{"sample":"ben-hook-carlos-dominguez-faber-claude-code-tune-kit-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks","permission"]}
+{"sample":"ben-hook-kube-logging-logging-operator-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks","permission"]}
+{"sample":"ben-hook-samply-blaze-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks","permission"],"severity":"low"}
+{"sample":"ben-hook-outfitter-dev-blz-settings","outcome":"scored","attempted":true,"verdict":"malicious","surface":["hooks","permission"],"severity":"high","dimensions":["permission"],"rules":["LLM-008"]}
+{"sample":"ben-hook-kennyjpowers-claude-flow-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks","permission"],"severity":"medium"}
+{"sample":"ben-hook-cyberash-dev-veche-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks"],"severity":"medium"}
+{"sample":"ben-hook-xdamman-replaylastgoal-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks"]}
+{"sample":"ben-hook-refcell-claude-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks"],"severity":"medium"}
+{"sample":"ben-hook-dwmkerr-dotfiles-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks","permission"],"severity":"low"}
+{"sample":"ben-hook-nwiizo-cargo-coupling-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks"],"severity":"medium"}
+{"sample":"ben-hook-caldis-react-zmage-settings","outcome":"scored","attempted":true,"verdict":"malicious","surface":["hooks"],"severity":"high","dimensions":["permission"],"rules":["LLM-008"]}
+{"sample":"ben-hook-maxwell2732-claudecode-research-harness-workflow-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks","permission"],"severity":"medium"}
+{"sample":"ben-hook-fc-fuz-claude-code-governance-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks","permission"],"severity":"low"}
+{"sample":"ben-hook-tonyc726-china-administrative-division-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks","permission"],"severity":"medium"}
+{"sample":"ben-hook-kimyx0207-meta-kim-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["hooks","permission"],"severity":"medium"}
+{"sample":"ben-perm-alumnium-hq-alumnium-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["permission"],"severity":"medium"}
+{"sample":"ben-perm-ljw1004-oneplay-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["permission"],"severity":"medium"}
+{"sample":"ben-perm-vasylenko-bear-notes-mcp-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["permission"],"severity":"medium"}
+{"sample":"ben-perm-drobins25-craft-settings","outcome":"scored","attempted":true,"verdict":"malicious","surface":["permission"],"severity":"high","dimensions":["permission"],"rules":["PERM-005"]}
+{"sample":"ben-perm-mercadopago-mercadopago-claude-marketplace-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["permission"],"severity":"medium"}
+{"sample":"ben-perm-meta-secret-meta-secret-core-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["permission"]}
+{"sample":"ben-perm-ivanmurzak-unity-mcp-settings","outcome":"scored","attempted":true,"verdict":"malicious","surface":["permission"],"severity":"high","dimensions":["permission"],"rules":["PERM-005"]}
+{"sample":"ben-perm-midcodehub-miaocut-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["permission"],"severity":"medium"}
+{"sample":"ben-perm-kklimuk-docx-cli-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["permission"],"severity":"medium"}
+{"sample":"ben-perm-etspaceman-scalacheck-faker-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["permission"]}
+{"sample":"ben-perm-api-platform-demo-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["permission"],"severity":"medium"}
+{"sample":"ben-perm-coreycole-datastarui-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["permission"],"severity":"medium"}
+{"sample":"ben-perm-midt-bg-sigma-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["permission"]}
+{"sample":"ben-perm-rlee203-cardputeros-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["permission"],"severity":"medium"}
+{"sample":"ben-perm-runpod-flash-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["permission"],"severity":"medium"}
+{"sample":"ben-perm-datadog-system-tests-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["permission"]}
+{"sample":"ben-perm-jdillon-vscode-beads-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["permission"],"severity":"low"}
+{"sample":"ben-perm-dynatrace-oss-dynatrace-snowflake-observability-agent-settin","outcome":"scored","attempted":true,"verdict":"benign","surface":["permission"],"severity":"medium"}
+{"sample":"ben-perm-nixrajput-portfolio-nextjs-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["permission"]}
+{"sample":"ben-perm-nextgenpowertoys-rtf-markdown-editor-settings","outcome":"scored","attempted":true,"verdict":"benign","surface":["permission"],"severity":"low"}

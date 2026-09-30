@@ -1,0 +1,53 @@
+name: ci
+on:
+  push:
+    # dev is the integration branch: work lands there first and soaks before main. It is
+    # listed here because a branch CI does not watch collects commits CI has never seen, and
+    # the first PR out of it then fails for reasons nobody can bisect.
+    branches: [main, dev]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - name: build (single binary, no CGO)
+        run: CGO_ENABLED=0 go build ./...
+      - name: vet
+        run: go vet ./...
+      - name: test + coverage
+        run: go test -race -coverprofile=coverage.out ./...
+      # The rule reference is generated from the engine's rule set. If a rule was added or its
+      # severity changed without regenerating, the docs would describe a tool that no longer
+      # exists — and a wrong severity is acted upon, not just read. `make docs` + this check
+      # make that state unreachable rather than reviewable.
+      - name: docs are in step with the code
+        run: |
+          make docs
+          git diff --exit-code -- docs/rules.md \
+            || { echo "::error::docs/rules.md is stale — run 'make docs' and commit the result"; exit 1; }
+      # The plugin ships INTO ~/.claude/plugins/cache, which is exactly where `aguard scan`
+      # reads. This repo's own docs quote every attack pattern the engine detects, so if any of
+      # them ever leaks into plugin/, every user's scan would report AgentGuard itself as
+      # high-risk. Enforced here rather than reviewed, because the failure is invisible until
+      # someone else's report is wrong. See CLAUDE.md "Claude Code 插件".
+      - name: the shipped plugin scans clean
+        run: |
+          CGO_ENABLED=0 go build -o bin/aguard ./cmd/aguard
+          ./bin/aguard check plugin --fail-on low \
+            || { echo "::error::plugin/ has findings — the shipped plugin must scan 100/100"; exit 1; }
+      # Pinned, not `latest`: `latest` means CI's behaviour changes without a commit (a new
+      # golangci-lint major rejects the previous config format outright, and the gate fails for
+      # a reason unrelated to any code under review). A gate that can break itself is not a gate.
+      # Bump deliberately, together with the config change the new version needs AND the
+      # action's own major: the action supports one golangci-lint major each ("golangci-lint v2
+      # is not supported by golangci-lint-action v6"), so pinning the tool without moving the
+      # action is not a pin, it is a mismatch.
+      - name: lint
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.13.2
