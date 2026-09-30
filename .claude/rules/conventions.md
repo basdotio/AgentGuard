@@ -8,11 +8,8 @@
   —— 改一个就要改另一个。**两个例外:**
   - `docs/rules.md`:它的正文就是代码里的字符串(按上一条必须是英文),而手工翻译的副本无法被
     CI 的漂移检查证明为真 —— 一份没人能验证的规则表比没有更糟。
-  - **`docs/planning/*.zh-CN.md` 三份规划文档(direction / plan / work-items)和
-    `docs/corpus-benchmark.zh-CN.md` 是中文单语,不做双语对子。** 它们是维护者自己用的内部工作文档,不是用户可见的;
-    而它们是全仓改动最频繁的文件,做成对子等于把维护量翻倍 —— 而"维护面超过人力"正是
-    `direction` 自己列的头号风险。**不要好心给它们各做一个英文版**:那会立刻回到十份,
-    且是五对会各自漂移的对子。
+  - **`docs/corpus-benchmark.zh-CN.md` 和 `docs/spec/spec.zh-CN.md` 是中文单语,不做双语对子。** 它们是维护者
+    文档,改动频繁,做成对子等于把维护量翻倍,而且两份会各自漂移。要英文的读者先靠 `docs/architecture.md`。
 - **发布产物只有 darwin/linux**(`Makefile` 的 `DIST_TARGETS`)。Windows 能干净交叉编译,而这正是
   陷阱:CI 只跑 ubuntu、代码里没有任何 `GOOS` 分支、不变量 #2 的符号链接约束依赖的原语在那边行为
   不同(建符号链接要特权,边界用例根本跑不到)。**要加回 windows,先加能在上面跑完整套测试的 CI
@@ -49,9 +46,5 @@
 - 测试是 table-driven 的,fixture 用 `t.TempDir()` 现搭(没有 `testdata/` 目录);judge 的测试用
   `httptest`。真正值钱的是**不变量测试** —— 不执行、符号链接不越界、secret 已脱敏、LLM 发现不动分数、
   `--fail-on` 契约。上面编号的不变量只要有改动,就补一条对应的测试。
-- 推迟/待办的事项记在 [ROADMAP.md](../../ROADMAP.md),**当期排期在
-  [docs/planning/plan.zh-CN.md](../../docs/planning/plan.zh-CN.md)**,确认存在的缺陷与否决记录在
-  [issues/](../../issues/README.md) —— 三者分工见开头那张表。
-- **第六份规划文档出现之前,先回答它取代了哪一份。** 2026-09-14 刚从八份合并到五份,
-  八份里没有一份进过 git,于是 `clone` 拿到的仓库里全部战略与审计结论都不存在,
-  而一个错的规则条数在其中传播了三个月。
+- 推迟/待办的事项记在 [ROADMAP.md](../../ROADMAP.md),确认存在的缺陷与否决记录在
+  [issues/](../../issues/README.md) —— 分工见 CLAUDE.md 开头那张表。

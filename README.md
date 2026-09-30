@@ -464,11 +464,6 @@ each is enforced, and an honest account of what is not implemented yet.
 
 ## Contributing
 
-Development happens on the `dev` branch; `main` is the default branch but lags behind it and
-will be updated in one merge later. After cloning, `git switch dev`, then run `make hooks` once to install the commit checks on your machine — they exist only
-where that was run. The development process — proposals, one branch per proposal, the
-`make verify` gate, evidence lines on every status change — is written in
-[docs/process.md](docs/process.md) (Chinese). The entry point is `/propose <problem>` inside
-Claude Code; without it, follow the document by hand. Changes land through a pull request against
-`dev`, merged with "Rebase and merge" on GitHub; reviewers need nothing installed. Installing the
-`gh` CLI is optional — with it, `/propose` opens the PR from the terminal instead of handing you a link.
+See [CONTRIBUTING.md](CONTRIBUTING.md): one branch per change, a pull request against `main`,
+and `make verify` green before you ask for review. `make hooks` installs the pre-commit gate that
+scans any skill you stage with aguard itself.

@@ -25,30 +25,27 @@ test:
 lint:
 	golangci-lint run ./...
 
-# The whole gate in one command (docs/process.md §4): what a proposal must pass before it is
+# The whole gate in one command: what a change must pass before it is
 # handed over for review. The self-scan covers the shipped plugin AND the four process skills in
-# .claude/skills/ — a repository that gates other people's skills runs its own through the same gate. Each line is its own shell; the first failure stops make. The order is
+# plugin/ — a repository that gates other people's skills runs its own through the same gate. Each line is its own shell
 # cheapest-first so a red vet does not wait for the race detector. Deliberately absent: the
 # real-machine scan (`aguard scan --root ~/.claude`) — that one is run by hand after collect/detect
 # changes, because its input is this machine, not the repository.
 verify:
 	go vet ./...
 	go test -race -cover ./...
-	@command -v golangci-lint >/dev/null || { echo "verify: golangci-lint is not installed — docs/process.md §4 names the pinned version and how to get it" >&2; exit 1; }
+	@command -v golangci-lint >/dev/null || { echo "verify: golangci-lint is not installed — see CONTRIBUTING.md for the pinned version" >&2; exit 1; }
 	golangci-lint run ./...
 	go run ./hack/gen-rules && git diff --quiet -- docs/rules.md || { echo "verify: docs/rules.md drifted from the code — commit the regenerated file" >&2; exit 1; }
 	go build -ldflags "$(LDFLAGS)" -o $(BIN) $(PKG) && $(BIN) check plugin --fail-on low --quiet
-	@for s in .claude/skills/*/; do $(BIN) check "$$s" --fail-on low --quiet || { echo "verify: $$s fails our own gate" >&2; exit 1; }; done
 	@grep -qx 'go 1.23.5' go.mod || { echo "verify: go.mod's go directive moved off 1.23.5 (see .claude/rules/conventions.md)" >&2; exit 1; }
 	@echo "verify: all gates passed"
 
-# Install the two git hooks (docs/process.md §3). Per machine: a clone that skipped this is not
-# protected, and nothing in CI stands in for it.
+# Install the pre-commit hook. Per machine: a clone that skipped this is not gated.
 hooks:
 	cp hack/pre-commit .git/hooks/pre-commit
-	cp hack/commit-msg .git/hooks/commit-msg
-	chmod +x .git/hooks/pre-commit .git/hooks/commit-msg
-	@echo "hooks: pre-commit and commit-msg installed into .git/hooks/"
+	chmod +x .git/hooks/pre-commit
+	@echo "hooks: pre-commit installed into .git/hooks/"
 
 # Regenerate docs/rules.md from the engine's own rule set. CI runs this and fails if the
 # result differs from what is committed, so the rule reference cannot drift from the code —

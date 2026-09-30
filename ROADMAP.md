@@ -36,7 +36,7 @@ carry the same severity as before.
 **v0.14.0 (2026-09-29) — rules that named a word now name what they mean, and two remote-control shapes stop at the gate.**
 
 As before, every rule change below was decided on `agent-artifact-corpus` before and after, on the same denominator; the per-source counts
-live in `docs/proposals/complete/028-…`, `029-…` and `030-…`, never here. Each of the three also ran against a real `~/.claude`, and two of
+live in the proposal records of the internal archive, never here. Each of the three also ran against a real `~/.claude`, and two of
 them were narrowed further because of what that found.
 
 - **Tool descriptions that ask for secrets (P-028).** `MCP-001` read any `~/` path or any secret-sounding noun as a target, so a parameter
@@ -63,7 +63,7 @@ them were narrowed further because of what that found.
 **v0.13.0 (2026-09-29) — three shapes that passed the gate now stop at it, and a credential sent to its own service is no longer called exfiltration.**
 
 As before, every rule change below was decided on `agent-artifact-corpus` before and after, on the same denominator; the per-source counts
-live in `docs/proposals/complete/024-…`, `025-…` and `026-…`, never here. The order of the three came from a per-sample comparison with
+live in the proposal records of the internal archive, never here. The order of the three came from a per-sample comparison with
 cc-audit and a restated schedule (P-023).
 
 - **Reverse shell (P-024).** A skill that hands an interactive shell to a remote host passed the gate. The one rule that knew the shape
@@ -96,7 +96,7 @@ cc-audit and a restated schedule (P-023).
 **v0.12.0 (2026-09-26) — the configuration surface gets rules, the judge learns which of its questions may not move a score, and the benchmark rig grows a second column.**
 
 As in v0.11.0, every rule change below was decided on `agent-artifact-corpus` before and after, on the same denominator, and the judge
-change on a measured run of it; the per-source counts live in `docs/proposals/complete/015-…`, `016-…` and `019-…`, never here.
+change on a measured run of it; the per-source counts live in the proposal records of the internal archive, never here.
 
 - **Configuration-surface shapes (P-016).** Four attacks written in plain sight in configuration produced no finding at all: an MCP server's
   `env` loading code into its interpreter (`NODE_OPTIONS=--require …`, `LD_PRELOAD`, `PYTHONSTARTUP` and kin — `EXEC-010`), a script that
@@ -123,7 +123,7 @@ change on a measured run of it; the per-source counts live in `docs/proposals/co
 **v0.11.0 (2026-09-21) — the exfiltration chain learns the shell's own words and stops reading documentation as requests.**
 
 Every line below was decided against `agent-artifact-corpus` (3,539 labelled real-world samples) with the runner this release adds; the
-per-source counts, with their denominators and caveats, are in `docs/proposals/complete/010-…`, `012-…` and `013-…`. No pooled rate is
+per-source counts, with their denominators and caveats, are in the proposal records of the internal archive. No pooled rate is
 quoted here on purpose: the corpus's own scorer refuses to pool sources, and so does this file.
 
 - **Credential leg (P-010).** `cat ~/.aws/credentials | curl POST` completed an exfiltration chain; `env | curl POST` produced nothing at all.
@@ -157,14 +157,14 @@ quoted here on purpose: the corpus's own scorer refuses to pool sources, and so 
   by content hash, so the same bytes were never asked about again. Now a pass that still carries a medium finding is announced on every
   load and is never remembered as trusted. Rule counts on one real install of 80 skills: zero hits before and after. Three cross-machine
   checks from the proposal (blocked-count does not rise on the 952-sample machine; `security-guidance` is not blocked; per-rule hit counts there)
-  are still listed as unverified in `docs/proposals/complete/005-…`.
+  are still listed as unverified in that release's proposal record (internal archive).
 - **`--md` (P-008).** `aguard scan|check --md <path>` writes the report as GitHub-flavoured markdown; `--md -` writes it to stdout in place
   of the terminal report, so `aguard check ./new-skill --md - | gh pr comment N --body-file -` posts a vetting result without retyping it.
   Same content and order as the terminal, written before the gate, unaffected by `--verbose`. Every name, path and snippet from the scanned
   tree is emitted inside a code span, so a file named `@someone` or `<img src=…>` cannot ping a person or load an image from the comment.
 
-**v0.9.0 (2026-09-15) — phase 0 of [docs/planning/plan.zh-CN.md](docs/planning/plan.zh-CN.md), "stop the
-bleeding": thirteen defects from [docs/planning/work-items.zh-CN.md](docs/planning/work-items.zh-CN.md), each with a
+**v0.9.0 (2026-09-15) — phase 0 of the internal plan, "stop the
+bleeding": thirteen defects from the internal work-item list, each with a
 regression test.** Four ways a hostile artifact reached 100/100 in silence are closed: an
 executable-but-unreadable directory (`chmod 0111`) is disclosed and changes the tree hash
 (W-001/W-005); `check` no longer lets a 29-byte `settings.json` inside the target re-route it
@@ -704,7 +704,7 @@ page cannot go stale, and a list in this file can.
 ## Now (in progress)
 
 > Current scheduling — phases, milestones and gates — lives in
-> [docs/planning/plan.zh-CN.md](docs/planning/plan.zh-CN.md). This file records what shipped, what is recorded but
+> the maintainers' internal plan. This file records what shipped, what is recorded but
 > not scheduled, and the limitations we are willing to state out loud.
 
 - [ ] **A.1 AST detection** (pure-Go, no CGO) — the LEXICAL half shipped (see below); what is

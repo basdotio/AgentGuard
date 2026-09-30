@@ -5,7 +5,7 @@ Every scanner's measurement against [agent-artifact-corpus](https://github.com/b
 including this project's own. One tree, so a comparison is a diff of two files rather than two
 prose paragraphs written a month apart.
 
-Provenance: [P-015](../docs/proposals/complete/015-baseline-runners-have-no-home.md).
+Provenance: the baseline-rig proposal (P-015) in the internal archive.
 
 ## Read this before reading a number here
 
