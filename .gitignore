@@ -1,0 +1,29 @@
+/bin/
+/dist/
+*.out
+*.test
+coverage.*
+.DS_Store
+report.html
+
+# personal LLM endpoint config (config.example.yaml is the shared one)
+aguard.yaml
+.env.local
+
+# local scan output staged for review (never committed: it carries real paths and code)
+/.scan-out/
+
+# stray build output at the repo root: the Makefile writes to bin/ and dist/, both ignored above.
+/aguard
+
+# Claude Code per-machine settings; .claude/rules/ is tracked on purpose
+.claude/settings.local.json
+# raw/ is never committed. A judge run's raw output is kept as a release asset instead (see the
+# run.yaml `raw_archive:` block); it is model output quoting malicious samples, not for the tree.
+/baselines/results/*/*/raw/
+/baselines/results/*/*/samples.jsonl
+# A judge subset is a random stratified draw, not `corpus samples` output, so those are kept.
+!/baselines/results/aguard/2026-09-25-llm-glm-5.3-flash/samples.jsonl
+!/baselines/results/aguard/2026-09-28-llm-gpt-4.1-mini/samples.jsonl
+!/baselines/results/aguard/2026-09-29-llm-gpt-4.1-mini-s3/samples.jsonl
+!/baselines/results/aguard/2026-09-29-llm-gpt-4.1-mini-s3-votes/samples.jsonl

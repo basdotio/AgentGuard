@@ -1,0 +1,819 @@
+{"sample": "mal-conn-mcp-autorun-bypass", "path": "corpus/malicious/connector/mcp-autorun-bypass", "class": "malicious", "surface": ["connector"], "severity": "high"}
+{"sample": "mal-conn-mcp-command-payload", "path": "corpus/malicious/connector/mcp-command-payload", "class": "malicious", "surface": ["connector"], "severity": "critical"}
+{"sample": "mal-conn-mcpoison-post-approval-swap", "path": "corpus/malicious/connector/mcpoison-post-approval-swap", "class": "malicious", "surface": ["connector"], "severity": "critical"}
+{"sample": "mal-conn-self-register-mcp", "path": "corpus/malicious/connector/self-register-mcp", "class": "malicious", "surface": ["connector"], "severity": "high"}
+{"sample": "mal-conn-tool-rugpull", "path": "corpus/malicious/connector/tool-rugpull", "class": "malicious", "surface": ["connector"], "severity": "high"}
+{"sample": "mal-hook-authorized-keys-persist", "path": "corpus/malicious/hooks/authorized-keys-persist", "class": "malicious", "surface": ["hooks"], "severity": "high"}
+{"sample": "mal-hook-git-config-exec-hook", "path": "corpus/malicious/hooks/git-config-exec-hook", "class": "malicious", "surface": ["hooks"], "severity": "high"}
+{"sample": "mal-hook-pretooluse-autoapprove", "path": "corpus/malicious/hooks/pretooluse-autoapprove", "class": "malicious", "surface": ["hooks"], "severity": "high"}
+{"sample": "mal-hook-sessionstart-rce", "path": "corpus/malicious/hooks/sessionstart-rce", "class": "malicious", "surface": ["hooks"], "severity": "critical"}
+{"sample": "mal-hook-userpromptsubmit-perm-rewrite", "path": "corpus/malicious/hooks/userpromptsubmit-perm-rewrite", "class": "malicious", "surface": ["hooks"], "severity": "high"}
+{"sample": "mal-instr-injection-literal", "path": "corpus/malicious/instruction/injection-literal", "class": "malicious", "surface": ["instruction"], "severity": "high"}
+{"sample": "mal-mcp-ci-act_as_role_injection", "path": "corpus/malicious/mcp/ci-act_as_role_injection", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-admin_privilege_escalation", "path": "corpus/malicious/mcp/ci-admin_privilege_escalation", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-api_key_harvesting_environment", "path": "corpus/malicious/mcp/ci-api_key_harvesting_environment", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-api_token_config_exfiltration", "path": "corpus/malicious/mcp/ci-api_token_config_exfiltration", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-arbitrary_file_copy_sensitive_data", "path": "corpus/malicious/mcp/ci-arbitrary_file_copy_sensitive_data", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-arbitrary_file_deletion_recursive", "path": "corpus/malicious/mcp/ci-arbitrary_file_deletion_recursive", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-arbitrary_file_write_system_overwrite", "path": "corpus/malicious/mcp/ci-arbitrary_file_write_system_overwrite", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-archive_extraction_zip_slip_attack", "path": "corpus/malicious/mcp/ci-archive_extraction_zip_slip_attack", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-base64_decode_execute_obfuscation", "path": "corpus/malicious/mcp/ci-base64_decode_execute_obfuscation", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-behavior_redirection_endpoint_manipulation", "path": "corpus/malicious/mcp/ci-behavior_redirection_endpoint_manipulation", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-browser_history_exfiltration", "path": "corpus/malicious/mcp/ci-browser_history_exfiltration", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-cache_poisoning_result_manipulation", "path": "corpus/malicious/mcp/ci-cache_poisoning_result_manipulation", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-cheetah_template_injection", "path": "corpus/malicious/mcp/ci-cheetah_template_injection", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-clipboard_monitoring_exfiltration", "path": "corpus/malicious/mcp/ci-clipboard_monitoring_exfiltration", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-cloud_metadata_credential_extraction", "path": "corpus/malicious/mcp/ci-cloud_metadata_credential_extraction", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-command_injection_grep", "path": "corpus/malicious/mcp/ci-command_injection_grep", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-compile_execute_bytecode_manipulation", "path": "corpus/malicious/mcp/ci-compile_execute_bytecode_manipulation", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-conditional_behavior_privileged_users", "path": "corpus/malicious/mcp/ci-conditional_behavior_privileged_users", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-context_poisoning_privilege_injection", "path": "corpus/malicious/mcp/ci-context_poisoning_privilege_injection", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-contradictory_description_validation_bypass", "path": "corpus/malicious/mcp/ci-contradictory_description_validation_bypass", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-cpu_exhaustion_attack", "path": "corpus/malicious/mcp/ci-cpu_exhaustion_attack", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-credential_harvesting_local_storage", "path": "corpus/malicious/mcp/ci-credential_harvesting_local_storage", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-cron_job_multiple_schedules", "path": "corpus/malicious/mcp/ci-cron_job_multiple_schedules", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-curl_command_injection", "path": "corpus/malicious/mcp/ci-curl_command_injection", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-database_exfiltration_chunking", "path": "corpus/malicious/mcp/ci-database_exfiltration_chunking", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-directory_traversal_write_path_manipulation", "path": "corpus/malicious/mcp/ci-directory_traversal_write_path_manipulation", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-disk_space_exhaustion_attack", "path": "corpus/malicious/mcp/ci-disk_space_exhaustion_attack", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-django_template_injection_custom_tags", "path": "corpus/malicious/mcp/ci-django_template_injection_custom_tags", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-dns_rebinding_attack", "path": "corpus/malicious/mcp/ci-dns_rebinding_attack", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-dns_tunneling_c2_communication", "path": "corpus/malicious/mcp/ci-dns_tunneling_c2_communication", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-docker_secrets_registry_exfiltration", "path": "corpus/malicious/mcp/ci-docker_secrets_registry_exfiltration", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-dynamic_import_arbitrary_module", "path": "corpus/malicious/mcp/ci-dynamic_import_arbitrary_module", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-dynamic_lambda_function_execution", "path": "corpus/malicious/mcp/ci-dynamic_lambda_function_execution", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-environment_secrets_exfiltration", "path": "corpus/malicious/mcp/ci-environment_secrets_exfiltration", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-environment_variable_enumeration", "path": "corpus/malicious/mcp/ci-environment_variable_enumeration", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-environment_variable_trigger_multi_condition", "path": "corpus/malicious/mcp/ci-environment_variable_trigger_multi_condition", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-file_descriptor_exhaustion", "path": "corpus/malicious/mcp/ci-file_descriptor_exhaustion", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-file_exfiltration_with_encoding", "path": "corpus/malicious/mcp/ci-file_exfiltration_with_encoding", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-file_permission_manipulation_privilege_escalation", "path": "corpus/malicious/mcp/ci-file_permission_manipulation_privilege_escalation", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-file_permissions_suid_bit_manipulation", "path": "corpus/malicious/mcp/ci-file_permissions_suid_bit_manipulation", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-file_protocol_ssrf_local_file", "path": "corpus/malicious/mcp/ci-file_protocol_ssrf_local_file", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-filesystem_mount_information_access", "path": "corpus/malicious/mcp/ci-filesystem_mount_information_access", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-fork_bomb_process_exhaustion", "path": "corpus/malicious/mcp/ci-fork_bomb_process_exhaustion", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-format_method_injection_attribute_access", "path": "corpus/malicious/mcp/ci-format_method_injection_attribute_access", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-format_string_injection", "path": "corpus/malicious/mcp/ci-format_string_injection", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-fstring_injection_dynamic_eval", "path": "corpus/malicious/mcp/ci-fstring_injection_dynamic_eval", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-git_repository_data_exfiltration", "path": "corpus/malicious/mcp/ci-git_repository_data_exfiltration", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-goal_subversion_objective_replacement", "path": "corpus/malicious/mcp/ci-goal_subversion_objective_replacement", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-hidden_metadata_filter_bypass", "path": "corpus/malicious/mcp/ci-hidden_metadata_filter_bypass", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-hidden_system_instructions", "path": "corpus/malicious/mcp/ci-hidden_system_instructions", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-importlib_dynamic_module_loading", "path": "corpus/malicious/mcp/ci-importlib_dynamic_module_loading", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-instruction_override_safety_bypass", "path": "corpus/malicious/mcp/ci-instruction_override_safety_bypass", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-internal_service_port_scanning", "path": "corpus/malicious/mcp/ci-internal_service_port_scanning", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-jailbreak_mode_context_manipulation", "path": "corpus/malicious/mcp/ci-jailbreak_mode_context_manipulation", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-jinja2_autoescape_disabled", "path": "corpus/malicious/mcp/ci-jinja2_autoescape_disabled", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-jinja2_ssti_dynamic_template", "path": "corpus/malicious/mcp/ci-jinja2_ssti_dynamic_template", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-ldap_injection_dynamic_filter", "path": "corpus/malicious/mcp/ci-ldap_injection_dynamic_filter", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-localhost_metadata_service_access", "path": "corpus/malicious/mcp/ci-localhost_metadata_service_access", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-log_tampering_evidence_removal", "path": "corpus/malicious/mcp/ci-log_tampering_evidence_removal", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-magic_string_backdoor", "path": "corpus/malicious/mcp/ci-magic_string_backdoor", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-mako_template_injection_email", "path": "corpus/malicious/mcp/ci-mako_template_injection_email", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-malicious_tool_registration_auto_invoke", "path": "corpus/malicious/mcp/ci-malicious_tool_registration_auto_invoke", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-memory_exhaustion_attack", "path": "corpus/malicious/mcp/ci-memory_exhaustion_attack", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-multi_cloud_credentials_exfiltration", "path": "corpus/malicious/mcp/ci-multi_cloud_credentials_exfiltration", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-multi_feature_web_shell", "path": "corpus/malicious/mcp/ci-multi_feature_web_shell", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-multi_layer_obfuscated_backdoor", "path": "corpus/malicious/mcp/ci-multi_layer_obfuscated_backdoor", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-multi_mechanism_persistence", "path": "corpus/malicious/mcp/ci-multi_mechanism_persistence", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-multi_method_container_escape", "path": "corpus/malicious/mcp/ci-multi_method_container_escape", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-multi_method_reverse_shell", "path": "corpus/malicious/mcp/ci-multi_method_reverse_shell", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-multi_technique_sandbox_escape", "path": "corpus/malicious/mcp/ci-multi_technique_sandbox_escape", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-mustache_template_injection_partials", "path": "corpus/malicious/mcp/ci-mustache_template_injection_partials", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-nested_ignore_trust_escalation", "path": "corpus/malicious/mcp/ci-nested_ignore_trust_escalation", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-network_bandwidth_exhaustion", "path": "corpus/malicious/mcp/ci-network_bandwidth_exhaustion", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-network_configuration_access", "path": "corpus/malicious/mcp/ci-network_configuration_access", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-nosql_injection_mongodb", "path": "corpus/malicious/mcp/ci-nosql_injection_mongodb", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-os_system_injection_archives", "path": "corpus/malicious/mcp/ci-os_system_injection_archives", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-output_manipulation_system_mods", "path": "corpus/malicious/mcp/ci-output_manipulation_system_mods", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-override_instruction_injection", "path": "corpus/malicious/mcp/ci-override_instruction_injection", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-path_traversal_directory_enumeration", "path": "corpus/malicious/mcp/ci-path_traversal_directory_enumeration", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-postmark_bcc_exfiltration", "path": "corpus/malicious/mcp/ci-postmark_bcc_exfiltration", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-private_ip_range_scanning", "path": "corpus/malicious/mcp/ci-private_ip_range_scanning", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-privilege_escalation_system_file_mod", "path": "corpus/malicious/mcp/ci-privilege_escalation_system_file_mod", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-process_information_access", "path": "corpus/malicious/mcp/ci-process_information_access", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-redirect_chain_internal_service", "path": "corpus/malicious/mcp/ci-redirect_chain_internal_service", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-redirect_following_open_redirect", "path": "corpus/malicious/mcp/ci-redirect_following_open_redirect", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-regex_dos_redos_attack", "path": "corpus/malicious/mcp/ci-regex_dos_redos_attack", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-response_poisoning_content_injection", "path": "corpus/malicious/mcp/ci-response_poisoning_content_injection", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-result_poisoning_data_injection", "path": "corpus/malicious/mcp/ci-result_poisoning_data_injection", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-rootkit_installation", "path": "corpus/malicious/mcp/ci-rootkit_installation", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-routing_table_arp_cache_access", "path": "corpus/malicious/mcp/ci-routing_table_arp_cache_access", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-safety_bypass_emergency_access", "path": "corpus/malicious/mcp/ci-safety_bypass_emergency_access", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-security_feature_disabling", "path": "corpus/malicious/mcp/ci-security_feature_disabling", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-security_policy_bypass_rule_manipulation", "path": "corpus/malicious/mcp/ci-security_policy_bypass_rule_manipulation", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-session_hijacking_token_manipulation", "path": "corpus/malicious/mcp/ci-session_hijacking_token_manipulation", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-shell_injection_network_diagnostics", "path": "corpus/malicious/mcp/ci-shell_injection_network_diagnostics", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-sql_injection_dynamic_query", "path": "corpus/malicious/mcp/ci-sql_injection_dynamic_query", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-ssh_key_certificate_exfiltration", "path": "corpus/malicious/mcp/ci-ssh_key_certificate_exfiltration", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-ssh_key_injection_multi_user", "path": "corpus/malicious/mcp/ci-ssh_key_injection_multi_user", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-ssrf_url_manipulation_internal_network", "path": "corpus/malicious/mcp/ci-ssrf_url_manipulation_internal_network", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-stack_exhaustion_infinite_recursion", "path": "corpus/malicious/mcp/ci-stack_exhaustion_infinite_recursion", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-state_persistence_malicious_config", "path": "corpus/malicious/mcp/ci-state_persistence_malicious_config", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-stealth_logging_interaction_tracking", "path": "corpus/malicious/mcp/ci-stealth_logging_interaction_tracking", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-string_template_injection_config", "path": "corpus/malicious/mcp/ci-string_template_injection_config", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-subprocess_shell_command_injection", "path": "corpus/malicious/mcp/ci-subprocess_shell_command_injection", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-symlink_attack_file_access_bypass", "path": "corpus/malicious/mcp/ci-symlink_attack_file_access_bypass", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-symlink_manipulation_privilege_escalation", "path": "corpus/malicious/mcp/ci-symlink_manipulation_privilege_escalation", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-system_file_access_enumeration", "path": "corpus/malicious/mcp/ci-system_file_access_enumeration", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-system_hardware_information_access", "path": "corpus/malicious/mcp/ci-system_hardware_information_access", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-system_log_access", "path": "corpus/malicious/mcp/ci-system_log_access", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-system_prompt_manipulation_override", "path": "corpus/malicious/mcp/ci-system_prompt_manipulation_override", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-system_prompt_override", "path": "corpus/malicious/mcp/ci-system_prompt_override", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-template_command_injection", "path": "corpus/malicious/mcp/ci-template_command_injection", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-thread_exhaustion_attack", "path": "corpus/malicious/mcp/ci-thread_exhaustion_attack", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-time_based_conditional_activation", "path": "corpus/malicious/mcp/ci-time_based_conditional_activation", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-timestamp_manipulation_anti_forensics", "path": "corpus/malicious/mcp/ci-timestamp_manipulation_anti_forensics", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-tornado_template_injection_web", "path": "corpus/malicious/mcp/ci-tornado_template_injection_web", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-trigger_based_malicious_behavior", "path": "corpus/malicious/mcp/ci-trigger_based_malicious_behavior", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-unix_socket_docker_exploitation", "path": "corpus/malicious/mcp/ci-unix_socket_docker_exploitation", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-unrestricted_eval_code_injection", "path": "corpus/malicious/mcp/ci-unrestricted_eval_code_injection", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-unrestricted_exec_arbitrary_code", "path": "corpus/malicious/mcp/ci-unrestricted_exec_arbitrary_code", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-unsafe_pickle_deserialization", "path": "corpus/malicious/mcp/ci-unsafe_pickle_deserialization", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-user_account_enumeration", "path": "corpus/malicious/mcp/ci-user_account_enumeration", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-user_database_access", "path": "corpus/malicious/mcp/ci-user_database_access", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-workflow_tampering_step_injection", "path": "corpus/malicious/mcp/ci-workflow_tampering_step_injection", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-xpath_injection_dynamic_query", "path": "corpus/malicious/mcp/ci-xpath_injection_dynamic_query", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-yaml_unsafe_load_code_execution", "path": "corpus/malicious/mcp/ci-yaml_unsafe_load_code_execution", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-ci-zip_bomb_decompression_attack", "path": "corpus/malicious/mcp/ci-zip_bomb_decompression_attack", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-mcptox-explicit-hijack", "path": "corpus/malicious/mcp/mcptox-explicit-hijack", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-mcptox-implicit-ambient", "path": "corpus/malicious/mcp/mcptox-implicit-ambient", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-mcp-mcptox-parameter-tamper", "path": "corpus/malicious/mcp/mcptox-parameter-tamper", "class": "malicious", "surface": ["mcp"], "severity": "high"}
+{"sample": "mal-perm-agent-bypass-permissions", "path": "corpus/malicious/permission/agent-bypass-permissions", "class": "malicious", "surface": ["permission"], "severity": "critical"}
+{"sample": "mal-perm-allowed-tools-backtick", "path": "corpus/malicious/permission/allowed-tools-backtick", "class": "malicious", "surface": ["permission"], "severity": "critical"}
+{"sample": "mal-perm-baseurl-redirect", "path": "corpus/malicious/permission/baseurl-redirect", "class": "malicious", "surface": ["permission"], "severity": "critical"}
+{"sample": "mal-perm-disable-own-guardrail", "path": "corpus/malicious/permission/disable-own-guardrail", "class": "malicious", "surface": ["permission"], "severity": "high"}
+{"sample": "mal-perm-mcp-env-hijack", "path": "corpus/malicious/permission/mcp-env-hijack", "class": "malicious", "surface": ["permission"], "severity": "high"}
+{"sample": "mal-perm-wildcard-autoapprove", "path": "corpus/malicious/permission/wildcard-autoapprove", "class": "malicious", "surface": ["permission"], "severity": "high"}
+{"sample": "mal-skill-dd-3bkader-gpt-malicious-skill-poc", "path": "corpus/malicious/skills/dd-3bkader-gpt-malicious-skill-poc", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-dd-ZackKorman-skills-openclaw-admin-security-breakglass", "path": "corpus/malicious/skills/dd-ZackKorman-skills-openclaw-admin-security-breakglass", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-dd-arjenschwarz-agentic-coding-claude-skills-project-init", "path": "corpus/malicious/skills/dd-arjenschwarz-agentic-coding-claude-skills-project-init", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-dd-arlenagreer-claude_configuration_docs-skills-email", "path": "corpus/malicious/skills/dd-arlenagreer-claude_configuration_docs-skills-email", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-dd-boomsystel-code-openclaw-workspace-skills-nanopdf", "path": "corpus/malicious/skills/dd-boomsystel-code-openclaw-workspace-skills-nanopdf", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-dd-boomsystel-code-openclaw-workspace-skills-yahoo-finance-who", "path": "corpus/malicious/skills/dd-boomsystel-code-openclaw-workspace-skills-yahoo-finance-who", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-dd-clawsights-clawsights-dot-agents-skills-clawsights", "path": "corpus/malicious/skills/dd-clawsights-clawsights-dot-agents-skills-clawsights", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-dd-clawsights-clawsights-skills-clawsights", "path": "corpus/malicious/skills/dd-clawsights-clawsights-skills-clawsights", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-dd-cybertechajju-productivity-boost-skills-productivity-boost", "path": "corpus/malicious/skills/dd-cybertechajju-productivity-boost-skills-productivity-boost", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-dd-cybertechajju-version-demo-helper", "path": "corpus/malicious/skills/dd-cybertechajju-version-demo-helper", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-dd-escapewu-skills-skills-CPA-antigravity-RT-exract", "path": "corpus/malicious/skills/dd-escapewu-skills-skills-CPA-antigravity-RT-exract", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-dd-gchan-bad-humanizer", "path": "corpus/malicious/skills/dd-gchan-bad-humanizer", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-dd-h1paastha-test-skill", "path": "corpus/malicious/skills/dd-h1paastha-test-skill", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-dd-netcode-openclaw-skills-old-fork-base-agent", "path": "corpus/malicious/skills/dd-netcode-openclaw-skills-old-fork-base-agent", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-dd-netcode-openclaw-skills-old-fork-bybit-agent", "path": "corpus/malicious/skills/dd-netcode-openclaw-skills-old-fork-bybit-agent", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-dd-nickoc-clawscan-malicious-skill", "path": "corpus/malicious/skills/dd-nickoc-clawscan-malicious-skill", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-dd-riba2534-feishu-cli-skills-feishu-cli-create", "path": "corpus/malicious/skills/dd-riba2534-feishu-cli-skills-feishu-cli-create", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-dd-ronyparra-fake-dep-check-skill", "path": "corpus/malicious/skills/dd-ronyparra-fake-dep-check-skill", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-dd-syncause-debug-skill-skills-syncause-debugger", "path": "corpus/malicious/skills/dd-syncause-debug-skill-skills-syncause-debugger", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-dd-zackkorman-skills-skills-audit", "path": "corpus/malicious/skills/dd-zackkorman-skills-skills-audit", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-dd-zackkorman-skills-skills-pdf-helper", "path": "corpus/malicious/skills/dd-zackkorman-skills-skills-pdf-helper", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-dd-zackkorman-skills-skills-security-review-4", "path": "corpus/malicious/skills/dd-zackkorman-skills-skills-security-review-4", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-env-exfil", "path": "corpus/malicious/skills/env-exfil", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-evmx-base64-wrapper", "path": "corpus/malicious/skills/evmx-base64-wrapper", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-evmx-blank-padding", "path": "corpus/malicious/skills/evmx-blank-padding", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-evmx-line-continuation", "path": "corpus/malicious/skills/evmx-line-continuation", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-evmx-plain", "path": "corpus/malicious/skills/evmx-plain", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-evmx-quote-splitting", "path": "corpus/malicious/skills/evmx-quote-splitting", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-evmx-split-across-files", "path": "corpus/malicious/skills/evmx-split-across-files", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-evmx-unicode-confusable", "path": "corpus/malicious/skills/evmx-unicode-confusable", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-evmx-zero-width", "path": "corpus/malicious/skills/evmx-zero-width", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-ns-mcp-poisoned-tool", "path": "corpus/malicious/skills/ns-mcp-poisoned-tool", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-ns-ssd-narrative-deception", "path": "corpus/malicious/skills/ns-ssd-narrative-deception", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-ns-ssd-nl-exfiltration", "path": "corpus/malicious/skills/ns-ssd-nl-exfiltration", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-ns-ssd-novel-phrasing", "path": "corpus/malicious/skills/ns-ssd-novel-phrasing", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-ns-ssd-semantic-injection", "path": "corpus/malicious/skills/ns-ssd-semantic-injection", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-revshell-python-dup2", "path": "corpus/malicious/skills/revshell-python-dup2", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T1-direct-injection-easy", "path": "corpus/malicious/skills/sc-T1-direct-injection-easy", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T1-direct-injection-hard", "path": "corpus/malicious/skills/sc-T1-direct-injection-hard", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T1-direct-injection-medium", "path": "corpus/malicious/skills/sc-T1-direct-injection-medium", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T10-mcp-hijack-easy", "path": "corpus/malicious/skills/sc-T10-mcp-hijack-easy", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T10-mcp-hijack-hard", "path": "corpus/malicious/skills/sc-T10-mcp-hijack-hard", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T10-mcp-hijack-medium", "path": "corpus/malicious/skills/sc-T10-mcp-hijack-medium", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T11-hook-weaponize-easy", "path": "corpus/malicious/skills/sc-T11-hook-weaponize-easy", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T11-hook-weaponize-hard", "path": "corpus/malicious/skills/sc-T11-hook-weaponize-hard", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T11-hook-weaponize-medium", "path": "corpus/malicious/skills/sc-T11-hook-weaponize-medium", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T12-implicit-poison-easy", "path": "corpus/malicious/skills/sc-T12-implicit-poison-easy", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T12-implicit-poison-hard", "path": "corpus/malicious/skills/sc-T12-implicit-poison-hard", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T12-implicit-poison-medium", "path": "corpus/malicious/skills/sc-T12-implicit-poison-medium", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T13-permission-bypass-easy", "path": "corpus/malicious/skills/sc-T13-permission-bypass-easy", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T13-permission-bypass-hard", "path": "corpus/malicious/skills/sc-T13-permission-bypass-hard", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T13-permission-bypass-medium", "path": "corpus/malicious/skills/sc-T13-permission-bypass-medium", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T14-memory-injection-easy", "path": "corpus/malicious/skills/sc-T14-memory-injection-easy", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T14-memory-injection-hard", "path": "corpus/malicious/skills/sc-T14-memory-injection-hard", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T14-memory-injection-medium", "path": "corpus/malicious/skills/sc-T14-memory-injection-medium", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T2-semantic-obfuscation-easy", "path": "corpus/malicious/skills/sc-T2-semantic-obfuscation-easy", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T2-semantic-obfuscation-hard", "path": "corpus/malicious/skills/sc-T2-semantic-obfuscation-hard", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T2-semantic-obfuscation-medium", "path": "corpus/malicious/skills/sc-T2-semantic-obfuscation-medium", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T3-context-hijack-easy", "path": "corpus/malicious/skills/sc-T3-context-hijack-easy", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T3-context-hijack-hard", "path": "corpus/malicious/skills/sc-T3-context-hijack-hard", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T3-context-hijack-medium", "path": "corpus/malicious/skills/sc-T3-context-hijack-medium", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T4-conditional-trigger-easy", "path": "corpus/malicious/skills/sc-T4-conditional-trigger-easy", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T4-conditional-trigger-hard", "path": "corpus/malicious/skills/sc-T4-conditional-trigger-hard", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T4-conditional-trigger-medium", "path": "corpus/malicious/skills/sc-T4-conditional-trigger-medium", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T5-instruction-fragment-easy", "path": "corpus/malicious/skills/sc-T5-instruction-fragment-easy", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T5-instruction-fragment-hard", "path": "corpus/malicious/skills/sc-T5-instruction-fragment-hard", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T5-instruction-fragment-medium", "path": "corpus/malicious/skills/sc-T5-instruction-fragment-medium", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T6-obfuscated-exec-easy", "path": "corpus/malicious/skills/sc-T6-obfuscated-exec-easy", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T6-obfuscated-exec-hard", "path": "corpus/malicious/skills/sc-T6-obfuscated-exec-hard", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T6-obfuscated-exec-medium", "path": "corpus/malicious/skills/sc-T6-obfuscated-exec-medium", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T7-multi-stage-easy", "path": "corpus/malicious/skills/sc-T7-multi-stage-easy", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T7-multi-stage-hard", "path": "corpus/malicious/skills/sc-T7-multi-stage-hard", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T7-multi-stage-medium", "path": "corpus/malicious/skills/sc-T7-multi-stage-medium", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T8-env-aware-easy", "path": "corpus/malicious/skills/sc-T8-env-aware-easy", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T8-env-aware-hard", "path": "corpus/malicious/skills/sc-T8-env-aware-hard", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T8-env-aware-medium", "path": "corpus/malicious/skills/sc-T8-env-aware-medium", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T9-supply-chain-easy", "path": "corpus/malicious/skills/sc-T9-supply-chain-easy", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T9-supply-chain-hard", "path": "corpus/malicious/skills/sc-T9-supply-chain-hard", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sc-T9-supply-chain-medium", "path": "corpus/malicious/skills/sc-T9-supply-chain-medium", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-adapter-cache-harvest", "path": "corpus/malicious/skills/sg-adapter-cache-harvest", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-archive-indirection-docx", "path": "corpus/malicious/skills/sg-archive-indirection-docx", "class": "malicious", "surface": ["skills"], "severity": "critical"}
+{"sample": "mal-skill-sg-base64-obvious", "path": "corpus/malicious/skills/sg-base64-obvious", "class": "malicious", "surface": ["skills"], "severity": "critical"}
+{"sample": "mal-skill-sg-bcc-exfil", "path": "corpus/malicious/skills/sg-bcc-exfil", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-benign-caller-malicious-callee", "path": "corpus/malicious/skills/sg-benign-caller-malicious-callee", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-bytecode-poisoning", "path": "corpus/malicious/skills/sg-bytecode-poisoning", "class": "malicious", "surface": ["skills"], "severity": "critical"}
+{"sample": "mal-skill-sg-charcode-exec", "path": "corpus/malicious/skills/sg-charcode-exec", "class": "malicious", "surface": ["skills"], "severity": "critical"}
+{"sample": "mal-skill-sg-clawhub-listing", "path": "corpus/malicious/skills/sg-clawhub-listing", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-clean-manifest-nested", "path": "corpus/malicious/skills/sg-clean-manifest-nested", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-codeword-activation", "path": "corpus/malicious/skills/sg-codeword-activation", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-config-url-fetch", "path": "corpus/malicious/skills/sg-config-url-fetch", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-confused-deputy-readme", "path": "corpus/malicious/skills/sg-confused-deputy-readme", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-corporate-narrative", "path": "corpus/malicious/skills/sg-corporate-narrative", "class": "malicious", "surface": ["skills"], "severity": "critical"}
+{"sample": "mal-skill-sg-cover-link-offload", "path": "corpus/malicious/skills/sg-cover-link-offload", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-definition-of-done-push", "path": "corpus/malicious/skills/sg-definition-of-done-push", "class": "malicious", "surface": ["skills"], "severity": "critical"}
+{"sample": "mal-skill-sg-description-understate", "path": "corpus/malicious/skills/sg-description-understate", "class": "malicious", "surface": ["skills"], "severity": "medium"}
+{"sample": "mal-skill-sg-dns-label-exfil", "path": "corpus/malicious/skills/sg-dns-label-exfil", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-env-gated-behavior", "path": "corpus/malicious/skills/sg-env-gated-behavior", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-env-harvest-loop", "path": "corpus/malicious/skills/sg-env-harvest-loop", "class": "malicious", "surface": ["skills"], "severity": "critical"}
+{"sample": "mal-skill-sg-error-message-leak", "path": "corpus/malicious/skills/sg-error-message-leak", "class": "malicious", "surface": ["skills"], "severity": "medium"}
+{"sample": "mal-skill-sg-extension-disguise", "path": "corpus/malicious/skills/sg-extension-disguise", "class": "malicious", "surface": ["skills"], "severity": "medium"}
+{"sample": "mal-skill-sg-git-hook-backdoor", "path": "corpus/malicious/skills/sg-git-hook-backdoor", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-gitignore-hide", "path": "corpus/malicious/skills/sg-gitignore-hide", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-helper-sourced-payload", "path": "corpus/malicious/skills/sg-helper-sourced-payload", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-hidden-html-comment-instruction", "path": "corpus/malicious/skills/sg-hidden-html-comment-instruction", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-homoglyph-imports", "path": "corpus/malicious/skills/sg-homoglyph-imports", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-ide-native-impersonation", "path": "corpus/malicious/skills/sg-ide-native-impersonation", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-ignore-previous-instructions", "path": "corpus/malicious/skills/sg-ignore-previous-instructions", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-image-metadata-payload", "path": "corpus/malicious/skills/sg-image-metadata-payload", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-indirect-resource-injection", "path": "corpus/malicious/skills/sg-indirect-resource-injection", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-judge-self-injection", "path": "corpus/malicious/skills/sg-judge-self-injection", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-lockfile-divergence", "path": "corpus/malicious/skills/sg-lockfile-divergence", "class": "malicious", "surface": ["skills"], "severity": "medium"}
+{"sample": "mal-skill-sg-mcp-json-directives", "path": "corpus/malicious/skills/sg-mcp-json-directives", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-memory-file-write", "path": "corpus/malicious/skills/sg-memory-file-write", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-minimal-interaction-allowlist", "path": "corpus/malicious/skills/sg-minimal-interaction-allowlist", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-missing-required-fields", "path": "corpus/malicious/skills/sg-missing-required-fields", "class": "malicious", "surface": ["skills"], "severity": "medium"}
+{"sample": "mal-skill-sg-nested-bundle-recursion", "path": "corpus/malicious/skills/sg-nested-bundle-recursion", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-newline-canyon", "path": "corpus/malicious/skills/sg-newline-canyon", "class": "malicious", "surface": ["skills"], "severity": "critical"}
+{"sample": "mal-skill-sg-overbroad-permissions", "path": "corpus/malicious/skills/sg-overbroad-permissions", "class": "malicious", "surface": ["skills"], "severity": "medium"}
+{"sample": "mal-skill-sg-password-zip-drop", "path": "corpus/malicious/skills/sg-password-zip-drop", "class": "malicious", "surface": ["skills"], "severity": "critical"}
+{"sample": "mal-skill-sg-pep723-deferred-dep", "path": "corpus/malicious/skills/sg-pep723-deferred-dep", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-plain-curl-bash", "path": "corpus/malicious/skills/sg-plain-curl-bash", "class": "malicious", "surface": ["skills"], "severity": "critical"}
+{"sample": "mal-skill-sg-plain-exec-eval", "path": "corpus/malicious/skills/sg-plain-exec-eval", "class": "malicious", "surface": ["skills"], "severity": "critical"}
+{"sample": "mal-skill-sg-plain-exfil-post", "path": "corpus/malicious/skills/sg-plain-exfil-post", "class": "malicious", "surface": ["skills"], "severity": "critical"}
+{"sample": "mal-skill-sg-plausibility-comments", "path": "corpus/malicious/skills/sg-plausibility-comments", "class": "malicious", "surface": ["skills"], "severity": "medium"}
+{"sample": "mal-skill-sg-reverse-shell-netcat", "path": "corpus/malicious/skills/sg-reverse-shell-netcat", "class": "malicious", "surface": ["skills"], "severity": "critical"}
+{"sample": "mal-skill-sg-rm-rf-no-confirm", "path": "corpus/malicious/skills/sg-rm-rf-no-confirm", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-rtl-override-labels", "path": "corpus/malicious/skills/sg-rtl-override-labels", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-runtime-instruction-fetch", "path": "corpus/malicious/skills/sg-runtime-instruction-fetch", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-self-rewrite-update", "path": "corpus/malicious/skills/sg-self-rewrite-update", "class": "malicious", "surface": ["skills"], "severity": "critical"}
+{"sample": "mal-skill-sg-settings-json-hook", "path": "corpus/malicious/skills/sg-settings-json-hook", "class": "malicious", "surface": ["skills"], "severity": "critical"}
+{"sample": "mal-skill-sg-sfs-xor-pack", "path": "corpus/malicious/skills/sg-sfs-xor-pack", "class": "malicious", "surface": ["skills"], "severity": "critical"}
+{"sample": "mal-skill-sg-shell-splice-concat", "path": "corpus/malicious/skills/sg-shell-splice-concat", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-shellrc-persistence", "path": "corpus/malicious/skills/sg-shellrc-persistence", "class": "malicious", "surface": ["skills"], "severity": "critical"}
+{"sample": "mal-skill-sg-soul-identity-hijack", "path": "corpus/malicious/skills/sg-soul-identity-hijack", "class": "malicious", "surface": ["skills"], "severity": "critical"}
+{"sample": "mal-skill-sg-split-across-files", "path": "corpus/malicious/skills/sg-split-across-files", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-sudo-install", "path": "corpus/malicious/skills/sg-sudo-install", "class": "malicious", "surface": ["skills"], "severity": "medium"}
+{"sample": "mal-skill-sg-symlink-escape", "path": "corpus/malicious/skills/sg-symlink-escape", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-typosquat-name", "path": "corpus/malicious/skills/sg-typosquat-name", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-unsafe-yaml-frontmatter", "path": "corpus/malicious/skills/sg-unsafe-yaml-frontmatter", "class": "malicious", "surface": ["skills"], "severity": "critical"}
+{"sample": "mal-skill-sg-vercel-skills-sh-pack", "path": "corpus/malicious/skills/sg-vercel-skills-sh-pack", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-vibe-coded-plugin", "path": "corpus/malicious/skills/sg-vibe-coded-plugin", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-sg-wallet-exhaustion-loop", "path": "corpus/malicious/skills/sg-wallet-exhaustion-loop", "class": "malicious", "surface": ["skills"], "severity": "medium"}
+{"sample": "mal-skill-sg-whitespace-below-fold", "path": "corpus/malicious/skills/sg-whitespace-below-fold", "class": "malicious", "surface": ["skills"], "severity": "medium"}
+{"sample": "mal-skill-sg-zero-width-directives", "path": "corpus/malicious/skills/sg-zero-width-directives", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-ssb-docker-socket-repro", "path": "corpus/malicious/skills/ssb-docker-socket-repro", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-ssb-metadata-service-probe", "path": "corpus/malicious/skills/ssb-metadata-service-probe", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-ssb-organize-audit-log-erasure", "path": "corpus/malicious/skills/ssb-organize-audit-log-erasure", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-ssb-organize-intake-manifest", "path": "corpus/malicious/skills/ssb-organize-intake-manifest", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-ssb-requery-loop", "path": "corpus/malicious/skills/ssb-requery-loop", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-ssb-tfidf-budget-drain", "path": "corpus/malicious/skills/ssb-tfidf-budget-drain", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-ssb-training-sweep-drain", "path": "corpus/malicious/skills/ssb-training-sweep-drain", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-ssb-travel-fanout-explosion", "path": "corpus/malicious/skills/ssb-travel-fanout-explosion", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "mal-skill-ssb-video-rescan-loop", "path": "corpus/malicious/skills/ssb-video-rescan-loop", "class": "malicious", "surface": ["skills"], "severity": "high"}
+{"sample": "hn-conn-starrocks", "path": "corpus/hard-negative/connector/starrocks-demo-mcp", "class": "hard-negative", "surface": ["connector"]}
+{"sample": "hn-hook-anneheartrecord", "path": "corpus/hard-negative/hooks/anneheartrecord-claude-code-config-settings", "class": "hard-negative", "surface": ["hooks", "permission"]}
+{"sample": "hn-hook-imcvampire", "path": "corpus/hard-negative/hooks/imcvampire-anytype-mind-settings", "class": "hard-negative", "surface": ["hooks"]}
+{"sample": "hn-hook-rubree-deny-list", "path": "corpus/hard-negative/hooks/rubree-deny-list", "class": "hard-negative", "surface": ["hooks", "permission"]}
+{"sample": "hn-instr-defensive-refusal", "path": "corpus/hard-negative/instruction/defensive-refusal-prose", "class": "hard-negative", "surface": ["instruction"]}
+{"sample": "hn-instr-fz-data-exfiltration", "path": "corpus/hard-negative/instruction/fz-data-exfiltration", "class": "hard-negative", "surface": ["instruction"]}
+{"sample": "hn-instr-fz-direct-injection", "path": "corpus/hard-negative/instruction/fz-direct-injection", "class": "hard-negative", "surface": ["instruction"]}
+{"sample": "hn-instr-fz-indirect-injection", "path": "corpus/hard-negative/instruction/fz-indirect-injection", "class": "hard-negative", "surface": ["instruction"]}
+{"sample": "hn-instr-fz-jailbreak-persona", "path": "corpus/hard-negative/instruction/fz-jailbreak-persona", "class": "hard-negative", "surface": ["instruction"]}
+{"sample": "hn-instr-fz-turkish-morphological", "path": "corpus/hard-negative/instruction/fz-turkish-morphological", "class": "hard-negative", "surface": ["instruction"]}
+{"sample": "hn-mcp-agentcash", "path": "corpus/hard-negative/mcp/am-agentcash", "class": "hard-negative", "surface": ["mcp"]}
+{"sample": "hn-mcp-alibabacloud", "path": "corpus/hard-negative/mcp/am-alibabacloud-devops-mcp-server", "class": "hard-negative", "surface": ["mcp"]}
+{"sample": "hn-mcp-am", "path": "corpus/hard-negative/mcp/am-21st-dev-magic", "class": "hard-negative", "surface": ["mcp"]}
+{"sample": "hn-mcp-ateai", "path": "corpus/hard-negative/mcp/am-ateam-ai-mcp", "class": "hard-negative", "surface": ["mcp"]}
+{"sample": "hn-perm-feiskyer", "path": "corpus/hard-negative/permission/feiskyer-claude-code-settings-settings", "class": "hard-negative", "surface": ["permission"]}
+{"sample": "hn-perm-unity-credential-deny-list", "path": "corpus/hard-negative/permission/unity-credential-deny-list", "class": "hard-negative", "surface": ["permission"]}
+{"sample": "hn-skill-environ-copy", "path": "corpus/hard-negative/skills/environ-copy-subprocess", "class": "hard-negative", "surface": ["skills"]}
+{"sample": "hn-skill-ns-ssd-clean", "path": "corpus/hard-negative/skills/ns-ssd-clean", "class": "hard-negative", "surface": ["skills"]}
+{"sample": "hn-skill-socket-client-plain", "path": "corpus/hard-negative/skills/socket-client-plain", "class": "hard-negative", "surface": ["skills"]}
+{"sample": "ben-skill-md-aiskillstore-marketplace-synthesis", "path": "corpus/benign/skills/md-aiskillstore-marketplace-synthesis", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-electron__electron__.claude__skills__electron-node-upgrade", "path": "corpus/benign/skills/sk-electron__electron__.claude__skills__electron-node-upgrade", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-gptomics-bioskills-strain-tracking", "path": "corpus/benign/skills/md-gptomics-bioskills-strain-tracking", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-hashi-demo-lab__claude-skill-hcp-terraform__terraform-style-guide", "path": "corpus/benign/skills/sk-hashi-demo-lab__claude-skill-hcp-terraform__terraform-style-guide", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-kcwoodfield__LifeOS-OSS__.claude__skills__weekly-review", "path": "corpus/benign/skills/sk-kcwoodfield__LifeOS-OSS__.claude__skills__weekly-review", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-brmbobo-web2podcast-clay-advanced-troubleshooting", "path": "corpus/benign/skills/md-brmbobo-web2podcast-clay-advanced-troubleshooting", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-tachyon-beep-skillpacks-using-ux-designer", "path": "corpus/benign/skills/md-tachyon-beep-skillpacks-using-ux-designer", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-controller-testing", "path": "corpus/benign/skills/md-neversight-skills-feed-controller-testing", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-poindexter12-waypoint-plugin-validator", "path": "corpus/benign/skills/md-poindexter12-waypoint-plugin-validator", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-tkzzzzzz6-baoyan-info-tracker", "path": "corpus/benign/skills/md-tkzzzzzz6-baoyan-info-tracker", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-clawdbot__clawdinators__clawdinator__workspace__skills__lurk", "path": "corpus/benign/skills/sk-clawdbot__clawdinators__clawdinator__workspace__skills__lurk", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-openclaw-skills-auto-updater-gateway", "path": "corpus/benign/skills/md-openclaw-skills-auto-updater-gateway", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-openclaw-skills-openbroker", "path": "corpus/benign/skills/md-openclaw-skills-openbroker", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-tianjianjiang-smith-smith-ralph", "path": "corpus/benign/skills/md-tianjianjiang-smith-smith-ralph", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-codename-co__devs__.github__skills__zustand-store-development", "path": "corpus/benign/skills/sk-codename-co__devs__.github__skills__zustand-store-development", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-mayurrathi-awesome-agent-skills-rust-pro", "path": "corpus/benign/skills/md-mayurrathi-awesome-agent-skills-rust-pro", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-brmbobo-web2podcast-scanning-for-vulnerabilities", "path": "corpus/benign/skills/md-brmbobo-web2podcast-scanning-for-vulnerabilities", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-nakaj1214-nakaj-claude-e2e-runner", "path": "corpus/benign/skills/md-nakaj1214-nakaj-claude-e2e-runner", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-justlookatnow-pt-mate-release", "path": "corpus/benign/skills/md-justlookatnow-pt-mate-release", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-narumiruna-telegram-bot-aiogram-framework", "path": "corpus/benign/skills/md-narumiruna-telegram-bot-aiogram-framework", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-aviflombaum-claude-code-in-avinyc-business", "path": "corpus/benign/skills/md-aviflombaum-claude-code-in-avinyc-business", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-cuioss-plan-marshall-plugin-plan-implement", "path": "corpus/benign/skills/md-cuioss-plan-marshall-plugin-plan-implement", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-subframe7536__kysely-sqlite-builder__skills__kysely-sqlite-builder", "path": "corpus/benign/skills/sk-subframe7536__kysely-sqlite-builder__skills__kysely-sqlite-builder", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-posit-dev-team-operator-team-operator-config", "path": "corpus/benign/skills/md-posit-dev-team-operator-team-operator-config", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-wonjangcloud9-claude-tree-code-review", "path": "corpus/benign/skills/md-wonjangcloud9-claude-tree-code-review", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-oalkabouss-fullstack-agent-skills-react-compound-components", "path": "corpus/benign/skills/md-oalkabouss-fullstack-agent-skills-react-compound-components", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-clawdbot-skills-pocket-casts-yt", "path": "corpus/benign/skills/md-clawdbot-skills-pocket-casts-yt", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-mikall-factoryx-sprint-planning", "path": "corpus/benign/skills/md-mikall-factoryx-sprint-planning", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-wallbit-wallbit-skills-skills", "path": "corpus/benign/skills/md-wallbit-wallbit-skills-skills", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-labeehive-standards-aso-review", "path": "corpus/benign/skills/md-labeehive-standards-aso-review", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-EricGrill__agents-skills-plugins__plugins__developer-essentials__skills__nx-workspace-patterns", "path": "corpus/benign/skills/sk-EricGrill__agents-skills-plugins__plugins__developer-essentials__skills__nx-workspace-patterns", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-unfrgivn__wilds-of-cloverhollow__.opencode__skill__godot-autonomous-iteration", "path": "corpus/benign/skills/sk-unfrgivn__wilds-of-cloverhollow__.opencode__skill__godot-autonomous-iteration", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-AsyrafHussin__agent-skills__skills__laravel-database-optimization", "path": "corpus/benign/skills/sk-AsyrafHussin__agent-skills__skills__laravel-database-optimization", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-vipulgupta2048-codex-skills-frontend-design", "path": "corpus/benign/skills/md-vipulgupta2048-codex-skills-frontend-design", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-uukuguy-regreader-wengui-dc-limit", "path": "corpus/benign/skills/md-uukuguy-regreader-wengui-dc-limit", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-thangchung-agent-engineering-experiment-markitdown", "path": "corpus/benign/skills/md-thangchung-agent-engineering-experiment-markitdown", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-tommymorgan-claude-plugins-verification-sweep", "path": "corpus/benign/skills/md-tommymorgan-claude-plugins-verification-sweep", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-code-reviewer", "path": "corpus/benign/skills/md-neversight-skills-feed-code-reviewer", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-bbgnsurftech-claude-skills-collection-api-documentation-generato", "path": "corpus/benign/skills/md-bbgnsurftech-claude-skills-collection-api-documentation-generato", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-hashi-demo-lab__claude-skill-hcp-terraform__terraform-mcp-as-code", "path": "corpus/benign/skills/sk-hashi-demo-lab__claude-skill-hcp-terraform__terraform-mcp-as-code", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-iclaudioo-marketing-science-skills-churn-prevention", "path": "corpus/benign/skills/md-iclaudioo-marketing-science-skills-churn-prevention", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-eous__dotclaude__skills__sql-patterns", "path": "corpus/benign/skills/sk-eous__dotclaude__skills__sql-patterns", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-ryanbreen-breenix-breenix-systematic-debugging", "path": "corpus/benign/skills/md-ryanbreen-breenix-breenix-systematic-debugging", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-zchee__coding-agents__.codex__skills__openrouter-model-catalog", "path": "corpus/benign/skills/sk-zchee__coding-agents__.codex__skills__openrouter-model-catalog", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-sludging-idleon-efficiency-testing", "path": "corpus/benign/skills/md-sludging-idleon-efficiency-testing", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-enisa200467-enisahealingandmassage-edit-page-content", "path": "corpus/benign/skills/md-enisa200467-enisahealingandmassage-edit-page-content", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-GondaDaikon__tri-ssd__skills__gen-doc", "path": "corpus/benign/skills/sk-GondaDaikon__tri-ssd__skills__gen-doc", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-brand-style", "path": "corpus/benign/skills/md-neversight-skills-feed-brand-style", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-ipixeldust-apryse-pdf-skills-apryse-redact", "path": "corpus/benign/skills/md-ipixeldust-apryse-pdf-skills-apryse-redact", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-vdesjardins-nix-config-skill-timewarrior-efficient-entry", "path": "corpus/benign/skills/md-vdesjardins-nix-config-skill-timewarrior-efficient-entry", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-SHAJAR5110__Hackathon-II-phase2__.claude__skills__frontend-expert", "path": "corpus/benign/skills/sk-SHAJAR5110__Hackathon-II-phase2__.claude__skills__frontend-expert", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-nextblock-cms__nextblock__.agent__skills__frontend-design", "path": "corpus/benign/skills/sk-nextblock-cms__nextblock__.agent__skills__frontend-design", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-steadfastasart-geoscience-skills-pyrolite", "path": "corpus/benign/skills/md-steadfastasart-geoscience-skills-pyrolite", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-Ketomihine__my_skills__giottosuite-local", "path": "corpus/benign/skills/sk-Ketomihine__my_skills__giottosuite-local", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-masayan1126-masayan-uni-code-plugins-review", "path": "corpus/benign/skills/md-masayan1126-masayan-uni-code-plugins-review", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-amnadtaowsoam-cerebraskills-feature-toggles", "path": "corpus/benign/skills/md-amnadtaowsoam-cerebraskills-feature-toggles", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sg-admin-installer", "path": "corpus/benign/skills/sg-admin-installer", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-leather-io-mono-monorepo-navigation", "path": "corpus/benign/skills/md-leather-io-mono-monorepo-navigation", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-small-java-world__todo-manage__todo-api-client-sample__.claude__skills__api.task-listing.minimal-v1", "path": "corpus/benign/skills/sk-small-java-world__todo-manage__todo-api-client-sample__.claude__skills__api.task-listing.minimal-v1", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-minecraft-fabric-dev", "path": "corpus/benign/skills/md-neversight-skills-feed-minecraft-fabric-dev", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-socketdev-skills-socket-dep-replace", "path": "corpus/benign/skills/md-socketdev-skills-socket-dep-replace", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-domjtalbot-homelab-env-hygiene", "path": "corpus/benign/skills/md-domjtalbot-homelab-env-hygiene", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-ferdiangunawan-rpi-stack-audit-security", "path": "corpus/benign/skills/md-ferdiangunawan-rpi-stack-audit-security", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-genmcp-gevals-create-eval", "path": "corpus/benign/skills/md-genmcp-gevals-create-eval", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-andershalo-halo-ai-dev-tools-plan-refinement", "path": "corpus/benign/skills/md-andershalo-halo-ai-dev-tools-plan-refinement", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-aiskillstore-marketplace-playwright-browser-automation", "path": "corpus/benign/skills/md-aiskillstore-marketplace-playwright-browser-automation", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-wallet-security", "path": "corpus/benign/skills/md-neversight-skills-feed-wallet-security", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-shinpr-ai-coding-project-boilerplate-typescript-testing", "path": "corpus/benign/skills/md-shinpr-ai-coding-project-boilerplate-typescript-testing", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-jeremylongshore-claude-code-plugins-plus-skills-skill-adapter-c12c75eb", "path": "corpus/benign/skills/md-jeremylongshore-claude-code-plugins-plus-skills-skill-adapter-c12c75eb", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-rankjay-ai-code-review", "path": "corpus/benign/skills/md-rankjay-ai-code-review", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-gunderwonder__bleikoya-2023__.claude__skills__obsidian", "path": "corpus/benign/skills/sk-gunderwonder__bleikoya-2023__.claude__skills__obsidian", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-openclaw-skills-solarpunk-evidence-logger", "path": "corpus/benign/skills/md-openclaw-skills-solarpunk-evidence-logger", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-otrebu__all-agents__.claude__skills__setup-lint-staged", "path": "corpus/benign/skills/sk-otrebu__all-agents__.claude__skills__setup-lint-staged", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-zmre-nix-pai-example-skill", "path": "corpus/benign/skills/md-zmre-nix-pai-example-skill", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-kuingsmile-word-gpt-plus-skills", "path": "corpus/benign/skills/md-kuingsmile-word-gpt-plus-skills", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-46ki75__skills__skills__prompt-evaluation", "path": "corpus/benign/skills/sk-46ki75__skills__skills__prompt-evaluation", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-l0g1x-bcc-bcc", "path": "corpus/benign/skills/md-l0g1x-bcc-bcc", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-pythoninthegrasses-lunchjs-fastlane", "path": "corpus/benign/skills/md-pythoninthegrasses-lunchjs-fastlane", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-brownbull-taskflow-tier-advisor", "path": "corpus/benign/skills/md-brownbull-taskflow-tier-advisor", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-akornmeier__claude-config__skills__nuxt-ui", "path": "corpus/benign/skills/sk-akornmeier__claude-config__skills__nuxt-ui", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-tailscale-runpod", "path": "corpus/benign/skills/md-neversight-skills-feed-tailscale-runpod", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-raintree-technology-claude-starter-stripe", "path": "corpus/benign/skills/md-raintree-technology-claude-starter-stripe", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-nbarthel__claudy__plugins__rails-workflow__skills__rails-pattern-finder", "path": "corpus/benign/skills/sk-nbarthel__claudy__plugins__rails-workflow__skills__rails-pattern-finder", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-almogkm-vs-code-terminal-tab-title-name-ext-deterministic-comman", "path": "corpus/benign/skills/md-almogkm-vs-code-terminal-tab-title-name-ext-deterministic-comman", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-duizendstra-antigravity-sandbox-code-style-checker", "path": "corpus/benign/skills/md-duizendstra-antigravity-sandbox-code-style-checker", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-melodic-software-claude-code-plugins-gap-analysis", "path": "corpus/benign/skills/md-melodic-software-claude-code-plugins-gap-analysis", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sg-cjk-documentation", "path": "corpus/benign/skills/sg-cjk-documentation", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-nfbs2000-vibe-with-phrack-skill-developer", "path": "corpus/benign/skills/md-nfbs2000-vibe-with-phrack-skill-developer", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-se04-aizu-2025-se04project-team-read-all-docs", "path": "corpus/benign/skills/md-se04-aizu-2025-se04project-team-read-all-docs", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-profbernardoj-everclaw-community-branches-three-shifts", "path": "corpus/benign/skills/md-profbernardoj-everclaw-community-branches-three-shifts", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-Jaisrinivasan23__CSV-Standalone__.claude__skills__email-html-engine", "path": "corpus/benign/skills/sk-Jaisrinivasan23__CSV-Standalone__.claude__skills__email-html-engine", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-0x3ef8-moltbook-ai-agent-docs", "path": "corpus/benign/skills/md-0x3ef8-moltbook-ai-agent-docs", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-gw-ai-security-ats-cv-scorer-project-phase-planner", "path": "corpus/benign/skills/md-gw-ai-security-ats-cv-scorer-project-phase-planner", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-premium-frontend-design", "path": "corpus/benign/skills/md-neversight-skills-feed-premium-frontend-design", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-amarbel-llc-dodder-design-patterns-hamster-style", "path": "corpus/benign/skills/md-amarbel-llc-dodder-design-patterns-hamster-style", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-daymade-claude-code-skills-macos-cleaner", "path": "corpus/benign/skills/md-daymade-claude-code-skills-macos-cleaner", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-mcp-supabase", "path": "corpus/benign/skills/md-neversight-skills-feed-mcp-supabase", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-keemsy-fastapi-playground-new-domain", "path": "corpus/benign/skills/md-keemsy-fastapi-playground-new-domain", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-dvcrn-openclaw-skills-marketplace-gcloud", "path": "corpus/benign/skills/md-dvcrn-openclaw-skills-marketplace-gcloud", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-RIMTHAN-LAB__rimthan-plugins__nodejs__skills__api-controller", "path": "corpus/benign/skills/sk-RIMTHAN-LAB__rimthan-plugins__nodejs__skills__api-controller", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-frankxai-frankx-ai-vercel-website-7-pillars", "path": "corpus/benign/skills/md-frankxai-frankx-ai-vercel-website-7-pillars", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-brownfinesecurity-iothackbot-iotnet", "path": "corpus/benign/skills/md-brownfinesecurity-iothackbot-iotnet", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-fellyph__ai-instructions__claude__skills__blueprint-maker", "path": "corpus/benign/skills/sk-fellyph__ai-instructions__claude__skills__blueprint-maker", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-anortham-sherpa-tdd-cycle", "path": "corpus/benign/skills/md-anortham-sherpa-tdd-cycle", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-send-email", "path": "corpus/benign/skills/md-neversight-skills-feed-send-email", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-openclaw-skills-protom-bridge-email", "path": "corpus/benign/skills/md-openclaw-skills-protom-bridge-email", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-chunkytortoise-enterprisehub-web-artifacts-builder", "path": "corpus/benign/skills/md-chunkytortoise-enterprisehub-web-artifacts-builder", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-bbgnsurftech-claude-skills-collection-overnight-dev", "path": "corpus/benign/skills/md-bbgnsurftech-claude-skills-collection-overnight-dev", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-EricGrill__agents-skills-plugins__plugins__awesome-claude-skills__composio-skills__neverbounce-automation", "path": "corpus/benign/skills/sk-EricGrill__agents-skills-plugins__plugins__awesome-claude-skills__composio-skills__neverbounce-automation", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-daniele21-role-fit-scanner-deploy-readiness-checker", "path": "corpus/benign/skills/md-daniele21-role-fit-scanner-deploy-readiness-checker", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-krwenholz-adventofcode-2025-aoc-solution-review", "path": "corpus/benign/skills/md-krwenholz-adventofcode-2025-aoc-solution-review", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-skyosev__agent-skills__hunter-party-py__security-hunter-py", "path": "corpus/benign/skills/sk-skyosev__agent-skills__hunter-party-py__security-hunter-py", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-mootbing-clawshi", "path": "corpus/benign/skills/md-mootbing-clawshi", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-jagreehal__baldrick__skills__spec-vibe", "path": "corpus/benign/skills/sk-jagreehal__baldrick__skills__spec-vibe", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-jeremylongshore-claude-code-plugins-plus-skills-skill-adapter-0ebf354d", "path": "corpus/benign/skills/md-jeremylongshore-claude-code-plugins-plus-skills-skill-adapter-0ebf354d", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-djankies-claude-configs-migrating-from-v3", "path": "corpus/benign/skills/md-djankies-claude-configs-migrating-from-v3", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-cnwzhu-gpui-skills-gpui-fundamentals", "path": "corpus/benign/skills/md-cnwzhu-gpui-skills-gpui-fundamentals", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-aadilmallick__claude-skills__plan-preview-skill", "path": "corpus/benign/skills/sk-aadilmallick__claude-skills__plan-preview-skill", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-small-java-world__todo-manage__todo-api-client-sample__.claude__skills__tdd.red-case.write-v1", "path": "corpus/benign/skills/sk-small-java-world__todo-manage__todo-api-client-sample__.claude__skills__tdd.red-case.write-v1", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-brmbobo-web2podcast-analyzing-liquidity-pools", "path": "corpus/benign/skills/md-brmbobo-web2podcast-analyzing-liquidity-pools", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-Goldziher__ai-rulez__internal__builtins__languages__r__skills__r-conventions", "path": "corpus/benign/skills/sk-Goldziher__ai-rulez__internal__builtins__languages__r__skills__r-conventions", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-legacy-to-ai-ready", "path": "corpus/benign/skills/md-neversight-skills-feed-legacy-to-ai-ready", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-ahmedasmar-devops-claude-skills-skills", "path": "corpus/benign/skills/md-ahmedasmar-devops-claude-skills-skills", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-openclaw-skills-tg-miniapp", "path": "corpus/benign/skills/md-openclaw-skills-tg-miniapp", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sg-git-hooks-legit", "path": "corpus/benign/skills/sg-git-hooks-legit", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-raytj0114-football-tracker-api-patterns", "path": "corpus/benign/skills/md-raytj0114-football-tracker-api-patterns", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-dsifry-metaswarm-external-tools", "path": "corpus/benign/skills/md-dsifry-metaswarm-external-tools", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-urjitbhatia-tpm-mcp-tpm-report", "path": "corpus/benign/skills/md-urjitbhatia-tpm-mcp-tpm-report", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-thebushidocollective-han-csharp-linq", "path": "corpus/benign/skills/md-thebushidocollective-han-csharp-linq", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-th0rgal-sandboxed-library-template-github-cli", "path": "corpus/benign/skills/md-th0rgal-sandboxed-library-template-github-cli", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-roaming-panda-llc-claude-plugins-narrated-demo", "path": "corpus/benign/skills/md-roaming-panda-llc-claude-plugins-narrated-demo", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-paymog-skill-builder", "path": "corpus/benign/skills/md-paymog-skill-builder", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-Andeveling__glasify-lite__.qwen__skills__openspec-propose", "path": "corpus/benign/skills/sk-Andeveling__glasify-lite__.qwen__skills__openspec-propose", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-iammarkps-eqapo-gui-rust-code-reviewer", "path": "corpus/benign/skills/md-iammarkps-eqapo-gui-rust-code-reviewer", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-ubterzioglu-desiremap-verification-mastery", "path": "corpus/benign/skills/md-ubterzioglu-desiremap-verification-mastery", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-brennacodes-brenna-plugs-capture-discussion", "path": "corpus/benign/skills/md-brennacodes-brenna-plugs-capture-discussion", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-rm2thaddeus-aitor-skills-git-pushing", "path": "corpus/benign/skills/md-rm2thaddeus-aitor-skills-git-pushing", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-nspady-google-calendar-mcp-gcal-api-research", "path": "corpus/benign/skills/md-nspady-google-calendar-mcp-gcal-api-research", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-manastalukdar-claude-devstudio-webpack-optimize", "path": "corpus/benign/skills/md-manastalukdar-claude-devstudio-webpack-optimize", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-confluence-cli", "path": "corpus/benign/skills/md-neversight-skills-feed-confluence-cli", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-openclaw-skills-fluxa-x402-payment", "path": "corpus/benign/skills/md-openclaw-skills-fluxa-x402-payment", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-ewe-studios-agentic-coding-starter-dangerous-operations", "path": "corpus/benign/skills/md-ewe-studios-agentic-coding-starter-dangerous-operations", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-viniciussouzax-visa-ds160map-reference", "path": "corpus/benign/skills/md-viniciussouzax-visa-ds160map-reference", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-harrytran998-sword-art-online-review-module", "path": "corpus/benign/skills/md-harrytran998-sword-art-online-review-module", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-dave-007-solid-rotary-phone-implement", "path": "corpus/benign/skills/md-dave-007-solid-rotary-phone-implement", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-hellochar-godot-sketches-roguelike-progression", "path": "corpus/benign/skills/md-hellochar-godot-sketches-roguelike-progression", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sg-ssh-config-reader", "path": "corpus/benign/skills/sg-ssh-config-reader", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-leonardocouy__obsidian-personal-pkm__.claude__skills__weekly", "path": "corpus/benign/skills/sk-leonardocouy__obsidian-personal-pkm__.claude__skills__weekly", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-tkhongsap__llama-index-rag-pipeline__.claude__skills__implementing-rag", "path": "corpus/benign/skills/sk-tkhongsap__llama-index-rag-pipeline__.claude__skills__implementing-rag", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-conorluddy-ios-simulator-skill-ios-simulator-skill", "path": "corpus/benign/skills/md-conorluddy-ios-simulator-skill-ios-simulator-skill", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-miethe-meatymusic-planning", "path": "corpus/benign/skills/md-miethe-meatymusic-planning", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-terrylica-cc-skills-asciinema-converter", "path": "corpus/benign/skills/md-terrylica-cc-skills-asciinema-converter", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-justEstif__sv-100-hours-tracker__.opencode__skill__brand-guidelines", "path": "corpus/benign/skills/sk-justEstif__sv-100-hours-tracker__.opencode__skill__brand-guidelines", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-insforge", "path": "corpus/benign/skills/md-neversight-skills-feed-insforge", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-ship-it", "path": "corpus/benign/skills/md-neversight-skills-feed-ship-it", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-shogookamoto-officialsitefinder-skills-google-search-skill", "path": "corpus/benign/skills/md-shogookamoto-officialsitefinder-skills-google-search-skill", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-nihiyama-ffq-codegen-test", "path": "corpus/benign/skills/md-nihiyama-ffq-codegen-test", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-ilkeozi-skills-proxy-pattern-typescript", "path": "corpus/benign/skills/md-ilkeozi-skills-proxy-pattern-typescript", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-aiskillstore-marketplace-rmcp-quickstart", "path": "corpus/benign/skills/md-aiskillstore-marketplace-rmcp-quickstart", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-alanlee0323-investment-dashboard-brand-identity", "path": "corpus/benign/skills/md-alanlee0323-investment-dashboard-brand-identity", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-nextblock-cms__nextblock__.agent__skills__agent-guidelines", "path": "corpus/benign/skills/sk-nextblock-cms__nextblock__.agent__skills__agent-guidelines", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-aiskillstore-marketplace-jira-safe", "path": "corpus/benign/skills/md-aiskillstore-marketplace-jira-safe", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-gges5110-austinbusgo-cloud-run-logs", "path": "corpus/benign/skills/md-gges5110-austinbusgo-cloud-run-logs", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-mcclowes__weavr-data-generator__.claude__skills__vague", "path": "corpus/benign/skills/sk-mcclowes__weavr-data-generator__.claude__skills__vague", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-jerome-benoit-freqai-strategies-openspec-ff-change", "path": "corpus/benign/skills/md-jerome-benoit-freqai-strategies-openspec-ff-change", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-dexploarer-claudius-skills-translation-key-extractor", "path": "corpus/benign/skills/md-dexploarer-claudius-skills-translation-key-extractor", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-retsohuang__retso-marketplace__plugins__code-review-tools__skills__code-review", "path": "corpus/benign/skills/sk-retsohuang__retso-marketplace__plugins__code-review-tools__skills__code-review", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-nmime-infra-skills-skill-v4", "path": "corpus/benign/skills/md-nmime-infra-skills-skill-v4", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-rb-mm-skillmaxxer-3000", "path": "corpus/benign/skills/md-rb-mm-skillmaxxer-3000", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-smoreg-bilanggen-finish-es-latam-audiobook", "path": "corpus/benign/skills/md-smoreg-bilanggen-finish-es-latam-audiobook", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-enforcing-typescript-standards", "path": "corpus/benign/skills/md-neversight-skills-feed-enforcing-typescript-standards", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-the-ai-engineer-ai-engineer-tutorials-veo3-image-prompt", "path": "corpus/benign/skills/md-the-ai-engineer-ai-engineer-tutorials-veo3-image-prompt", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-buildatscale-tv-claude-code-plugins-promo-video", "path": "corpus/benign/skills/md-buildatscale-tv-claude-code-plugins-promo-video", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-johng-openclaw-skills-example-skill", "path": "corpus/benign/skills/md-johng-openclaw-skills-example-skill", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-lowranceworks-dotfiles-ansible-dev", "path": "corpus/benign/skills/md-lowranceworks-dotfiles-ansible-dev", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-personamanagmentlayer-pcl-databricks-expert", "path": "corpus/benign/skills/md-personamanagmentlayer-pcl-databricks-expert", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-jeremylongshore-claude-code-plugins-plus-skills-storybrand-messa", "path": "corpus/benign/skills/md-jeremylongshore-claude-code-plugins-plus-skills-storybrand-messa", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-xorbitsai-xagent-presentation-generator", "path": "corpus/benign/skills/md-xorbitsai-xagent-presentation-generator", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-speniti-neovim-lua-plugin", "path": "corpus/benign/skills/md-speniti-neovim-lua-plugin", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-edwardmonteiro__Aiskillinpractice__skills__optimization__metric_review", "path": "corpus/benign/skills/sk-edwardmonteiro__Aiskillinpractice__skills__optimization__metric_review", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-letta-ai-skills-letta-configuration", "path": "corpus/benign/skills/md-letta-ai-skills-letta-configuration", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-cfoster5-simply-water-app-store-optimization", "path": "corpus/benign/skills/md-cfoster5-simply-water-app-store-optimization", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-thegreatl-ojt-time-tracker-mobile-developer", "path": "corpus/benign/skills/md-thegreatl-ojt-time-tracker-mobile-developer", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-marswang42-orbitos-kickoff", "path": "corpus/benign/skills/md-marswang42-orbitos-kickoff", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-niznik-dev-cruijff-kit-create-meeting-agenda", "path": "corpus/benign/skills/md-niznik-dev-cruijff-kit-create-meeting-agenda", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-openclaw-skills-agent-task-manager", "path": "corpus/benign/skills/md-openclaw-skills-agent-task-manager", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-legacybridge-tech-claude-plugins-memory-recall", "path": "corpus/benign/skills/md-legacybridge-tech-claude-plugins-memory-recall", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-dicklesworthstone-beads-rust-bd-to-br-migration", "path": "corpus/benign/skills/md-dicklesworthstone-beads-rust-bd-to-br-migration", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-robynnai__robynn-claude-cmo__skills__cmo", "path": "corpus/benign/skills/sk-robynnai__robynn-claude-cmo__skills__cmo", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-AsyrafHussin__agent-skills__skills__git-workflow", "path": "corpus/benign/skills/sk-AsyrafHussin__agent-skills__skills__git-workflow", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-pmarashian-cursor-agent-skills-localstorage-patterns", "path": "corpus/benign/skills/md-pmarashian-cursor-agent-skills-localstorage-patterns", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-spillwavesolutions-developing-with-docker-agentic-skill-developi", "path": "corpus/benign/skills/md-spillwavesolutions-developing-with-docker-agentic-skill-developi", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-openclaw-skills-doubao-api-open-tts", "path": "corpus/benign/skills/md-openclaw-skills-doubao-api-open-tts", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-vm0-ai-vm0-skills-zapsign", "path": "corpus/benign/skills/md-vm0-ai-vm0-skills-zapsign", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-jero2rome-compounder-init", "path": "corpus/benign/skills/md-jero2rome-compounder-init", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-khalidelborai-claude-skills-parallel-worktree-orchestrator", "path": "corpus/benign/skills/md-khalidelborai-claude-skills-parallel-worktree-orchestrator", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-marcbadiam-git-check", "path": "corpus/benign/skills/md-marcbadiam-git-check", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-chongdashu__threejs-forest-census__.claude__skills__threejs-builder", "path": "corpus/benign/skills/sk-chongdashu__threejs-forest-census__.claude__skills__threejs-builder", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-cmnemoi-intrusion-debug", "path": "corpus/benign/skills/md-cmnemoi-intrusion-debug", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-antoniolg__agent-skills__skills__cloudflared-tunnel", "path": "corpus/benign/skills/sk-antoniolg__agent-skills__skills__cloudflared-tunnel", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-emaginebr-nnews-nnews-guide", "path": "corpus/benign/skills/md-emaginebr-nnews-nnews-guide", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-sfeir-open-source-sfeir-school-vuejs-test", "path": "corpus/benign/skills/md-sfeir-open-source-sfeir-school-vuejs-test", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-8954sood-overwatch-civilwar-ask", "path": "corpus/benign/skills/md-8954sood-overwatch-civilwar-ask", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-agneym__agneym-claude-marketplace__plugins__explore-with-illustrations__skills__gemini-imagen", "path": "corpus/benign/skills/sk-agneym__agneym-claude-marketplace__plugins__explore-with-illustrations__skills__gemini-imagen", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-tomnagengast__revurb__.claude__skills__codex", "path": "corpus/benign/skills/sk-tomnagengast__revurb__.claude__skills__codex", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-risk-management", "path": "corpus/benign/skills/md-neversight-skills-feed-risk-management", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-victorgpt-vibeusage-backend-mvp-guardrails", "path": "corpus/benign/skills/md-victorgpt-vibeusage-backend-mvp-guardrails", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-benchflow-ai-skillsbench-data-reconciliation", "path": "corpus/benign/skills/md-benchflow-ai-skillsbench-data-reconciliation", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-iamandrewpeters-claude-skills-beaver-builder", "path": "corpus/benign/skills/md-iamandrewpeters-claude-skills-beaver-builder", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-openclaw-skills-headless-vault-cli", "path": "corpus/benign/skills/md-openclaw-skills-headless-vault-cli", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-zwlcoding-skills-ssr-tanstack-strapi", "path": "corpus/benign/skills/md-zwlcoding-skills-ssr-tanstack-strapi", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-roshunsunder-filesift-search-codebase", "path": "corpus/benign/skills/md-roshunsunder-filesift-search-codebase", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-amodkala-dotfiles-idiomatic-rust", "path": "corpus/benign/skills/md-amodkala-dotfiles-idiomatic-rust", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-xiaohongshu-cover-generator", "path": "corpus/benign/skills/md-neversight-skills-feed-xiaohongshu-cover-generator", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-home-assistant-core-integrations", "path": "corpus/benign/skills/md-home-assistant-core-integrations", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-SHAJAR5110__Hackathon-II-phase2__.claude__skills__firebase-specialist", "path": "corpus/benign/skills/sk-SHAJAR5110__Hackathon-II-phase2__.claude__skills__firebase-specialist", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-cloudposse-docs-developing-stacks", "path": "corpus/benign/skills/md-cloudposse-docs-developing-stacks", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-dj02-a-dotfiles-add-triton-to-rayworker", "path": "corpus/benign/skills/md-dj02-a-dotfiles-add-triton-to-rayworker", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-Yeachan-Heo__My-Jogyo__skills__ml-rigor", "path": "corpus/benign/skills/sk-Yeachan-Heo__My-Jogyo__skills__ml-rigor", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-aiskillstore-marketplace-shadcn-aesthetic", "path": "corpus/benign/skills/md-aiskillstore-marketplace-shadcn-aesthetic", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-diet103-claude-code-infrastructure-showcase-route-tester", "path": "corpus/benign/skills/md-diet103-claude-code-infrastructure-showcase-route-tester", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-tahatms12-chargeback-seo-content", "path": "corpus/benign/skills/md-tahatms12-chargeback-seo-content", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-fontezbrooks-react-native-testing-react-native-testing", "path": "corpus/benign/skills/md-fontezbrooks-react-native-testing-react-native-testing", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-inclusionai-areal-add-reward", "path": "corpus/benign/skills/md-inclusionai-areal-add-reward", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-ChrisWiles__claude-code-showcase__.claude__skills__graphql-schema", "path": "corpus/benign/skills/sk-ChrisWiles__claude-code-showcase__.claude__skills__graphql-schema", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-nbarthel__claudy__plugins__rails-workflow__skills__rails-docs-search", "path": "corpus/benign/skills/sk-nbarthel__claudy__plugins__rails-workflow__skills__rails-docs-search", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-discreteds__competition-scout__skills__comp-scout-persist", "path": "corpus/benign/skills/sk-discreteds__competition-scout__skills__comp-scout-persist", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-silbaram-artifact-driven-agent-template", "path": "corpus/benign/skills/md-silbaram-artifact-driven-agent-template", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-zsh2401-vibeacademy-latex-tikz-debug", "path": "corpus/benign/skills/md-zsh2401-vibeacademy-latex-tikz-debug", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-jamie-bitflight-claude-skills-the-rewrite-room", "path": "corpus/benign/skills/md-jamie-bitflight-claude-skills-the-rewrite-room", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-ShareX__ShareX.Avalonia__.ai__skills__create-uploader-plugin", "path": "corpus/benign/skills/sk-ShareX__ShareX.Avalonia__.ai__skills__create-uploader-plugin", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-0xabrar-skills-ios-hig-rn-basics", "path": "corpus/benign/skills/md-0xabrar-skills-ios-hig-rn-basics", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-helixdevelopment-helixagent-excel-variance-analyzer", "path": "corpus/benign/skills/md-helixdevelopment-helixagent-excel-variance-analyzer", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-Goldziher__ai-rulez__internal__builtins__bindings__vite-plus__skills__vite-plus-conventions", "path": "corpus/benign/skills/sk-Goldziher__ai-rulez__internal__builtins__bindings__vite-plus__skills__vite-plus-conventions", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-Azeem-2__final-docusarus__.claude__skills__research-methodology", "path": "corpus/benign/skills/sk-Azeem-2__final-docusarus__.claude__skills__research-methodology", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-rileyhilliard-claude-essentials-refactoring-code", "path": "corpus/benign/skills/md-rileyhilliard-claude-essentials-refactoring-code", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-wcag-audit-perceivable-color-contrast", "path": "corpus/benign/skills/md-neversight-skills-feed-wcag-audit-perceivable-color-contrast", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-darkroomengineering-cc-settings-ask", "path": "corpus/benign/skills/md-darkroomengineering-cc-settings-ask", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-jeremylongshore-claude-code-plugins-plus-skills-skill-adapter-04ee6dc5", "path": "corpus/benign/skills/md-jeremylongshore-claude-code-plugins-plus-skills-skill-adapter-04ee6dc5", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-letta-ai-skills-yelp-search", "path": "corpus/benign/skills/md-letta-ai-skills-yelp-search", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-rohunvora__cool-claude-skills__skills__ai-loading-ux", "path": "corpus/benign/skills/sk-rohunvora__cool-claude-skills__skills__ai-loading-ux", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-jezweb-claude-skills-wordpress-elementor", "path": "corpus/benign/skills/md-jezweb-claude-skills-wordpress-elementor", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-alysonhower-dupcheck-clavix-plan", "path": "corpus/benign/skills/md-alysonhower-dupcheck-clavix-plan", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-sergio-bershadsky-ai-django-dev-unfold", "path": "corpus/benign/skills/md-sergio-bershadsky-ai-django-dev-unfold", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-pixel-process-ug-superkit-agents-email-composer", "path": "corpus/benign/skills/md-pixel-process-ug-superkit-agents-email-composer", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-MUmerRazzaq__claude-code-skills-lab__.claude__skills__prebuilt__browsing-with-playwright", "path": "corpus/benign/skills/sk-MUmerRazzaq__claude-code-skills-lab__.claude__skills__prebuilt__browsing-with-playwright", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-numman-ali-n-skills-zai-cli", "path": "corpus/benign/skills/md-numman-ali-n-skills-zai-cli", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-blueif16-claude-code-with-telegram-tel-start", "path": "corpus/benign/skills/md-blueif16-claude-code-with-telegram-tel-start", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-claudio-mas-solo-cc-migration-vbnet", "path": "corpus/benign/skills/md-claudio-mas-solo-cc-migration-vbnet", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-mkelam-pdflab-skills", "path": "corpus/benign/skills/md-mkelam-pdflab-skills", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-Jaisrinivasan23__CSV-Standalone__.claude__skills__email-design-system", "path": "corpus/benign/skills/sk-Jaisrinivasan23__CSV-Standalone__.claude__skills__email-design-system", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-wordflowlab-agentsdk-pdfmd", "path": "corpus/benign/skills/md-wordflowlab-agentsdk-pdfmd", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-cskiro-claudex-skill-isolation-tester", "path": "corpus/benign/skills/md-cskiro-claudex-skill-isolation-tester", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-luckyegg168-rust-skill-rust-error-handling", "path": "corpus/benign/skills/md-luckyegg168-rust-skill-rust-error-handling", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-tmustier-heypocket-reader", "path": "corpus/benign/skills/md-tmustier-heypocket-reader", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-findall-api", "path": "corpus/benign/skills/md-neversight-skills-feed-findall-api", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-elct9620-claude-ruby-plugin-ri", "path": "corpus/benign/skills/md-elct9620-claude-ruby-plugin-ri", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-leiyang2003-research-bot-public-financial-analysis", "path": "corpus/benign/skills/md-leiyang2003-research-bot-public-financial-analysis", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-jamesprial-claudefiles-vet", "path": "corpus/benign/skills/md-jamesprial-claudefiles-vet", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-cliangdev-specflux-ui-patterns", "path": "corpus/benign/skills/md-cliangdev-specflux-ui-patterns", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-bendrucker-claude-fix", "path": "corpus/benign/skills/md-bendrucker-claude-fix", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-nblog-my-fridajs-example-frida-script-assistant", "path": "corpus/benign/skills/md-nblog-my-fridajs-example-frida-script-assistant", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-ue-too-ue-too-typedoc", "path": "corpus/benign/skills/md-ue-too-ue-too-typedoc", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-jellylala1220-brp-benchmarking-eaai-benchmark-paper", "path": "corpus/benign/skills/md-jellylala1220-brp-benchmarking-eaai-benchmark-paper", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-bbgnsurftech-claude-skills-collection-synthetic-monitoring-setup", "path": "corpus/benign/skills/md-bbgnsurftech-claude-skills-collection-synthetic-monitoring-setup", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-gtmagents-gtm-agents-provider-scorecard", "path": "corpus/benign/skills/md-gtmagents-gtm-agents-provider-scorecard", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-surfinzap-bikkuri-theme-vscode-add-missing-theme-vars", "path": "corpus/benign/skills/md-surfinzap-bikkuri-theme-vscode-add-missing-theme-vars", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-brmbobo-web2podcast-validating-ai-ethics-and-fairness", "path": "corpus/benign/skills/md-brmbobo-web2podcast-validating-ai-ethics-and-fairness", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-takwaratec-mulheres-tecem-amazonia-annals", "path": "corpus/benign/skills/md-takwaratec-mulheres-tecem-amazonia-annals", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-thebushidocollective-han-sip-authentication-security", "path": "corpus/benign/skills/md-thebushidocollective-han-sip-authentication-security", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-se-dev-game-code", "path": "corpus/benign/skills/md-neversight-skills-feed-se-dev-game-code", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-peopleforrester-claude-dotfiles-debugging-assistant", "path": "corpus/benign/skills/md-peopleforrester-claude-dotfiles-debugging-assistant", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-wordpress-php-mcp-schema-skill", "path": "corpus/benign/skills/md-wordpress-php-mcp-schema-skill", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-byteflare-co-magic-switch-deploy", "path": "corpus/benign/skills/md-byteflare-co-magic-switch-deploy", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-xmcp-dev-skills-widget-design", "path": "corpus/benign/skills/md-xmcp-dev-skills-widget-design", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-civitai-civitai-clickup", "path": "corpus/benign/skills/md-civitai-civitai-clickup", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-ahtavarasmus-lightfriend-lightfriend-add-frontend-page", "path": "corpus/benign/skills/md-ahtavarasmus-lightfriend-lightfriend-add-frontend-page", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-openclaw-skills-review-summarizer", "path": "corpus/benign/skills/md-openclaw-skills-review-summarizer", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-raintree-technology-claude-starter-claude-hook-builder", "path": "corpus/benign/skills/md-raintree-technology-claude-starter-claude-hook-builder", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-openclaw-skills-bidclub-ai", "path": "corpus/benign/skills/md-openclaw-skills-bidclub-ai", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-marcos-vinicius-mafei-liferay-obj-sdk-gsd-new-project", "path": "corpus/benign/skills/md-marcos-vinicius-mafei-liferay-obj-sdk-gsd-new-project", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-BlueEventHorizon__Swift-Selena__.claude__skills__xcode-build", "path": "corpus/benign/skills/sk-BlueEventHorizon__Swift-Selena__.claude__skills__xcode-build", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-blencorp-claude-code-kit-tailwindcss", "path": "corpus/benign/skills/md-blencorp-claude-code-kit-tailwindcss", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-hazat-poe-item-search-testing-verification", "path": "corpus/benign/skills/md-hazat-poe-item-search-testing-verification", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-rinti-dotfiles-settings-audit", "path": "corpus/benign/skills/md-rinti-dotfiles-settings-audit", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-noirj0e-tsrpc-ecommerce-admin-example-tsrpc-flow", "path": "corpus/benign/skills/md-noirj0e-tsrpc-ecommerce-admin-example-tsrpc-flow", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-nprbst__speck__plugins__reviewer__skills__pr-review", "path": "corpus/benign/skills/sk-nprbst__speck__plugins__reviewer__skills__pr-review", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-jmerta-codex-skills-docs-sync", "path": "corpus/benign/skills/md-jmerta-codex-skills-docs-sync", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-hacket__AICodingGuide__.claude__skills__internal-comms", "path": "corpus/benign/skills/sk-hacket__AICodingGuide__.claude__skills__internal-comms", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-openclaw-skills-easyverein-api", "path": "corpus/benign/skills/md-openclaw-skills-easyverein-api", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-fierzone-agent-skills-standard-language", "path": "corpus/benign/skills/md-fierzone-agent-skills-standard-language", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-artsy-positron-querying-positron", "path": "corpus/benign/skills/md-artsy-positron-querying-positron", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-guinardelli-sheet-guardian-planning", "path": "corpus/benign/skills/md-guinardelli-sheet-guardian-planning", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-otel-instrumentation", "path": "corpus/benign/skills/md-neversight-skills-feed-otel-instrumentation", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-nguyenhuuca-assessment-test-driven-development", "path": "corpus/benign/skills/md-nguyenhuuca-assessment-test-driven-development", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-aiskillstore-marketplace-workhub", "path": "corpus/benign/skills/md-aiskillstore-marketplace-workhub", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-json-canvas", "path": "corpus/benign/skills/md-neversight-skills-feed-json-canvas", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-imaimai17468-custom-asmr-coding-guidelines", "path": "corpus/benign/skills/md-imaimai17468-custom-asmr-coding-guidelines", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-kubony-openclaw-gcp-setup-gcp-vm-create", "path": "corpus/benign/skills/md-kubony-openclaw-gcp-setup-gcp-vm-create", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-hxk622-tokendance-cosmic-database", "path": "corpus/benign/skills/md-hxk622-tokendance-cosmic-database", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-linear-workflow-manager", "path": "corpus/benign/skills/md-neversight-skills-feed-linear-workflow-manager", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sg-registry-mirror-documented", "path": "corpus/benign/skills/sg-registry-mirror-documented", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-z-soulx-ai-toolkit-note-outline-checklist", "path": "corpus/benign/skills/md-z-soulx-ai-toolkit-note-outline-checklist", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-mikepsinn-disease-eradication-plan-peer-review", "path": "corpus/benign/skills/md-mikepsinn-disease-eradication-plan-peer-review", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-secondsky-claude-skills-mobile-offline-support", "path": "corpus/benign/skills/md-secondsky-claude-skills-mobile-offline-support", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-jmbluhm-b2b-sales-skills-chris-voss-framework", "path": "corpus/benign/skills/md-jmbluhm-b2b-sales-skills-chris-voss-framework", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-kay-ou-claudeskills-md-to-json-parser", "path": "corpus/benign/skills/md-kay-ou-claudeskills-md-to-json-parser", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-44-pixels-chief-of-staff-notification-delivery", "path": "corpus/benign/skills/md-44-pixels-chief-of-staff-notification-delivery", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-infographic-item-creator", "path": "corpus/benign/skills/md-neversight-skills-feed-infographic-item-creator", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-masplett-native-consultant", "path": "corpus/benign/skills/md-masplett-native-consultant", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-zephyrwang6-myskill-topic-collector", "path": "corpus/benign/skills/md-zephyrwang6-myskill-topic-collector", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-ahstn-dotfiles-markdown-converter", "path": "corpus/benign/skills/md-ahstn-dotfiles-markdown-converter", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-inspecting-skills", "path": "corpus/benign/skills/md-neversight-skills-feed-inspecting-skills", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-secondsky-claude-skills-responsive-web-design", "path": "corpus/benign/skills/md-secondsky-claude-skills-responsive-web-design", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-sk-GondaDaikon__tri-ssd__skills__review-tri-ssd", "path": "corpus/benign/skills/sk-GondaDaikon__tri-ssd__skills__review-tri-ssd", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-patniko-skills-meeting-to-issues", "path": "corpus/benign/skills/md-patniko-skills-meeting-to-issues", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-brmbobo-web2podcast-tracking-token-launches", "path": "corpus/benign/skills/md-brmbobo-web2podcast-tracking-token-launches", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-openclaw-skills-obsidian-plugin-dev", "path": "corpus/benign/skills/md-openclaw-skills-obsidian-plugin-dev", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-kuniwak-homebrew-tap-update-homebrew-tap", "path": "corpus/benign/skills/md-kuniwak-homebrew-tap-update-homebrew-tap", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-patrickperes-volcano-agents-va-agente-sm", "path": "corpus/benign/skills/md-patrickperes-volcano-agents-va-agente-sm", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-ydnikolaev-antigravity-factory-hello-world", "path": "corpus/benign/skills/md-ydnikolaev-antigravity-factory-hello-world", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-kishoredr-terraform-drift-explaine", "path": "corpus/benign/skills/md-kishoredr-terraform-drift-explaine", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-gmail-multi-inbox", "path": "corpus/benign/skills/md-neversight-skills-feed-gmail-multi-inbox", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-pinkpixel-dev-sorbet-architecture-patterns", "path": "corpus/benign/skills/md-pinkpixel-dev-sorbet-architecture-patterns", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-visual-hierarchy-refactoring", "path": "corpus/benign/skills/md-neversight-skills-feed-visual-hierarchy-refactoring", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-acidsound-acidapps-screenshot-generator", "path": "corpus/benign/skills/md-acidsound-acidapps-screenshot-generator", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-robbyt-claude-skills-reflect", "path": "corpus/benign/skills/md-robbyt-claude-skills-reflect", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-neversight-skills-feed-codemap", "path": "corpus/benign/skills/md-neversight-skills-feed-codemap", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-noice1909-test-agent-token-fuzzy-search", "path": "corpus/benign/skills/md-noice1909-test-agent-token-fuzzy-search", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-skill-md-gndys-loomai2-ai-provider-integration", "path": "corpus/benign/skills/md-gndys-loomai2-ai-provider-integration", "class": "benign", "surface": ["skills"]}
+{"sample": "ben-mcp-am-codex-mcp-server", "path": "corpus/benign/mcp/am-codex-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-12306-mcp", "path": "corpus/benign/mcp/am-12306-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-chinchillaenterprises-mcp-stripe", "path": "corpus/benign/mcp/am-chinchillaenterprises-mcp-stripe", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-professional-wiki-mediawiki-mcp-server", "path": "corpus/benign/mcp/am-professional-wiki-mediawiki-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-softeria-ms-365-mcp-server", "path": "corpus/benign/mcp/am-softeria-ms-365-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-mobilenext-mobile-mcp", "path": "corpus/benign/mcp/am-mobilenext-mobile-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-velvetmonkey-flywheel-memory", "path": "corpus/benign/mcp/am-velvetmonkey-flywheel-memory", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-ohah-react-native-mcp-server", "path": "corpus/benign/mcp/am-ohah-react-native-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-mistflow-ai-mcp", "path": "corpus/benign/mcp/am-mistflow-ai-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-linktr-ee-arbor-mcp", "path": "corpus/benign/mcp/am-linktr-ee-arbor-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-puppeteer-mcp-server", "path": "corpus/benign/mcp/am-puppeteer-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-staticn0va-wigolo", "path": "corpus/benign/mcp/am-staticn0va-wigolo", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-bitbonsai-mcpvault", "path": "corpus/benign/mcp/am-bitbonsai-mcpvault", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-ue-mcp", "path": "corpus/benign/mcp/am-ue-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-skillsmith-mcp-server", "path": "corpus/benign/mcp/am-skillsmith-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-openephemeris-mcp-server", "path": "corpus/benign/mcp/am-openephemeris-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-codacy-codacy-mcp", "path": "corpus/benign/mcp/am-codacy-codacy-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-wikipedia-mcp", "path": "corpus/benign/mcp/am-wikipedia-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-remotion-mcp", "path": "corpus/benign/mcp/am-remotion-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-eternalai-org-mcp-server", "path": "corpus/benign/mcp/am-eternalai-org-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-automatelab-ai-seo-mcp", "path": "corpus/benign/mcp/am-automatelab-ai-seo-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-nexusforgetools-eu-finance", "path": "corpus/benign/mcp/am-nexusforgetools-eu-finance", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-elliotding-ai-agent-mcp", "path": "corpus/benign/mcp/am-elliotding-ai-agent-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-mapbox-mcp-server", "path": "corpus/benign/mcp/am-mapbox-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-gcp-mcp", "path": "corpus/benign/mcp/am-gcp-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-ttpears-gitlab-mcp-server", "path": "corpus/benign/mcp/am-ttpears-gitlab-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-mui-mcp", "path": "corpus/benign/mcp/am-mui-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-tosspayments-integration-guide-mcp", "path": "corpus/benign/mcp/am-tosspayments-integration-guide-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-mcpbrowser", "path": "corpus/benign/mcp/am-mcpbrowser", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-igniteui-theming", "path": "corpus/benign/mcp/am-igniteui-theming", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-k8ika0s-mcp-tmux", "path": "corpus/benign/mcp/am-k8ika0s-mcp-tmux", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-seldonframe-mcp", "path": "corpus/benign/mcp/am-seldonframe-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-ng-primitives-mcp", "path": "corpus/benign/mcp/am-ng-primitives-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-agent-hansa-mcp", "path": "corpus/benign/mcp/am-agent-hansa-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-sinco-lab-mcp-youtube-transcript", "path": "corpus/benign/mcp/am-sinco-lab-mcp-youtube-transcript", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-markitdown-mcp-npx", "path": "corpus/benign/mcp/am-markitdown-mcp-npx", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-phantom-mcp-server", "path": "corpus/benign/mcp/am-phantom-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-cyanheads-calculator-mcp-server", "path": "corpus/benign/mcp/am-cyanheads-calculator-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-buywhere-mcp-server", "path": "corpus/benign/mcp/am-buywhere-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-narrarium-mcp-server", "path": "corpus/benign/mcp/am-narrarium-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-heroku-mcp-server", "path": "corpus/benign/mcp/am-heroku-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-perplexity-ai-mcp-server", "path": "corpus/benign/mcp/am-perplexity-ai-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-weppy-roblox-mcp", "path": "corpus/benign/mcp/am-weppy-roblox-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-efficient-gitlab-mcp-server", "path": "corpus/benign/mcp/am-efficient-gitlab-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-garrettheath4-sendgrid-mcp", "path": "corpus/benign/mcp/am-garrettheath4-sendgrid-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-npm-search-mcp-server", "path": "corpus/benign/mcp/am-npm-search-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-kosyak-evm-mcp-server", "path": "corpus/benign/mcp/am-kosyak-evm-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-langsmith-mcp-server", "path": "corpus/benign/mcp/am-langsmith-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-structured-world-gitlab-mcp", "path": "corpus/benign/mcp/am-structured-world-gitlab-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-agentmail-mcp", "path": "corpus/benign/mcp/am-agentmail-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-browsermcp-mcp", "path": "corpus/benign/mcp/am-browsermcp-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-ehrocks-fe-mcp-server", "path": "corpus/benign/mcp/am-ehrocks-fe-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-modelcontextprotocol-server-filesystem", "path": "corpus/benign/mcp/am-modelcontextprotocol-server-filesystem", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-octocode-mcp", "path": "corpus/benign/mcp/am-octocode-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-notionhq-notion-mcp-server", "path": "corpus/benign/mcp/am-notionhq-notion-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-sap-ux-fiori-mcp-server", "path": "corpus/benign/mcp/am-sap-ux-fiori-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-kirkdeam-puppeteer-mcp-server", "path": "corpus/benign/mcp/am-kirkdeam-puppeteer-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-winor30-mcp-server-datadog", "path": "corpus/benign/mcp/am-winor30-mcp-server-datadog", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-sveltejs-mcp", "path": "corpus/benign/mcp/am-sveltejs-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-mcp-grafana-npx", "path": "corpus/benign/mcp/am-mcp-grafana-npx", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-modelcontextprotocol-server-github", "path": "corpus/benign/mcp/am-modelcontextprotocol-server-github", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-mcp-server-sqlite", "path": "corpus/benign/mcp/am-mcp-server-sqlite", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-mcp-server-madeonsol", "path": "corpus/benign/mcp/am-mcp-server-madeonsol", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-sbb-mcp", "path": "corpus/benign/mcp/am-sbb-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-socraticode", "path": "corpus/benign/mcp/am-socraticode", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-notprolands-ast-grep-mcp", "path": "corpus/benign/mcp/am-notprolands-ast-grep-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-chrome-devtools-mcp", "path": "corpus/benign/mcp/am-chrome-devtools-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-european-parliament-mcp-server", "path": "corpus/benign/mcp/am-european-parliament-mcp-server", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-just-every-mcp-screenshot-website-fast", "path": "corpus/benign/mcp/am-just-every-mcp-screenshot-website-fast", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-mcp-am-jtalk22-slack-mcp", "path": "corpus/benign/mcp/am-jtalk22-slack-mcp", "class": "benign", "surface": ["mcp"]}
+{"sample": "ben-conn-agiflow-claude-instrument-mcp", "path": "corpus/benign/connector/agiflow-claude-instrument-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-ng-galien-maket-mcp", "path": "corpus/benign/connector/ng-galien-maket-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-doist-todoist-mcp-mcp", "path": "corpus/benign/connector/doist-todoist-mcp-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-tobilg-duckdb-tileserver-mcp", "path": "corpus/benign/connector/tobilg-duckdb-tileserver-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-lowtidebuild-public-equity-research-mcp", "path": "corpus/benign/connector/lowtidebuild-public-equity-research-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-lucy971326-edith-mcp", "path": "corpus/benign/connector/lucy971326-edith-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-haru-redmine-ai-helper-mcp", "path": "corpus/benign/connector/haru-redmine-ai-helper-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-superamped-ai-marketing-skills-mcp", "path": "corpus/benign/connector/superamped-ai-marketing-skills-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-hydai-ff14-tw-mcp", "path": "corpus/benign/connector/hydai-ff14-tw-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-paypal-ai-toolkit-mcp", "path": "corpus/benign/connector/paypal-ai-toolkit-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-kotlin-kotlinx-rpc-mcp", "path": "corpus/benign/connector/kotlin-kotlinx-rpc-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-paldom-databricks-apps-fastapi-starter-mcp", "path": "corpus/benign/connector/paldom-databricks-apps-fastapi-starter-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-replicate-skills-mcp", "path": "corpus/benign/connector/replicate-skills-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-ryoppippi-chatgpt-heatmap-mcp", "path": "corpus/benign/connector/ryoppippi-chatgpt-heatmap-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-chef-chef-mcp", "path": "corpus/benign/connector/chef-chef-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-faw01-create-mf2-app-mcp", "path": "corpus/benign/connector/faw01-create-mf2-app-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-navikt-sykepengesoknad-frontend-mcp", "path": "corpus/benign/connector/navikt-sykepengesoknad-frontend-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-jakemannix-yaucca-mcp", "path": "corpus/benign/connector/jakemannix-yaucca-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-duhu2000-financial-services-qcc-mcp", "path": "corpus/benign/connector/duhu2000-financial-services-qcc-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-spacehendrix-clauder-mcp", "path": "corpus/benign/connector/spacehendrix-clauder-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-johndpope-vasa-1-hack-mcp", "path": "corpus/benign/connector/johndpope-vasa-1-hack-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-xh-hoist-react-mcp", "path": "corpus/benign/connector/xh-hoist-react-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-georgekhananaev-claude-skills-vault-mcp", "path": "corpus/benign/connector/georgekhananaev-claude-skills-vault-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-motleyai-motleycrew-mcp", "path": "corpus/benign/connector/motleyai-motleycrew-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-taurheim-scrobblify-mcp", "path": "corpus/benign/connector/taurheim-scrobblify-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-bradtraversy-devstash-mcp", "path": "corpus/benign/connector/bradtraversy-devstash-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-writer-cerebro-mcp", "path": "corpus/benign/connector/writer-cerebro-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-markifact-markifact-mcp-mcp", "path": "corpus/benign/connector/markifact-markifact-mcp-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-oneprojectorg-common-mcp", "path": "corpus/benign/connector/oneprojectorg-common-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-catalystbyzoho-agent-skills-mcp", "path": "corpus/benign/connector/catalystbyzoho-agent-skills-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-ernestoespinosajr-claude-context-engine-mcp", "path": "corpus/benign/connector/ernestoespinosajr-claude-context-engine-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-opendcai-dataflow-webui-mcp", "path": "corpus/benign/connector/opendcai-dataflow-webui-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-pioneershub-pyconde-talks-mcp", "path": "corpus/benign/connector/pioneershub-pyconde-talks-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-hzrd149-nostrudel-mcp", "path": "corpus/benign/connector/hzrd149-nostrudel-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-betagouv-anssi-portail-mcp", "path": "corpus/benign/connector/betagouv-anssi-portail-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-akiojin-unity-editor-mcp-mcp", "path": "corpus/benign/connector/akiojin-unity-editor-mcp-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-akiojin-unity-mcp-server-mcp", "path": "corpus/benign/connector/akiojin-unity-mcp-server-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-phantom-phantom-agent-kit-mcp", "path": "corpus/benign/connector/phantom-phantom-agent-kit-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-growerp-growerp-mcp", "path": "corpus/benign/connector/growerp-growerp-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-conn-khan-wonder-blocks-mcp", "path": "corpus/benign/connector/khan-wonder-blocks-mcp", "class": "benign", "surface": ["connector"]}
+{"sample": "ben-hook-jordanhubbard-nanolang-settings", "path": "corpus/benign/hooks/jordanhubbard-nanolang-settings", "class": "benign", "surface": ["hooks"]}
+{"sample": "ben-hook-bh213-hx-multianim-settings", "path": "corpus/benign/hooks/bh213-hx-multianim-settings", "class": "benign", "surface": ["hooks", "permission"]}
+{"sample": "ben-hook-commercetools-ui-kit-settings", "path": "corpus/benign/hooks/commercetools-ui-kit-settings", "class": "benign", "surface": ["hooks"]}
+{"sample": "ben-hook-jiyuan-tan-causalsmith-settings", "path": "corpus/benign/hooks/jiyuan-tan-causalsmith-settings", "class": "benign", "surface": ["hooks", "permission"]}
+{"sample": "ben-hook-listener-he-java-harness-agent-settings", "path": "corpus/benign/hooks/listener-he-java-harness-agent-settings", "class": "benign", "surface": ["hooks", "permission"]}
+{"sample": "ben-hook-m-xlsea-ruoyi-plus-soybean-settings", "path": "corpus/benign/hooks/m-xlsea-ruoyi-plus-soybean-settings", "class": "benign", "surface": ["hooks", "permission"]}
+{"sample": "ben-hook-willdady-platypus-settings", "path": "corpus/benign/hooks/willdady-platypus-settings", "class": "benign", "surface": ["hooks"]}
+{"sample": "ben-hook-opencue-gitguardex-settings", "path": "corpus/benign/hooks/opencue-gitguardex-settings", "class": "benign", "surface": ["hooks"]}
+{"sample": "ben-hook-jlevy-rust-porting-playbook-settings", "path": "corpus/benign/hooks/jlevy-rust-porting-playbook-settings", "class": "benign", "surface": ["hooks"]}
+{"sample": "ben-hook-daniloc-mnemion-settings", "path": "corpus/benign/hooks/daniloc-mnemion-settings", "class": "benign", "surface": ["hooks"]}
+{"sample": "ben-hook-indexedlabs-pydantic-ai-gepa-settings", "path": "corpus/benign/hooks/indexedlabs-pydantic-ai-gepa-settings", "class": "benign", "surface": ["hooks"]}
+{"sample": "ben-hook-10legs-freelance-developer-harness-settings", "path": "corpus/benign/hooks/10legs-freelance-developer-harness-settings", "class": "benign", "surface": ["hooks", "permission"]}
+{"sample": "ben-hook-unclejobs-ai-blog-posting-auto-settings", "path": "corpus/benign/hooks/unclejobs-ai-blog-posting-auto-settings", "class": "benign", "surface": ["hooks", "permission"]}
+{"sample": "ben-hook-julep-ai-steadytext-settings", "path": "corpus/benign/hooks/julep-ai-steadytext-settings", "class": "benign", "surface": ["hooks", "permission"]}
+{"sample": "ben-hook-shanraisshan-codex-cli-best-practice-settings", "path": "corpus/benign/hooks/shanraisshan-codex-cli-best-practice-settings", "class": "benign", "surface": ["hooks", "permission"]}
+{"sample": "ben-hook-tomdwipo-claude-soul-settings", "path": "corpus/benign/hooks/tomdwipo-claude-soul-settings", "class": "benign", "surface": ["hooks"]}
+{"sample": "ben-hook-daniloc-coherence-settings", "path": "corpus/benign/hooks/daniloc-coherence-settings", "class": "benign", "surface": ["hooks"]}
+{"sample": "ben-hook-mrwaip-svelte-rs-settings", "path": "corpus/benign/hooks/mrwaip-svelte-rs-settings", "class": "benign", "surface": ["hooks", "permission"]}
+{"sample": "ben-hook-proffesor-for-testing-agentic-qe-settings", "path": "corpus/benign/hooks/proffesor-for-testing-agentic-qe-settings", "class": "benign", "surface": ["hooks", "permission"]}
+{"sample": "ben-hook-spacehendrix-clauder-settings", "path": "corpus/benign/hooks/spacehendrix-clauder-settings", "class": "benign", "surface": ["hooks", "permission"]}
+{"sample": "ben-hook-mrocklin-dask-array-settings", "path": "corpus/benign/hooks/mrocklin-dask-array-settings", "class": "benign", "surface": ["hooks"]}
+{"sample": "ben-hook-ianscott313-miniverse-settings", "path": "corpus/benign/hooks/ianscott313-miniverse-settings", "class": "benign", "surface": ["hooks"]}
+{"sample": "ben-hook-drona23-claude-token-efficient-settings", "path": "corpus/benign/hooks/drona23-claude-token-efficient-settings", "class": "benign", "surface": ["hooks"]}
+{"sample": "ben-hook-gunnarguy-openintelligence-settings", "path": "corpus/benign/hooks/gunnarguy-openintelligence-settings", "class": "benign", "surface": ["hooks"]}
+{"sample": "ben-hook-aizenvoltprime-damocles-settings", "path": "corpus/benign/hooks/aizenvoltprime-damocles-settings", "class": "benign", "surface": ["hooks", "permission"]}
+{"sample": "ben-hook-carlos-dominguez-faber-claude-code-tune-kit-settings", "path": "corpus/benign/hooks/carlos-dominguez-faber-claude-code-tune-kit-settings", "class": "benign", "surface": ["hooks", "permission"]}
+{"sample": "ben-hook-kube-logging-logging-operator-settings", "path": "corpus/benign/hooks/kube-logging-logging-operator-settings", "class": "benign", "surface": ["hooks", "permission"]}
+{"sample": "ben-hook-samply-blaze-settings", "path": "corpus/benign/hooks/samply-blaze-settings", "class": "benign", "surface": ["hooks", "permission"]}
+{"sample": "ben-hook-outfitter-dev-blz-settings", "path": "corpus/benign/hooks/outfitter-dev-blz-settings", "class": "benign", "surface": ["hooks", "permission"]}
+{"sample": "ben-hook-kennyjpowers-claude-flow-settings", "path": "corpus/benign/hooks/kennyjpowers-claude-flow-settings", "class": "benign", "surface": ["hooks", "permission"]}
+{"sample": "ben-hook-cyberash-dev-veche-settings", "path": "corpus/benign/hooks/cyberash-dev-veche-settings", "class": "benign", "surface": ["hooks"]}
+{"sample": "ben-hook-xdamman-replaylastgoal-settings", "path": "corpus/benign/hooks/xdamman-replaylastgoal-settings", "class": "benign", "surface": ["hooks"]}
+{"sample": "ben-hook-refcell-claude-settings", "path": "corpus/benign/hooks/refcell-claude-settings", "class": "benign", "surface": ["hooks"]}
+{"sample": "ben-hook-dwmkerr-dotfiles-settings", "path": "corpus/benign/hooks/dwmkerr-dotfiles-settings", "class": "benign", "surface": ["hooks", "permission"]}
+{"sample": "ben-hook-nwiizo-cargo-coupling-settings", "path": "corpus/benign/hooks/nwiizo-cargo-coupling-settings", "class": "benign", "surface": ["hooks"]}
+{"sample": "ben-hook-caldis-react-zmage-settings", "path": "corpus/benign/hooks/caldis-react-zmage-settings", "class": "benign", "surface": ["hooks"]}
+{"sample": "ben-hook-maxwell2732-claudecode-research-harness-workflow-settings", "path": "corpus/benign/hooks/maxwell2732-claudecode-research-harness-workflow-settings", "class": "benign", "surface": ["hooks", "permission"]}
+{"sample": "ben-hook-fc-fuz-claude-code-governance-settings", "path": "corpus/benign/hooks/fc-fuz-claude-code-governance-settings", "class": "benign", "surface": ["hooks", "permission"]}
+{"sample": "ben-hook-tonyc726-china-administrative-division-settings", "path": "corpus/benign/hooks/tonyc726-china-administrative-division-settings", "class": "benign", "surface": ["hooks", "permission"]}
+{"sample": "ben-hook-kimyx0207-meta-kim-settings", "path": "corpus/benign/hooks/kimyx0207-meta-kim-settings", "class": "benign", "surface": ["hooks", "permission"]}
+{"sample": "ben-perm-alumnium-hq-alumnium-settings", "path": "corpus/benign/permission/alumnium-hq-alumnium-settings", "class": "benign", "surface": ["permission"]}
+{"sample": "ben-perm-ljw1004-oneplay-settings", "path": "corpus/benign/permission/ljw1004-oneplay-settings", "class": "benign", "surface": ["permission"]}
+{"sample": "ben-perm-vasylenko-bear-notes-mcp-settings", "path": "corpus/benign/permission/vasylenko-bear-notes-mcp-settings", "class": "benign", "surface": ["permission"]}
+{"sample": "ben-perm-drobins25-craft-settings", "path": "corpus/benign/permission/drobins25-craft-settings", "class": "benign", "surface": ["permission"]}
+{"sample": "ben-perm-mercadopago-mercadopago-claude-marketplace-settings", "path": "corpus/benign/permission/mercadopago-mercadopago-claude-marketplace-settings", "class": "benign", "surface": ["permission"]}
+{"sample": "ben-perm-meta-secret-meta-secret-core-settings", "path": "corpus/benign/permission/meta-secret-meta-secret-core-settings", "class": "benign", "surface": ["permission"]}
+{"sample": "ben-perm-ivanmurzak-unity-mcp-settings", "path": "corpus/benign/permission/ivanmurzak-unity-mcp-settings", "class": "benign", "surface": ["permission"]}
+{"sample": "ben-perm-midcodehub-miaocut-settings", "path": "corpus/benign/permission/midcodehub-miaocut-settings", "class": "benign", "surface": ["permission"]}
+{"sample": "ben-perm-kklimuk-docx-cli-settings", "path": "corpus/benign/permission/kklimuk-docx-cli-settings", "class": "benign", "surface": ["permission"]}
+{"sample": "ben-perm-etspaceman-scalacheck-faker-settings", "path": "corpus/benign/permission/etspaceman-scalacheck-faker-settings", "class": "benign", "surface": ["permission"]}
+{"sample": "ben-perm-api-platform-demo-settings", "path": "corpus/benign/permission/api-platform-demo-settings", "class": "benign", "surface": ["permission"]}
+{"sample": "ben-perm-coreycole-datastarui-settings", "path": "corpus/benign/permission/coreycole-datastarui-settings", "class": "benign", "surface": ["permission"]}
+{"sample": "ben-perm-midt-bg-sigma-settings", "path": "corpus/benign/permission/midt-bg-sigma-settings", "class": "benign", "surface": ["permission"]}
+{"sample": "ben-perm-rlee203-cardputeros-settings", "path": "corpus/benign/permission/rlee203-cardputeros-settings", "class": "benign", "surface": ["permission"]}
+{"sample": "ben-perm-runpod-flash-settings", "path": "corpus/benign/permission/runpod-flash-settings", "class": "benign", "surface": ["permission"]}
+{"sample": "ben-perm-datadog-system-tests-settings", "path": "corpus/benign/permission/datadog-system-tests-settings", "class": "benign", "surface": ["permission"]}
+{"sample": "ben-perm-jdillon-vscode-beads-settings", "path": "corpus/benign/permission/jdillon-vscode-beads-settings", "class": "benign", "surface": ["permission"]}
+{"sample": "ben-perm-dynatrace-oss-dynatrace-snowflake-observability-agent-settin", "path": "corpus/benign/permission/dynatrace-oss-dynatrace-snowflake-observability-agent-settin", "class": "benign", "surface": ["permission"]}
+{"sample": "ben-perm-nixrajput-portfolio-nextjs-settings", "path": "corpus/benign/permission/nixrajput-portfolio-nextjs-settings", "class": "benign", "surface": ["permission"]}
+{"sample": "ben-perm-nextgenpowertoys-rtf-markdown-editor-settings", "path": "corpus/benign/permission/nextgenpowertoys-rtf-markdown-editor-settings", "class": "benign", "surface": ["permission"]}

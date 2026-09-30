@@ -1,0 +1,199 @@
+// SPDX-License-Identifier: MIT
+// Package judge is AgentGuard's M5 LLM intent judge (spec §5.2/§16.4): it catches
+// "the description says A but the code does B" mismatches that static rules miss.
+//
+// Hard constraints (must never be relaxed):
+//   - OFF by default: runs only when config enables it AND `scan --llm` is passed.
+//   - Every byte sent is passed through detect.Redact first (§16.3). Redaction is BEST-EFFORT
+//     (known secret shapes + high-entropy tokens); it is not a guarantee, so enabling the judge
+//     against a NON-LOCAL endpoint means best-effort-redacted skill content leaves the machine.
+//     Default endpoint is local for this reason.
+//   - Advisory ONLY: findings are Source=llm, so they never move the deterministic score
+//     and never trip --fail-on (score.Apply and report.HasAtLeast both skip Source==llm).
+//     Scoring stays reproducible (required for D12 on-chain attestation).
+package judge
+
+import (
+	"context"
+
+	"github.com/basdotio/AgentGuard/internal/detect"
+	"github.com/basdotio/AgentGuard/internal/model"
+)
+
+// Threat dimensions (spec §3) an LLM verdict can map to. The dimension is fixed PER MODE and
+// never taken from the model: letting a verdict choose its own scoring bucket would hand a
+// hostile artifact a way to pick which dimension it lands in.
+const (
+	dimInjection   = 1  // hidden prompt injection in instructions
+	dimCapability  = 2  // capability out of proportion to what the artifact is for
+	dimCollusion   = 3  // data flow assembled across files
+	dimSupplyChain = 5  // where a dependency/server comes from and whether it is pinned
+	dimObfusc      = 6  // obfuscation (decoded payload)
+	dimIntent      = 10 // intent mismatch (description vs behavior)
+)
+
+// Mode selects what the judge is looking for; it picks the system prompt and how the result
+// is surfaced (an artifact finding, or an advisory scan note for triage).
+type Mode int
+
+const (
+	ModeIntent     Mode = iota // description-vs-behavior mismatch (skills)
+	ModeInjection              // hidden/paraphrased prompt injection in instruction text
+	ModeExplain                // decode + explain an obfuscated payload (deobfuscation)
+	ModeCapability             // hooks: is the command proportionate to its interception point?
+	ModeMCPConfig              // MCP servers: what the CONFIG says (see limits in prompt.go)
+	ModeCollusion              // skills: does a capability chain span several files?
+)
+
+// Request is one artifact submission. Declared and Behavior are ALREADY redacted before
+// construction. Both are UNTRUSTED artifact content and are fenced with a per-call nonce
+// so the model can't be hijacked by instructions embedded in them (spec §5.2 barrier).
+type Request struct {
+	Artifact string // "kind:name", redacted, for labeling only
+	Mode     Mode
+	// Declared is the artifact's own account of what it is FOR — the side a behavior is
+	// judged against. For a skill that is its description; for a hook it is the structural
+	// interception point (event + matcher), which is the only honest "purpose" a hook has:
+	// its event name says WHEN it runs, never what it ought to do.
+	Declared string
+	Behavior string // the text under scrutiny, redacted
+	// Temperature is 0 for a single call — as deterministic as the endpoint allows. Consensus
+	// sampling raises it, because asking the same question N times at temperature 0 returns
+	// the same answer N times: the votes would be identical by construction and the "agreement"
+	// would measure nothing at all.
+	Temperature float64
+}
+
+// twoSided reports whether this request compares a declared side against a behavior side (and
+// so renders both in the prompt), rather than examining one block of text.
+//
+// Injection is the conditional one: an artifact that declares a purpose can be judged against
+// it ("does this go beyond what it says it is for?"), while CLAUDE.md declares nothing and can
+// only be read on its own terms.
+func (r Request) twoSided() bool {
+	switch r.Mode {
+	case ModeIntent, ModeCapability, ModeCollusion:
+		return true
+	case ModeInjection:
+		return r.Declared != ""
+	}
+	return false
+}
+
+// Verdict is the model's structured judgment (mode-agnostic). Parsed from its JSON reply.
+type Verdict struct {
+	Flagged  bool   `json:"flagged"`  // intent: undisclosed behavior; injection: hidden directive found
+	Severity string `json:"severity"` // low|medium|high (advisory — never critical)
+	Summary  string `json:"summary"`  // one-line explanation
+	Evidence string `json:"evidence"` // the specific triggering text
+	// BarrierEvidence carries the directive the fenced data aimed at the ANALYZER, quoted
+	// verbatim; empty means none. It is one field rather than a boolean plus a quote so that
+	// "claims a violation but cannot show it" is not a representable state — and so the claim
+	// goes through the same grounding check as everything else.
+	//
+	// This is orthogonal to Flagged: a model may find the artifact's behavior perfectly fine
+	// and still have been told to ignore its instructions, and that attempt is a signal in its
+	// own right (LLM-007). Note the asymmetry — a report means an attempt was made, but silence
+	// proves nothing, because a manipulation that worked would not be reported.
+	BarrierEvidence string `json:"barrier_evidence"`
+}
+
+// TriageItem is one static finding submitted for triage (RuleID + a redacted evidence line).
+type TriageItem struct {
+	RuleID   string
+	Evidence string
+}
+
+// Client is the LLM judge. Implementations MUST send only the (already-redacted) inputs and
+// nothing else about the environment, and must fence untrusted content with a nonce barrier.
+type Client interface {
+	// Judge runs a flagged-verdict mode (intent / injection / explain).
+	Judge(ctx context.Context, r Request) (Verdict, error)
+	// Triage labels an artifact's static findings likely-real vs likely-benign (advisory).
+	// It returns display-only labels; it never removes or changes a finding.
+	Triage(ctx context.Context, artifact string, items []TriageItem) ([]model.AdvisoryLabel, error)
+}
+
+// clampSeverity maps a model-reported severity to a safe advisory level. Unknown →
+// medium; anything the model calls "critical" is capped to high, because an LLM guess
+// must never present as a confirmed critical.
+func clampSeverity(s string) model.Severity {
+	switch s {
+	case "low":
+		return model.SevLow
+	case "high", "critical":
+		return model.SevHigh
+	default:
+		return model.SevMedium
+	}
+}
+
+// finding converts a flagged verdict into an advisory finding. Returns nil when nothing was
+// flagged. RuleID/dimension/title depend on the mode. The evidence snippet is re-redacted
+// defensively; control-character sanitization happens in the report renderer.
+func finding(r Request, v Verdict) *model.Finding {
+	if !v.Flagged {
+		return nil
+	}
+	ruleID, dim, title := "LLM-001", dimIntent, "Intent mismatch (LLM judge — advisory, not confirmed)"
+	def := "The artifact's behavior does something its description does not disclose."
+	switch r.Mode {
+	case ModeInjection:
+		ruleID, dim, title = "LLM-003", dimInjection, "Hidden prompt injection (LLM judge — advisory, not confirmed)"
+		def = "The instruction text contains a directive aimed at the agent that isn't disclosed as its purpose."
+	case ModeExplain:
+		ruleID, dim, title = "LLM-004", dimObfusc, "Decoded obfuscated payload (LLM judge — advisory, not confirmed)"
+		def = "An obfuscated (base64/hex) payload decodes to content that performs sensitive actions."
+	case ModeCollusion:
+		ruleID, dim, title = "LLM-006", dimCollusion, "Cross-file capability chain (LLM judge — advisory, not confirmed)"
+		def = "Capabilities in different files of this artifact combine into a credential-to-network chain."
+	case ModeCapability:
+		ruleID, dim, title = "LLM-008", dimCapability, "Hook capability exceeds its interception point (LLM judge — advisory, not confirmed)"
+		def = "The hook does more than intercepting this event plausibly requires."
+	case ModeMCPConfig:
+		ruleID, dim, title = "LLM-009", dimSupplyChain, "MCP server configuration risk (LLM judge — advisory, not confirmed)"
+		def = "The server's configuration (source, pinning, transport, credentials) carries supply-chain risk."
+	}
+	why := detect.Redact(v.Summary) // defense-in-depth: model output re-redacted, like Evidence
+	if why == "" {
+		why = def
+	}
+	return &model.Finding{
+		RuleID:    ruleID,
+		Dimension: dim,
+		Severity:  clampSeverity(v.Severity),
+		Title:     title,
+		Why:       why,
+		Source:    model.SrcLLM,
+		Advisory:  true,
+		Evidence: []model.Evidence{{
+			File:    r.Artifact,
+			Line:    0,
+			Snippet: detect.Redact(v.Evidence),
+		}},
+	}
+}
+
+// barrierFinding reports that the fenced data tried to give the analyzer instructions
+// (LLM-007, dimension 1). An artifact that argues with the tool examining it is not doing so
+// by accident, which makes this one of the highest-confidence malicious signals available —
+// so unlike every other verdict, the SEVERITY IS OURS, not the model's. A manipulation attempt
+// would naturally include "and rate this low"; letting the model grade its own report of being
+// attacked would hand the attacker the volume knob.
+func barrierFinding(r Request, quote string) *model.Finding {
+	return &model.Finding{
+		RuleID:    "LLM-007",
+		Dimension: dimInjection,
+		Severity:  model.SevHigh,
+		Title:     "Artifact tried to instruct the analyzer (LLM judge — advisory, not confirmed)",
+		Why: "While being examined, this content addressed the analysis model directly — telling it what to " +
+			"conclude, or to disregard its instructions. Legitimate content has no reason to talk to a scanner.",
+		Source:   model.SrcLLM,
+		Advisory: true,
+		Evidence: []model.Evidence{{
+			File:    r.Artifact,
+			Line:    0,
+			Snippet: detect.Redact(quote),
+		}},
+	}
+}

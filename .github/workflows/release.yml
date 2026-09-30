@@ -1,0 +1,135 @@
+# SPDX-License-Identifier: MIT
+# Publishes a GitHub Release when a version tag is pushed:
+#
+#     git tag -a v0.2.0 -m "v0.2.0" && git push origin v0.2.0
+#
+# Artifacts are the RAW static binaries from `make dist` plus SHA256SUMS.txt, so the
+# documented install is a curl + chmod with a verifiable checksum. Nothing here re-derives
+# the build: the Makefile owns the target list, the ldflags and the checksums, so a release
+# is reproducible from a maintainer's laptop with `make dist`.
+name: release
+on:
+  push:
+    tags: ['v*']
+  # Lets a maintainer build and inspect the artifacts WITHOUT cutting a tag. A tag is
+  # permanent and a release is public, so the dry run has to exist somewhere other than
+  # "push a tag and see"; the release step below stays gated on the tag.
+  workflow_dispatch:
+
+permissions:
+  contents: write # required to create the release and upload assets
+  id-token: write # npm --provenance signs the packages with this workflow's identity
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Unshallow: the Makefile stamps the version via `git describe --tags`, which
+          # reports a bare commit on the default shallow clone.
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      # Publishing to npm needs a registry-scoped Node. node-version is not the runtime the
+      # package uses — the launcher only spawns the static binary — it is what runs `npm publish`.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      # The gate runs here too, not only on main: a tag can point at any commit, and an
+      # unverified binary is exactly what this tool tells its users not to run.
+      - name: vet
+        run: go vet ./...
+      - name: test
+        run: go test -race ./...
+
+      - name: cross-compile + checksums
+        run: make dist
+
+      # Tag runs only: on a workflow_dispatch GITHUB_REF_NAME is the BRANCH name, so this
+      # check would compare a version against "feat/whatever" and always fail. Gating it is
+      # not weakening the release gate — the release step below is gated on the same condition.
+      - name: verify the stamped version matches the tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -euo pipefail
+          got=$(./dist/aguard-linux-amd64 version | awk '{print $2}')
+          if [ "$got" != "${GITHUB_REF_NAME}" ]; then
+            echo "binary reports '$got' but the tag is '${GITHUB_REF_NAME}'" >&2
+            exit 1
+          fi
+          echo "version ok: $got"
+
+      # Packages the binaries `make dist` just produced — it does not rebuild them, so what npm
+      # installs is byte-for-byte what the release page lists and SHA256SUMS.txt describes.
+      - name: lay out the npm packages
+        run: make npm-dist
+
+      # `npm pack` on every run, tagged or not: it is what catches a lost executable bit or an
+      # unsubstituted template placeholder, and it costs nothing on a dry run.
+      - name: pack the npm packages
+        run: |
+          set -euo pipefail
+          for d in dist/npm/*/; do (cd "$d" && npm pack --silent >/dev/null); done
+          ls -l dist/npm/*/*.tgz
+
+      # Available on every run, tagged or not — this is what makes workflow_dispatch a real
+      # dry run rather than a build that throws its output away.
+      - name: upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: aguard-dist
+          path: dist/
+
+      # npm goes BEFORE the GitHub release, because npm is the half that cannot be redone: a
+      # version can never be republished there, while `gh release create` can be deleted and
+      # re-run. Publishing first means a failure here leaves no public release announcing
+      # artifacts that npm does not have.
+      #
+      # The platform packages go first and the launcher last: the launcher pins them as exact
+      # optionalDependencies, so publishing it first leaves a window where `npm i` resolves a
+      # launcher whose binary does not exist yet.
+      #
+      # Each package is skipped if that exact version is already on the registry, which is what
+      # makes a re-run possible at all. Without it, a partial publish (expired token, registry
+      # 5xx) could only be recovered by cutting a new version tag: the re-run would abort on the
+      # first package with "cannot publish over the previously published versions".
+      #
+      # --provenance: npm signs each package with this workflow's identity and the commit it built
+      # from, verifiable with `npm audit signatures`. It requires a public repository whose URL
+      # matches package.json's `repository` field — both true here.
+      - name: publish to npm
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          publish() {
+            local dir="$1" spec
+            spec="$(node -p "const p=require('./$dir/package.json');p.name+'@'+p.version")"
+            if npm view "$spec" version >/dev/null 2>&1; then
+              echo "already published, skipping: $spec"
+              return 0
+            fi
+            echo "publishing $spec"
+            (cd "$dir" && npm publish --access public --provenance)
+          }
+          for d in dist/npm/*/; do
+            case "$d" in */launcher/) continue ;; esac
+            publish "${d%/}"
+          done
+          publish dist/npm/launcher
+
+      - name: create release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes \
+            --verify-tag \
+            dist/aguard-* dist/SHA256SUMS.txt

@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: MIT
+# Keeps the embedded reputation allowlist in step with the official marketplace.
+#
+# An allowlist entry is keyed by canonical hash, so it expires every time upstream ships a
+# commit. hack/reputation-refresh renews an entry ONLY when the new commit produces the same
+# finding fingerprint the human review covered; a changed set makes the tool exit 1 with the
+# diff, and this job goes red — that red is the request for a new review, not a flake.
+#
+# Weekly, plus on demand. The result is a pull request, never a direct push: the JSON feeds
+# the score, so its changes go through review like any other scoring change.
+name: reputation-refresh
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Mondays 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - name: build
+        run: CGO_ENABLED=0 go build -o bin/aguard ./cmd/aguard
+      - name: renew entries whose finding set is unchanged
+        run: go run ./hack/reputation-refresh -aguard bin/aguard -write
+      - name: the renewed list still passes its own tests
+        run: go test ./internal/reputation/ ./hack/reputation-refresh/
+      - name: open a pull request when something moved
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: chore/reputation-refresh
+          title: 'reputation: renew allowlist entries at new marketplace pins'
+          commit-message: 'reputation: renew allowlist entries at new marketplace pins'
+          body: |
+            `hack/reputation-refresh` found marketplace pins that moved without changing the
+            finding fingerprint the recorded review covers, and renewed the hash/sha/version
+            of those entries. Nothing else changed. The review text and date are unchanged
+            because the set of findings it explains is unchanged.
+
+            If this job went red instead, the fingerprint changed: read the diff in the job
+            log, review the new version, and update `reason`/`reviewed`/`findings` by hand.
+          delete-branch: true

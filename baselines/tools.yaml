@@ -1,0 +1,136 @@
+# SPDX-License-Identifier: MIT
+# The scanners baselines/ measures, and the facts about each that change either how its numbers
+# must be read or how the run is allowed to execute.
+#
+# This file is not a scoreboard and holds no results. It holds the things that, left implicit,
+# turn a measurement into a misleading one.
+#
+# `uploads_samples` — does sample content leave this machine. NOT a licence question: every one
+#   of the 3,539 samples is permissively licensed (the corpus's own `make validate` enforces
+#   that) and the corpus repository is public, so anything handed to a vendor could be cloned
+#   instead. It is recorded because a reader is entitled to know, and because it is what decides
+#   whether a run needs an account and a terms-of-service reading first.
+#
+# `executes_scanned_content` — does the tool run what it scans. aguard's invariant #1 forbids
+#   this for aguard; it says nothing about anybody else's tool. Pointing a scanner that executes
+#   MCP configs at 300 malicious samples executes 300 payloads, so a tool marked true here does
+#   not run without container isolation, and no-container is a refusal rather than a downgrade.
+#
+# `provisional` — do this tool's figures carry the standing caveat. True for every tool that is
+#   not ours: agent-artifact-corpus is public and its guide invites any vendor to measure
+#   itself, so until they do, our number is the best available guess and not theirs.
+#
+# `surfaces_declared_uncovered` — per-surface statements that this tool reads nothing on a load
+#   path. Written only after a run trips the tripwire, with the evidence, because the whole
+#   purpose is to distinguish "we staged it where the tool does not look" from "the tool does not
+#   cover this". A declaration written in advance is a guess with a gate's authority.
+
+tools:
+  - id: aguard
+    name: AgentGuard
+    repo: https://github.com/basdotio/AgentGuard
+    uploads_samples: false
+    uploads_samples_basis: >-
+      invariant #1, enforced by tests in this repository: aguard never connects out except for
+      the explicitly opted-in LLM judge, which a baseline run does not enable unless
+      -aguard-extra-args passes --llm — and then run.yaml replaces this line with one written
+      for that run (P-021).
+    executes_scanned_content: false
+    # Our own tool. There is no vendor to wait for, so its figures are not provisional — and a
+    # caveat printed on every line is a caveat nobody reads.
+    provisional: false
+    # The gate's own default, so the measured behaviour is the shipped behaviour.
+    threshold: high
+    surfaces_declared_uncovered: {}
+
+  - id: ccaudit
+    name: cc-audit
+    repo: https://github.com/ryo-ebata/cc-audit
+    # UNPROVEN, and the run is what proves it. Reading v3.23.9's source found exactly one
+    # outbound path — `--report-fp`, which shells out to `gh issue create` against the tool's own
+    # repository — and P-017 never passes that flag. But nobody has read all 300 KB of it, and a
+    # `--no-telemetry` flag existing at all says the default is not total silence. So this value
+    # is what the first run under `--network none` is expected to confirm, NOT something the
+    # figures may rest on before then. If that run fails, this becomes true and the failure is
+    # the evidence (P-017 W6).
+    uploads_samples: false
+    uploads_samples_basis: >-
+      NOT MEASURED. Read at v3.23.9: the only outbound path found in source is --report-fp,
+      which shells out to `gh issue create`, and this rig never passes it. But nobody read all
+      300 KB of it, and a --no-telemetry flag existing at all says the default is not total
+      silence. The run that would settle it — the full corpus under `--network none` — needs a
+      containerised execution path this repository does not have yet (P-017 open question 9).
+      Until then this value is the expectation, not the finding.
+    # Same standing: a static Rust scanner, and nothing read suggests otherwise. It is measured
+    # inside the container regardless, because that is what turns the line above into a fact.
+    executes_scanned_content: false
+    provisional: true
+    # cc-audit gates on TIERS, not severity words. `default` reports errors only — its SARIF
+    # reporter maps Critical and High to `error`, Medium to `warning`, Low to `note`
+    # (src/reporter/sarif.rs severity_to_level) — while `strict` adds medium/low and promotes
+    # warnings to errors. Default is chosen for the same reason aguard is measured at its own
+    # shipped `high`: the measured behaviour has to be the behaviour a user gets. The finer
+    # knobs (--min-severity, --min-rule-severity, --min-confidence) are deliberately untouched.
+    #
+    # Pinned to v3.23.9. This tool has shipped 146 releases and went v1.0.0 → v3.0.0 inside 24
+    # hours, so an unpinned figure cannot be recomputed a week later — and "recomputable
+    # offline" is the claim being tested.
+    threshold: default
+    surfaces_declared_uncovered: {}
+
+  - id: skill-scanner
+    # The id is the product name, not the vendor: `cisco` is also a corpus SOURCE
+    # (cisco-mcp-scanner-evals), and the corpus's neutrality check refuses a tool id that already
+    # appears in the scripts producing everybody's samples. Same id on both sides.
+    name: Cisco skill-scanner
+    repo: https://github.com/cisco-ai-defense/skill-scanner
+    uploads_samples: false
+    uploads_samples_basis: >-
+      NOT MEASURED. Read at 2.1.0 and confirmed by `list-analyzers` on the installed binary: the
+      default analyzers are static, bytecode and pipeline; the ones that leave the machine
+      (virustotal, aidefense, LLM) are opt-in flags this rig never passes. The run that would
+      settle it — the corpus under `--network none` — needs a containerised execution path this
+      repository does not have yet (P-017 open question 9). Until then this is the expectation,
+      not the finding.
+    # Probed 2026-09-24 on the corpus's one .pyc (sg-bytecode-poisoning): bytecode_analyzer.py
+    # calls marshal.load() on a scanned .pyc after checking the magic number and flags, and CPython
+    # documents marshal as "not intended to be secure against ... maliciously constructed data".
+    # On this venv (Python 3.12) the sample's cpython-314 magic did not match, marshal.load() was
+    # never reached, and the tool reported BYTECODE_ANALYSIS_UNAVAILABLE at HIGH. On a 3.14 runtime
+    # it WOULD be reached. compile() on the paired .py compiles without executing. Deserialisation
+    # is not execution; this line says false and the sentence above says why that is not the
+    # whole story.
+    executes_scanned_content: false
+    provisional: true
+    # Its own ladder (critical/high/medium/low/info), passed to --fail-on-severity. `high` is what
+    # the tool's own legacy --fail-on-findings meant, and SARIF folds at `error` because its
+    # reporter maps CRITICAL and HIGH both to `error` (sarif_reporter.py:40-45). Probed: a HIGH
+    # finding exits 1 at `high` and 0 at `critical`.
+    #
+    # Strict mode is kept — no --lenient. Trees without SKILL.md are refused by the loader and
+    # recorded as no-verdict/unsupported-input; that is what empties the mcp, hooks, permission,
+    # instruction and connector rows, and it is the shipped behaviour.
+    #
+    # Policy: the built-in `balanced` preset, dumped with `generate-policy` and passed via -policy
+    # so run.yaml carries its hash (probed: byte-identical SARIF to running without --policy,
+    # once the invocation timestamp is set aside).
+    threshold: high
+    # Written AFTER the 2026-09-24 run tripped the tripwire on mcp (0 flagged of 130), with the
+    # evidence the tripwire asks for. The cause is one fact, not a placement fault: strict mode
+    # requires SKILL.md, and mcp artifacts are .mcp.json. Every refused tree got the same stderr
+    # line, `Error loading skill: SKILL.md not found in …`, and is a no-verdict/unsupported-input
+    # row. Counted from that run's raw output (scored = a SARIF document came back):
+    #   mcp          0 of 487 scored   (130 malicious, 353 benign, 4 hard-negative)  ← declared
+    #   connector    1 of 126 scored   NOT declared: the tool DOES read the tree that has SKILL.md
+    #   hooks        1 of 196 scored   NOT declared, same
+    #   permission   2 of 178 scored   NOT declared — and the rerun flagged one, which turned a
+    #                                  first-draft declaration here into `stale-declaration`.
+    #                                  A declaration means "reads nothing"; partial coverage is
+    #                                  a fact for the ledger, not a declaration.
+    #   skills    2636 of 2636 scored
+    # `--lenient` would make the refused trees scannable and is deliberately NOT used for the
+    # headline column: it is not the shipped behaviour. If it is ever run it goes in its own directory.
+    surfaces_declared_uncovered:
+      mcp: >-
+        strict mode requires SKILL.md; 0 of 487 mcp trees carry one, all refused with
+        "Error loading skill: SKILL.md not found" (2026-09-24, v2.1.0, default policy).

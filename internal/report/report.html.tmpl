@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentGuard — {{.Overall}}/100 {{.Level}}</title>
+<style>
+  :root{
+    --bg:#f6f8fb;--card:#ffffff;--line:#dfe5ee;--tx:#14202e;--mut:#5b6b7e;--dim:#8a97a8;
+    --accent:#0f766e;--green:#15803d;--red:#b91c1c;--amber:#b45309;--gold:#a16207;
+    --green-bg:#ecfdf3;--red-bg:#fef2f2;--amber-bg:#fffbeb;--gold-bg:#fefce8;--trust-bg:#eef6ff;--trust:#1d4ed8;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0b0f14;--card:#141b25;--line:#243244;--tx:#e6edf5;--mut:#9fb0c3;--dim:#6b7d92;
+      --accent:#25d0c0;--green:#3ecf8e;--red:#ff6b78;--amber:#ffb454;--gold:#ffd76a;
+      --green-bg:rgba(62,207,142,.10);--red-bg:rgba(255,107,120,.12);--amber-bg:rgba(255,180,84,.12);--gold-bg:rgba(255,215,106,.10);
+      --trust-bg:rgba(96,165,250,.12);--trust:#8fb8ff;
+    }
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;line-height:1.55;font-size:15px}
+  a{color:inherit}
+  .wrap{max-width:980px;margin:0 auto;padding:28px 24px 60px}
+  header{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  h1{font-size:22px;font-weight:800;letter-spacing:-.01em}
+  .meta{color:var(--dim);font-size:12.5px;font-family:ui-monospace,Menlo,monospace}
+  nav.toc{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 0;margin:14px 0 6px;border-bottom:1px solid var(--line);display:flex;gap:6px;flex-wrap:wrap}
+  nav.toc a{text-decoration:none;font-size:13px;color:var(--mut);padding:4px 10px;border:1px solid var(--line);border-radius:999px;background:var(--card)}
+  nav.toc a:hover{color:var(--tx);border-color:var(--accent)}
+  nav.toc a b{color:var(--tx)}
+  section{margin-top:28px}
+  h2{font-size:17px;font-weight:750;margin-bottom:10px;display:flex;gap:10px;align-items:baseline}
+  h2 .badge{font-size:12.5px;color:var(--dim);font-weight:500}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+
+  /* summary */
+  .summary{display:grid;grid-template-columns:150px 1fr;gap:22px;align-items:center}
+  @media (max-width:640px){.summary{grid-template-columns:1fr}}
+  .gauge{width:132px;height:132px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:radial-gradient(closest-side,var(--card) 79%,transparent 80% 100%),conic-gradient({{.GaugeColor}} {{.GaugeDeg}}deg,var(--line) 0)}
+  .gauge .n{font-size:38px;font-weight:800;line-height:1}
+  .gauge .l{font-size:13px;color:var(--mut);margin-top:2px}
+  .gauge.eff{width:96px;height:96px;margin-top:10px;background:radial-gradient(closest-side,var(--card) 79%,transparent 80% 100%),conic-gradient({{.EffectiveColor}} {{.EffectiveDeg}}deg,var(--line) 0)}
+  .gauge.eff .n{font-size:26px}
+  .verdict{font-size:19px;font-weight:650;line-height:1.35}
+  .checked{color:var(--mut);margin-top:8px}
+  .trustline{margin-top:8px;color:var(--trust);font-size:14px}
+  .scope{color:var(--dim);font-size:12.5px;margin-top:10px}
+
+  /* actions */
+  ol.actions{list-style:none;counter-reset:a}
+  ol.actions li{counter-increment:a;display:grid;grid-template-columns:30px 1fr;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
+  ol.actions li:first-child{border-top:0}
+  ol.actions li::before{content:counter(a);font-weight:800;font-size:18px;color:var(--accent)}
+  .actions .t{font-weight:650}
+  .actions .w{color:var(--mut);font-size:13.5px;font-family:ui-monospace,Menlo,monospace;margin-top:2px}
+  .actions a{text-decoration:none;color:var(--accent);font-size:13px;margin-left:8px}
+  .empty{color:var(--green);font-weight:600}
+
+  /* findings */
+  .f{background:var(--card);border:1px solid var(--line);border-left-width:5px;border-radius:12px;padding:14px 18px;margin-bottom:10px;scroll-margin-top:64px}
+  .f.critical,.f.high{border-left-color:var(--red)}
+  .f.medium{border-left-color:var(--amber)}
+  .f.low{border-left-color:var(--gold)}
+  .f .h{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .sev{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;padding:3px 9px;border-radius:999px}
+  .sev.critical,.sev.high{background:var(--red-bg);color:var(--red)}
+  .sev.medium{background:var(--amber-bg);color:var(--amber)}
+  .sev.low{background:var(--gold-bg);color:var(--gold)}
+  .who{font-weight:700}
+  .what{font-weight:650;font-size:15.5px;margin-top:6px;line-height:1.4}
+  .cnt{color:var(--accent);font-size:12.5px;font-weight:700}
+  .adv{font-size:11px;color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:1px 8px}
+  .rid{margin-left:auto;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--dim)}
+  .plain{margin-top:6px;font-size:14px;color:var(--mut)}
+  .plain b{color:var(--tx);font-weight:650}
+  .why{color:var(--mut);font-size:14px;margin-top:6px}
+  .ev{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:var(--dim);margin-top:8px}
+  .ev .row{padding:3px 0}
+  .ev .loc{overflow-wrap:anywhere}
+  .ev .snip{display:block;margin:2px 0 0 18px;padding:4px 8px;border-left:2px solid var(--line);color:var(--mut);white-space:pre-wrap;overflow-wrap:anywhere}
+  .ev abbr{text-decoration:none;border-bottom:1px dotted var(--line);cursor:help}
+
+  /* trust + notes */
+  .trust{background:var(--trust-bg);border:1px solid var(--line);border-left:5px solid var(--trust);border-radius:12px;padding:14px 18px;margin-bottom:10px}
+  .trust .h{font-weight:700;color:var(--trust)}
+  .trust .why{color:var(--tx)}
+  details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 18px}
+  summary{cursor:pointer;font-weight:650;color:var(--mut)}
+  .note{color:var(--amber);font-size:13.5px;margin-top:12px}
+  .note .why{color:var(--mut);font-size:13px}
+  .note .rid{margin-left:6px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .chip{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--mut);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 7px}
+  details.inner{border:0;padding:0;margin-top:6px;background:transparent}
+  details.inner summary{font-size:12.5px;font-weight:500}
+
+  /* details / inventory */
+  .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:8px}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+  .tile .v{font-size:20px;font-weight:700}
+  .tile .k{font-size:12px;color:var(--mut)}
+  .hy{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:8px}
+  .hy .k{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent)}
+  footer{margin-top:36px;color:var(--dim);font-size:12.5px;border-top:1px solid var(--line);padding-top:14px}
+  .sandbox{background:#4a2b00;color:#ffd9a8;border:1px solid #a35a00;border-radius:12px;padding:14px 16px;margin:0 0 18px;font-size:14px;line-height:1.5}
+  .sandbox .why{color:#e8b783;font-size:12.5px}
+  @media (prefers-color-scheme: light){:root:not([data-theme="dark"]) .sandbox{background:#fff4e0;color:#7a4a00;border-color:#e0a34d}:root:not([data-theme="dark"]) .sandbox .why{color:#9a6b1f}}
+</style>
+</head>
+<body><div class="wrap">
+  <header>
+    <h1>AgentGuard report</h1>
+    <div class="meta">{{.Root}} · {{.ScannedAt}} · aguard {{.ToolVersion}}</div>
+  </header>
+
+  <nav class="toc">
+    <a href="#summary"><b>Summary</b></a>
+    <a href="#actions">What to look at{{if .Actions}} <b>{{len .Actions}}</b>{{end}}</a>
+    <a href="#findings">All findings <b>{{len .Groups}}</b></a>
+    {{if .JudgeRequested}}<a href="#judge">LLM judge{{if .JudgeGroups}} <b>{{len .JudgeGroups}}</b>{{end}}</a>{{end}}
+    {{if .Inbox}}<a href="#inbox">Downloads <b>{{len .Inbox.Items}}</b></a>{{end}}
+    {{if .Trust}}<a href="#trusted">Trusted <b>{{len .Trust}}</b></a>{{end}}
+    <a href="#hygiene">Cleanup <b>{{len .Hygiene}}</b></a>
+    {{if .Coverage}}<a href="#notchecked">Not checked <b>{{len .Coverage}}</b></a>{{end}}
+    <a href="#details">Scan details</a>
+  </nav>
+
+  {{if .SandboxBanner}}<div class="sandbox"><strong>⚠ Temporary cloud environment — this is not your computer.</strong> {{.SandboxBanner}}{{if .SandboxWhy}} <span class="why">Why we can tell: {{.SandboxWhy}}.</span>{{end}}</div>{{end}}
+
+  <section id="summary">
+    <div class="card summary">
+      <div>
+        <div class="gauge"><div class="n">{{.Overall}}</div><div class="l">{{.Level}} risk</div></div>
+        {{if .ShowEffective}}<div class="gauge eff" title="with LLM advisories — not reproducible, does not gate"><div class="n">{{.Effective}}</div><div class="l">{{.EffectiveLevel}}</div></div>{{end}}
+      </div>
+      <div>
+        <div class="verdict">{{.Verdict}}</div>
+        <div class="checked">{{.Checked}}</div>
+        {{if .WorstLine}}<div class="checked"><b>{{.WorstLine}}</b></div>{{end}}
+        {{if .JudgeLine}}<div class="checked">{{.JudgeLine}}</div>{{end}}
+        {{if .Trust}}<div class="trustline">Some findings were suppressed because a reviewed allowlist entry matched — see <a href="#trusted">Trusted</a>.</div>{{end}}
+        <div class="scope">Static scan, read-only, no network. The score is relative risk from static rules, not a safety certificate; it cannot see what code does at runtime.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="actions">
+    <h2>What to look at <span class="badge">worst first · medium and above</span></h2>
+    <div class="card">
+      {{if not .Actions}}<div class="empty">✅ Nothing at medium or above.{{if .Groups}} The findings below are informational.{{end}}</div>{{end}}
+      {{if .Actions}}<ol class="actions">
+        {{range $i, $a := .Actions}}<li><div>
+          <div class="t">{{$a.Artifact}} — {{$a.Title}} <span class="sev {{$a.Severity}}">{{$a.Severity}}</span><a href="#f-{{$i}}">details ↓</a></div>
+          {{if $a.Where}}<div class="w">where: {{$a.Where}}</div>{{end}}
+        </div></li>{{end}}
+      </ol>{{end}}
+    </div>
+  </section>
+
+  <section id="findings">
+    <h2>All findings <span class="badge">{{len .Groups}} · these make up the score</span></h2>
+    {{if not .Groups}}<div class="card empty">✅ No risk findings (static).</div>{{end}}
+    {{range .Groups}}
+    <div class="f {{.Severity}}" id="{{.Anchor}}">
+      <div class="h">
+        <span class="sev {{.Severity}}">{{.Severity}}</span>
+        <span class="who">{{.Friendly}}</span>
+        {{if gt .Count 1}}<span class="cnt">×{{.Count}}{{if gt .Files 1}} in {{.Files}} files{{end}}</span>{{end}}
+        {{if .Advisory}}<span class="adv">advisory: not confirmed</span>{{end}}
+        <span class="rid">{{.RuleID}}</span>
+      </div>
+      <div class="what">{{.Title}}</div>
+      {{if .Plain}}<div class="plain">In plain terms: <b>{{.Plain}}</b></div>{{end}}
+      {{if .Action}}<div class="plain">What to do: {{.Action}}</div>{{end}}
+      <div class="why">{{.Why}}</div>
+      {{if .Triage}}<div class="why">⚖ triage (LLM, advisory): {{.Triage}}</div>{{end}}
+      {{if .Ev}}<details class="inner"><summary>Where: {{with index .Ev 0}}<abbr title="{{.Full}}">{{.Short}}</abbr>{{if .Line}}:{{.Line}}{{end}}{{end}}{{if gt (len .Ev) 1}} and {{len .Ev}} places in all{{end}}</summary><div class="ev">{{range .Ev}}<div class="row"><div class="loc">← <abbr title="{{.Full}}">{{.Short}}</abbr>{{if .Line}}:{{.Line}}{{end}}</div>{{if .Snippet}}<div class="snip">{{.Snippet}}</div>{{end}}</div>{{end}}{{if .MoreFiles}}<div>← … and {{.MoreFiles}} more file(s) — the JSON/SARIF output lists them all</div>{{end}}</div></details>{{end}}
+    </div>
+    {{end}}
+  </section>
+
+  {{if .JudgeRequested}}
+  <section id="judge">
+    <h2>LLM judge leads <span class="badge">{{len .JudgeGroups}} · advisory — never set the score or --fail-on</span></h2>
+    {{if not .JudgeGroups}}<div class="card"><div class="checked">{{.JudgeLine}}</div></div>{{end}}
+    {{range .JudgeGroups}}
+    <div class="f {{.Severity}}" id="{{.Anchor}}">
+      <div class="h">
+        <span class="sev {{.Severity}}">{{.Severity}}</span>
+        <span class="who">{{.Friendly}}</span>
+        {{if gt .Count 1}}<span class="cnt">×{{.Count}}{{if gt .Files 1}} in {{.Files}} files{{end}}</span>{{end}}
+        <span class="adv">advisory: not confirmed</span>
+        <span class="rid">{{.RuleID}}</span>
+      </div>
+      <div class="what">{{.Title}}</div>
+      {{if .Plain}}<div class="plain">In plain terms: <b>{{.Plain}}</b></div>{{end}}
+      {{if .Action}}<div class="plain">What to do: {{.Action}}</div>{{end}}
+      <div class="why">{{.Why}}</div>
+      {{if .Triage}}<div class="why">⚖ triage (LLM, advisory): {{.Triage}}</div>{{end}}
+      {{if .Ev}}<details class="inner"><summary>Where: {{with index .Ev 0}}<abbr title="{{.Full}}">{{.Short}}</abbr>{{if .Line}}:{{.Line}}{{end}}{{end}}{{if gt (len .Ev) 1}} and {{len .Ev}} places in all{{end}}</summary><div class="ev">{{range .Ev}}<div class="row"><div class="loc">← <abbr title="{{.Full}}">{{.Short}}</abbr>{{if .Line}}:{{.Line}}{{end}}</div>{{if .Snippet}}<div class="snip">{{.Snippet}}</div>{{end}}</div>{{end}}{{if .MoreFiles}}<div>← … and {{.MoreFiles}} more file(s) — the JSON/SARIF output lists them all</div>{{end}}</div></details>{{end}}
+    </div>
+    {{end}}
+  </section>
+  {{end}}
+
+  {{if .Inbox}}
+  <section id="inbox">
+    <h2>Downloads <span class="badge">{{len .Inbox.Items}} agent-shaped item(s) under {{.Inbox.Dir}} — not installed, each checked on its own, not part of the score</span></h2>
+    {{if not .Inbox.Items}}<div class="card"><div class="checked">Nothing agent-shaped among {{.Inbox.Skipped}} entries; nothing else was read.</div></div>{{end}}
+    {{if and .Inbox.Items .Inbox.JudgeLine}}<p class="scope">{{.Inbox.JudgeLine}}</p>{{end}}
+    {{range .Inbox.Items}}
+    <div class="f {{if .Error}}low{{else if eq .Level "Low"}}low{{else if eq .Level "Watch"}}medium{{else}}high{{end}}">
+      <div class="h">
+        {{if .Error}}<span class="sev low">not checked</span>{{else}}<span class="sev {{if eq .Level "Low"}}low{{else if eq .Level "Watch"}}medium{{else}}high{{end}}">{{.Overall}}/100 · {{.Level}}</span>{{end}}
+        <span class="who">{{.Name}}</span>
+        <span class="adv">{{.Label}}</span>
+        {{if .Findings}}<span class="cnt">{{len .Findings}} finding(s)</span>{{end}}
+      </div>
+      {{if .Error}}<div class="why">{{.Error}}</div>{{else}}
+      {{if .Worst}}<div class="what">Worst: {{.Worst}}</div>{{end}}
+      <div class="plain">What to do: {{.Advice}}</div>
+      {{range .Notes}}<div class="why">note: {{.Title}} <details class="inner"><summary>why</summary><div class="why">{{.Why}}</div></details></div>{{end}}
+      {{if .Findings}}<details class="inner"><summary>All {{len .Findings}} finding(s)</summary><div class="ev">{{range .Findings}}<div class="row"><div class="loc">[{{.RuleID}}] {{.Severity}} — {{.Title}}{{if .Evidence}}{{with index .Evidence 0}} ← {{.File}}{{if .Line}}:{{.Line}}{{end}}{{end}}{{end}}</div></div>{{end}}</div></details>{{end}}
+      {{end}}
+    </div>
+    {{end}}
+    {{if and .Inbox.Items .Inbox.Skipped}}<p class="scope">{{.Inbox.Skipped}} other entries were not agent-shaped and were not read.</p>{{end}}
+    {{range .Inbox.Notes}}<div class="note">· {{.Title}} <details class="inner"><summary>why</summary><div class="why">{{.Why}}</div></details></div>{{end}}
+  </section>
+  {{end}}
+
+  {{if .Trust}}
+  <section id="trusted">
+    <h2>Trusted by allowlist <span class="badge">{{len .Trust}} trust decision(s) changed the score — findings were suppressed, not absent</span></h2>
+    {{range .Trust}}
+    <div class="trust">
+      <div class="h">[{{.RuleID}}] {{.Title}}{{if .Evidence}}{{with index .Evidence 0}}{{if .File}} — {{.File}}{{end}}{{end}}{{end}} · highest suppressed: {{.Severity}}</div>
+      {{if .Head}}<div class="why">{{.Head}}</div>{{end}}
+      {{if .Reason}}<details class="inner"><summary>Why it is trusted — the reviewer's notes</summary><div class="why">{{.Reason}}</div></details>{{end}}
+    </div>
+    {{end}}
+  </section>
+  {{end}}
+
+  <section id="hygiene">
+    <h2>Cleanup <span class="badge">{{if .Reclaim}}~{{.Reclaim}} tokens of context reclaimable{{else}}junk and stale context{{end}}</span></h2>
+    {{if not .Hygiene}}<div class="card empty">✅ No junk / hygiene issues found.</div>{{end}}
+    {{range .Hygiene}}
+    <div class="hy"><b>{{.Label}}</b> — {{.Detail}}{{if .Targets}}<div class="ev">{{.TargetsStr}}</div>{{end}}<details class="inner"><summary>details</summary><span class="k">{{.Kind}}/{{.Tier}}</span> {{if .ID}}<code>{{.ID}}</code>{{end}}</details></div>
+    {{end}}
+  </section>
+
+  {{if .Coverage}}
+  <section id="notchecked">
+    <h2>Not checked <span class="badge">{{len .Coverage}} coverage note(s) — what the scan did not read, and why</span></h2>
+    <details>
+      <summary>Show the {{len .Coverage}} note(s)</summary>
+      {{range .Coverage}}<div class="note">· {{.Title}} <span class="rid">{{.RuleID}}</span>
+        {{if .Items}}<div class="chips">{{range .Items}}<span class="chip">{{.}}</span>{{end}}</div>{{end}}
+        {{if .Rest}}<details class="inner"><summary>Why it was skipped</summary><div class="why">{{.Rest}}</div></details>{{end}}
+      </div>{{end}}
+    </details>
+  </section>
+  {{end}}
+
+  <section id="details">
+    <h2>Scan details <span class="badge">inventory and coverage</span></h2>
+    {{if .Locations}}<div class="card" style="margin-bottom:10px"><div class="checked"><b>Where the scan looked</b></div>{{range .Locations}}<div class="ev"><div class="row">{{if eq .Status "read"}}✅{{else if eq .Status "off"}}⏸{{else}}—{{end}} {{.Name}} · <span class="loc">{{.Path}}</span> · {{.Status}}</div></div>{{end}}</div>{{end}}
+    <div class="tiles">
+      <div class="tile"><div class="v">{{.Env.Plugins}}</div><div class="k">Plugins</div></div>
+      <div class="tile"><div class="v">{{.Env.Skills}}</div><div class="k">Skills</div></div>
+      {{if .Env.BundledSkills}}<div class="tile"><div class="v">{{.Env.BundledSkills}}</div><div class="k">Skills inside plugins</div></div>{{end}}
+      <div class="tile"><div class="v">{{.Env.MCPServers}}</div><div class="k">MCP servers</div></div>
+      <div class="tile"><div class="v">{{.Env.Connectors}}</div><div class="k">Remote connectors</div></div>
+      <div class="tile"><div class="v">{{.Env.Hooks}}</div><div class="k">Hooks</div></div>
+      <div class="tile"><div class="v">{{.Env.Permissions}}</div><div class="k">Permission rules</div></div>
+      <div class="tile"><div class="v">{{.Env.Subagents}}</div><div class="k">Subagents</div></div>
+      <div class="tile"><div class="v">{{.Env.Commands}}</div><div class="k">Commands</div></div>
+      <div class="tile"><div class="v">{{.Env.Rules}}</div><div class="k">Rule files</div></div>
+      <div class="tile"><div class="v">{{.Env.Workflows}}</div><div class="k">Workflows</div></div>
+      <div class="tile"><div class="v">{{.Env.OutputStyles}}</div><div class="k">Output styles</div></div>
+      <div class="tile"><div class="v">{{.Env.Memories}}</div><div class="k">Memory files</div></div>
+      <div class="tile"><div class="v">{{.Env.Quarantined}}</div><div class="k">Quarantined</div></div>
+    </div>
+    {{if .OWASPSilent}}<p class="scope">OWASP Agentic (2026): {{.OWASPCovered}}/{{.OWASPTotal}} categories have rules · silent on {{.OWASPSilent}} — runtime behaviour across agents that a static scan cannot witness.</p>{{end}}
+  </section>
+
+  <footer>
+    Generated by AgentGuard (local static scan, read-only, no network). Score model: max-per-dimension, summed across dimensions, capped critical→≤49 / high→≤69.
+    Dimensions 7/8 (backdoor / resource-abuse) are marked "advisory: not confirmed". The findings above are deterministic and are what <code>--fail-on</code> gates on. Rule ids are in the right margin of each finding; --json and --sarif carry every path in full.
+  </footer>
+</div></body>
+</html>

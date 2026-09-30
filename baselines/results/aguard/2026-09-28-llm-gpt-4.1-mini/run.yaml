@@ -1,0 +1,60 @@
+# Written BY HAND from the run's raw output, not by baselines/cmd/baseline: the driver (P-021)
+# records the flags and the upload claim but folds verdicts from deterministic findings only, so
+# its own verdicts.jsonl is the static column; the files here are re-folded from raw/ at the
+# judge's predicate. Read baselines/README.md "Measuring the judge" before citing any figure
+# produced alongside this file. THIS IS NOT A BASELINE: the verdicts depend on a model, a day
+# and a single sample per question. The static baseline these 819 samples belong to is
+# ../2026-09-24/; the same subset judged by glm-5.3-flash is ../2026-09-25-llm-glm-5.3-flash/.
+#
+# measured by agent-guard's own adapter (agent-guard baselines/adapter/aguard) with --llm passed through, threshold "high" chosen by us, placement: by content, into a fake home; unplaceable trees are handed to `check` directly (the judge does not run on that path)
+
+tool: aguard
+tool_version: aguard v0.12.0-2-gb3f3e2a (commit b3f3e2a, built 2026-09-27T06:29:24Z) · reputation entries=18
+threshold: high
+tool_extra_args:
+    - --llm
+    - --config
+    - <judge config, not committed; contents reproduced under `judge:` below>
+uploads_samples: true
+uploads_samples_basis: >-
+    this run passed --llm to aguard: redacted excerpts of every judged artifact (skills, CLAUDE.md,
+    subagents, commands, hooks, MCP configs; at most 6,000 bytes per skill) were sent to the endpoint
+    under `judge:`. The 127 MCP-server-source samples go through `check`, which is static, so
+    nothing of theirs left the machine.
+corpus_commit: 5c3db6ee
+started_at: 2026-09-28T06:54:32Z
+finished_at: 2026-09-28T07:35:46Z   # mtime of the last raw/ file written; 41 min wall clock at -j 2
+adapter: agent-guard baselines/adapter/aguard
+placement: by content, into a fake home; unplaceable trees are handed to `check` directly
+provisional: false
+work_list: samples.jsonl              # the same 819 as ../2026-09-25-llm-glm-5.3-flash/samples.jsonl:
+                                      # 300 malicious + 19 hard-negative + 500 benign stratified by surface
+judge:
+    provider: openai_compatible
+    endpoint: https://api.openai.com/v1
+    model: gpt-4.1-mini               # served as gpt-4.1-mini-2025-04-14; a non-reasoning model, 0 reasoning tokens
+    samples: 1                        # ONE answer per question: the consensus bar (spec §5.2.1 ②) was empty
+    authority: advisory
+    concurrency: 8                    # per process; two driver workers, so about 16 in flight
+    timeout: 120s
+    total_timeout: 20m
+    max_retries: 4
+    calls: 1923
+    failed: 20                        # 1.0%; each failure is an LLM-000 note on that sample
+    skipped: 0
+fold: >-
+    verdict = malicious when a deterministic finding is >= high, OR an LLM finding that ESCALATED
+    (grounded; consensus trivially met at samples=1) is >= high and its rule is not LLM-009 (P-019,
+    v0.12.0: advisory-only). severity is the highest severity among the findings that count;
+    dimensions and rules come from the findings that carried the flag, static and escalated alike.
+    Per-sample static / judge / judge-any and the escalated rule ids are in judge.jsonl. Regenerate
+    from raw/ — nothing here is hand-typed except this file.
+counts:
+    scored: 819
+    no_verdict: 0
+    error: 0
+work_list_size: 819
+raw_archive:                          # raw/ left the tree in P-039: 6.2 MB of model output quoting malicious samples,
+    asset: aguard-judge-raw-2026-09.tar.gz   # attached as a release asset; holds the raw/ of all four judge runs
+    sha256: 10a7ba6eb7e70f336da4616cfb7ff02a0e59749f8868e7ffb1e84ea2faa4eafd
+    note: the fold above is reproducible from the archive alone; judge.jsonl here is derived from it
