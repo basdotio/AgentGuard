@@ -408,8 +408,5 @@ make dist           # 交叉编译发布二进制 + SHA256SUMS.txt 到 dist/
 
 ## 参与开发
 
-开发在 `dev` 分支上进行;`main` 是默认分支但落后于 `dev`,以后一次性合入。clone 之后先 `git switch dev`,再跑一次 `make hooks`,把提交检查装到你的机器上 ——
-它只存在于跑过这条命令的机器。流程 —— proposal、一个 proposal 一个分支、`make verify` 闸门、每次状态变更带证据行 ——
-写在 [docs/process.md](docs/process.md);在 Claude Code 里敲 `/propose <一句话问题>` 进入,不用 AI 的照文档手动走。
-改动通过对 `dev` 的 pull request 合入,在 GitHub 上用 "Rebase and merge";审和合的人什么都不用装。
-`gh` 命令行可选:装了之后 `/propose` 走到最后直接在终端里开 PR,不装就给你一个链接自己点。
+见 [CONTRIBUTING.md](CONTRIBUTING.md)(英文):一个改动一个分支,对 `main` 开 pull request,请人 review 前 `make verify` 要绿。
+`make hooks` 装的 pre-commit 会用 aguard 自己扫你暂存的 skill。

@@ -6,13 +6,11 @@
 
 > **module path 有三处必须始终一致**:`go.mod` 的 module 指令、每个 `.go` 文件的 import、
 > 以及 `hack/github-action.yml` 里那条 `go install`(它会被拷到分发仓库,所以那边也要跟着动)。
-> 少改一处的表现不是测试变红,是**编译不过**。2026-09-10 org 从 `bnb-attestation-service`
-> 改名为 `basdotio` 时,这三处连同全部 URL 一起改了(101 个 `.go` 文件)。
+> 少改一处的表现不是测试变红,是**编译不过**。
 > 改 module path 之后**必须确认 `go.mod` 第二行仍是 `go 1.23.5`** —— 见下面「约定」里那条:
 > 任何让 `go mod tidy` 顶高 go 指令的东西都会让 CI 编译失败,而 `make test` 在自动切换后的
 > 工具链上照样全绿,绿灯在这里不构成证据。规格源头是本仓库的 [docs/spec/spec.zh-CN.md](docs/spec/spec.zh-CN.md) ——
-源码注释里的 "spec §N" 全部指向它;改动带不变量的代码前,先去读被引用的那一节。**它 2026-09-15 从独立的
-agent-guard-design 仓库搬进来并追平了代码;那个仓库和公开分发仓 guard 都不再维护,本仓库是唯一要保持同步的地方。**
+源码注释里的 "spec §N" 全部指向它;改动带不变量的代码前,先去读被引用的那一节。
 
 **本文件与其余文档分工不同,别混。找东西按这张表走:**
 
@@ -24,16 +22,12 @@ agent-guard-design 仓库搬进来并追平了代码;那个仓库和公开分发
 | [ROADMAP.md](ROADMAP.md) | 想知道做过什么的人 | 已发布的、已记录但未排期的、以及愿意公开承认的限制 |
 | [issues/](issues/README.md) | 要动某块代码的人 | **确认存在的缺陷、绕过、覆盖缺口,以及否决记录**(试过什么、为什么失败、代价多少)。带封闭的状态取值集 |
 | [docs/spec/spec.zh-CN.md](docs/spec/spec.zh-CN.md) | 改带不变量的代码的人 | **规格源头**:什么必须成立;源码注释 `spec §N` 的目标。改了不变量或数据模型要同步它 |
-| [docs/planning/direction.zh-CN.md](docs/planning/direction.zh-CN.md) | 拿主意的人 | 为什么这么做、往哪走、**明确放弃什么** |
-| [docs/planning/plan.zh-CN.md](docs/planning/plan.zh-CN.md) | 排期的人 | 阶段、里程碑、门槛、决策点、编号沿革 |
-| [docs/planning/work-items.zh-CN.md](docs/planning/work-items.zh-CN.md) | **开工的人** | 每一条具体怎么修:复现、修法、验收、不能说什么 |
 | [docs/corpus-benchmark.zh-CN.md](docs/corpus-benchmark.zh-CN.md) | 做语料的人 | benchmark 的口径与 schema 设计。**样本和打分器都在独立仓库 `../agent-artifact-corpus`**（许可隔离、工具中立）；本仓库只有驱动:`baselines/`(P-015;`baselines/cmd/baseline` 替代了 P-011 的 `hack/corpus-runner`),`make bench` 串起三步,**每次运行的账本与成绩单提交在 `baselines/results/`** |
 
 改动本文件描述的结构时,顺手看一眼架构文档要不要跟(它是手写的;规则表是 `make docs` 生成的)。
 
-**新发现的东西进哪份**:有复现 + 有修法 → `work-items` 加一条;有复现但修法未知 → `issues/`;
-有观察没复现 → `work-items` 的「未确认」;判断变了 → `direction`。
-判据一句话:**这条修完之后,这段文字还有没有价值?** 有 → `issues/`,没有 → `work-items`。
+**新发现的东西进哪份**:有复现但修法未知、或试过被否决 → `issues/`;有复现有修法 → 直接修,修法写在改动里;
+推迟的方向 → `ROADMAP.md`。判据一句话:**这条修完之后,这段文字还有没有价值?** 有 → `issues/`,没有 → 不留档。
 
 ## 常用命令
 
@@ -43,8 +37,7 @@ make test                        # go test -race -cover ./...
 make lint                        # golangci-lint run ./...(govet staticcheck errcheck ineffassign unused gofmt goimports misspell)
 make docs                        # 从代码重新生成 docs/rules.md(加/改规则后必跑,CI 会校验)
 make verify                      # 一条命令跑完整个闸门(vet test lint docs漂移 plugin自扫 go指令),交付前必过
-make hooks                       # 装 pre-commit + commit-msg 到 .git/hooks/(clone 后跑一次;没装的机器拦不到)
-/propose /release                # 流程入口(.claude/skills/,只由人触发):/propose 一条走到 PR,/release 发版;守则是 docs/process.md
+make hooks                       # 装 pre-commit 到 .git/hooks/(clone 后跑一次;没装的机器拦不到)
 make dist                        # 交叉编译到 dist/(darwin/linux;windows 见下)
 go vet ./...                     # CI 也会跑
 
@@ -69,8 +62,8 @@ echo '{"hook_event_name":"PreToolUse","tool_name":"Skill","tool_input":{"skill":
 
 ## 各包的防护点在 `.claude/rules/`
 
-本文件只留文档地图和常用命令。**不要怎么改**那些段(2026-09-16 前都在这里)按包搬进了 `.claude/rules/`,
-带 `paths:` 的只在读写匹配文件时加载,不带的会话开始即加载。搬家零改动,出处见 `docs/proposals/complete/003-split-claude-md.md`。
+本文件只留文档地图和常用命令。**不要怎么改**那些段按包放在 `.claude/rules/`,
+带 `paths:` 的只在读写匹配文件时加载,不带的会话开始即加载。
 
 | 文件 | 原段 | 何时加载 |
 |---|---|---|

@@ -9,10 +9,6 @@ set -euo pipefail
 AGUARD="${AGUARD:-aguard}"
 FAIL_ON="${AGUARD_FAIL_ON:-high}"
 
-# Proposal / issue bookkeeping (process.md §5, §6): state vocabulary and evidence lines.
-# Runs first and independently of aguard being installed.
-"$(git rev-parse --show-toplevel)/hack/check-proposal"
-
 # Staged skill dirs (dirs whose SKILL.md is staged). Bash 3 compatible: macOS ships 3.2, which
 # has no mapfile — the previous form died there with "mapfile: command not found".
 skills=()

@@ -4,8 +4,8 @@
 > `docs/spec/spec.zh-CN.md`;此前在独立的 agent-guard-design 仓库,那个仓库不再维护,其余五份设计文档
 > (产品规划、pitch、执行计划、LLM 判官设计、信誉库设计,均为 2026-07 的决策记录)作历史归档放在
 > `docs/decisions/archive/design-2026-07/`(2026-09-20 删除,见该日期前的 git 历史),**不再是任何东西的源头**。
-> 方向与放弃清单看 [direction.zh-CN.md](../planning/direction.zh-CN.md),排期看 [plan.zh-CN.md](../planning/plan.zh-CN.md),
-> 代码现状看 [../docs/architecture.md](../architecture.md),规则条数以 [../docs/rules.md](../rules.md) 头部计数块为准。
+> 代码现状看 [../docs/architecture.md](../architecture.md),规则条数以 [../docs/rules.md](../rules.md) 头部计数块为准,
+> 已排期与已放弃的方向看 [../../ROADMAP.md](../../ROADMAP.md)。
 > 状态:**v1.2**(v1.1 = LLM 单向升级修订;v1.2 = 2026-09-15 追平代码:补 §3/§4/§5/§8/§9/§11/§12 里
 > 9 月 4 日之后发布的功能,改掉 7 处与代码相反的陈述,见文末「v1.2 修订清单」)
 
@@ -13,7 +13,7 @@
 
 本轮改动只有一个主题:把 LLM 从**旁注层**改为**单向升级的分析层** —— 旧铁律「永不改分」是双向禁令,而注入攻击只想要"降分"那一个方向;禁死升分等于自缚,收益为零。涉及 §3(闸门 flag)、§5.2(触发条件按三类重写)、§5.2.1(铁律 #1)、§5.3(双分数)、§8(数据模型)、§11(配置)、§13(不变量测试)、§16(不变量 7)。
 
-**v1.1 时标 `[M6]` 的条款(单向升级)已全部实现**,v1.2 去掉了那些标记;本文描述的全部是已实现状态,除非某句明写「未实现」。实现进度以 `ROADMAP.md` 为准,后续排期见 `docs/planning/plan.zh-CN.md`。
+**v1.1 时标 `[M6]` 的条款(单向升级)已全部实现**,v1.2 去掉了那些标记;本文描述的全部是已实现状态,除非某句明写「未实现」。实现进度与后续排期以 `ROADMAP.md` 为准。
 
 ---
 
@@ -473,9 +473,9 @@ v1 写的 `internal/rules/` 从未存在:规则表就在 `detect/rules_data.go`,
 
 ## 14. 待定 —— 已全部关闭(2026-09-15 记录)
 
-1. **命名**:产品 AgentGuard,二进制 `aguard`,npm 包 `@bas.io/guard`,插件 `agentguard@guard`。名字撞车问题在 `direction.zh-CN.md` §0 列为必须解决项。
+1. **命名**:产品 AgentGuard,二进制 `aguard`,npm 包 `@bas.io/guard`,插件 `agentguard@guard`。
 2. **HTML 报告**:已交付,信息架构见 §9。
-3. **AST**:**推迟到阶段 1 之后**,等 benchmark 的「错误响」列证明正则精度是真问题再付依赖成本(`direction.zh-CN.md` §4)。词法层(`logical.go`)已做。
+3. **AST**:**推迟到阶段 1 之后**,等 benchmark 的「错误响」列证明正则精度是真问题再付依赖成本。词法层(`logical.go`)已做。
 4. **规则来源**:从 OWASP Agentic / MITRE ATLAS 重新推导,每条带 `Ref`,已落地;`owasp.go` 给每条规则一个 ASI 位置,`TestASIMapping_EveryRuleHasADecidedPosition` 钉住。ASI 编号与官方核对仍是 `issues/014`。
 5. **工期**:P0 已发布,不再有意义。后续排期见 `plan.zh-CN.md`。
 
