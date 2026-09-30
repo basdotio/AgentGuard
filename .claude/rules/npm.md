@@ -60,10 +60,14 @@ paths:
   以前这里写着"npm pack 会拒绝这种版本",**那是错的**:`0.8.1-2-gabc-dirty` 是合法的 semver
   prerelease,实测 npm 照收。真正的后果是手动发布会把一个垃圾版本号永久占掉(npm 不允许复用)。
   显式传 `NPM_VERSION=` 仍然放行 —— 那是明说的选择,不是 git 的副产物。
-- **`--provenance` 现在没开,这是仓库现状不是偏好。** npm 的出处证明由跑 workflow 的那个仓库
-  生成,要求它**公开**且与 `package.json` 的 `repository` 相符;而构建跑在私有源码仓库、
-  `repository` 指向公开分发仓库,带上这个 flag 会让 publish 失败。要开就得改其中一个前提,
-  workflow 里的注释写了这件事 —— 在那之前可验证的下载是 release 上的 `SHA256SUMS.txt`。
+- **发布凭证是 npm trusted publishing(OIDC),没有 `NPM_TOKEN`**(2026-09-30)。五个包在 npmjs.com
+  上各有一条 trusted publisher:`basdotio/AgentGuard` + `release.yml`,环境留空,勾了 "Allow npm publish"
+  (不勾就只能 `npm stage publish`,每版要人用 2FA 逐个批准,而且"npm 先于 GitHub release"那条顺序保证会失效)。
+  **改 workflow 文件名、搬仓库、加新平台包,都要去 npmjs.com 重建/新增这几条**,否则 publish 报的是一个
+  什么都没说的 ENEEDAUTH。它要 npm ≥ 11.5.1,所以 setup-node 是 24 不是 20,publish 步骤开头有一条
+  版本下限检查 —— 旧 npm 不会说"我太老",只会退回 token 认证然后失败。`--provenance` 仓库公开之后
+  已经打开(源码仓库和分发仓库合并成了同一个公开仓库,`repository` 与之相符);OIDC 下它本来就自动生成,
+  flag 留着是冗余的保险。以前"私有源码仓库、公开分发仓库"时开它会让 publish 失败,别把两个仓库再拆开。
 - **`npx` 和加载时闸门不能混用**,这是 npm 这条路新开的口子:`hook install` 注册绝对路径,
   npx 的路径在 npm 的 `_npx` 缓存里、之后会被回收,回收之后就是 `GATE-001`
   ——每个 skill 未经审计地加载,而外表和"受保护"一模一样。所以

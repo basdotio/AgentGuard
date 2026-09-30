@@ -18,7 +18,7 @@ on:
 
 permissions:
   contents: write # required to create the release and upload assets
-  id-token: write # npm --provenance signs the packages with this workflow's identity
+  id-token: write # npm trusted publishing (OIDC) authenticates with it, and provenance signs with it
 
 jobs:
   release:
@@ -34,9 +34,10 @@ jobs:
           go-version: '1.23'
       # Publishing to npm needs a registry-scoped Node. node-version is not the runtime the
       # package uses — the launcher only spawns the static binary — it is what runs `npm publish`.
+      # 24, not 20: trusted publishing needs npm >= 11.5.1, which Node 20 does not bundle.
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
       # The gate runs here too, not only on main: a tag can point at any commit, and an
@@ -65,8 +66,18 @@ jobs:
 
       # Packages the binaries `make dist` just produced — it does not rebuild them, so what npm
       # installs is byte-for-byte what the release page lists and SHA256SUMS.txt describes.
+      #
+      # A workflow_dispatch run is not on a tag, so `git describe` stamps something like
+      # `v0.16.0-3-gabc` (or a bare commit when the repo has no tags yet) and npm-dist rightly
+      # refuses it. The dry run states a throwaway version instead; nothing publishes it, because
+      # the publish step is gated on the tag.
       - name: lay out the npm packages
-        run: make npm-dist
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            make npm-dist
+          else
+            make npm-dist NPM_VERSION=0.0.0-dryrun
+          fi
 
       # `npm pack` on every run, tagged or not: it is what catches a lost executable bit or an
       # unsubstituted template placeholder, and it costs nothing on a dry run.
@@ -98,15 +109,26 @@ jobs:
       # 5xx) could only be recovered by cutting a new version tag: the re-run would abort on the
       # first package with "cannot publish over the previously published versions".
       #
+      # Auth is npm trusted publishing (OIDC), not a stored token: each of the five packages has a
+      # trusted-publisher entry on npmjs.com naming basdotio/AgentGuard and release.yml, with
+      # direct `npm publish` allowed. There is no NPM_TOKEN secret to expire or leak. Renaming
+      # this file or moving the repo breaks publishing until those five entries are recreated.
+      #
       # --provenance: npm signs each package with this workflow's identity and the commit it built
-      # from, verifiable with `npm audit signatures`. It requires a public repository whose URL
-      # matches package.json's `repository` field — both true here.
+      # from, verifiable with `npm audit signatures`. Trusted publishing does this on its own; the
+      # flag is redundant there and stays so provenance survives if auth ever goes back to a token.
+      # It requires a public repository whose URL matches package.json's `repository` field.
       - name: publish to npm
         if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
+          # An npm too old for trusted publishing does not say so: it falls back to token auth and
+          # dies with a bare ENEEDAUTH that names neither cause.
+          npm_version="$(npm --version)"
+          if ! node -e 'const [a,b,c]=process.argv[1].split(".").map(Number);process.exit(a>11||(a===11&&(b>5||(b===5&&c>=1)))?0:1)' "$npm_version"; then
+            echo "npm $npm_version is too old for trusted publishing (needs >= 11.5.1)" >&2
+            exit 1
+          fi
           publish() {
             local dir="$1" spec
             spec="$(node -p "const p=require('./$dir/package.json');p.name+'@'+p.version")"
