@@ -17,7 +17,19 @@ rate copied into prose goes stale on the next rule. `git tag` and the Releases p
 - Invariants: never executes scanned content, no cross-root symlink reads, secret redaction before storage (+ high-entropy fallback).
 - Single static binary (`CGO_ENABLED=0`), MIT + SPDX, CI, bilingual README.
 
-## v0.2.0 – v0.15.0
+## v0.2.0 – v0.16.0
+
+**v0.16.0 (2026-09-30) — the npm packages are published by the release workflow itself, and carry provenance.**
+
+No rule, score or gate answer changed, and the binaries are built the same way; this release changes how they reach npm.
+
+- **npm publishing uses trusted publishing (OIDC) instead of a stored token.** Each of the five packages trusts `release.yml` in
+  `basdotio/AgentGuard` and nothing else, so there is no long-lived publish token to expire or leak. Every package now carries a
+  provenance attestation tying it to the commit and workflow run that built it, which `npm audit signatures` verifies.
+- **The packages' `repository` link points at this repository**; through v0.15.0 it named the old distribution repo, `basdotio/guard`.
+- **The release workflow's dry run no longer stops at `make npm-dist`.** A `workflow_dispatch` run is not on a tag, so npm-dist
+  rightly refused the version `git describe` stamped and the dry run never reached the pack step; it now packs at `0.0.0-dryrun`,
+  and publishing stays gated on the tag.
 
 **v0.15.0 (2026-09-29) — a sampled judge finding shows every vote, and the benchmark prints the denominator a tool declares.**
 
