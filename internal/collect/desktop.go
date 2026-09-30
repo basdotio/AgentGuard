@@ -317,13 +317,13 @@ func collectDesktop(home string, env *model.EnvSummary) ([]model.ArtifactReport,
 	return out, notes
 }
 
-// desktopPluginPaths maps a desktop-installed bundle's name (the part before "@marketplace")
-// to its directory, for the load-time gate's `plugin:skill` resolution — the same lookup
-// PluginPaths does over installed_plugins.json, over the other install channel. Same
-// containment, no notes: a bundle it cannot resolve is simply absent, and the gate turns an
+// desktopPluginInstalls maps a desktop-installed bundle's name (the part before "@marketplace")
+// to its directory and marketplace, for the load-time gate's `plugin:skill` resolution — the
+// same lookup PluginInstalls does over installed_plugins.json, over the other install channel.
+// Same containment, no notes: a bundle it cannot resolve is simply absent, and the gate turns an
 // absence into GATE-000 rather than a silent pass.
-func desktopPluginPaths(home string) map[string]string {
-	out := map[string]string{}
+func desktopPluginInstalls(home string) map[string]PluginInstall {
+	out := map[string]PluginInstall{}
 	base, ok, _ := desktopBase(home)
 	if !ok {
 		return out
@@ -351,7 +351,7 @@ func desktopPluginPaths(home string) map[string]string {
 			if !withinDir(home, real) {
 				continue
 			}
-			out[p.Name] = real
+			out[p.Name] = PluginInstall{Dir: real, Marketplace: p.MarketplaceName, Desktop: true}
 		}
 	}
 	return out
