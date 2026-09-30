@@ -10,8 +10,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/basdotio/agent-guard/internal/detect"
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/detect"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // SARIF is the format that puts a finding where the person who can fix it will see it: annotated on

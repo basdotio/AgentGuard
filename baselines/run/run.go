@@ -24,7 +24,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/basdotio/agent-guard/baselines/ledger"
+	"github.com/basdotio/AgentGuard/baselines/ledger"
 )
 
 // Run is one measurement of one tool against one corpus checkout. It is written beside the

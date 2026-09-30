@@ -42,8 +42,8 @@ func TestMarketplaceEntryVersionMatchesPlugin(t *testing.T) {
 	if err := json.Unmarshal(b, &mk); err != nil {
 		t.Fatal(err)
 	}
-	if mk.Name != "guard" {
-		t.Errorf("marketplace name = %q, want the public repo name \"guard\" (the desktop looks it up by repo name)", mk.Name)
+	if mk.Name != "AgentGuard" {
+		t.Errorf("marketplace name = %q, want the public repo name \"AgentGuard\" (the desktop looks it up by repo name)", mk.Name)
 	}
 	if len(mk.Plugins) != 1 || mk.Plugins[0].Name != pluginBundleName {
 		t.Fatalf("marketplace must list exactly the %s plugin, got %+v", pluginBundleName, mk.Plugins)

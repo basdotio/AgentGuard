@@ -49,7 +49,7 @@ depend on which machine is running it. `scan` is a statement about the machine i
 `darwin-arm64` · `darwin-amd64` · `linux-amd64` · `linux-arm64`:
 
 ```bash
-REPO=basdotio/agent-guard
+REPO=basdotio/AgentGuard
 PLAT=darwin-arm64                                   # <- yours
 curl -fsSLO "https://github.com/$REPO/releases/latest/download/aguard-$PLAT"
 curl -fsSLO "https://github.com/$REPO/releases/latest/download/SHA256SUMS.txt"
@@ -68,7 +68,7 @@ chmod +x "aguard-$PLAT" && sudo mv "aguard-$PLAT" /usr/local/bin/aguard
 **From source** (Go 1.23+):
 
 ```bash
-git clone https://github.com/basdotio/agent-guard && cd agent-guard
+git clone https://github.com/basdotio/AgentGuard && cd AgentGuard
 make build          # produces bin/aguard
 # or directly:
 CGO_ENABLED=0 go build -o bin/aguard ./cmd/aguard
@@ -92,16 +92,16 @@ it") instead of memorising flags:
 In the **terminal** Claude Code, as slash commands:
 
 ```
-/plugin marketplace add basdotio/guard
-/plugin install agentguard@guard
+/plugin marketplace add basdotio/AgentGuard
+/plugin install agentguard@AgentGuard
 ```
 
 In the **VS Code / JetBrains extension**, `/plugin` is not available — run the same two
 steps from a shell with the `claude` CLI instead:
 
 ```bash
-claude plugin marketplace add basdotio/guard
-claude plugin install agentguard@guard
+claude plugin marketplace add basdotio/AgentGuard
+claude plugin install agentguard@AgentGuard
 ```
 Third-party marketplaces do not auto-update by default in the terminal. Turn it on once so skill
 and command updates arrive on their own — `/plugin` → **Marketplaces** → `agentguard` → **Enable

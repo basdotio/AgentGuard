@@ -8,9 +8,9 @@ import (
 	"io"
 	"strings"
 
-	"github.com/basdotio/agent-guard/internal/detect"
-	"github.com/basdotio/agent-guard/internal/model"
-	"github.com/basdotio/agent-guard/internal/score"
+	"github.com/basdotio/AgentGuard/internal/detect"
+	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/score"
 )
 
 // Sanitize strips control characters (C0, DEL, C1) from any string before it is written to a

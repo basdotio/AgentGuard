@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // A reverse shell opens an outbound connection and binds an interpreter's standard streams to it,

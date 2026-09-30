@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/agent-guard/internal/gate"
+	"github.com/basdotio/AgentGuard/internal/gate"
 )
 
 // hookRun drives the real runner the way Claude Code drives it: one JSON event in, one JSON

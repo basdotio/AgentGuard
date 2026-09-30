@@ -29,7 +29,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // The injected sentence is PARAPHRASED on purpose: INJ-001..004 are keyword regexes, so a

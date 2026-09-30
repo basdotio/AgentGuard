@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // TestSandboxBanner_RendersInTextAndHTML: when a scan is marked as run in a sandbox, the

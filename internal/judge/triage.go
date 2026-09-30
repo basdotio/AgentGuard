@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 const maxTriageItems = 40 // cap findings sent per artifact (keeps the prompt bounded)

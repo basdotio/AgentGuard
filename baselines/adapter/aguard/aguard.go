@@ -15,12 +15,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/basdotio/agent-guard/baselines/adapter"
-	"github.com/basdotio/agent-guard/baselines/corpus"
-	"github.com/basdotio/agent-guard/baselines/ledger"
-	"github.com/basdotio/agent-guard/baselines/scrub"
-	"github.com/basdotio/agent-guard/internal/model"
-	"github.com/basdotio/agent-guard/internal/score"
+	"github.com/basdotio/AgentGuard/baselines/adapter"
+	"github.com/basdotio/AgentGuard/baselines/corpus"
+	"github.com/basdotio/AgentGuard/baselines/ledger"
+	"github.com/basdotio/AgentGuard/baselines/scrub"
+	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/score"
 )
 
 // ScanTimeout bounds one aguard run. The corpus's injected-fault fixtures include a FIFO in

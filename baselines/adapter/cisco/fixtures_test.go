@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/agent-guard/baselines/adapter"
+	"github.com/basdotio/AgentGuard/baselines/adapter"
 )
 
 func TestTraverseOnlyHasTwoWaysToPassAndOneToFail(t *testing.T) {

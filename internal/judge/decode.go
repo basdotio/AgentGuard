@@ -10,8 +10,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/basdotio/agent-guard/internal/collect"
-	"github.com/basdotio/agent-guard/internal/detect"
+	"github.com/basdotio/AgentGuard/internal/collect"
+	"github.com/basdotio/AgentGuard/internal/detect"
 )
 
 // Deobfuscation caps: decoding is DECODING, never execution (§16.1). Bounded so a huge file

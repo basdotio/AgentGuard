@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // write creates a file (and its parents) under dir.

@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/basdotio/agent-guard/internal/collect"
-	"github.com/basdotio/agent-guard/internal/safeio"
+	"github.com/basdotio/AgentGuard/internal/collect"
+	"github.com/basdotio/AgentGuard/internal/safeio"
 )
 
 // The manifest is what makes a quarantine reversible. Before it existed, recovery was a `mv` line

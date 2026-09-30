@@ -5,7 +5,7 @@ package sarif
 import (
 	"testing"
 
-	"github.com/basdotio/agent-guard/baselines/ledger"
+	"github.com/basdotio/AgentGuard/baselines/ledger"
 )
 
 // TestEmptySarifRunIsNotACleanBill is this adapter's headline criterion, and the trap the

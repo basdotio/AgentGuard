@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/agent-guard/baselines/ledger"
+	"github.com/basdotio/AgentGuard/baselines/ledger"
 )
 
 // mal builds a qualifying malicious sample on one surface.

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // TestEscapes covers the whole point of PERM-006: `Bash(git *)` is `Bash(*)` wearing a

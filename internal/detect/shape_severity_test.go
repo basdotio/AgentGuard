@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/agent-guard/internal/model"
-	"github.com/basdotio/agent-guard/internal/score"
+	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/score"
 )
 
 // The four shape rules were written for four samples that evade line rules, and each

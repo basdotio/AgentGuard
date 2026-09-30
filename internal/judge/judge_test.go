@@ -15,9 +15,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/basdotio/agent-guard/internal/model"
-	"github.com/basdotio/agent-guard/internal/report"
-	"github.com/basdotio/agent-guard/internal/score"
+	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/report"
+	"github.com/basdotio/AgentGuard/internal/score"
 )
 
 func TestClampSeverity(t *testing.T) {

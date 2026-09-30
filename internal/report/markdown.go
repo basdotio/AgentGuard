@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/basdotio/agent-guard/internal/detect"
-	"github.com/basdotio/agent-guard/internal/model"
-	"github.com/basdotio/agent-guard/internal/score"
+	"github.com/basdotio/AgentGuard/internal/detect"
+	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/score"
 )
 
 // Markdown renders the scan as GitHub-flavoured markdown — the third human-read renderer, for
@@ -326,7 +326,7 @@ func mdScanDetails(b *strings.Builder, r model.ScanResult) {
 				len(cats)-len(silent), len(cats), strings.Join(silent, ", "))
 		}
 	}
-	fmt.Fprintf(b, "- Static analysis only: it cannot prove malice or see runtime behaviour. `--json` and `--sarif` carry every path in full; rule ids are explained in docs/rules.md: https://github.com/basdotio/agent-guard/blob/dev/docs/rules.md\n")
+	fmt.Fprintf(b, "- Static analysis only: it cannot prove malice or see runtime behaviour. `--json` and `--sarif` carry every path in full; rule ids are explained in docs/rules.md: https://github.com/basdotio/AgentGuard/blob/main/docs/rules.md\n")
 	fmt.Fprintf(b, "\n<sub>AgentGuard %s", text(r.ToolVersion))
 	if r.ScannedAt > 0 {
 		fmt.Fprintf(b, " · scanned %s", time.Unix(r.ScannedAt, 0).UTC().Format("2006-01-02 15:04 UTC"))

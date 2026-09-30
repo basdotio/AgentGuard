@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/basdotio/agent-guard/internal/model"
-	"github.com/basdotio/agent-guard/internal/safeio"
+	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/safeio"
 )
 
 // Deciding whether a skill was ever used needs a record of what ran. There are two on disk and they

@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/basdotio/agent-guard/internal/collect"
-	"github.com/basdotio/agent-guard/internal/safeio"
+	"github.com/basdotio/AgentGuard/internal/collect"
+	"github.com/basdotio/AgentGuard/internal/safeio"
 )
 
 // Binary-behind-plugin detection, without a network call.

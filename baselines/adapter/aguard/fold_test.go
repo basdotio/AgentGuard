@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/basdotio/agent-guard/baselines/ledger"
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/baselines/ledger"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // Moved here with the fold logic from hack/corpus-runner. It pins the one thing that

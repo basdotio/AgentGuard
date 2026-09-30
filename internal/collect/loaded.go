@@ -9,8 +9,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/basdotio/agent-guard/internal/model"
-	"github.com/basdotio/agent-guard/internal/parse"
+	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/parse"
 )
 
 // This file collects the surfaces Claude Code loads WITHOUT being asked: rules, workflows, output

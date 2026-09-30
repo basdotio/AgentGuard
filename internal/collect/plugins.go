@@ -11,8 +11,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/basdotio/agent-guard/internal/model"
-	"github.com/basdotio/agent-guard/internal/safeio"
+	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/safeio"
 )
 
 // manifestSchema is the installed_plugins.json layout this build understands.

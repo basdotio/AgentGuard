@@ -4,7 +4,7 @@ package detect
 import (
 	"testing"
 
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // TestDetect_RecursiveDeleteOfATreeRoot: FS-003 is titled "rm -rf against root/home" but

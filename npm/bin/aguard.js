@@ -50,7 +50,7 @@ if (!suffixes.includes(`${platform}-${arch}`)) {
     `no prebuilt binary for ${platform}-${arch}. Supported: ` +
       (suffixes.join(", ") || "none declared") +
       ". Download a release binary or build from source: " +
-      "https://github.com/basdotio/guard/releases/latest",
+      "https://github.com/basdotio/AgentGuard/releases/latest",
   );
 }
 

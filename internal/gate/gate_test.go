@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // fixedNow keeps approval timestamps deterministic.

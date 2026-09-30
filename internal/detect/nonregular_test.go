@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // A named pipe planted inside an artifact used to hang the scan forever: os.ReadFile blocks on

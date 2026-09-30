@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // This file is the report's plain-language layer, shared by the terminal and HTML renderers so

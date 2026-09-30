@@ -4,7 +4,7 @@ package main
 import (
 	"sort"
 
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // fingerprint reduces a scan to the set of findings a review can be said to cover: one

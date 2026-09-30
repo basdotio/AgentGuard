@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // idHexLen is the starting length of an item ID's hex body, grown on collision.

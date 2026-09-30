@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	ccauditadapter "github.com/basdotio/agent-guard/baselines/adapter/ccaudit"
-	ciscoadapter "github.com/basdotio/agent-guard/baselines/adapter/cisco"
+	ccauditadapter "github.com/basdotio/AgentGuard/baselines/adapter/ccaudit"
+	ciscoadapter "github.com/basdotio/AgentGuard/baselines/adapter/cisco"
 )
 
 // TestPickRefusesWithAnActionableReason — the driver's refusals are the only thing a person sees

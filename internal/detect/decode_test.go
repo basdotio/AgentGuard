@@ -4,7 +4,7 @@ package detect
 import (
 	"testing"
 
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // TestDetect_DecodeThenExecute: a base64 payload decoded straight into a shell — `base64 -d

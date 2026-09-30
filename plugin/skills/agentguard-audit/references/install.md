@@ -40,7 +40,7 @@ lines in Terminal, then print exactly this — with `$PLAT` replaced by the valu
 and wait for the user to say "done":
 
 ```bash
-cd ~/Downloads && curl -fsSLO "https://github.com/basdotio/guard/releases/latest/download/aguard-$PLAT" && curl -fsSLO "https://github.com/basdotio/guard/releases/latest/download/SHA256SUMS.txt"
+cd ~/Downloads && curl -fsSLO "https://github.com/basdotio/AgentGuard/releases/latest/download/aguard-$PLAT" && curl -fsSLO "https://github.com/basdotio/AgentGuard/releases/latest/download/SHA256SUMS.txt"
 shasum -a 256 --ignore-missing -c SHA256SUMS.txt
 mkdir -p ~/.local/bin && chmod +x "aguard-$PLAT" && mv "aguard-$PLAT" ~/.local/bin/aguard
 ```
@@ -66,13 +66,13 @@ echo "$PLAT"
 Download the binary (one command):
 
 ```bash
-curl -fsSLO "https://github.com/basdotio/guard/releases/latest/download/aguard-$PLAT"
+curl -fsSLO "https://github.com/basdotio/AgentGuard/releases/latest/download/aguard-$PLAT"
 ```
 
 Download the checksums (one command):
 
 ```bash
-curl -fsSLO "https://github.com/basdotio/guard/releases/latest/download/SHA256SUMS.txt"
+curl -fsSLO "https://github.com/basdotio/AgentGuard/releases/latest/download/SHA256SUMS.txt"
 ```
 
 Verify BEFORE running it. Do not skip this step and do not offer to skip it:
@@ -106,7 +106,7 @@ in its output says so.
 
 ```bash
 aguard version
-curl -fsSL "https://api.github.com/repos/basdotio/guard/releases/latest"   | grep -o '"tag_name": *"[^"]*"'
+curl -fsSL "https://api.github.com/repos/basdotio/AgentGuard/releases/latest"   | grep -o '"tag_name": *"[^"]*"'
 ```
 
 If the installed version is older, fetch and verify exactly as in the prebuilt section above,
@@ -124,7 +124,7 @@ hook pointing at a file that no longer exists — the `GATE-001` failure mode.
 Update the plugin (skills and commands) separately — it moves on its own clock:
 
 ```
-/plugin update agentguard@guard        # VS Code / JetBrains: `claude plugin update agentguard@guard` in a shell
+/plugin update agentguard@AgentGuard        # VS Code / JetBrains: `claude plugin update agentguard@AgentGuard` in a shell
 ```
 
 then restart Claude Code (the extension: reload the window).
@@ -136,7 +136,7 @@ public distribution repo. This path is for contributors who have access to the p
 source repository.
 
 ```bash
-git clone https://github.com/basdotio/agent-guard && cd agent-guard
+git clone https://github.com/basdotio/AgentGuard && cd AgentGuard
 make build                                        # -> bin/aguard
 # or, without make:
 CGO_ENABLED=0 go build -o bin/aguard ./cmd/aguard

@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/basdotio/agent-guard/internal/safeio"
+	"github.com/basdotio/AgentGuard/internal/safeio"
 )
 
 // ApprovalsFile is the store's name under a scan root. It sits beside .aguardignore and is

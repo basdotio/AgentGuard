@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/agent-guard/baselines/adapter"
-	"github.com/basdotio/agent-guard/baselines/ledger"
+	"github.com/basdotio/AgentGuard/baselines/adapter"
+	"github.com/basdotio/AgentGuard/baselines/ledger"
 )
 
 // TestResultsCarryNoMachinePaths: every row's and fixture's Detail is scrubbed of the

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 package detect
 
-import "github.com/basdotio/agent-guard/internal/model"
+import "github.com/basdotio/AgentGuard/internal/model"
 
 // OWASP's Top 10 for Agentic Applications (2026) is the catalogue a security reviewer, a procurement
 // checklist and every comparable scanner speak in. This file attaches those identifiers to our

@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/basdotio/agent-guard/baselines/adapter"
+	"github.com/basdotio/AgentGuard/baselines/adapter"
 )
 
 // The six injected-fault fixtures, judged by the corpus's own tool-neutral `Expected` sentences —

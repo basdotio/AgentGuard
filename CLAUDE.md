@@ -2,7 +2,7 @@
 
 本文件为 Claude Code (claude.ai/code) 在本仓库中工作时提供指引。
 
-本仓库是 `aguard` 的 Go 实现(module `github.com/basdotio/agent-guard`),**所有代码都在这里**。
+本仓库是 `aguard` 的 Go 实现(module `github.com/basdotio/AgentGuard`),**所有代码都在这里**。
 
 > **module path 有三处必须始终一致**:`go.mod` 的 module 指令、每个 `.go` 文件的 import、
 > 以及 `hack/github-action.yml` 里那条 `go install`(它会被拷到分发仓库,所以那边也要跟着动)。

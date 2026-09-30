@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/agent-guard/internal/detect"
+	"github.com/basdotio/AgentGuard/internal/detect"
 )
 
 // idLiteral matches a rule-ID string literal as the code writes it: "EXEC-001", "COV-000".

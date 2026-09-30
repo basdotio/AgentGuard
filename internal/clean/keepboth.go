@@ -9,8 +9,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/basdotio/agent-guard/internal/model"
-	"github.com/basdotio/agent-guard/internal/safeio"
+	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/safeio"
 )
 
 // "Keep both" is a real answer, not an evasion. Two skills with identical descriptions are
