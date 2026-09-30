@@ -55,6 +55,14 @@ paths:
   marketplace 条目里的 `version` 不是可选的装饰:桌面版的更新检查读的是账号级名单里的 `availableVersion`,
   服务端从 marketplace.json 条目算,条目没写 version 就永远显示 "No changes since the last release"
   (2026-09-05 真机确认;CLI 那边读 plugin.json,两边不一致时 CLI 静默取 plugin.json)。
-  `TestMarketplaceEntryVersionMatchesPlugin` 钉住两个文件相等和 marketplace 名叫 `guard`。skill/command 是纯文本,没有构建步骤,也**不进 canonical 哈希的排除名单**(它们不是
+  `TestMarketplaceEntryVersionMatchesPlugin` 钉住两个文件相等,以及 marketplace 名等于 `cmd/aguard/version.go` 的
+  `homeMarketplace`(`AgentGuard`)。skill/command 是纯文本,没有构建步骤,也**不进 canonical 哈希的排除名单**(它们不是
   生成物)。
+- **`aguard version` 的升级提示按"这一份安装"给命令,不写死 marketplace**(2026-09-30)。原来是字面量 `agentguard@guard`:
+  从本仓库装的(`@AgentGuard`)拿到的是一条找不到 marketplace 的命令;从旧分发仓库 `basdotio/guard` 装的(停在 0.9.0)拿到的是
+  一条能成功、但永远追不上的命令。现在 `collect.PluginInstalls` 带出每个渠道自己记录的 marketplace(`installed_plugins.json` 的
+  key、桌面版 manifest 的 `marketplaceName`)和是不是桌面版;`updateHint` 据此给 `claude plugin update`、桌面版 Customize,或
+  "换到 `basdotio/AgentGuard`"三种之一。marketplace 名来自配置文件,而这一行原样打印、还会被 skill 转述给模型,所以**不是
+  普通名字的一律不回显**(`plainMarketplaceName`),`TestUpdateHint` 里有一条带反引号和换行的用例钉着。**改仓库名或
+  marketplace 名时,`homeMarketplace`/`homeMarketplaceRepo` 要一起改。**
 

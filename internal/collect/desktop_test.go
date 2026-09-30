@@ -205,6 +205,34 @@ func TestPluginPaths_IncludesDesktopBundles(t *testing.T) {
 	}
 }
 
+// TestPluginInstalls_RecordMarketplaceAndChannel: `aguard version` tells a user how to update
+// the plugin, and the right command depends on which marketplace installed it and through which
+// channel — so the lookup carries both, taken from each channel's own record (the "@marketplace"
+// half of the installed_plugins.json key; the desktop manifest's marketplaceName), and the entry
+// that wins a name collision carries ITS marketplace, not the loser's.
+func TestPluginInstalls_RecordMarketplaceAndChannel(t *testing.T) {
+	home, root, pluginDir, _ := desktopStore(t)
+	real, _ := filepath.EvalSymlinks(pluginDir)
+
+	want := PluginInstall{Dir: real, Marketplace: "guard", Desktop: true}
+	if got := PluginInstalls(root, home)["agentguard"]; got != want {
+		t.Fatalf("desktop-only install = %+v, want %+v", got, want)
+	}
+
+	cli := filepath.Join(root, "plugins", "cache", "AgentGuard", "agentguard", "9.9.9")
+	mustWrite(t, filepath.Join(cli, "skills", "s", "SKILL.md"), "---\nname: s\n---\n")
+	installedPlugins(t, root, "agentguard@AgentGuard", cli)
+	cliReal, _ := filepath.EvalSymlinks(cli)
+
+	want = PluginInstall{Dir: cliReal, Marketplace: "AgentGuard", Desktop: false}
+	if got := PluginInstalls(root, home)["agentguard"]; got != want {
+		t.Errorf("with both channels installed = %+v, want the CLI install %+v", got, want)
+	}
+	if got := PluginPaths(root, home)["agentguard"]; got != cliReal {
+		t.Errorf("PluginPaths must stay the Dir projection of PluginInstalls: got %q, want %q", got, cliReal)
+	}
+}
+
 // TestCollectDesktop_BundledMCPServersAreCounted: same rule for a desktop-installed plugin.
 func TestCollectDesktop_BundledMCPServersAreCounted(t *testing.T) {
 	_, root, pluginDir, _ := desktopStore(t)

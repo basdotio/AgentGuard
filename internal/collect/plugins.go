@@ -31,22 +31,46 @@ type pluginManifestDoc struct {
 	} `json:"plugins"`
 }
 
+// PluginInstall is where an installed plugin bundle loads from, and which install it is.
+type PluginInstall struct {
+	Dir string
+	// Marketplace is the marketplace name the installing channel recorded — the "@marketplace"
+	// half of the installed_plugins.json key, or the desktop manifest's marketplaceName — as
+	// written, unvalidated: it comes out of a config file, and a caller that prints it must
+	// check it first. "" when the record does not say.
+	Marketplace string
+	// Desktop is true for a bundle from Claude Desktop's store, which updates through the
+	// desktop app rather than `claude plugin`.
+	Desktop bool
+}
+
 // PluginPaths maps an installed plugin's BUNDLE name (the part before "@marketplace") to the
-// directory that actually gets loaded, applying the same containment collectPlugins applies:
-// symlinks resolved, anything landing outside home dropped (§16.2, invariant #2).
+// directory that actually gets loaded. It is the Dir projection of PluginInstalls.
+func PluginPaths(root, home string) map[string]string {
+	out := map[string]string{}
+	for name, in := range PluginInstalls(root, home) {
+		out[name] = in.Dir
+	}
+	return out
+}
+
+// PluginInstalls maps an installed plugin's BUNDLE name (the part before "@marketplace") to
+// the directory that actually gets loaded and the install that put it there, applying the same
+// containment collectPlugins applies: symlinks resolved, anything landing outside home dropped
+// (§16.2, invariant #2).
 //
 // Callers get no notes back — this is a lookup, not a collection pass. A plugin it cannot
 // resolve is simply absent from the map, and the caller decides what an absence means; for
 // the gate that is a GATE-000 "loaded without an audit", never a silent pass.
-func PluginPaths(root, home string) map[string]string {
-	out := map[string]string{}
+func PluginInstalls(root, home string) map[string]PluginInstall {
+	out := map[string]PluginInstall{}
 	// Desktop-installed bundles first, so an entry from installed_plugins.json overwrites a
 	// desktop one of the same bundle name: when both channels install the same plugin the CLI's
 	// own loader owns the name, and the gate keeps resolving it exactly as it did before the
 	// desktop store was known. A bundle only the desktop installed used to resolve to nothing
 	// (GATE-000 on every load); now it resolves to what actually loads.
-	for name, dir := range desktopPluginPaths(home) {
-		out[name] = dir
+	for name, in := range desktopPluginInstalls(home) {
+		out[name] = in
 	}
 	b, err := safeio.ReadFile(filepath.Join(root, "plugins", "installed_plugins.json"), safeio.MaxConfigBytes)
 	if err != nil {
@@ -57,9 +81,9 @@ func PluginPaths(root, home string) map[string]string {
 		return out
 	}
 	for name, insts := range doc.Plugins {
-		bundle := name
-		if i := strings.IndexByte(bundle, '@'); i > 0 {
-			bundle = bundle[:i]
+		bundle, marketplace := name, ""
+		if i := strings.IndexByte(name, '@'); i > 0 {
+			bundle, marketplace = name[:i], name[i+1:]
 		}
 		for _, inst := range insts {
 			if inst.InstallPath == "" {
@@ -75,7 +99,7 @@ func PluginPaths(root, home string) map[string]string {
 			if !withinDir(home, real) {
 				continue
 			}
-			out[bundle] = real
+			out[bundle] = PluginInstall{Dir: real, Marketplace: marketplace}
 		}
 	}
 	return out

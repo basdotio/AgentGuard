@@ -42,8 +42,10 @@ func TestMarketplaceEntryVersionMatchesPlugin(t *testing.T) {
 	if err := json.Unmarshal(b, &mk); err != nil {
 		t.Fatal(err)
 	}
-	if mk.Name != "AgentGuard" {
-		t.Errorf("marketplace name = %q, want the public repo name \"AgentGuard\" (the desktop looks it up by repo name)", mk.Name)
+	// Against the constant, not a literal: `aguard version` tells stale installs to switch to
+	// homeMarketplace, so the file and that hint must name the same marketplace.
+	if mk.Name != homeMarketplace || !strings.HasSuffix(homeMarketplaceRepo, "/"+homeMarketplace) {
+		t.Errorf("marketplace name = %q, want %q, the public repo name in %q (the desktop looks it up by repo name)", mk.Name, homeMarketplace, homeMarketplaceRepo)
 	}
 	if len(mk.Plugins) != 1 || mk.Plugins[0].Name != pluginBundleName {
 		t.Fatalf("marketplace must list exactly the %s plugin, got %+v", pluginBundleName, mk.Plugins)
