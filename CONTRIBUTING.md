@@ -29,6 +29,15 @@ conventions in `.claude/rules/conventions.md` explain the one dependency that tr
 - Confirmed bypasses, coverage gaps and rejected approaches are recorded under `issues/` with the
   evidence; a fix that leaves nothing worth knowing afterwards needs no record beyond its commit.
 
+## Proposals for larger changes
+
+A change to a rule, an invariant, the data model or the collection surface — anything whose
+"done" is not obvious — starts as a proposal under `docs/proposals/` (template and rules in
+[docs/proposals/README.md](docs/proposals/README.md), in Chinese). The directory a proposal sits
+in is its state: `draft/` and `design/` live on the `p/NNN-slug` branch, `complete/` and
+`rejected/` land on `main` with the PR. Commits on such a branch end with `(P-NNN)`. Typos, CI
+lines and comment fixes need none of this.
+
 ## Reporting a security issue
 
 Open a private security advisory on GitHub rather than a public issue for anything that lets a
