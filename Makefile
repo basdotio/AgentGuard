@@ -26,8 +26,8 @@ lint:
 	golangci-lint run ./...
 
 # The whole gate in one command: what a change must pass before it is
-# handed over for review. The self-scan covers the shipped plugin AND the four process skills in
-# plugin/ — a repository that gates other people's skills runs its own through the same gate. Each line is its own shell
+# handed over for review. The self-scan covers the shipped plugin — a repository that gates other
+# people's skills runs its own through the same gate. Each line is its own shell; the first failure stops make. The order is
 # cheapest-first so a red vet does not wait for the race detector. Deliberately absent: the
 # real-machine scan (`aguard scan --root ~/.claude`) — that one is run by hand after collect/detect
 # changes, because its input is this machine, not the repository.
