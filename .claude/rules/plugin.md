@@ -21,11 +21,11 @@ paths:
   ./bin/aguard check plugin --fail-on low     # 必须 exit 0(实测 100/100)
   ```
 
-- **marketplace.json 的 `name` 必须等于公开仓库名(`guard`)。** 桌面版 Customize 里添加 marketplace 时,是按用户
+- **marketplace.json 的 `name` 必须等于公开仓库名(`AgentGuard`)。** 桌面版 Customize 里添加 marketplace 时,是按用户
   输入的 `owner/repo` 取仓库名当 marketplace 名记在账号里的;点 Update 时它拿这个名字让内置 CLI 刷新,而 CLI 是按
   marketplace.json 里声明的名字注册的。两个名字不一样,CLI 回 "not found. available marketplaces",桌面版翻译成
   `MARKETPLACE_ERROR:NOT_REGISTERED`,界面只显示 "Couldn't check for updates",插件永远停在装机时那个版本
-  (2026-09-04 真机日志确认,marketplace 原来叫 `agentguard`)。所以插件 ID 是 `agentguard@guard`,改仓库名就要
+  (2026-09-04 真机日志确认,marketplace 原来叫 `agentguard`)。所以插件 ID 是 `agentguard@AgentGuard`,改仓库名就要
   同时改这里。
 - **`marketplace.json` 必须留在仓库根,`plugin.json` 必须不在** ——
   `/plugin marketplace add <repo>` 只认根上的 `.claude-plugin/marketplace.json`;而

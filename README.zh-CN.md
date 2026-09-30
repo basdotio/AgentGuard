@@ -49,7 +49,7 @@ npm i -g @bas.io/guard                              # 或者装下来:PATH 上�
 `darwin-arm64` · `darwin-amd64` · `linux-amd64` · `linux-arm64` 里挑:
 
 ```bash
-REPO=basdotio/agent-guard
+REPO=basdotio/AgentGuard
 PLAT=darwin-arm64                                   # <- 换成你的
 curl -fsSLO "https://github.com/$REPO/releases/latest/download/aguard-$PLAT"
 curl -fsSLO "https://github.com/$REPO/releases/latest/download/SHA256SUMS.txt"
@@ -62,7 +62,7 @@ chmod +x "aguard-$PLAT" && sudo mv "aguard-$PLAT" /usr/local/bin/aguard
 **从源码构建**(Go 1.23+):
 
 ```bash
-git clone https://github.com/basdotio/agent-guard && cd agent-guard
+git clone https://github.com/basdotio/AgentGuard && cd AgentGuard
 make build          # 产出 bin/aguard
 # 或直接:
 CGO_ENABLED=0 go build -o bin/aguard ./cmd/aguard
@@ -84,15 +84,15 @@ CGO_ENABLED=0 go build -o bin/aguard ./cmd/aguard
 **终端版** Claude Code,用斜杠命令:
 
 ```
-/plugin marketplace add basdotio/guard
-/plugin install agentguard@guard
+/plugin marketplace add basdotio/AgentGuard
+/plugin install agentguard@AgentGuard
 ```
 
 **VS Code / JetBrains 扩展**里没有 `/plugin` —— 到 shell 里用 `claude` 命令跑同样两步:
 
 ```bash
-claude plugin marketplace add basdotio/guard
-claude plugin install agentguard@guard
+claude plugin marketplace add basdotio/AgentGuard
+claude plugin install agentguard@AgentGuard
 ```
 终端里第三方 marketplace 默认**不**自动更新。打开一次,skill 和命令的更新就会自己到:`/plugin` →
 **Marketplaces** → `agentguard` → **Enable auto-update**(桌面版添加 marketplace 时的 "Sync automatically"

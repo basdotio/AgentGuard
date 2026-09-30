@@ -473,7 +473,7 @@ v1 写的 `internal/rules/` 从未存在:规则表就在 `detect/rules_data.go`,
 
 ## 14. 待定 —— 已全部关闭(2026-09-15 记录)
 
-1. **命名**:产品 AgentGuard,二进制 `aguard`,npm 包 `@bas.io/guard`,插件 `agentguard@guard`。
+1. **命名**:产品 AgentGuard,二进制 `aguard`,npm 包 `@bas.io/guard`,插件 `agentguard@AgentGuard`。
 2. **HTML 报告**:已交付,信息架构见 §9。
 3. **AST**:**推迟到阶段 1 之后**,等 benchmark 的「错误响」列证明正则精度是真问题再付依赖成本。词法层(`logical.go`)已做。
 4. **规则来源**:从 OWASP Agentic / MITRE ATLAS 重新推导,每条带 `Ref`,已落地;`owasp.go` 给每条规则一个 ASI 位置,`TestASIMapping_EveryRuleHasADecidedPosition` 钉住。ASI 编号与官方核对仍是 `issues/014`。

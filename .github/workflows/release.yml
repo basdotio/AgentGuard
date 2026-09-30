@@ -17,6 +17,7 @@ on:
 
 permissions:
   contents: write # required to create the release and upload assets
+  id-token: write # npm --provenance signs the packages with this workflow's identity
 
 jobs:
   release:
@@ -96,13 +97,9 @@ jobs:
       # 5xx) could only be recovered by cutting a new version tag: the re-run would abort on the
       # first package with "cannot publish over the previously published versions".
       #
-      # --provenance is NOT passed, and that is a fact about this repository rather than a
-      # preference: npm builds provenance from the workflow's own repo and requires it to be
-      # public and to match package.json's `repository` field. This build runs in the private
-      # source repo while `repository` points at the public distribution repo, so the flag
-      # would fail the publish. Making it work means either publishing from the public repo or
-      # making this one public; until then the verifiable download is SHA256SUMS.txt on the
-      # release, and adding the flag here is a one-word change once a precondition changes.
+      # --provenance: npm signs each package with this workflow's identity and the commit it built
+      # from, verifiable with `npm audit signatures`. It requires a public repository whose URL
+      # matches package.json's `repository` field — both true here.
       - name: publish to npm
         if: startsWith(github.ref, 'refs/tags/v')
         env:
@@ -117,7 +114,7 @@ jobs:
               return 0
             fi
             echo "publishing $spec"
-            (cd "$dir" && npm publish --access public)
+            (cd "$dir" && npm publish --access public --provenance)
           }
           for d in dist/npm/*/; do
             case "$d" in */launcher/) continue ;; esac
