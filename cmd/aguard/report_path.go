@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/basdotio/agent-guard/internal/config"
+	"github.com/basdotio/AgentGuard/internal/config"
 )
 
 // `--report`: the HTML report without having to invent a path.

@@ -16,8 +16,8 @@ package judge
 import (
 	"context"
 
-	"github.com/basdotio/agent-guard/internal/detect"
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/detect"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // Threat dimensions (spec §3) an LLM verdict can map to. The dimension is fixed PER MODE and

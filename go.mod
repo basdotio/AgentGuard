@@ -1,4 +1,4 @@
-module github.com/basdotio/agent-guard
+module github.com/basdotio/AgentGuard
 
 go 1.23.5
 

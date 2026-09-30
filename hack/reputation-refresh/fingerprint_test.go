@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 func TestFingerprint(t *testing.T) {

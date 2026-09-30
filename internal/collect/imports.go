@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/basdotio/agent-guard/internal/model"
-	"github.com/basdotio/agent-guard/internal/safeio"
+	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/safeio"
 )
 
 // An instruction file can pull in other files with `@path` syntax, and those imports are expanded

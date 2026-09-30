@@ -6,7 +6,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/basdotio/agent-guard/baselines/ledger"
+	"github.com/basdotio/AgentGuard/baselines/ledger"
 )
 
 // TestEveryCategoryTheToolEmitsHasADecision — the eight values below are the complete set cc-audit

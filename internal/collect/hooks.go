@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // hookGroup mirrors one entry of a settings.json hooks event:

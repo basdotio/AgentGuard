@@ -5,7 +5,7 @@ package ccaudit
 import (
 	"strings"
 
-	"github.com/basdotio/agent-guard/baselines/adapter/sarif"
+	"github.com/basdotio/AgentGuard/baselines/adapter/sarif"
 )
 
 // Tier is cc-audit's gate, and it is NOT a severity name.

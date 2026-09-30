@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/agent-guard/internal/collect"
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/collect"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // TrashDirForTest names the quarantine directory in assertions. Spelled via the collector's constant

@@ -42,7 +42,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/basdotio/agent-guard/baselines/ledger"
+	"github.com/basdotio/AgentGuard/baselines/ledger"
 )
 
 // Level is a SARIF result level. Ordered by Rank, most severe first.

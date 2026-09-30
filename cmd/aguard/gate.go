@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/basdotio/agent-guard/internal/config"
-	"github.com/basdotio/agent-guard/internal/gate"
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/config"
+	"github.com/basdotio/AgentGuard/internal/gate"
+	"github.com/basdotio/AgentGuard/internal/model"
 	"github.com/spf13/cobra"
 )
 

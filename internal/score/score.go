@@ -13,7 +13,7 @@
 // is probabilistic. Rather than trade one for the other, they get a number each.
 package score
 
-import "github.com/basdotio/agent-guard/internal/model"
+import "github.com/basdotio/AgentGuard/internal/model"
 
 // Penalty weights (spec appendix A). Within a dimension only the max hit counts;
 // across dimensions penalties add; final score is clamped to [0,100].

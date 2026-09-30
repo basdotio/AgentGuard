@@ -33,17 +33,17 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/basdotio/agent-guard/baselines/adapter"
-	aguardadapter "github.com/basdotio/agent-guard/baselines/adapter/aguard"
-	ccauditadapter "github.com/basdotio/agent-guard/baselines/adapter/ccaudit"
-	ciscoadapter "github.com/basdotio/agent-guard/baselines/adapter/cisco"
-	"github.com/basdotio/agent-guard/baselines/corpus"
-	"github.com/basdotio/agent-guard/baselines/isolate"
-	"github.com/basdotio/agent-guard/baselines/ledger"
-	"github.com/basdotio/agent-guard/baselines/run"
-	"github.com/basdotio/agent-guard/baselines/scrub"
-	"github.com/basdotio/agent-guard/baselines/tripwire"
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/baselines/adapter"
+	aguardadapter "github.com/basdotio/AgentGuard/baselines/adapter/aguard"
+	ccauditadapter "github.com/basdotio/AgentGuard/baselines/adapter/ccaudit"
+	ciscoadapter "github.com/basdotio/AgentGuard/baselines/adapter/cisco"
+	"github.com/basdotio/AgentGuard/baselines/corpus"
+	"github.com/basdotio/AgentGuard/baselines/isolate"
+	"github.com/basdotio/AgentGuard/baselines/ledger"
+	"github.com/basdotio/AgentGuard/baselines/run"
+	"github.com/basdotio/AgentGuard/baselines/scrub"
+	"github.com/basdotio/AgentGuard/baselines/tripwire"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 const (

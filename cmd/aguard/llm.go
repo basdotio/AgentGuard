@@ -13,8 +13,8 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
-	"github.com/basdotio/agent-guard/internal/config"
-	"github.com/basdotio/agent-guard/internal/judge"
+	"github.com/basdotio/AgentGuard/internal/config"
+	"github.com/basdotio/AgentGuard/internal/judge"
 )
 
 // `aguard llm` — set up, test and inspect the optional LLM judge without editing YAML.

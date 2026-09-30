@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/basdotio/agent-guard/internal/collect"
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/collect"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // These tests are the point of the auto-loaded collectors: not "was the file listed" (collect's own

@@ -5,7 +5,7 @@ package cisco
 import (
 	"strings"
 
-	"github.com/basdotio/agent-guard/baselines/adapter/sarif"
+	"github.com/basdotio/AgentGuard/baselines/adapter/sarif"
 )
 
 // Severity is skill-scanner's own ladder, as --fail-on-severity takes it: cli.py:435

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/agent-guard/baselines/adapter"
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/baselines/adapter"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // TestAnUnknownFixtureIsUntestableNotAbsent — the corpus can add a seventh fixture tomorrow. A

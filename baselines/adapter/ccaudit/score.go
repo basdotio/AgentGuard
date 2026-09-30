@@ -5,7 +5,7 @@ package ccaudit
 import (
 	"fmt"
 
-	"github.com/basdotio/agent-guard/baselines/ledger"
+	"github.com/basdotio/AgentGuard/baselines/ledger"
 )
 
 // ScanResult is the subset of cc-audit's `--format json` document this adapter reads, named

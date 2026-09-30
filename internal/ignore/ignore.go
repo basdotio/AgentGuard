@@ -12,8 +12,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/basdotio/agent-guard/internal/model"
-	"github.com/basdotio/agent-guard/internal/safeio"
+	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/safeio"
 )
 
 // itemIDRE tells a CLEANUP ITEM id (Z-87845f60, D-121d192b) from a RULE id (INJ-004, COV-000).

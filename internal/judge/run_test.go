@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // skillTree writes n skills and returns the artifacts a scan would hand the judge. Every

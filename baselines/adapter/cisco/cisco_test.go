@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/agent-guard/baselines/corpus"
-	"github.com/basdotio/agent-guard/baselines/ledger"
+	"github.com/basdotio/AgentGuard/baselines/corpus"
+	"github.com/basdotio/AgentGuard/baselines/ledger"
 )
 
 // The tests here run the adapter against a STUB that plays back canned exit codes and streams.

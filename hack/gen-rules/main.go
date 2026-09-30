@@ -20,8 +20,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/basdotio/agent-guard/internal/detect"
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/detect"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // structural documents the checks that cannot be a Rule: they need more than one line, or

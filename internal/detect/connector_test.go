@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 func connectorArtifact(tools ...model.ConnectorTool) model.ArtifactReport {

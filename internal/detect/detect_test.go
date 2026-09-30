@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/agent-guard/internal/collect"
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/collect"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 func skillArtifact(t *testing.T, files map[string]string) (root string, art model.ArtifactReport) {

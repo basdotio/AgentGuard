@@ -4,7 +4,7 @@ package detect
 import (
 	"regexp"
 
-	"github.com/basdotio/agent-guard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // Rule is one detection rule (spec §5.1). Rules are re-derived from OWASP Agentic

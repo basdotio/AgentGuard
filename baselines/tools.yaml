@@ -27,7 +27,7 @@
 tools:
   - id: aguard
     name: AgentGuard
-    repo: https://github.com/basdotio/agent-guard
+    repo: https://github.com/basdotio/AgentGuard
     uploads_samples: false
     uploads_samples_basis: >-
       invariant #1, enforced by tests in this repository: aguard never connects out except for
