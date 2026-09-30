@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 # AgentGuard build. Pure Go, single static binary (CGO disabled).
 BIN     := bin/aguard
 PKG     := ./cmd/aguard

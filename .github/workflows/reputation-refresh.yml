@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 # Keeps the embedded reputation allowlist in step with the official marketplace.
 #
 # An allowlist entry is keyed by canonical hash, so it expires every time upstream ships a
