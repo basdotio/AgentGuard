@@ -30,6 +30,7 @@
 | [019](019-symlink-installed-skills-report-only.md) | 软链安装的 skill 只能报告，不能隔离（R31b 否决） | 功能范围 / 报告缺陷 | 中 | 报告缺陷**已修复**；隔离**不规划** |
 | [020](020-interactive-picker-withdrawn.md) | `clean --ask` 方向键选择器审查后撤回并重做（11 项缺陷） | 安全缺陷 / 功能撤回 | 高 | **已修复**；已按收集→对账→一次执行重做，方向键待下一轮 |
 | [021](021-judge-triage-by-static-severity-rejected.md) | 只在静态报到 medium 以上时才问判官：实测否决（保住 14/62，丢 77%） | 功能范围 | — | **不规划**（前提实测不成立）|
+| [022](022-plugin-install-case-collision-macos.md) | macOS 上 CLI 装不上插件：插件名与 marketplace 名只差大小写（上游 bug） | 分发缺陷 | 高 | 未修复（修法实测可行，待定插件新名） |
 
 ## 判定口径
 
