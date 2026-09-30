@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 # AgentGuard CI gate — drop into .github/workflows/agentguard.yml
 #
 # Fails the build if any committed skill/agent artifact scans at or above `--fail-on`, and annotates

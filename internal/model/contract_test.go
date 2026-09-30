@@ -17,7 +17,7 @@ import (
 //
 // TO CHANGE A VALUE BELOW:
 //  1. bump CleanPlanSchema,
-//  2. say so in docs/clean-guide.md §9,
+//  2. say so in docs/clean-guide.zh-CN.md §9,
 //  3. mark the commit breaking (`feat(clean)!: …`) — release notes are generated from commit
 //     subjects, so an unmarked subject means the break never reaches the release page.
 func TestWireContract_CleanItemEnums(t *testing.T) {

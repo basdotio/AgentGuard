@@ -7,14 +7,14 @@
 
 | 文档 | 权威性 | 位置 |
 |---|---|---|
-| [`docs/spec/spec.zh-CN.md`](spec/spec.zh-CN.md) | **规范性。** 什么必须成立。源码注释以 `spec §N` 引用它;标了 `[M6]` 的条款是刻意领先于代码的。 | design 仓 |
+| [`docs/spec/spec.zh-CN.md`](spec/spec.zh-CN.md) | **规范性。** 什么必须成立。源码注释以 `spec §N` 引用它。 | 本仓 |
 | [`README.md`](../README.zh-CN.md) | 面向用户:安装、命令、扫什么、能力边界。 | 本仓 |
 | [`ROADMAP.md`](../ROADMAP.md) | 什么已完成、什么被推迟,以及**诚实的已知局限**(含已确认的规避手法)。 | 本仓 |
 | [`rules.md`](rules.md) | **生成的**(`make docs`,CI 校验):每一个规则 ID 及其维度、严重度、触发原因。 | 本仓 |
 | **本文** | 描述性:as-built 地图。**改动它描述的结构时,在同一个 PR 里一起改。** | 本仓 |
 
-规模,供校准:14 个 `internal` 包加 CLI,非测试 Go 约 6.8k 行,测试约 7.0k 行(223 个测试函数
-外加 2 个 fuzz 目标),两个直接依赖(`spf13/cobra`、`gopkg.in/yaml.v3`),单个静态二进制,不用 CGO。
+规模,供校准:16 个 `internal` 包加 CLI,非测试 Go 约 2 万行,测试约 2 万行(596 个测试函数
+外加 2 个 fuzz 目标),三个直接依赖(`spf13/cobra`、`gopkg.in/yaml.v3`、`golang.org/x/term`),单个静态二进制,不用 CGO。
 
 ## 一段话讲清心智模型
 
@@ -207,13 +207,12 @@ v0.9.0 起:读用户文件一律经 `safeio`;存在但读不了的条目被披�
 - **Windows 二进制。** 它能干净地交叉编译,而这正是陷阱:CI 只跑 ubuntu、代码里没有任何 `GOOS`
   分支、不变量 2 背后的符号链接约束依赖的原语在那边行为不同。源码构建可用;发布产物只有
   darwin/linux,直到有 CI matrix 在 Windows 上跑完整套测试。
-- **插件自带 hook 的逐 (event, command) 审计。** 插件目前当一整棵树扫;只有 `settings.json` 里的
-  hook 做了更细的切分。
 
 **已确认的规避手法**在 [`cmd/aguard/adversarial_test.go`](../cmd/aguard/adversarial_test.go) 里
-**反向断言** —— 补上任何一条都会让测试失败,于是缺口不会像 checklist 条目那样被忘掉。目前有:
-`ExcludeFromScan` 目录的内容、扩展名不认识的文件、同形字命令名(隐形字符已经剥掉了,但折叠混淆字符需要一张
-没有编进来的 Unicode 表)、以及 root 下无人认领又无人引用的顶层目录。
+**反向断言** —— 补上任何一条都会让测试失败,于是缺口不会像 checklist 条目那样被忘掉。目前只剩一条:
+`ExcludeFromScan` 目录(vendored 或生成的树)的内容不扫 —— 那里的发现是别人依赖的问题 —— 而把 agent
+指进去的 artifact 会被报(`SUP-004`)。未知扩展名、无主顶层文件、同形字命令名曾在这张表上,现在都能抓到;
+更长的经过在 ROADMAP 的「Known limitations」。
 
 ## 上手干活
 
@@ -232,8 +231,7 @@ go test -run TestFailGate ./cmd/aguard/     # 跑单个测试
   其中声明该包负责的不变量。
 - **代码和所有用户可见字符串只用英文。** 文档做双语对子(`README.md`/`README.zh-CN.md`、本文与其
   英文版)—— 改一个就要改另一个。
-- 注释会引用规格(`spec §16.3`)和历次评审结论(`review B-1`、`F2`、`M5.2`)。请延续这个风格:
-  一处不显然的防护,应当说明它实现的是哪条要求。
+- 注释会引用规格(`spec §16.3`)。请延续这个风格:一处不显然的防护,应当说明它实现的是哪条要求。
 - 测试是 table-driven 的,fixture 用 `t.TempDir()` 现搭(没有 `testdata/`);judge 的测试用
   `httptest`。**真正值钱的是不变量测试** —— 不执行、边界不越界、secret 已脱敏、LLM 发现不动分数、
   `--fail-on` 契约。上面编号的不变量只要有改动,就补一条对应的测试。

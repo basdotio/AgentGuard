@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
 # AgentGuard pre-commit gate.
 # Install:  cp hack/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
 #

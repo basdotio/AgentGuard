@@ -3,7 +3,7 @@
 
 > 这份文档的读者是**要审计这段代码或要改它的人**。
 >
-> - 想知道怎么用 → [`clean-guide.md`](../clean-guide.md)
+> - 想知道怎么用 → [`clean-guide.zh-CN.md`](../clean-guide.zh-CN.md)
 > - 想知道当初为什么这么设计 → `../prd-selective-clean.md`(文件未入库)
 > - 想知道哪里还不行 → [`issues/012`](../../issues/012-clean-scope-and-remaining-gaps.md)
 >   [`013`](../../issues/013-clean-write-path-audit.md)

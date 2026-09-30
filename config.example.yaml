@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 # AgentGuard config — OPTIONAL. Only the LLM intent judge and the load-time gate read it;
 # the static scan, permission audit, cleanup, and reputation list all work with NO config
 # at all.

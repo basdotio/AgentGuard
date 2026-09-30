@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: MIT -->
 <!-- 常驻规则:没有 paths,会话开始即加载(P-003) -->
 ## 不变量 —— 不要削弱
 

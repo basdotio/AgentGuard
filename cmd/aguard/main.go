@@ -711,7 +711,7 @@ func main() {
 			"Run it when no Claude Code session is active: Claude Code watches skills/, commands/ and\n" +
 			"agents/ live, and this tool's lock only protects two aguard runs from each other.\n\n" +
 			"Exit codes: 0 done · 2 refused, nothing changed · 3 acted partially, reasons printed.\n" +
-			"Full guide: docs/clean-guide.md",
+			"Full guide: docs/clean-guide.zh-CN.md",
 		RunE: func(_ *cobra.Command, _ []string) error {
 			// Undo needs no scan: it replays a recorded batch and re-derives every safety decision
 			// from the filesystem rather than from what the manifest claims.

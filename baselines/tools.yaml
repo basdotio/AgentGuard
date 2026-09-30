@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 # The scanners baselines/ measures, and the facts about each that change either how its numbers
 # must be read or how the run is allowed to execute.
 #

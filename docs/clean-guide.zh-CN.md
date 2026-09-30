@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: MIT -->
 # `aguard clean` — 使用说明
 
 > 这是**使用**说明。要审计实现或改这段代码，看 [`clean-internals.md`](internals/clean-internals.md)：
