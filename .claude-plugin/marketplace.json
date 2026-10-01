@@ -5,7 +5,7 @@
   },
   "plugins": [
     {
-      "name": "agentguard",
+      "name": "aguard",
       "source": "./plugin",
       "version": "0.16.0",
       "category": "security",

@@ -86,18 +86,27 @@ CGO_ENABLED=0 go build -o bin/aguard ./cmd/aguard
 
 ```
 /plugin marketplace add basdotio/AgentGuard
-/plugin install agentguard@AgentGuard
+/plugin install aguard@AgentGuard
 ```
 
 **VS Code / JetBrains 扩展**里没有 `/plugin` —— 到 shell 里用 `claude` 命令跑同样两步:
 
 ```bash
 claude plugin marketplace add basdotio/AgentGuard
-claude plugin install agentguard@AgentGuard
+claude plugin install aguard@AgentGuard
 ```
 终端里第三方 marketplace 默认**不**自动更新。打开一次,skill 和命令的更新就会自己到:`/plugin` →
-**Marketplaces** → `agentguard` → **Enable auto-update**(桌面版添加 marketplace 时的 "Sync automatically"
+**Marketplaces** → `AgentGuard` → **Enable auto-update**(桌面版添加 marketplace 时的 "Sync automatically"
 就是同一个开关)。二进制是另一回事,它从不自动更新;`aguard version` 会说它是否落后于插件。
+
+**v0.17.0 之前装过插件?** 那时它叫 `agentguard`,这个名字不会再收到更新。改名是因为在不区分大小写的文件系统上
+(macOS 默认就是),它和 marketplace 名 `AgentGuard` 在 Claude Code 的安装缓存里撞成同一个目录,安装报 `EINVAL`
+([issues/022](issues/022-plugin-install-case-collision-macos.md))。换一次就好;`aguard version` 会按你的安装给出确切命令:
+
+```bash
+claude plugin install aguard@AgentGuard
+claude plugin uninstall agentguard@AgentGuard
+```
 
 
 仓库是公开的,插件就在 `main` 上,所以直接用上面那条命令即可 —— 不需要 `#…` 后缀,

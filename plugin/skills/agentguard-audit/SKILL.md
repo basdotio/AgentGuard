@@ -37,10 +37,12 @@ Not found → follow [references/install.md](references/install.md). Do **not** 
 install; that file has the checksum-verification step, and a security tool you fetched without
 verifying is a security tool you have no reason to trust.
 
-`aguard version` also prints one line about the installed agentguard plugin. If it says the
+`aguard version` also prints one line about the installed AgentGuard plugin. If it says the
 plugin is **newer than this binary**, tell the user in one sentence — the plugin updates itself
 through Claude Code, the binary does not, and an old binary silently lacks the newer rules and
-allowlist — and recommend `/aguard-setup` to upgrade. Then continue; do not block the scan on it.
+allowlist — and recommend `/aguard-setup` to upgrade. If it says an old `agentguard` install is
+still there, pass on the command it prints: two copies duplicate every skill. Then continue; do
+not block the scan on it.
 
 ## The rule that outranks everything else in this skill
 
