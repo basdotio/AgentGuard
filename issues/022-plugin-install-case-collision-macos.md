@@ -3,7 +3,7 @@
 
 - **类别**：分发缺陷（根因在 Claude Code，触发条件在本仓库的命名）
 - **严重程度**：高 —— 默认 macOS 上，README 写的那条安装路径（`/plugin install agentguard@AgentGuard`）走不通
-- **状态**：**未修复** —— 修法实测可行（§4），但要改用户可见的插件名，还没人拍板。上游 bug 报告**尚未提交**。
+- **状态**：**已修复**（本仓库这一侧）—— 0.17.0 把插件改名为 `aguard`，回归测试钉住，见 §8。上游 bug 本身仍在，报告**尚未提交**。
 
 > 2026-09-30 在 v0.16.0 发版后的真机换装中发现。**要改插件名、marketplace 名或仓库名之前先读 §3 和 §4**：
 > 三个名字互相卡着，能动的只有一个。
@@ -99,3 +99,20 @@ D 让这两个名字分开，每个带命名空间的 skill 在闸门里都会�
 - 上游：anthropics/claude-code（bug 报告未提交；2026-09-30 按 "EINVAL rename plugins cache" 搜过，没有现成 issue）
 - 桌面版 marketplace 名的约束：[`.claude/rules/plugin.md`](../.claude/rules/plugin.md)
 - 升级提示：`cmd/aguard/version.go` `updateHint`；闸门解析：`internal/gate/resolve.go` `ResolveSkill`
+
+## 8. 已做的修复（0.17.0，2026-10-01）
+
+按 §4 的 B：插件名 `agentguard` → `aguard`，`plugin/.claude-plugin/plugin.json` 和 `.claude-plugin/marketplace.json` 的条目
+**一起改**（D 的教训：两处不同名，闸门的带命名空间查找就落空）。marketplace 名仍是 `AgentGuard`。
+
+- **钉住它的测试**：`TestPluginNameCannotCollideInTheInstallCache`（`cmd/aguard/plugin_manifest_test.go`）断言三件事：
+  `plugin.json` 的 name 等于 marketplace 条目名；插件名与 `AgentGuard`、退役的 `guard` 在忽略大小写时都不同；
+  `pluginBundleName` 与 `legacyBundleName` 不同。**在旧名字上验证过会红。**
+- **旧安装的迁移**：`aguard version` 认出 `agentguard` 名下的安装（`legacyBundleName`），不管版本如何都给出换装命令 ——
+  旧名字不再更新，永远报不出"插件比二进制新"，不提示就等于静默停更；新旧并存时提示删掉旧的（同名 skill 让闸门的裸名查找有歧义）。
+  `TestPluginVersionLine_LegacyName` 覆盖四种情形。
+- **实测**（同一台机器、同一个卷，隔离配置）：首次安装 ✅、重装 ✅；从模拟的 v0.16.0 安装出发，执行 `aguard version`
+  打印的 `claude plugin install aguard@AgentGuard && claude plugin uninstall agentguard@AgentGuard` ✅ —— 新安装与 `plugin/`
+  哈希一致，之后 `aguard version` 报 matches。旧版文件留在磁盘上（未登记），由 Claude Code 自己回收。
+- **没解决的**：上游的大小写比较 bug 还在（§2）；任何插件名与 marketplace 名只差大小写的第三方插件照样会踩。
+  桌面版渠道的换装没有实测（隔离配置里开不了桌面版）。

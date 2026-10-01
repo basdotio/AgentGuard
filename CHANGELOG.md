@@ -17,7 +17,29 @@ rate copied into prose goes stale on the next rule. `git tag` and the Releases p
 - Invariants: never executes scanned content, no cross-root symlink reads, secret redaction before storage (+ high-entropy fallback).
 - Single static binary (`CGO_ENABLED=0`), MIT + SPDX, CI, bilingual README.
 
-## v0.2.0 – v0.16.0
+## v0.2.0 – v0.17.0
+
+**v0.17.0 (2026-10-01) — the plugin is now `aguard`, because `agentguard` could not be installed on a Mac, and `aguard version` names the command that updates your install.**
+
+No rule, score or gate answer changed, and the binaries are built the same way.
+
+- **The plugin is renamed `agentguard` → `aguard`. This is a breaking change.** Claude Code stages a plugin in a directory named
+  after the plugin and then moves it under one named after the marketplace. On a case-insensitive filesystem (macOS by default)
+  `agentguard` and `AgentGuard` are the same directory, so the move failed with `EINVAL` and the plugin was never registered: the
+  install path the README documented did not work on a default Mac
+  ([issues/022](issues/022-plugin-install-case-collision-macos.md)). The marketplace name has to stay `AgentGuard`, because the
+  desktop app looks it up by repository name, so the plugin name moved. The plugin ID is now `aguard@AgentGuard` and skills and
+  commands are namespaced `aguard:`. A test now fails if the plugin name ever again equals a marketplace name up to case.
+- **Switching from the old name.** An install under `agentguard` gets no further updates. `aguard version` recognizes it and
+  prints the exact switch for that install; for a CLI install from this marketplace that is
+  `claude plugin install aguard@AgentGuard && claude plugin uninstall agentguard@AgentGuard`. If both are installed it says so:
+  two copies duplicate every skill, and the load-time gate refuses to guess which of two same-named skills loads.
+- **The update hint names your install's own marketplace.** It used to print `claude plugin update agentguard@guard` for every
+  install. That is the marketplace of the retired `basdotio/guard` distribution repo, which stopped at plugin 0.9.0, so an install
+  from this repository got a command naming a marketplace it did not have, and an install from the old one got a command that
+  succeeds without ever catching up. The hint now reads which marketplace and channel installed the plugin: `claude plugin update
+  aguard@AgentGuard` for a CLI install from this marketplace, the Customize panel for a desktop install, and a switch to
+  `basdotio/AgentGuard` for any other marketplace. A marketplace name that is not a plain name is never echoed back.
 
 **v0.16.0 (2026-09-30) — the npm packages are published by the release workflow itself, and carry provenance.**
 
