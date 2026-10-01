@@ -23,8 +23,16 @@ import (
 // reading the installed plugin through the same collectors a scan uses (both install channels),
 // and the skills relay the line when they check the binary.
 
-// pluginBundleName is what the marketplace calls the bundle; PluginInstalls keys by it.
-const pluginBundleName = "agentguard"
+// pluginBundleName is what the marketplace calls the bundle; PluginInstalls keys by it. It must
+// equal plugin.json's name, which is the skill namespace the gate resolves, and must differ up to
+// case from every marketplace name (TestPluginNameCannotCollideInTheInstallCache, issues/022).
+const pluginBundleName = "aguard"
+
+// legacyBundleName is what the plugin was called through v0.16.0. `agentguard` in marketplace
+// `AgentGuard` is one directory on a case-insensitive volume, and Claude Code's install moved the
+// plugin into itself (issues/022). The marketplace no longer lists the old name, so an install
+// under it never updates again — pluginVersionLine tells it to switch.
+const legacyBundleName = "agentguard"
 
 // The marketplace this repository publishes: the name .claude-plugin/marketplace.json declares
 // (TestMarketplaceEntryVersionMatchesPlugin pins it) and the repo that serves it. Any other
@@ -40,15 +48,31 @@ const (
 // the skills to the model — so a backtick, newline or shell metacharacter is never echoed.
 var plainMarketplaceName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`)
 
-// pluginVersionLine returns one line about the installed agentguard plugin relative to this
-// binary's version, or "" when there is no plugin to compare with or the binary carries no
-// release version (a dev build has nothing to be behind).
+// pluginVersionLine returns one line about the installed plugin relative to this binary's
+// version, or "" when there is no plugin to compare with. An install under legacyBundleName is
+// told to switch whatever the versions say: it can never again report "newer than this binary",
+// which is how a user learns the binary fell behind.
 func pluginVersionLine(root, binaryVersion string) string {
 	home := filepath.Dir(filepath.Clean(root))
-	in, ok := collect.PluginInstalls(root, home)[pluginBundleName]
-	if !ok {
+	installs := collect.PluginInstalls(root, home)
+	cur, hasCur := installs[pluginBundleName]
+	old, hasOld := installs[legacyBundleName]
+	if !hasCur {
+		if hasOld {
+			return renamedLine(old)
+		}
 		return ""
 	}
+	line := versionLine(cur, binaryVersion)
+	if line != "" && hasOld {
+		line += "; " + leftoverHint(old)
+	}
+	return line
+}
+
+// versionLine compares one install under pluginBundleName with this binary, or returns "" when
+// its plugin.json carries no version. A dev build is reported, not compared.
+func versionLine(in collect.PluginInstall, binaryVersion string) string {
 	pv := bundleVersionOf(in.Dir)
 	if pv == "" {
 		return ""
@@ -73,28 +97,71 @@ func pluginVersionLine(root, binaryVersion string) string {
 // install, which is a marketplace an install from this repository does not have, and one that
 // an install from the old repository can update against forever without catching up.
 func updateHint(in collect.PluginInstall, binaryVersion string) string {
-	home := pluginBundleName + "@" + homeMarketplace
 	if in.Marketplace == homeMarketplace {
 		if in.Desktop {
 			return "update it from Claude Desktop's Customize panel"
 		}
-		return fmt.Sprintf("update the plugin (`claude plugin update %s`)", home)
+		return fmt.Sprintf("update the plugin (`claude plugin update %s@%s`)", pluginBundleName, homeMarketplace)
 	}
 	from := "a marketplace this project does not publish to"
-	old := ""
 	if plainMarketplaceName.MatchString(in.Marketplace) {
 		from = fmt.Sprintf("marketplace %q, not this project's (%s)", in.Marketplace, homeMarketplace)
-		old = pluginBundleName + "@" + in.Marketplace
 	}
 	if in.Desktop {
 		return fmt.Sprintf("it was installed from %s, so updating it there may never reach %s: in Claude Desktop's Customize panel, add the marketplace %s, install %s from it and remove the old one",
 			from, binaryVersion, homeMarketplaceRepo, pluginBundleName)
 	}
-	cmd := fmt.Sprintf("claude plugin marketplace add %s && claude plugin install %s", homeMarketplaceRepo, home)
-	if old != "" {
-		cmd += " && claude plugin uninstall " + old
+	return fmt.Sprintf("it was installed from %s, so updating it there may never reach %s; switch: `%s`",
+		from, binaryVersion, switchCommand(in.Marketplace, pluginBundleName))
+}
+
+// renamedLine reports an install under legacyBundleName, with no current install next to it.
+func renamedLine(old collect.PluginInstall) string {
+	pv := bundleVersionOf(old.Dir)
+	if pv != "" {
+		pv = " " + pv
 	}
-	return fmt.Sprintf("it was installed from %s, so updating it there may never reach %s; switch: `%s`", from, binaryVersion, cmd)
+	return fmt.Sprintf("plugin %s%s is installed under the plugin's old name: since 0.17.0 it is %s, and the old name gets no further updates — %s",
+		legacyBundleName, pv, pluginBundleName, renameHint(old))
+}
+
+// renameHint says how to move an install under legacyBundleName to pluginBundleName.
+func renameHint(old collect.PluginInstall) string {
+	if old.Desktop {
+		return fmt.Sprintf("in Claude Desktop's Customize panel, install %s from the %s marketplace (add %s first if it is not listed) and remove %s",
+			pluginBundleName, homeMarketplace, homeMarketplaceRepo, legacyBundleName)
+	}
+	return fmt.Sprintf("switch: `%s`", switchCommand(old.Marketplace, legacyBundleName))
+}
+
+// leftoverHint is appended when an install under legacyBundleName sits next to the current one.
+// It duplicates every skill, and a bare skill name two plugins provide is ambiguous to the gate.
+func leftoverHint(old collect.PluginInstall) string {
+	const lead = "the old " + legacyBundleName + " plugin is still installed too and duplicates every skill — remove it"
+	switch {
+	case old.Desktop:
+		return lead + " in Claude Desktop's Customize panel"
+	case plainMarketplaceName.MatchString(old.Marketplace):
+		return fmt.Sprintf("%s: `claude plugin uninstall %s@%s`", lead, legacyBundleName, old.Marketplace)
+	default:
+		return lead
+	}
+}
+
+// switchCommand is the CLI line that installs pluginBundleName from this project's marketplace
+// and removes oldBundle as installed from marketplace. It adds the marketplace first unless the
+// old install already came from it, and names the old install only when its marketplace is a
+// plain name (an unrecognizable one is not repeated back).
+func switchCommand(marketplace, oldBundle string) string {
+	var parts []string
+	if marketplace != homeMarketplace {
+		parts = append(parts, "claude plugin marketplace add "+homeMarketplaceRepo)
+	}
+	parts = append(parts, "claude plugin install "+pluginBundleName+"@"+homeMarketplace)
+	if plainMarketplaceName.MatchString(marketplace) {
+		parts = append(parts, "claude plugin uninstall "+oldBundle+"@"+marketplace)
+	}
+	return strings.Join(parts, " && ")
 }
 
 func bundleVersionOf(dir string) string {

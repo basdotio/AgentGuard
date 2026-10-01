@@ -124,7 +124,7 @@ hook pointing at a file that no longer exists — the `GATE-001` failure mode.
 Update the plugin (skills and commands) separately — it moves on its own clock:
 
 ```
-/plugin update agentguard@AgentGuard        # VS Code / JetBrains: `claude plugin update agentguard@AgentGuard` in a shell
+/plugin update aguard@AgentGuard            # VS Code / JetBrains: `claude plugin update aguard@AgentGuard` in a shell
 ```
 
 then restart Claude Code (the extension: reload the window).

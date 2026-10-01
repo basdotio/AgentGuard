@@ -94,7 +94,7 @@ In the **terminal** Claude Code, as slash commands:
 
 ```
 /plugin marketplace add basdotio/AgentGuard
-/plugin install agentguard@AgentGuard
+/plugin install aguard@AgentGuard
 ```
 
 In the **VS Code / JetBrains extension**, `/plugin` is not available — run the same two
@@ -102,12 +102,23 @@ steps from a shell with the `claude` CLI instead:
 
 ```bash
 claude plugin marketplace add basdotio/AgentGuard
-claude plugin install agentguard@AgentGuard
+claude plugin install aguard@AgentGuard
 ```
 Third-party marketplaces do not auto-update by default in the terminal. Turn it on once so skill
-and command updates arrive on their own — `/plugin` → **Marketplaces** → `agentguard` → **Enable
+and command updates arrive on their own — `/plugin` → **Marketplaces** → `AgentGuard` → **Enable
 auto-update** (the desktop app's "Sync automatically" toggle is the same thing). The binary is
 separate and never updates itself; `aguard version` says when it has fallen behind the plugin.
+
+**Installed the plugin before v0.17.0?** It was called `agentguard` then, and that name receives no
+further updates. It was renamed because it collides with the marketplace name `AgentGuard` in
+Claude Code's install cache on a case-insensitive filesystem — macOS by default — where installing
+it fails with `EINVAL` ([issues/022](issues/022-plugin-install-case-collision-macos.md)). Switch
+once; `aguard version` prints the exact command for your install:
+
+```bash
+claude plugin install aguard@AgentGuard
+claude plugin uninstall agentguard@AgentGuard
+```
 
 
 The repository is public and the plugin ships from `main`, so the plain form above is the one to

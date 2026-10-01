@@ -57,8 +57,8 @@ var desktopSessionsDir = filepath.Join("Library", "Application Support", "Claude
 
 // desktopMarker is appended to every artifact this collector produces, so a report says which
 // install channel a plugin or skill came through. It sits in the marketplace position of a plugin
-// name ("agentguard@AgentGuard via Claude Desktop (0.3.0)") so friendlyArtifact renders it as
-// "agentguard plugin, from guard via Claude Desktop (0.3.0)".
+// name ("aguard@AgentGuard via Claude Desktop (0.3.0)") so friendlyArtifact renders it as
+// "aguard plugin, from AgentGuard via Claude Desktop (0.3.0)".
 const desktopMarker = "Claude Desktop"
 
 // desktopRPMManifest is <rpm>/manifest.json: the desktop's record of which bundle is which.

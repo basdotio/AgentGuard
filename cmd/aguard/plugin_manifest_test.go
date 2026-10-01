@@ -55,6 +55,44 @@ func TestMarketplaceEntryVersionMatchesPlugin(t *testing.T) {
 	}
 }
 
+// TestPluginNameCannotCollideInTheInstallCache: issues/022. Claude Code stages a plugin at
+// cache/<plugin.json name> and then moves it to cache/<marketplace>/<plugin>/<version>; its check
+// for "target inside the staging dir" is a case-sensitive string compare. Through v0.16.0 the plugin
+// was `agentguard` in marketplace `AgentGuard`: on a case-insensitive volume (macOS by default) the
+// two are one directory, the check misses, and `claude plugin install` fails with EINVAL and leaves
+// the plugin unregistered. The marketplace name cannot move (the desktop keys it by repo name), so
+// these pin the plugin name — the one name this repository can change.
+func TestPluginNameCannotCollideInTheInstallCache(t *testing.T) {
+	root := filepath.Join("..", "..")
+	var plugin struct {
+		Name string `json:"name"`
+	}
+	b, err := os.ReadFile(filepath.Join(root, "plugin", ".claude-plugin", "plugin.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(b, &plugin); err != nil {
+		t.Fatal(err)
+	}
+	// The skill namespace (`<name>:skill`) comes from plugin.json; the gate looks a scoped skill up
+	// by the plugin ID's bundle half, which is the marketplace entry name. Two different names make
+	// every scoped skill unresolvable — GATE-000 on every load.
+	if plugin.Name != pluginBundleName {
+		t.Errorf("plugin.json name = %q, want %q: it must equal the marketplace entry name, or the gate cannot resolve a scoped skill", plugin.Name, pluginBundleName)
+	}
+	// The staging dir is cache/<plugin.json name>; it must not be any marketplace's cache dir on a
+	// case-insensitive volume: not this one, and not the retired `guard` (basdotio/guard), whose
+	// cache dir still exists on machines that never removed it — the staging step rm -rf's it.
+	for _, mkName := range []string{homeMarketplace, "guard"} {
+		if strings.EqualFold(plugin.Name, mkName) {
+			t.Errorf("plugin name %q equals marketplace name %q up to case: `claude plugin install` fails on macOS (issues/022)", plugin.Name, mkName)
+		}
+	}
+	if strings.EqualFold(pluginBundleName, legacyBundleName) {
+		t.Errorf("pluginBundleName %q and legacyBundleName %q must differ up to case, or a legacy install is read as current", pluginBundleName, legacyBundleName)
+	}
+}
+
 // TestSkillFrontmatterFitsDesktopLimits: Claude Desktop validates each skill's frontmatter
 // against name ≤ 64 and description ≤ 1024 characters (limits table in the app bundle:
 // nameChars:64, descriptionChars:1024, skillsPerEntry:20) and silently drops a skill that

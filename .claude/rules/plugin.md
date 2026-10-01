@@ -26,8 +26,17 @@ paths:
   输入的 `owner/repo` 取仓库名当 marketplace 名记在账号里的;点 Update 时它拿这个名字让内置 CLI 刷新,而 CLI 是按
   marketplace.json 里声明的名字注册的。两个名字不一样,CLI 回 "not found. available marketplaces",桌面版翻译成
   `MARKETPLACE_ERROR:NOT_REGISTERED`,界面只显示 "Couldn't check for updates",插件永远停在装机时那个版本
-  (2026-09-04 真机日志确认,marketplace 原来叫 `agentguard`)。所以插件 ID 是 `agentguard@AgentGuard`,改仓库名就要
-  同时改这里。
+  (2026-09-04 真机日志确认,marketplace 原来叫 `agentguard`)。所以 marketplace 名是 `AgentGuard`,改仓库名就要
+  同时改这里。插件 ID 是 `aguard@AgentGuard` —— 为什么不是 `agentguard`,见下一条。
+- **插件名不能和任何 marketplace 名只差大小写**(2026-10-01,[issues/022](../../issues/022-plugin-install-case-collision-macos.md))。
+  Claude Code 先把插件暂存到 `cache/<plugin.json 的 name>`,再挪进 `cache/<marketplace>/<插件>/<版本>`,而"目标在暂存目录里"
+  的判断是区分大小写的字符串比较。插件原来叫 `agentguard`,在默认的 macOS(不区分大小写)上和 `cache/AgentGuard` 是同一个
+  目录,`claude plugin install` 报 `EINVAL` 并且**不登记** —— README 写的那条安装路径从来没走通过。marketplace 名被上一条钉死,
+  能动的只有插件名,于是 0.17.0 改成 `aguard`。**也不能叫 `guard`**:旧 `basdotio/guard` marketplace 的缓存目录就叫这个,暂存
+  那步会先把它 `rm -rf`。**`plugin.json` 的 name 必须等于 marketplace 条目名**:前者是 skill 命名空间,闸门拿它去查以后者为
+  key 的 `PluginPaths`,两个一分开,每个带命名空间的 skill 都是 `GATE-000`(只改 `plugin.json` 那个"零迁移"方案就是死在这)。
+  `TestPluginNameCannotCollideInTheInstallCache` 钉住这三条,在旧名字上验证过会红。旧名字的安装由 `aguard version` 认出来并给出
+  换装命令(`legacyBundleName`):旧名字不会再收到更新,所以它永远报不出"插件比二进制新",不主动提示就等于静默停更。
 - **`marketplace.json` 必须留在仓库根,`plugin.json` 必须不在** ——
   `/plugin marketplace add <repo>` 只认根上的 `.claude-plugin/marketplace.json`;而
   `collect.CollectTarget` 认的是 `.claude-plugin/plugin.json`,把它加回根上就会把整个仓库重新
