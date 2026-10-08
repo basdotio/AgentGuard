@@ -220,7 +220,8 @@ triage 标签(`likely-real` / `likely-benign`)以 `⚖ triage (LLM, advisory)` �
 
 `--fail-on-llm` 要**两次**主动选择:既要传这个 flag,`llm.authority` 还要写成 `escalate`。
 只传 flag 而没授权,会**报错拒绝**,不是静默忽略 —— 一个永远不会触发的闸门比没有闸门更糟:
-流水线一路绿灯,所有人都以为自己被保护着。
+流水线一路绿灯,所有人都以为自己被保护着。两个阈值连同授权在扫描**之前**校验:被拒(或级别拼错)时退出码 2,
+一个请求都不发、报告不印;确定性发现先命中 `--fail-on` 也盖不住它、不会变成退出码 1。
 
 两个开关在 `scan` 和 `check` 上含义相同。想让判官在 PR 上说话的 CI 任务跑
 `aguard check ./skill --llm --fail-on-llm high`:确定性的 high 照样经 `--fail-on` 让它失败(`check` 默认 `high`),
