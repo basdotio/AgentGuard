@@ -50,6 +50,13 @@ paths:
   **不要把这条并回阈值** —— "拦不拦"和"记不记"是两个决定,P-005 之前它们是一个:四个 ToB 样本各以一条 medium 通过
   high 阈值,然后被永久信任,以后同样字节连问都不问。也**不要把 low 也变成不记**:大多数真实 skill 会每次加载都响,
   那是让人卸闸门的成本。`TestPassWithMediumFindingIsNotRemembered` 及旁边三条钉住边界两侧。
+- **没有哈希就没有批准,而且要拒绝得出声**(P-011)。`Store.Approve` 遇到空 key 静默丢掉 —— 对批准库这是对的
+  (读不出哈希的东西就是没人审过的东西,`TestEmptyHashIsNeverApproved`),但调用方不能因此照常报喜:`aguard approve`
+  以前在最差 artifact 哈希为空(`PARSE-000`、打不开的文件)时打印 `approved … hash ` 然后什么都没存,人以为信任了,闸门照问。
+  现在 `approvePath` 在**打开批准库之前**看 `Verdict.Hash`,空就返回运行错误(退出码 2),原因取 `Verdict.Unhashed`
+  —— 由 `Summarize` 填,因为只有它知道选的是哪个 artifact。**不要按 kind 猜原因**:kind 会获得哈希,猜的那句当天变假话。
+  **不要改成退到下一个有哈希的 artifact**:那是批准一份判决没描述的内容。`TestApproveRefusesWhatHasNoContentHash`、
+  `TestApproveRefusalLeavesTheStoreAlone` 钉拒绝,`TestApproveStillRecordsWhatHasAHash` 钉反方向。
 - **`ask` 在会自动答应的权限模式下等于放行,所以要升级成 `deny`。** `auto`/`acceptEdits`/
   `bypassPermissions`/`dontAsk` 会自动答应弹窗;闸门读事件里的 `permission_mode`,命中就改判拒绝,
   并在理由里点名是哪个模式。**这是真机上找出来的**:一个 51/100、带完整凭证外泄链的 skill 返回了

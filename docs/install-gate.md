@@ -72,6 +72,11 @@ called pdf-export from now on"; it approves those bytes. An update, a re-install
 edited character produces a different hash, and the gate asks again **by itself**: no expiry to
 tune, no cache to invalidate, nothing to remember to re-run.
 
+Content with no hash cannot be approved. A config file that did not parse, or a file the scanner
+could not open, has no hash for an approval to be keyed on, so `aguard approve` refuses it — it
+names the artifact and the reason, exits 2, and leaves the store untouched. `aguard check <path>`
+shows what could not be read.
+
 The store is `~/.claude/.aguard-approvals.json`, mode 0600, written atomically. Besides the
 approvals it holds, for at most an hour, the verdict behind each prompt still waiting for your
 answer: the answer arrives in a separate hook call, and this file is the only thing the two
