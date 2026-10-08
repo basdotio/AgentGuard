@@ -153,19 +153,27 @@ everything on your machine. That trade-off is yours.
   any value whose key names it a credential — `password=hunter2` goes too, length is not the
   test once the key has vouched for it — and high-entropy strings. None of that is proof.
   That's why the default endpoint is **local**.
-- **Your home directory is not sent.** Every spelling of the scanned environment's home — as
-  given, with symlinks resolved, and as Claude Code's encoded project directory (`-Users-you-…`) —
-  becomes `~` *before* redaction, in content and in triage evidence; a file in the home that a
-  static finding names as `<username>/<file>` goes as `~/<file>`. **Only the home is replaced**:
-  a bare username in prose, a git author name, an email address, and absolute paths outside the
-  home are sent as written. The environment scan's home is `--root`'s parent (your home, for the
-  default root); the Downloads pass uses your home.
-- **MCP configuration is sent by key.** A server's entry is rendered as sorted `key=value` lines
-  (`command=…`, `args=…`, `env.NAME=…`) — the same strings the static scan reads. A value whose
-  key names a credential (`…PASS`, `…PWD`, `…TOKEN`, `…KEY`, `…SECRET`, anything with auth /
-  cred / cookie / private) is replaced by `<REDACTED>` whatever it looks like; every other value
-  goes through redaction as usual. It used to be the values alone, so a password under `DB_PASS`
-  went out as a bare `hunter2`.
+- **Two home directories become `~`, and nothing else does.** On every judged run — `scan`,
+  the Downloads pass, a judged `check` — your own home (the OS user's, `$HOME`) is replaced; on
+  `scan`, so is the scanned environment's (`--root`'s parent, taken from the absolute root; for the
+  default root that is your home again). Each in three spellings: as given, with symlinks
+  resolved, and as Claude Code's encoded project directory (`-Users-you-…`). Replaced in content
+  and in triage evidence, *after* redaction, so redaction weighs each line as the report does; a
+  file in the home that a static finding names as `<username>/<file>` goes as `~/<file>`. When the
+  scanned home lies inside yours (`CLAUDE_CONFIG_DIR=~/.config/claude` makes it `~/.config`), only
+  yours becomes `~`, so the path keeps its place: `~/.config/claude/…`. **Nothing beyond those two
+  homes is replaced**: a bare username in prose, a git author name, an email address, another
+  user's home, and every absolute path outside both homes are sent as written. And `~` does not
+  always mean your home: with `--root /srv/proj/.claude`, `/srv/proj` becomes `~` too.
+- **MCP configuration is sent by key.** A server's entry is rendered as `key=value` lines — the
+  same strings the static scan reads — with what the server runs and where it connects first, in
+  this order: `command=…`, `args=…`, `env.NAME=…`, `url=…`, `headers.NAME=…`; every other key
+  follows, sorted. Each line is capped at 500 bytes and the whole entry at 6,000; when either cap
+  cuts something, the text sent says so and the report gets an `LLM-000` note naming the server
+  (a real configuration fits). A value whose key names a credential (`…PASS`, `…PWD`, `…TOKEN`,
+  `…KEY`, `…SECRET`, anything with auth / cred / cookie / private) is replaced by `<REDACTED>`
+  whatever it looks like; every other value goes through redaction as usual. It used to be the
+  values alone, so a password under `DB_PASS` went out as a bare `hunter2`.
 - **A declared purpose is capped at 1,000 bytes** (a description, a hook's interception point),
   cut on a character boundary.
 - **Non-local endpoint → an `LLM-002` warning** is added to the report, because
