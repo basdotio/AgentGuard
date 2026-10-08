@@ -42,6 +42,16 @@ type HTTPClient struct {
 	completionTokens atomic.Int64
 }
 
+// Transport is a TEST SEAM, and nothing outside tests assigns it. It is the RoundTripper a client
+// built by NewHTTP(…, nil) uses; nil — the only value production ever leaves here — means
+// http.DefaultTransport, exactly what the bare &http.Client{} this replaced used.
+//
+// It exists for invariant #1 (no network except the explicitly enabled judge): the commands pass
+// a nil client, so this is the one point every judge request crosses, and a test in cmd/aguard
+// swaps it for a counter to prove which entry points send anything and which send nothing. A
+// caller that supplies its own *http.Client is not affected by it.
+var Transport http.RoundTripper
+
 // NewHTTP builds a client. httpClient may be nil; tests inject their own. baseURL is the
 // OpenAI-compatible root (…/v1); "/chat/completions" is appended.
 //
@@ -51,7 +61,7 @@ type HTTPClient struct {
 // caller MUST do the same, or a hung endpoint hangs the process.
 func NewHTTP(baseURL, apiKey, model string, httpClient *http.Client) *HTTPClient {
 	if httpClient == nil {
-		httpClient = &http.Client{}
+		httpClient = &http.Client{Transport: Transport}
 	}
 	if model == "" {
 		model = "llama3.1"
