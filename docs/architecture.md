@@ -218,7 +218,13 @@ take; `clean` and the load-time gate never call it (the gate's scanners never se
 (decode only, never execute), cross-file collusion, hook capability, MCP configuration, and
 triage labelling. Scanned content is treated as **hostile**: every call fences it inside a
 `crypto/rand` nonce barrier as inert data, and a nonce generation failure fails the call rather
-than degrading to a guessable fence.
+than degrading to a guessable fence. One step before egress is outside `detect.Redact`'s reach
+(`judge/egress.go`): as each excerpt is built, the scanned environment's home directory — as given,
+symlinks resolved, and in Claude Code's encoded project-directory form — becomes `~` before
+redaction, and so do the static `File` fields in triage evidence; MCP configuration goes as sorted
+`key=value` lines (`detect.ConfigLines`, the same leaves the static pass reads), with a value whose
+key names a credential withheld. It stays out of `Redact` because that is the exit for every
+static snippet.
 
 Two properties matter more than the passes:
 
