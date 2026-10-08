@@ -177,7 +177,8 @@ skill 与 plugin 用树哈希(按相对路径排序 + 每个文件的 sha256);�
 
 ## LLM judge(可选,默认关)
 
-必须同时满足配置里 `llm.enabled: true` **和** `--llm` 才会启用;`check`/`clean` 永不调用它。按
+必须同时满足配置里 `llm.enabled: true` **和** `--llm` 才会启用,`scan` 和 `check` 都接受 `--llm`;`clean`
+和加载时闸门永不调用它(闸门的扫描器永不设 `llm`,由 `TestGateScannerNeverEnablesLLM` 钉住)。按
 artifact 种类跑这些趟:隐藏注入、意图不符、去混淆(**只解码、绝不执行**)、跨文件串通、hook 能力、
 MCP 配置、triage 标签。被扫内容按**敌对**处理:每次调用用 `crypto/rand` 生成 **nonce barrier**
 把内容围成惰性数据块;nonce 生成失败时**让该次调用失败**,而不是退化成一个可被猜到的围栏。

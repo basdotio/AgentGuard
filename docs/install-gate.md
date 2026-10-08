@@ -2,8 +2,8 @@
 # Load-time gate
 
 `aguard hook` audits a skill **before an agent loads it**, and asks you about anything that
-carries a finding. It is the same static scan `aguard check` runs — no model, no network,
-nothing executed — delivered at the moment the answer is worth something.
+carries a finding. It is the same static scan `aguard check` runs without `--llm` — no model, no
+network, nothing executed — delivered at the moment the answer is worth something.
 
 Chinese version: [install-gate.zh-CN.md](install-gate.zh-CN.md).
 

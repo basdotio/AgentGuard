@@ -13,8 +13,9 @@ cp config.example.yaml config.yaml     # 改 base_url / model
 aguard scan --llm --config config.yaml
 ```
 
-默认关。需要 config 里 `llm.enabled: true` **且** 命令行加 `--llm`,两者缺一不可。只有 `scan` 用它——
-`check` 和 `clean` 恒静态。
+默认关。需要 config 里 `llm.enabled: true` **且** 命令行加 `--llm`,两者缺一不可。`scan` 能用,
+审单个目标的 `check` 也能用(`aguard check ./some-skill --llm`)。`clean` 永不用它,加载时闸门也不用:
+`aguard hook` 和 `aguard approve` 只跑 `check` 的静态路径。
 
 ## 铁律(你为什么可以信任它)
 
@@ -142,6 +143,8 @@ aguard scan --llm --config config.yaml
   发现照样引真实 `file:line`:摘录带着一张回到原文的行号映射。
 - **`--llm` 时下载目录的候选也过判官**:~/Downloads 下像 agent 的东西(静态检查已经读过、打过分)走同样几趟;
   文件夹里其余内容照旧不读。Downloads 一节会写明判官跑没跑,端点非本地时带自己的 `LLM-002`。
+- **`check --llm` 同样把目标的摘录发出去。** CI 里的目标通常是别人的 PR:端点非本地时,它脱敏后的摘录离开了 runner,
+  报告带同一条 `LLM-002` 说明这一点。
 
 ## 诚实性与失败行为
 
@@ -218,6 +221,10 @@ triage 标签(`likely-real` / `likely-benign`)以 `⚖ triage (LLM, advisory)` �
 `--fail-on-llm` 要**两次**主动选择:既要传这个 flag,`llm.authority` 还要写成 `escalate`。
 只传 flag 而没授权,会**报错拒绝**,不是静默忽略 —— 一个永远不会触发的闸门比没有闸门更糟:
 流水线一路绿灯,所有人都以为自己被保护着。
+
+两个开关在 `scan` 和 `check` 上含义相同。想让判官在 PR 上说话的 CI 任务跑
+`aguard check ./skill --llm --fail-on-llm high`:确定性的 high 照样经 `--fail-on` 让它失败(`check` 默认 `high`),
+合格的 LLM high 经 `--fail-on-llm` 让它失败。加载时闸门两个都不接 —— 它永不问模型。
 
 档位由你声明,是因为自备端点对我们是不透明的:`model` 是自由文本、想写什么写什么,从中推断能力
 既不可靠**又可伪造**。(托管端点则由服务端自己断言档位 —— 客户端永远不该能自封。)

@@ -5,8 +5,8 @@
 #
 # `aguard llm setup` writes this file for you at ~/.config/aguard/config.yaml (read whenever
 # --config is not given). To do it by hand: copy to that path, edit, run `aguard scan --llm`.
-# The judge runs ONLY when BOTH llm.enabled: true AND --llm are set. `check`/`clean` are
-# always static-only and ignore this file.
+# The judge runs ONLY when BOTH llm.enabled: true AND --llm are set, on `scan` or `check`.
+# `clean` never runs it, and neither does the load-time gate, whatever this file says.
 
 llm:
   # Master switch. Must be true AND you must pass --llm on the command line.
