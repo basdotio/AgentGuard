@@ -65,11 +65,14 @@ func majority(samples int) int { return samples/2 + 1 }
 // be the raw material for a latency/cost baseline). Nothing here feeds a finding or the
 // score — it is pure telemetry for the operator.
 type Stats struct {
-	Calls     int             // calls issued (a retry is the SAME call re-sent, not a new one)
-	Retries   int             // retry attempts across all calls
-	Failed    int             // calls that ended in an error after retries
-	Skipped   int             // calls never issued: budget exhausted or run deadline hit
-	Latencies []time.Duration // one per issued call, retries included
+	Calls   int // calls issued (a retry is the SAME call re-sent, not a new one)
+	Retries int // retry attempts across all calls
+	Failed  int // calls that ended in an error after retries
+	Skipped int // calls never issued: budget exhausted or run deadline hit
+	// TriageCalls is the part of Calls that was triage. A judge question is asked `Samples`
+	// times and triage once, so without this split what one question costs can only be guessed.
+	TriageCalls int
+	Latencies   []time.Duration // one per issued call, retries included
 }
 
 // Percentile returns the p-th percentile latency (p in [0,1]), or 0 when no call ran.
@@ -257,6 +260,9 @@ func Run(ctx context.Context, c Client, arts []model.ArtifactReport, opts Option
 			continue
 		}
 		stats.Calls++
+		if t.kind == taskTriage {
+			stats.TriageCalls++
+		}
 		stats.Retries += r.retries
 		stats.Latencies = append(stats.Latencies, r.latency)
 		if r.err != nil {
