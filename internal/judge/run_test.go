@@ -293,6 +293,53 @@ func TestHTTPClient_CountsTokens(t *testing.T) {
 	}
 }
 
+// roundTripFunc adapts a function to http.RoundTripper.
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+// TestNewHTTP_TransportSeam: the seam cmd/aguard's zero-dial test counts through. Unset, a nil
+// client is exactly the &http.Client{} it always was (Transport nil = http.DefaultTransport); set,
+// every request goes through it; and a client the caller built is used as given, seam or not —
+// every judge test here injects srv.Client() and must keep reaching its own server.
+func TestNewHTTP_TransportSeam(t *testing.T) {
+	prev := Transport
+	t.Cleanup(func() { Transport = prev })
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	Transport = nil
+	if c := NewHTTP("http://127.0.0.1:9/v1", "", "m", nil); c.http.Transport != nil {
+		t.Errorf("unset seam: a nil client got Transport %T, want nil (http.DefaultTransport)", c.http.Transport)
+	}
+
+	var seen atomic.Int32
+	Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		seen.Add(1)
+		if r.Body != nil {
+			_ = r.Body.Close()
+		}
+		return nil, errors.New("refused by the seam")
+	})
+	if _, err := NewHTTP("http://127.0.0.1:9/v1", "", "m", nil).Ping(ctx); err == nil {
+		t.Error("a refused round trip must fail the call")
+	}
+	if n := seen.Load(); n != 1 {
+		t.Errorf("the seam saw %d request(s), want 1", n)
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"OK"}}]}`))
+	}))
+	defer srv.Close()
+	if _, err := NewHTTP(srv.URL, "", "m", srv.Client()).Ping(ctx); err != nil {
+		t.Errorf("a caller-supplied client must reach its server whatever the seam holds: %v", err)
+	}
+	if n := seen.Load(); n != 1 {
+		t.Errorf("the seam saw %d request(s) after a caller-supplied client ran, want still 1", n)
+	}
+}
+
 func TestRetryAfter(t *testing.T) {
 	cases := map[string]time.Duration{
 		"":         0,
