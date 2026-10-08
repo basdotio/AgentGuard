@@ -57,6 +57,13 @@ func scanInbox(dir string, explicit bool, o scanOpts) (*model.InboxReport, error
 	}
 	d := inbox.Discover(dir)
 	rep := &model.InboxReport{Dir: dir, Skipped: d.Skipped, Notes: d.Notes, Items: []model.InboxItem{}}
+	// Each candidate is analysed with its own root, whose parent is the Downloads folder, not the
+	// home — so the home the judge strips is named here: the user's, where the folder lives.
+	if o.home == "" {
+		if h, err := os.UserHomeDir(); err == nil {
+			o.home = h
+		}
+	}
 	// The deep check covers the CANDIDATES — things already read and scored as agent-shaped —
 	// never the rest of the folder, which stays uncounted and unread as before. A candidate is
 	// exactly the kind of content the judge exists for (a downloaded skill nobody has vetted),
