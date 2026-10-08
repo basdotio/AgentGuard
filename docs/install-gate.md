@@ -72,7 +72,10 @@ called pdf-export from now on"; it approves those bytes. An update, a re-install
 edited character produces a different hash, and the gate asks again **by itself**: no expiry to
 tune, no cache to invalidate, nothing to remember to re-run.
 
-The store is `~/.claude/.aguard-approvals.json`, mode 0600, written atomically. A store that
+The store is `~/.claude/.aguard-approvals.json`, mode 0600, written atomically. Besides the
+approvals it holds, for at most an hour, the verdict behind each prompt still waiting for your
+answer: the answer arrives in a separate hook call, and this file is the only thing the two
+calls share. A store that
 cannot be parsed degrades to *asking about everything* rather than to allowing it — the two
 failure directions are not symmetric, and `aguard hook` will not overwrite a file it could not
 read.
