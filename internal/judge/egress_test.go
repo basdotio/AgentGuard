@@ -473,3 +473,19 @@ func TestEgress_RelativeHomeIsResolved(t *testing.T) {
 		t.Errorf("relative home: got %q, want %q", got, "cat ~/notes")
 	}
 }
+
+// TestEgress_HomeIsReplacedInItsAbsoluteCleanedForm: "as given" was never quite true. A home is
+// made absolute and cleaned (filepath.Abs) before it is replaced, so `HOME=/Users/alicemarker/`
+// still strips `/Users/alicemarker/notes`, while a spelling only the caller's bytes had — the
+// unclean `/Users/./alicemarker` in content — is sent as written.
+func TestEgress_HomeIsReplacedInItsAbsoluteCleanedForm(t *testing.T) {
+	for _, c := range []struct{ home, in, want string }{
+		{"/Users/alicemarker/", "cat /Users/alicemarker/notes", "cat ~/notes"},
+		{"/Users/./alicemarker", "cat /Users/alicemarker/notes", "cat ~/notes"},
+		{"/Users/./alicemarker", "cat /Users/./alicemarker/notes", "cat /Users/./alicemarker/notes"},
+	} {
+		if got := newEgress(c.home).scrub(c.in); got != c.want {
+			t.Errorf("home %q: scrub(%q) = %q, want %q", c.home, c.in, got, c.want)
+		}
+	}
+}

@@ -220,8 +220,10 @@ type Rule struct {
 **出网前去掉"这台机器是谁的"**(2026-10-08,`judge/egress.go`):脱敏只认 secret 形状,`/Users/alice/…` 不是 secret,却是用户名。
 判官**构造摘录的那一刻**把**两个家目录**换成 `~`:**OS 用户的家目录**(`os.UserHomeDir()`,每次判官运行都换,不靠调用方传——
 空的 `Options.Home` 不等于"不换",`check --llm` 就从没传过),和**被扫环境的家目录**(`Options.Home`,环境扫描取**绝对** `--root` 的上一级,
-与 collect/detect 同一锚点;相对的 `--root .claude` 曾让它成了 `.`,于是一个都没换)。每个都换三种写法:给定写法(相对的先取绝对路径)、
+与 collect/detect 同一锚点;相对的 `--root .claude` 曾让它成了 `.`,于是一个都没换)。每个最多换三种写法:取绝对路径后的写法
+(`filepath.Abs`:相对的按工作目录解析,路径被 `Clean` 规整;只有调用方原字节才有的写法如 `/Users/./alice` 不在其中)、
 `EvalSymlinks` 之后、Claude Code 项目目录编码 `-Users-alice-…`(按**字符**而不是字节编码:`/Users/josé` 是 `-Users-jos-`)。
+**只有一段的家目录(`HOME=/root`)故意不换编码写法**:`-root` 太像命令行选项(`tool -root-dir x`),换了会改坏被审的命令;`/root/…` 照换。
 被扫环境的家目录落在 OS 用户家目录之内时(`CLAUDE_CONFIG_DIR=~/.config/claude`)只换外层那个,路径保持原位(`~/.config/claude/…`,
 不是 `~/claude/…`);反过来被扫环境的家目录**包含** OS 用户家目录时两个都换,否则用户名会留在 `~` 后面第一段。
 **先 `Redact` 再换**:熵规则按一段连续字符的长度判,家目录是那段的一部分——`/Users/alice/Xk9mQ2vL8pR4tZ7wB3n` 会被抹,先换成
