@@ -166,3 +166,43 @@ func TestPeekZip_ReadsOnlyTheIndex(t *testing.T) {
 		t.Errorf("photo zip: ok=%v err=%v", ok, err)
 	}
 }
+
+// TestExtractZip_FolderNamedAfterTheArchive: entries land in a folder named after the archive,
+// inside a private temporary directory that holds nothing else, on a symlink-resolved path. The
+// folder's name becomes the artifact's name and its path the base every evidence path is taken
+// relative to, so neither may be random; the private parent is the "home" a root-shaped archive
+// is collected under, so it must not be the machine's shared temp dir. Cleanup removes the parent.
+func TestExtractZip_FolderNamedAfterTheArchive(t *testing.T) {
+	dir := t.TempDir()
+	zp := filepath.Join(dir, "My Skill.zip")
+	zipWith(t, zp, map[string]string{"SKILL.md": "---\nname: m\n---\n", "run.sh": "echo hi\n"})
+	out, _, cleanup, err := ExtractZip(zp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cleanup()
+	if filepath.Base(out) != "My Skill.zip" {
+		t.Errorf("extraction folder = %q, want it named after the archive", filepath.Base(out))
+	}
+	if real, err := filepath.EvalSymlinks(out); err != nil || real != out {
+		t.Errorf("extraction folder %q is not symlink-resolved (resolves to %q, err %v)", out, real, err)
+	}
+	if _, err := os.Stat(filepath.Join(out, "SKILL.md")); err != nil {
+		t.Errorf("entries are not at the folder's top: %v", err)
+	}
+	parent := filepath.Dir(out)
+	if filepath.Clean(parent) == filepath.Clean(os.TempDir()) {
+		t.Fatalf("extraction folder sits directly in the shared temp dir %s", parent)
+	}
+	ents, err := os.ReadDir(parent)
+	if err != nil || len(ents) != 1 || ents[0].Name() != "My Skill.zip" {
+		t.Errorf("private parent holds %v (err %v), want only the extraction folder", ents, err)
+	}
+	if fi, err := os.Stat(parent); err != nil || fi.Mode().Perm() != 0o700 {
+		t.Errorf("private parent mode: %v, %v — want 0700", fi, err)
+	}
+	cleanup()
+	if _, err := os.Stat(parent); !os.IsNotExist(err) {
+		t.Errorf("cleanup left the private parent behind: %v", err)
+	}
+}
