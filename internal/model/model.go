@@ -553,6 +553,15 @@ type JudgeSummary struct {
 	Skipped   int    `json:"skipped"`          // calls never issued: budget or deadline
 	Findings  int    `json:"findings"`         // advisory leads added
 	Endpoint  string `json:"endpoint,omitempty"`
+	// What the run cost. TriageCalls is the part of Calls that was triage (asked once, where a
+	// judge question is asked `samples` times); Retries counts re-sends of the same call. Both
+	// are our own counts and always present. The token totals are what the ENDPOINT reported —
+	// absent when it reported none, since a real call never uses zero prompt tokens and a 0
+	// would read as a measurement.
+	TriageCalls      int `json:"triage_calls"`
+	Retries          int `json:"retries"`
+	PromptTokens     int `json:"prompt_tokens,omitempty"`
+	CompletionTokens int `json:"completion_tokens,omitempty"`
 }
 
 // Connector is the tool list a remote MCP server advertised, as cached by Claude Desktop.
