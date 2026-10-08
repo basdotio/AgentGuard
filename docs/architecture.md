@@ -190,11 +190,14 @@ into* an excluded directory.
 what decides a finding — each rule's ID, dimension, severity, flags and pattern source, in engine
 order, but not its title or explanation — plus an integer `rulesEpoch`. Scan reports carry it as
 `rules_version`, `aguard version` prints it, and the `rules.md` header shows it, so a pattern change
-cannot ship without `make docs`. **When you change detection code outside `builtinRules()`** —
-structural or shape checks, the role gate, the lexical layer, which files are read, `permcheck`,
-the judge's rule mapping — in a way that changes which findings an input produces or their
-ID/dimension/severity, **bump `rulesEpoch` in the same commit.** Nothing enforces it; a forgotten
-bump lets two reports claim the same rules while different code produced them.
+cannot ship without `make docs`. It covers **deterministic detection only** — what `overall` is
+computed from. **When you change deterministic detection code outside `builtinRules()`** —
+structural or shape checks, the role gate, the lexical layer, which files are read, `permcheck` —
+in a way that changes which findings an input produces or their ID/dimension/severity, **bump
+`rulesEpoch` in the same commit.** Nothing enforces it; a forgotten bump lets two reports claim the
+same rules while different code produced them. The LLM judge is outside it altogether — prompts,
+grounding, consensus and severity clamping included: the judge moves only `overall_effective`, and
+the report's `judge` summary says how it ran, so a judge change never bumps the epoch.
 
 ## Canonical hashing
 

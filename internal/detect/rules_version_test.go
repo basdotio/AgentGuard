@@ -2,8 +2,12 @@
 package detect
 
 import (
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"reflect"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/basdotio/AgentGuard/internal/model"
@@ -144,5 +148,62 @@ func TestRulesVersion_EveryRuleFieldIsDecided(t *testing.T) {
 	}
 	if n := rt.NumField(); n != len(hashed)+len(prose) {
 		t.Errorf("Rule has %d fields but the two lists name %d — a listed field no longer exists", n, len(hashed)+len(prose))
+	}
+}
+
+// constDoc returns the doc comment of the package-level const name in file, whitespace-folded,
+// so a test can read what the source tells the next person who edits it.
+func constDoc(t *testing.T, file, name string) string {
+	t.Helper()
+	f, err := parser.ParseFile(token.NewFileSet(), file, nil, parser.ParseComments)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, d := range f.Decls {
+		gd, ok := d.(*ast.GenDecl)
+		if !ok || gd.Tok != token.CONST {
+			continue
+		}
+		for _, s := range gd.Specs {
+			vs := s.(*ast.ValueSpec)
+			for _, n := range vs.Names {
+				if n.Name != name {
+					continue
+				}
+				doc := vs.Doc
+				if doc == nil {
+					doc = gd.Doc
+				}
+				if doc == nil {
+					t.Fatalf("const %s in %s has no doc comment", name, file)
+				}
+				return strings.Join(strings.Fields(doc.Text()), " ")
+			}
+		}
+	}
+	t.Fatalf("no const %s in %s", name, file)
+	return ""
+}
+
+// TestRulesEpoch_ScopeIsDeterministicOnly pins where the epoch's duty stops (spec §5.1). The
+// rules version exists so the deterministic score, overall, can be matched to the rules that
+// produced it; the judge moves only overall_effective, and the report's judge summary says how
+// it ran. A doc comment that lists judge internals as epoch-covered code obliges every judge
+// change to bump the epoch — a coupling nobody editing internal/judge can see — and a judge
+// change that skipped the bump would leave the version vouching for detection it does not track.
+func TestRulesEpoch_ScopeIsDeterministicOnly(t *testing.T) {
+	doc := constDoc(t, "rules_version.go", "rulesEpoch")
+	for _, want := range []string{
+		"DETERMINISTIC detection only",
+		"The LLM judge is outside the rules version",
+	} {
+		if !strings.Contains(doc, want) {
+			t.Errorf("rulesEpoch's doc comment does not say %q — its scope must stop at deterministic detection", want)
+		}
+	}
+	for _, judgeInternal := range []string{"clampSeverity", "LLM-007", "the judge's rule mapping"} {
+		if strings.Contains(doc, judgeInternal) {
+			t.Errorf("rulesEpoch's doc comment lists %q as epoch-covered code; the judge is outside the rules version", judgeInternal)
+		}
 	}
 }
