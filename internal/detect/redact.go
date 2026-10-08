@@ -107,7 +107,18 @@ var urlCredRE = regexp.MustCompile(`([a-zA-Z][a-zA-Z0-9+.\-]*://[^:@/\s]*:)([^@/
 
 // Redact returns s with any secret-looking value replaced by <REDACTED>. Idempotent.
 // This is the ONLY way finding snippets are produced (spec §16.3, privacy invariant).
-func Redact(s string) string {
+//
+// It is two passes, kept apart so the content hash (contenthash.go) can take the first without
+// the second: redactCredentials removes what is ANNOUNCED as a credential — by a key, a flag, a URL
+// userinfo or a known token prefix — and redactEntropy removes any long opaque token whatever it
+// is. A snippet wants both. A hash wants only the first: a digest cannot leak a high-entropy string
+// (that is what high entropy means), while the catch-all also matches a base64 payload, and a
+// payload replaced before hashing is a payload that can be swapped without changing the hash.
+func Redact(s string) string { return redactEntropy(redactCredentials(s)) }
+
+// redactCredentials is Redact without the entropy catch-all: every value that something in the
+// text announces as a credential.
+func redactCredentials(s string) string {
 	out := urlCredRE.ReplaceAllString(s, `$1<REDACTED>$3`)
 	out = flagUserPassRE.ReplaceAllString(out, `$1$2<REDACTED>`)
 	out = flagSecretRE.ReplaceAllString(out, `$1<REDACTED>`)
@@ -116,7 +127,13 @@ func Redact(s string) string {
 	for _, re := range redactPatterns {
 		out = re.ReplaceAllString(out, "<REDACTED>")
 	}
-	out = entropyTokenRE.ReplaceAllStringFunc(out, func(tok string) string {
+	return out
+}
+
+// redactEntropy is the catch-all for keyword-less, bespoke secrets: long opaque tokens with high
+// Shannon entropy (spec §16.3 "high-entropy strings").
+func redactEntropy(s string) string {
+	return entropyTokenRE.ReplaceAllStringFunc(s, func(tok string) string {
 		// Test the token WITHOUT its base64 padding: `=` carries no information, and counting
 		// it would drag the entropy of a genuine key below the threshold that removes it.
 		if secretish(strings.TrimRight(tok, "=")) {
@@ -124,7 +141,6 @@ func Redact(s string) string {
 		}
 		return tok
 	})
-	return out
 }
 
 // redactValueHalf replaces the VALUE half of every key/value hit, keeping the key and the
