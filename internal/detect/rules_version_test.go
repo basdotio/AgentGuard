@@ -128,9 +128,13 @@ func TestRulesVersion_IgnoresProse(t *testing.T) {
 	}
 }
 
-// TestRulesVersion_EveryRuleFieldIsDecided makes adding a field to Rule a decision. A new
-// behavioural flag that nobody added to the hash would let two different rule tables share a
-// version, and nothing else would notice.
+// TestRulesVersion_EveryRuleFieldIsDecided makes adding a field to Rule a decision, and then
+// checks the decision. A new behavioural flag that nobody added to the hash would let two different
+// rule tables share a version, and nothing else would notice — and so would a field that is LISTED
+// as hashed while rulesVersion never writes it, which a list alone cannot catch. So every field is
+// changed in a copy of one rule: an exported one by reflection (perturb), an unexported one by an
+// explicit mutation, since reflection cannot set it. A hashed field must move the version; a prose
+// field must not.
 func TestRulesVersion_EveryRuleFieldIsDecided(t *testing.T) {
 	hashed := map[string]bool{
 		"ID": true, "Dimension": true, "Severity": true, "Advisory": true,
@@ -138,6 +142,12 @@ func TestRulesVersion_EveryRuleFieldIsDecided(t *testing.T) {
 		"re": true, "except": true,
 	}
 	prose := map[string]bool{"Title": true, "Why": true, "Ref": true}
+	// The unexported fields, set by hand. TestRulesVersion_MovesWithWhatDecidesAFinding keeps its
+	// own named cases for both, including taking an except away.
+	unexported := map[string]func(Rule) Rule{
+		"re":     func(r Rule) Rule { r.re = regexp.MustCompile(r.re.String() + "|never-in-a-real-file"); return r },
+		"except": func(r Rule) Rule { return r.exceptWhen(`harmless`) },
+	}
 	rt := reflect.TypeOf(Rule{})
 	for i := 0; i < rt.NumField(); i++ {
 		name := rt.Field(i).Name
@@ -148,6 +158,46 @@ func TestRulesVersion_EveryRuleFieldIsDecided(t *testing.T) {
 	}
 	if n := rt.NumField(); n != len(hashed)+len(prose) {
 		t.Errorf("Rule has %d fields but the two lists name %d — a listed field no longer exists", n, len(hashed)+len(prose))
+	}
+
+	base := builtinRules()
+	target := indexOf(t, base, "INJ-001")
+	want := rulesVersion(base, rulesEpoch)
+	for i := 0; i < rt.NumField(); i++ {
+		f := rt.Field(i)
+		mutate := unexported[f.Name]
+		switch {
+		case f.IsExported():
+			mutate = func(r Rule) Rule { perturb(t, reflect.ValueOf(&r).Elem().Field(i), "Rule."+f.Name); return r }
+		case mutate == nil:
+			t.Errorf("Rule.%s is unexported, so reflection cannot change it — add an explicit mutation for it here", f.Name)
+			continue
+		}
+		moved := rulesVersion(withRule(base, target, mutate), rulesEpoch) != want
+		switch {
+		case hashed[f.Name] && !moved:
+			t.Errorf("Rule.%s is listed as hashed, but changing it does not move the rules version — "+
+				"hash it in rulesVersion, or move it to the prose list", f.Name)
+		case prose[f.Name] && moved:
+			t.Errorf("Rule.%s is listed as prose, but changing it moves the rules version — list it as hashed", f.Name)
+		}
+	}
+}
+
+// perturb sets v to a different value of its own type: a flipped bool, an integer one higher, a
+// string — or a string-kinded type such as model.Severity — with a byte appended. Any other kind
+// fails the test, so a field of a new kind cannot pass until someone says how to change it.
+func perturb(t *testing.T, v reflect.Value, name string) {
+	t.Helper()
+	switch v.Kind() {
+	case reflect.Bool:
+		v.SetBool(!v.Bool())
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		v.SetInt(v.Int() + 1)
+	case reflect.String:
+		v.SetString(v.String() + "x")
+	default:
+		t.Fatalf("%s has kind %s, which perturb does not know how to change — teach it", name, v.Kind())
 	}
 }
 
