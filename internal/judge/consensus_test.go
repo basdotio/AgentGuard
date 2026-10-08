@@ -271,3 +271,30 @@ func TestConsensus_VarianceNeverReachesTheDeterministicScore(t *testing.T) {
 		}
 	}
 }
+
+// TestRun_StatsCountTriageApart: a judge question is asked `samples` times, triage once. With a
+// single counter for both, what one question costs could only be inferred — and was, by hand,
+// for the committed samples:3 judge runs (`questions = (calls - triage) / 3`, with triage itself
+// guessed as "one per artifact with a static finding"). Stats keeps the two apart.
+func TestRun_StatsCountTriageApart(t *testing.T) {
+	withStatic := func() []model.ArtifactReport {
+		arts := skillTree(t, 1)
+		arts[0].Findings = append(arts[0].Findings, model.Finding{
+			RuleID: "FS-002", Dimension: 9, Severity: model.SevMedium, Source: model.SrcStatic,
+			Evidence: []model.Evidence{{File: "run.sh", Line: 1, Snippet: "cat ~/.aws/credentials"}}})
+		return arts
+	}
+	_, s1 := Run(context.Background(), &scriptedClient{}, withStatic(), Options{Samples: 1, Concurrency: 1})
+	_, s3 := Run(context.Background(), &scriptedClient{}, withStatic(), Options{Samples: 3, Concurrency: 1})
+
+	if s1.TriageCalls != 1 || s3.TriageCalls != 1 {
+		t.Fatalf("triage calls = %d (samples=1), %d (samples=3); want 1 and 1", s1.TriageCalls, s3.TriageCalls)
+	}
+	questions := s1.Calls - s1.TriageCalls
+	if questions < 1 {
+		t.Fatalf("samples=1 issued %d call(s) with %d triage — no judge question was asked", s1.Calls, s1.TriageCalls)
+	}
+	if want := 3*questions + 1; s3.Calls != want {
+		t.Errorf("samples=3 issued %d call(s), want 3 x %d question(s) + 1 triage = %d", s3.Calls, questions, want)
+	}
+}
