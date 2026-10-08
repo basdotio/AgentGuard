@@ -119,8 +119,8 @@ const (
 // newZeroDialFixture builds an environment the judge would have plenty to say about: the
 // three-file test-runner skill (static findings, so a triage call is planned too), a skill with
 // a credential-exfiltration chain the gate stops (so PostToolUse has a decision to re-scan and
-// record), one agent-shaped download, and an installed aguard plugin for `version` to compare
-// with.
+// record), one agent-shaped download, an installed aguard plugin for `version` to compare with,
+// and a gate registration whose binary is gone for the liveness probe to report.
 func newZeroDialFixture(t *testing.T) zeroDialFixture {
 	t.Helper()
 	fx := zeroDialFixture{root: buildTestRunnerSkill(t, true), downloads: t.TempDir(), scratch: t.TempDir()}
@@ -136,6 +136,15 @@ func newZeroDialFixture(t *testing.T) zeroDialFixture {
 	mustWriteFile(t, filepath.Join(fx.root, "plugins", "installed_plugins.json"),
 		`{"version":2,"plugins":{"`+pluginBundleName+`@`+homeMarketplace+`":[{"scope":"user","installPath":`+
 			string(mustJSON(t, bundle))+`,"version":"`+zeroDialPluginVersion+`"}]}}`)
+	// The gate as `aguard hook install` registers it, from a binary since deleted — the state the
+	// gate-liveness probe `scan` appends exists to report, so that row has something to find.
+	reg, err := gate.PlanInstall(fx.root, gate.HookCommand(filepath.Join(filepath.Dir(fx.root), "gone", "aguard")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := reg.Apply(); err != nil {
+		t.Fatal(err)
+	}
 	mustWriteFile(t, filepath.Join(fx.downloads, "changelog-fmt", "SKILL.md"),
 		"---\nname: changelog-fmt\ndescription: Formats a changelog.\n---\nRun fmt.sh.\n")
 	mustWriteFile(t, filepath.Join(fx.downloads, "changelog-fmt", "fmt.sh"),
@@ -283,7 +292,14 @@ func TestZeroDial_OnlyTheJudgeConnects(t *testing.T) {
 			_, err := scanEnv(fx.root, scanOpts{cfgPath: fx.on, quiet: true})
 			return err
 		}},
-		{"scan: the gate-liveness probe it appends", func() error { _ = gateLivenessNote(fx.root); return nil }},
+		{"scan: the gate-liveness probe it appends", func() error {
+			// The fixture registers the gate at a binary that is gone, so the probe has to read
+			// settings.json, resolve the registration and stat it to say so.
+			if notes := gateLivenessNote(fx.root); len(notes) != 1 || notes[0].RuleID != "GATE-001" {
+				return fmt.Errorf("want the fixture's dead registration reported as GATE-001, got %+v: the probe checked nothing", notes)
+			}
+			return nil
+		}},
 		{"scan, Downloads items (no --llm)", func() error {
 			_, err := scanInbox(fx.downloads, true, scanOpts{cfgPath: fx.on, quiet: true})
 			return err
@@ -314,7 +330,17 @@ func TestZeroDial_OnlyTheJudgeConnects(t *testing.T) {
 			return nil
 		})},
 		{"approve", func() error { return approvePath(io.Discard, fx.root, fx.on, fx.skill) }},
-		{"approvals", func() error { return listApprovals(io.Discard, fx.root, true) }},
+		{"approvals", func() error {
+			// The row above approved test-runner, so the store has one entry to read back and list.
+			var out bytes.Buffer
+			if err := listApprovals(&out, fx.root, true); err != nil {
+				return err
+			}
+			if !strings.Contains(out.String(), "test-runner") {
+				return fmt.Errorf("approvals did not list the skill approved in the row above, so it read nothing: %q", out.String())
+			}
+			return nil
+		}},
 		{"llm setup", func() error {
 			return runLLMSetup(io.Discard, filepath.Join(fx.scratch, "setup.yaml"), llmSetupOpts{
 				Provider: config.ProviderGeneric, BaseURL: unroutableJudge, Model: "fake",
