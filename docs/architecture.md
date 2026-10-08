@@ -245,7 +245,8 @@ Two properties matter more than the passes:
   text, each cut end marked `…`, never from the line's start), never the model's quote; a quote of the excerpt's
   "N line(s) omitted" marker does not ground; the model's reason is capped at 512 bytes; triage
   labels go through the same sanitising as every other attacker-influenced string
-  (`report.sanitizeResult`).
+  (`report.sanitizeResult`) and are kept only for a rule id that was sent for triage, byte for
+  byte, so every renderer attaches them to the same finding.
 
 Full reference: [`docs/llm-judge.md`](llm-judge.md).
 

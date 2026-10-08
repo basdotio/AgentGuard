@@ -59,7 +59,7 @@ func (c *HTTPClient) Triage(ctx context.Context, artifact string, items []Triage
 	if err != nil {
 		return nil, err
 	}
-	return parseTriage(content), nil
+	return parseTriage(content, items), nil
 }
 
 // parseTriage extracts the labels object from a reply, tolerating prose/fences around it.
@@ -67,7 +67,13 @@ func (c *HTTPClient) Triage(ctx context.Context, artifact string, items []Triage
 // The reason is model output stored for display, so it gets what every other piece of model
 // output gets before it is kept: redaction, then a bound — here, so JSON carries the same text
 // the human renderers do (they additionally sanitize it, report.sanitizeResult).
-func parseTriage(content string) []model.AdvisoryLabel {
+//
+// A label is kept only if its rule_id is, byte for byte, the id of an item that was SENT. The id
+// is the key report.Aggregate joins a label to its group on, and the model wrote it: the terminal
+// joined on it raw and the markdown/HTML reports on its sanitized copy, so "EXEC-001\a" labelled
+// the EXEC-001 group in a PR comment and nowhere in the terminal. Keeping only ids we sent makes
+// the key ours, so every renderer joins the same way (and an empty or invented id labels nothing).
+func parseTriage(content string, sent []TriageItem) []model.AdvisoryLabel {
 	start := strings.IndexByte(content, '{')
 	end := strings.LastIndexByte(content, '}')
 	if start < 0 || end <= start {
@@ -77,9 +83,13 @@ func parseTriage(content string) []model.AdvisoryLabel {
 	if json.Unmarshal([]byte(content[start:end+1]), &tr) != nil {
 		return nil
 	}
+	asked := make(map[string]bool, len(sent))
+	for _, it := range sent {
+		asked[it.RuleID] = true
+	}
 	out := make([]model.AdvisoryLabel, 0, len(tr.Labels))
 	for _, l := range tr.Labels {
-		if l.RuleID == "" {
+		if l.RuleID == "" || !asked[l.RuleID] {
 			continue
 		}
 		out = append(out, model.AdvisoryLabel{

@@ -184,7 +184,7 @@ aguard scan --llm --config config.yaml
 | `LLM-009` | MCP 服务器配置风险 —— 来源、是否 pin、传输方式、凭证(维度 5)。**只提示**:按模型给的严重度显示,但无论几票都不升级。"`npx -y` 没钉版本还拿着 token"是真实配置的常态,500 个良性配置上它是唯一一条升级过的判官规则(P-019)。 |
 
 triage 标签(`likely-real` / `likely-benign`)以 `⚖ triage (LLM, advisory)` 显示在对应发现下方,纯展示。只有以
-`likely-benign` 这个词开头、且通篇没说 `likely-real` 的才算 `likely-benign`,其余一律读作 `likely-real`。reason 先脱敏、截到 256 字节,
+`likely-benign` 这个词开头、且通篇没说 `likely-real` 的才算 `likely-benign`,其余一律读作 `likely-real`。标签的规则 ID 必须和送去 triage 的某条一字不差才保留,所以每份报告都把它挂在同一条发现上。reason 先脱敏、截到 256 字节,
 人读的报告再像其它攻击者可影响的文字一样清洗。SARIF 里判官规则的说明用工具自己的定义,不用某一条发现的理由。
 
 ## 证据落地(为什么一条发现会消失)

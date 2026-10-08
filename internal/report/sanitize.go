@@ -64,7 +64,11 @@ func sanitizeResult(r model.ScanResult) model.ScanResult {
 	return out
 }
 
-// sanitizeLabels copies triage labels with every field sanitized: all three are model output.
+// sanitizeLabels copies triage labels with every field sanitized: all three are model output. The
+// rule id is also the key Aggregate joins a label on, so sanitizing it must not change it — the
+// judge keeps a label only when its id is byte for byte one it sent (judge.parseTriage), and a
+// rule id never carries a character Sanitize touches; otherwise this renderer and the terminal,
+// which joins on the raw id, would attach different labels.
 func sanitizeLabels(ls []model.AdvisoryLabel) []model.AdvisoryLabel {
 	if ls == nil {
 		return nil

@@ -224,7 +224,8 @@ everything on your machine. That trade-off is yours.
 Triage labels (`likely-real` / `likely-benign`) render inline under the matching finding as
 `⚖ triage (LLM, advisory)`; they are display-only. A label counts as `likely-benign` only when
 it starts with exactly that word and never says `likely-real`; anything else reads as
-`likely-real`. The reason is redacted and capped at 256 bytes, and the human-read reports
+`likely-real`. A label is kept only if its rule id is exactly one that was sent for triage, so
+every report attaches it to the same finding. The reason is redacted and capped at 256 bytes, and the human-read reports
 sanitize it like any other attacker-influenced text. In SARIF, a judge rule is described by the
 tool's own definition, never by one finding's reason.
 
