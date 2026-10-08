@@ -433,6 +433,14 @@ func forgetApproval(w io.Writer, root, hash string) error {
 }
 
 func resolveHashPrefix(store *gate.Store, prefix string) (string, error) {
+	// Every gate message shows a hash in its display form — twelve characters and an
+	// ellipsis — and that is where an operator copies it from. The ellipsis is not part of
+	// the hash. What is left must be non-empty: "" is a prefix of every hash, and treating it
+	// as one silently withdrew an approval whenever exactly one existed.
+	prefix = strings.TrimSuffix(strings.TrimSuffix(strings.TrimSpace(prefix), "…"), "...")
+	if prefix == "" {
+		return "", fmt.Errorf("no hash given: pass the hash (or the prefix a gate message printed), or `all`")
+	}
 	var hits []string
 	for h := range store.Approvals {
 		if len(h) >= len(prefix) && h[:len(prefix)] == prefix {
