@@ -146,6 +146,19 @@ func sarifURI(p string) string {
 	return strings.TrimPrefix(u, "./")
 }
 
+// ruleDescription is the text that describes a RULE — created once, from the first finding of
+// it the walk meets, and shown for every result of that rule. A static rule's Why is the rule's
+// own paragraph, so it serves. A judge rule's Why is not: it is one model's sentence about one
+// artifact (or, for a judge note, a count, an endpoint error, the model's failed quotes), and it
+// changed with whichever artifact happened to be walked first. Judge rules are described by the
+// tool's own definition; one without a definition gets none rather than a Why.
+func ruleDescription(f model.Finding) string {
+	if f.Source == model.SrcLLM {
+		return model.JudgeRuleText(f.RuleID)
+	}
+	return f.Why
+}
+
 // fingerprint identifies a finding across runs. Deliberately (rule, file, snippet) with NO LINE
 // NUMBER: inserting a line above a finding must not reopen an alert somebody already triaged.
 func fingerprint(ruleID, file, snippet string) string {
@@ -184,9 +197,9 @@ func SARIF(w io.Writer, res model.ScanResult, version, infoURI string) error {
 				DefaultConfiguration: &sarifRuleConfig{Level: lvl},
 				Properties:           props,
 			}
-			if f.Why != "" {
-				r.FullDescription = &sarifText{Text: f.Why}
-				r.Help = &sarifText{Text: f.Why}
+			if desc := ruleDescription(f); desc != "" {
+				r.FullDescription = &sarifText{Text: desc}
+				r.Help = &sarifText{Text: desc}
 			}
 			rules[f.RuleID] = r
 		}
