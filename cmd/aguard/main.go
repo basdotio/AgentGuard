@@ -385,6 +385,11 @@ func resolveIgnorePath(root, explicit string, auto bool) string {
 	return filepath.Join(root, ".aguardignore")
 }
 
+// contentHashes is the detect-stage step that gives hooks, MCP servers and permission lists their
+// canonical hash (detect.ContentHashes). A variable only so a test can run analyze WITHOUT it and
+// prove the step changes nothing in a report but those hash fields; nothing reassigns it otherwise.
+var contentHashes = detect.ContentHashes
+
 // analyze runs detect → permcheck → baseline-suppress → hygiene → score.
 func analyze(root string, res collect.Result, o scanOpts) (model.ScanResult, error) {
 	cfg, err := config.LoadUser(o.cfgPath)
@@ -392,6 +397,11 @@ func analyze(root string, res collect.Result, o scanOpts) (model.ScanResult, err
 		return model.ScanResult{}, err
 	}
 	arts, covNotes := detect.New().Run(root, res.Artifacts)
+	// Hooks, MCP servers and permission lists get their content hash HERE, before anything below
+	// reads Hash: reputation in this function, and — through scanEnv / checkTarget — the gate's
+	// SessionStart, `aguard approve` and the Downloads pass. Collect leaves them "", which every one
+	// of those reads as "never seen".
+	arts = contentHashes(root, arts)
 	// Managed policy loads before everything and cannot be excluded, but it lives at an absolute OS
 	// path unrelated to --root, so it is disclosed here rather than collected: folding it into
 	// findings would make the reproducible score depend on how the machine is administered.
@@ -843,7 +853,8 @@ func main() {
 	}
 
 	// hash computes the canonical hash of a skill/dir/file — the key a maintainer adds to
-	// the reputation list (skill=tree hash, single-file=sha256; same hashing as scan).
+	// the reputation list (skill=tree hash, single-file=sha256, and for a config root the content
+	// hash of every hook, MCP server and permission list; same hashing as scan, same root).
 	hashCmd := &cobra.Command{
 		Use:   "hash <path>",
 		Short: "Print the canonical reputation hash of a skill/dir/file",
@@ -853,7 +864,7 @@ func main() {
 			if err != nil {
 				return err
 			}
-			for _, a := range res.Artifacts {
+			for _, a := range contentHashes(args[0], res.Artifacts) {
 				fmt.Printf("%s  %s:%s\n", a.Hash, a.Kind, a.Name)
 			}
 			return nil

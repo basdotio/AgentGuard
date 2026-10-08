@@ -2,6 +2,7 @@
 package main
 
 import (
+	"encoding/json"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -116,4 +117,70 @@ func TestHashCommand_PrintsConfigHashes(t *testing.T) {
 	if seen < 5 {
 		t.Fatalf("want a line per hook, MCP server, permissions list and env block (5), got %d:\n%s", seen, stdout)
 	}
+}
+
+// TestScan_OnlyConfigHashesChange is the reverse assertion for the whole step: run the same scan
+// with and without it, and the two reports must be byte-identical once the hook/MCP/permission hash
+// fields are blanked — no finding, score, note, inventory count or other kind's hash may move. The
+// fixture carries findings on every config kind (a curl|bash hook script, an escapable grant, a
+// credential in env) so "identical" is not vacuous, and runs with reputation ON, the consumer that
+// sits right after the step.
+func TestScan_OnlyConfigHashesChange(t *testing.T) {
+	root := configRoot(t)
+	scan := func() model.ScanResult {
+		t.Helper()
+		out, err := scanEnv(root, scanOpts{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+	after := scan()
+	saved := contentHashes
+	contentHashes = func(_ string, arts []model.ArtifactReport) []model.ArtifactReport { return arts }
+	before := scan()
+	contentHashes = saved
+
+	hashed, scored := 0, 0
+	for i, a := range after.Artifacts {
+		if configKinds[a.Kind] {
+			if before.Artifacts[i].Hash != "" || !hex64.MatchString(a.Hash) {
+				t.Errorf("%s %q: hash %q without the step, %q with it", a.Kind, a.Name, before.Artifacts[i].Hash, a.Hash)
+			}
+			hashed++
+			if a.Score < 100 {
+				scored++
+			}
+			continue
+		}
+		if a.Hash != before.Artifacts[i].Hash {
+			t.Errorf("%s %q: the step changed a hash it does not own: %q → %q", a.Kind, a.Name, before.Artifacts[i].Hash, a.Hash)
+		}
+	}
+	if hashed < 5 || scored < 2 {
+		t.Fatalf("fixture too thin to mean anything: %d config artifacts, %d with findings", hashed, scored)
+	}
+	if b, a := blankConfigHashes(t, before), blankConfigHashes(t, after); b != a {
+		t.Errorf("the step changed more than the config hashes:\nwithout: %s\nwith:    %s", b, a)
+	}
+}
+
+// blankConfigHashes returns the scan as JSON with every hook/MCP/permission hash set to "" and the
+// timestamp zeroed — the only two things the two runs may differ in.
+func blankConfigHashes(t *testing.T, out model.ScanResult) string {
+	t.Helper()
+	out.ScannedAt = 0
+	arts := make([]model.ArtifactReport, len(out.Artifacts))
+	for i, a := range out.Artifacts {
+		if configKinds[a.Kind] {
+			a.Hash = ""
+		}
+		arts[i] = a
+	}
+	out.Artifacts = arts
+	b, err := json.Marshal(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(b)
 }
