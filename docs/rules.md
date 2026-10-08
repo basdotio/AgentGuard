@@ -22,6 +22,12 @@ read the evidence before acting.
 These counts are generated from the same tables the drift check reads, so if a count
 anywhere else in this repository disagrees with this line, that other count is stale.
 
+**Rules version `43f245966105`** — reports from this build carry it as `rules_version` (`--json`),
+and `aguard version` prints it. It hashes what decides a finding — each rule's ID, dimension,
+severity, flags and pattern, not the titles and explanations below — plus an epoch the
+maintainers bump when detection code outside this table changes. Two reports that disagree
+here were produced by different rules; two that agree were produced by the same rule table.
+
 ## Contents
 
 - [1 — Prompt injection](#1--prompt-injection) (10)

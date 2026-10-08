@@ -208,6 +208,17 @@ func main() {
 	p("These counts are generated from the same tables the drift check reads, so if a count\n")
 	p("anywhere else in this repository disagrees with this line, that other count is stale.\n\n")
 
+	// The rules version, so a report can be matched to the table that produced it. It lives in
+	// the header and not only in reports because the drift check then covers it: a pattern change
+	// that leaves every title alone still changes this line, so it cannot ship without `make docs`.
+	// The wording says only what the hash guarantees; internal/detect's rulesEpoch says what it cannot.
+	p("**Rules version `%s`** — reports from this build carry it as `rules_version` (`--json`),\n",
+		detect.RulesVersion())
+	p("and `aguard version` prints it. It hashes what decides a finding — each rule's ID, dimension,\n")
+	p("severity, flags and pattern, not the titles and explanations below — plus an epoch the\n")
+	p("maintainers bump when detection code outside this table changes. Two reports that disagree\n")
+	p("here were produced by different rules; two that agree were produced by the same rule table.\n\n")
+
 	byDim := map[int][]entry{}
 	for _, r := range rules {
 		byDim[r.Dimension] = append(byDim[r.Dimension], entry{
