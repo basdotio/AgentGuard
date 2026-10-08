@@ -23,6 +23,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -278,6 +279,85 @@ func TestE2E_JudgeRunsToCompletion(t *testing.T) {
 	}
 	if judged != 20 {
 		t.Errorf("%d of 20 skills produced a judge finding — coverage is thinner than the plan", judged)
+	}
+}
+
+// usageServer answers every call with a non-flagging verdict and a fixed usage block, so the
+// tokens a run used are exactly calls x the block — the arithmetic the summary has to match.
+func usageServer(t *testing.T, prompt, completion int) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.ReadAll(r.Body)
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"{\"flagged\":false}"}}],` +
+			`"usage":{"prompt_tokens":` + strconv.Itoa(prompt) + `,"completion_tokens":` + strconv.Itoa(completion) + `}}`))
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+// TestE2E_JudgeSummaryCarriesCost: what --llm cost used to exist only as one stderr line, and
+// not at all under --quiet — which is how every Downloads item is judged. A driver that reads
+// --json (the baseline adapter) never sees stderr either. The JSON summary is where a machine
+// reads it, so that is where it has to be, quiet or not.
+func TestE2E_JudgeSummaryCarriesCost(t *testing.T) {
+	root := buildTestRunnerSkill(t, true)
+	srv := usageServer(t, 100, 7)
+	cfg := writeJudgeConfig(t, srv.URL, "advisory")
+
+	out, err := scanEnv(root, scanOpts{cfgPath: cfg, llm: true, quiet: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	j := out.Judge
+	if j == nil || !j.Ran || j.Calls == 0 || j.Failed != 0 {
+		t.Fatalf("judge summary = %+v; want a clean run with calls", j)
+	}
+	if j.PromptTokens != 100*j.Calls || j.CompletionTokens != 7*j.Calls {
+		t.Errorf("tokens = %d in / %d out over %d call(s); want %d / %d",
+			j.PromptTokens, j.CompletionTokens, j.Calls, 100*j.Calls, 7*j.Calls)
+	}
+	wantTriage := 0
+	for _, a := range out.Artifacts {
+		for _, f := range a.Findings {
+			if f.Source != model.SrcLLM && f.Dimension != 0 {
+				wantTriage++
+				break
+			}
+		}
+	}
+	if wantTriage == 0 || j.TriageCalls != wantTriage {
+		t.Errorf("triage_calls = %d, want %d (one per artifact with a static finding)", j.TriageCalls, wantTriage)
+	}
+	if j.Retries != 0 {
+		t.Errorf("retries = %d against an endpoint that never failed", j.Retries)
+	}
+}
+
+// TestE2E_UnreportedUsageIsNotAZero: an endpoint that sends no usage block has not told us the
+// call was free. A real call never uses zero prompt tokens, so the honest record of "not reported"
+// is the key's absence; retries and triage_calls are our own counts and are always there.
+func TestE2E_UnreportedUsageIsNotAZero(t *testing.T) {
+	root := buildTestRunnerSkill(t, true)
+	srv := judgeServer(t, injectedLine) // no usage block
+	cfg := writeJudgeConfig(t, srv.URL, "advisory")
+
+	out, err := scanEnv(root, scanOpts{cfgPath: cfg, llm: true, quiet: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := json.Marshal(out.Judge)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{`"prompt_tokens"`, `"completion_tokens"`} {
+		if strings.Contains(string(raw), key) {
+			t.Errorf("judge summary %s carries %s although the endpoint reported no usage", raw, key)
+		}
+	}
+	for _, key := range []string{`"retries"`, `"triage_calls"`} {
+		if !strings.Contains(string(raw), key) {
+			t.Errorf("judge summary %s lacks %s; our own counts are always recorded", raw, key)
+		}
 	}
 }
 
