@@ -146,6 +146,9 @@ func TestContentHash_SameConfigTwoMachines(t *testing.T) {
 	if h1 == "" || h1 != h2 {
 		t.Errorf("same settings hook under two homes: %q vs %q", h1, h2)
 	}
+	if h := hashOf(r1+string(filepath.Separator), a1); h != h1 {
+		t.Errorf("a trailing slash on the root changed the hook's identity: %q vs %q", h, h1)
+	}
 
 	pluginHook := func() (string, model.ArtifactReport) {
 		home := t.TempDir()

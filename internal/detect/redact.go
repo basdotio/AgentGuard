@@ -3,6 +3,10 @@
 // findings. Secret redaction happens HERE, before any snippet is stored in a finding —
 // so the report AND the (optional M5) LLM judge consume the same redacted view and a
 // real credential never leaves the machine (spec §16.3, the privacy invariant).
+//
+// The content hash of hooks, MCP servers and permission lists is computed here too
+// (contenthash.go), over Redact's credential half: no artifact's Hash may be a digest of
+// credential material, and none may depend on where the configuration sits on disk.
 package detect
 
 import (
