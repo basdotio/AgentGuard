@@ -1249,9 +1249,6 @@ func configStrings(path, section, name string) []string {
 	return strs
 }
 
-// ConfigStrings is configStrings for the LLM judge's MCP excerpt until it moves to ConfigLines.
-func ConfigStrings(path, section, name string) []string { return configStrings(path, section, name) }
-
 // ConfigLines renders section[name] as `key=value` lines: exactly the string leaves configStrings
 // returns, each prefixed with where it sits in the entry (`command`, `args`, `env.DB_PASS`).
 // Object keys are sorted and array elements keep their order, so the text is byte-stable from run

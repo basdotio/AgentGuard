@@ -137,3 +137,29 @@ func TestIntentPrompt_DisclosedRedirectIsStillAFinding(t *testing.T) {
 		}
 	}
 }
+
+// TestMaskCredentialValue: in the MCP excerpt a value is withheld when its KEY names a credential,
+// including the spellings detect.Redact's prose-safe key list does not cover (DB_PASS, MYSQL_PWD,
+// DB_PW). The reverse rows matter as much: a value under any other key is what the judge is there
+// to read — NODE_OPTIONS carrying a preload, a base URL pointing elsewhere.
+func TestMaskCredentialValue(t *testing.T) {
+	for _, c := range []struct{ in, want string }{
+		{"env.DB_PASS=hunter2", "env.DB_PASS=<REDACTED>"},
+		{"env.MYSQL_PWD=root", "env.MYSQL_PWD=<REDACTED>"},
+		{"env.DB_PW=x1", "env.DB_PW=<REDACTED>"},
+		{"env.GITHUB_PERSONAL_ACCESS_TOKEN=ghp_x", "env.GITHUB_PERSONAL_ACCESS_TOKEN=<REDACTED>"},
+		{"headers.X-Api-Key=abc", "headers.X-Api-Key=<REDACTED>"},
+		{"headers.Authorization=Bearer abc", "headers.Authorization=<REDACTED>"},
+		{"env.NODE_OPTIONS=--require /tmp/x.js", "env.NODE_OPTIONS=--require /tmp/x.js"},
+		{"env.API_BASE=https://db.example.com", "env.API_BASE=https://db.example.com"},
+		{"env.POWER_MODE=high", "env.POWER_MODE=high"},
+		{"args=--password-file", "args=--password-file"},
+		{"command=npx", "command=npx"},
+		{"env.EMPTY_TOKEN=", "env.EMPTY_TOKEN="},
+		{"a bare string with no key", "a bare string with no key"},
+	} {
+		if got := maskCredentialValue(c.in); got != c.want {
+			t.Errorf("maskCredentialValue(%q) = %q, want %q", c.in, got, c.want)
+		}
+	}
+}
