@@ -239,7 +239,9 @@ that quote is checked against the text the model was actually sent:
   **the line it landed on, as it was sent** (redacted, at most 512 bytes) — not the model's quote.
   A quote that fails as a whole is retried line by line and the first line that lands is the
   citation; the rest of what the model wrote is not shown, so a real line cannot vouch for
-  invented ones beside it.
+  invented ones beside it. A line longer than 512 bytes is cut to a window **around the quoted
+  text**, each cut end marked `…` — not to its first 512 bytes, which let a directive padded with
+  prose show only the prose. A quote that is itself longer than the window shows its beginning.
 - **Not found** → the finding is **discarded**, and the count surfaces as `LLM-005`. A silent
   drop would make a paraphrasing model look like a clean environment.
 

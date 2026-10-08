@@ -196,8 +196,8 @@ MCP 配置、triage 标签。被扫内容按**敌对**处理:每次调用用 `cr
 - **升级资格是逐条 finding 的**:必须过**证据落地**(`judge.Ground` 回填真实 `file:line`,落不了地
   就丢弃并计入 `LLM-005`)**加 k-of-n 共识**。`llm.authority` 管的是 `--fail-on-llm` 这个闸门,
   不是分数本身。
-- **判官发现展示的是发出去的东西**:snippet 是引文落地的那几行摘录原文(再过一次 Redact,最多 512 字节),
-  不是模型的引文;引摘录里 "N line(s) omitted" 标记的不算落地;模型的理由最多 512 字节;triage 标签和
+- **判官发现展示的是发出去的东西**:snippet 是引文落地的那几行摘录原文(再过一次 Redact,最多 512 字节;
+  行太长时围绕引文所在位置开窗截取,截断的一端标 `…`,不从行首截),不是模型的引文;引摘录里 "N line(s) omitted" 标记的不算落地;模型的理由最多 512 字节;triage 标签和
   其它攻击者可影响的字符串走同一道清洗(`report.sanitizeResult`)。
 
 完整参考:[`docs/llm-judge.zh-CN.md`](llm-judge.zh-CN.md)。

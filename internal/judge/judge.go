@@ -140,6 +140,9 @@ const (
 	maxSnippetBytes = 512 // the grounded line(s) shown as a judge finding's evidence
 )
 
+// ellipsis marks where bounded text was cut.
+const ellipsis = "…"
+
 // capBytes bounds s to max bytes, cutting on a rune boundary (a cut mid-rune would put invalid
 // UTF-8 in the report) and marking the cut with an ellipsis. Callers redact FIRST, so a secret
 // straddling the cut cannot survive as a sub-threshold fragment (invariant #3).
@@ -151,7 +154,7 @@ func capBytes(s string, max int) string {
 	for cut > 0 && !utf8.RuneStart(s[cut]) {
 		cut--
 	}
-	return s[:cut] + "…"
+	return s[:cut] + ellipsis
 }
 
 // finding converts a flagged verdict into an advisory finding. Returns nil when nothing was
@@ -215,8 +218,9 @@ func barrierFinding(r Request) *model.Finding {
 }
 
 // evidence is what a grounded span contributes to a finding: the real location and, as the
-// snippet, the sent line(s) it landed on — re-redacted defensively like everything else the
-// judge hands to a report, then bounded.
+// snippet, the sent line(s) it landed on (already cut to a window around the quote when they are
+// too long, ground.go) — re-redacted defensively like everything else the judge hands to a
+// report. The cap is a backstop: it only bites if that re-redaction made the text longer.
 func (s groundedSpan) evidence() model.Evidence {
 	return model.Evidence{File: s.file, Line: s.line, Snippet: capBytes(detect.Redact(s.text), maxSnippetBytes)}
 }
