@@ -153,6 +153,21 @@ everything on your machine. That trade-off is yours.
   any value whose key names it a credential — `password=hunter2` goes too, length is not the
   test once the key has vouched for it — and high-entropy strings. None of that is proof.
   That's why the default endpoint is **local**.
+- **Your home directory is not sent.** Every spelling of the scanned environment's home — as
+  given, with symlinks resolved, and as Claude Code's encoded project directory (`-Users-you-…`) —
+  becomes `~` *before* redaction, in content and in triage evidence; a file in the home that a
+  static finding names as `<username>/<file>` goes as `~/<file>`. **Only the home is replaced**:
+  a bare username in prose, a git author name, an email address, and absolute paths outside the
+  home are sent as written. The environment scan's home is `--root`'s parent (your home, for the
+  default root); the Downloads pass uses your home.
+- **MCP configuration is sent by key.** A server's entry is rendered as sorted `key=value` lines
+  (`command=…`, `args=…`, `env.NAME=…`) — the same strings the static scan reads. A value whose
+  key names a credential (`…PASS`, `…PWD`, `…TOKEN`, `…KEY`, `…SECRET`, anything with auth /
+  cred / cookie / private) is replaced by `<REDACTED>` whatever it looks like; every other value
+  goes through redaction as usual. It used to be the values alone, so a password under `DB_PASS`
+  went out as a bare `hunter2`.
+- **A declared purpose is capped at 1,000 bytes** (a description, a hook's interception point),
+  cut on a character boundary.
 - **Non-local endpoint → an `LLM-002` warning** is added to the report, because
   best-effort-redacted skill content is leaving the machine.
 - **What the judge sees is a condensed excerpt, not the file.** Per skill, up to 6000 bytes of
