@@ -283,6 +283,11 @@ func runJudge(cfg config.Config, arts []model.ArtifactReport, quiet bool) ([]mod
 	})
 	summary.Ran = true
 	summary.Calls, summary.Failed, summary.Skipped = stats.Calls, stats.Failed, stats.Skipped
+	// Cost goes into the summary whether or not anyone is watching stderr: quiet is how every
+	// Downloads item is judged, and a driver that reads --json (the baseline adapter) never sees
+	// stderr at all — those are the runs a cost is read from afterwards.
+	summary.TriageCalls, summary.Retries = stats.TriageCalls, stats.Retries
+	summary.PromptTokens, summary.CompletionTokens = client.Usage()
 	for _, a := range arts {
 		for _, f := range a.Findings {
 			if f.Source == model.SrcLLM && f.Dimension > 0 {
@@ -291,8 +296,9 @@ func runJudge(cfg config.Config, arts []model.ArtifactReport, quiet bool) ([]mod
 		}
 	}
 	if !quiet && stats.Calls > 0 {
-		// Cost is the one thing about --llm the operator cannot see in the report itself.
-		prompt, completion := client.Usage()
+		// The same numbers as the JSON summary, for the operator at the terminal; the human
+		// report deliberately carries no cost line.
+		prompt, completion := summary.PromptTokens, summary.CompletionTokens
 		fmt.Fprintf(os.Stderr,
 			"LLM judge: %d call(s) in %s (p50 %s, p95 %s) · %d retry · %d failed · %d tokens in / %d out\n",
 			stats.Calls, time.Since(started).Round(time.Millisecond),
