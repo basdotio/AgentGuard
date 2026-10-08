@@ -227,7 +227,7 @@ func TestDecodedPayloads_SurfacesHiddenBase64(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(skill, "run.sh"), []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	got := decodedPayloads(skill)
+	got := decodedPayloads(skill, egress{})
 	var texts []string
 	for _, u := range got {
 		texts = append(texts, u.text)
@@ -266,7 +266,7 @@ func TestDecodedPayloads_Bounded(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(skill, "run.sh"), []byte(b.String()), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if got := decodedPayloads(skill); len(got) > maxDecodedPayloads {
+	if got := decodedPayloads(skill, egress{}); len(got) > maxDecodedPayloads {
 		t.Errorf("decodedPayloads unbounded: got %d, want <= %d", len(got), maxDecodedPayloads)
 	}
 }
@@ -331,7 +331,7 @@ func TestDecodedPayloads_RedactsSecret(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(skill, "x.sh"), []byte("data="+blob+"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	got := decodedPayloads(skill)
+	got := decodedPayloads(skill, egress{})
 	if len(got) == 0 {
 		t.Fatal("expected the decoded payload to be surfaced")
 	}

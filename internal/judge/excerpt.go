@@ -51,13 +51,13 @@ var behaviorExts = map[string]bool{
 // singleFileExcerpt reads ONE artifact file (CLAUDE.md, a subagent, a slash command). These
 // kinds have no tree and no frontmatter contract worth splitting: the whole file is the
 // instruction text an agent will read.
-func singleFileExcerpt(path string) (string, []sourceUnit) {
+func singleFileExcerpt(path string, eg egress) (string, []sourceUnit) {
 	raw := readAtMost(path, maxFileRead)
 	if raw == nil {
 		return "", nil
 	}
 	// Prose: blank runs collapse (padding hides here too) but nothing is a "comment" to drop.
-	text, lm := condense(path, detect.Redact(string(raw)), false)
+	text, lm := condense(path, eg.redact(string(raw)), false)
 	text, lm = capHeadTail(text, lm, maxExcerptBytes)
 	return text, []sourceUnit{{file: detect.Redact(filepath.Base(path)), text: text, firstLine: 1, lineMap: lm}}
 }
@@ -168,15 +168,15 @@ func offsetLines(lm []int, delta int) []int {
 // hookExcerpt renders a hook as its interception point plus the command it runs. The command
 // lives inside JSON, so there is no meaningful line to cite — hence a collapsed unit at
 // line 0, matching how the static engine reports hook hits.
-func hookExcerpt(file string, h model.Hook) (declared, behavior string, units []sourceUnit) {
+func hookExcerpt(file string, h model.Hook, eg egress) (declared, behavior string, units []sourceUnit) {
 	matcher := h.Matcher
 	if matcher == "" {
 		matcher = "* (every tool)"
 	}
-	declared = detect.Redact("event: " + h.Event + "\nmatcher: " + matcher)
-	behavior = boundedRedact(h.Command, maxExcerptBytes)
+	declared = eg.redact("event: " + h.Event + "\nmatcher: " + matcher)
+	behavior = boundedRedact(eg.scrub(h.Command), maxExcerptBytes)
 	if behavior == "" && h.URL != "" {
-		behavior = boundedRedact(h.URL, maxExcerptBytes)
+		behavior = boundedRedact(eg.scrub(h.URL), maxExcerptBytes)
 	}
 	return declared, behavior, []sourceUnit{{
 		file: detect.Redact(filepath.Base(file)), text: behavior, firstLine: 0, collapsed: true,
@@ -185,12 +185,12 @@ func hookExcerpt(file string, h model.Hook) (declared, behavior string, units []
 
 // mcpExcerpt returns an MCP server's configured strings — command, args, env values — using
 // the SAME extraction the static engine scans (detect.ConfigStrings), so the two can't drift.
-func mcpExcerpt(path, name string) (string, []sourceUnit) {
+func mcpExcerpt(path, name string, eg egress) (string, []sourceUnit) {
 	strs := detect.ConfigStrings(path, "mcpServers", name)
 	if len(strs) == 0 {
 		return "", nil
 	}
-	text := boundedRedact(strings.Join(strs, "\n"), maxExcerptBytes)
+	text := boundedRedact(eg.scrub(strings.Join(strs, "\n")), maxExcerptBytes)
 	return text, []sourceUnit{{
 		file: detect.Redact(filepath.Base(path)), text: text, firstLine: 0, collapsed: true,
 	}}
@@ -213,7 +213,11 @@ var capabilityDims = map[int]bool{
 // whole-tree upload: the model only needs to know which file does what, and the static pass
 // already found exactly those lines. Sending the tree instead would multiply the price of the
 // cheapest question the judge asks.
-func capabilityDigest(a model.ArtifactReport) (string, []sourceUnit) {
+//
+// The digest line carries the static File and Snippet, so both are scrubbed for sending (the
+// File as a file position); the unit keeps the static File as its citation, since that is what
+// the report shows for the same line.
+func capabilityDigest(a model.ArtifactReport, eg egress) (string, []sourceUnit) {
 	var lines []string
 	var units []sourceUnit
 	seen := map[string]bool{}
@@ -225,7 +229,7 @@ func capabilityDigest(a model.ArtifactReport) (string, []sourceUnit) {
 			if e.File == "" || e.Snippet == "" {
 				continue
 			}
-			line := fmt.Sprintf("%s:%d [%s] %s", e.File, e.Line, f.RuleID, detect.Redact(e.Snippet))
+			line := fmt.Sprintf("%s:%d [%s] %s", eg.file(e.File), e.Line, f.RuleID, eg.redact(e.Snippet))
 			if seen[line] {
 				continue
 			}
@@ -260,7 +264,7 @@ func boundedRedact(s string, max int) string {
 // the whole point: grounding (ground.go) checks a verdict's quote against what the model was
 // actually shown, so a unit holding text that never got sent would ground a claim about
 // something the model could not have seen.
-func behaviorExcerpt(dir string) (string, []sourceUnit) {
+func behaviorExcerpt(dir string, eg egress) (string, []sourceUnit) {
 	var units []sourceUnit
 	total := 0
 	_ = filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
@@ -287,7 +291,7 @@ func behaviorExcerpt(dir string) (string, []sourceUnit) {
 		// survive as a sub-threshold partial. The rel path is redacted too (a path segment could
 		// be a token). Then condense — blank runs to one, comments out — and cap head+tail, so
 		// the 2000 bytes carry code from both ends of the file rather than whitespace from one.
-		red, lm := condense(p, detect.Redact(string(raw)), true)
+		red, lm := condense(p, eg.redact(string(raw)), true)
 		red, lm = capHeadTail(red, lm, maxFileBytes)
 		rel, _ := filepath.Rel(dir, p)
 		header := "# " + detect.Redact(rel) + "\n"
