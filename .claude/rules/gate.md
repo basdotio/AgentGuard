@@ -75,7 +75,9 @@ paths:
   的原文塞进一条安全提示再喂给模型,正是这个工具拒绝采取的形状。有测试盯着
   (`TestReasonCarriesNoEvidenceSnippets`)。
 - **判定必须走 `score.Deterministic`,不要在这里重写一遍条件。** 闸门和 `--fail-on` 必须对同一份
-  字节给同一个答案;judge 在这条路上永不运行(和 `check` 一样)。
+  字节给同一个答案;judge 在这条路上永不运行。`check` 自 P-004 起接受 `--llm`,**闸门不跟**:`gateOptions` 和
+  `approvePath` 构造的 `scanOpts` 永不设 `llm`,`TestGateScannerNeverEnablesLLM` 用计数端点钉住(比检查字段更严:
+  换一种方式在闸门里打开判官也会红)。闸门对应的是不带 `--llm` 的 `check`。
 - **`hook uninstall` 要删掉每一份、且只删我们自己的**(`removeCommand`,2026-09-08)。原来 `findEntry` 只返回第一个匹配、
   只删那一条:闸门被注册了两次(老安装路径、手改)时,uninstall 报成功、hook 照样触发。而且它删的是**整条 entry**——一条 entry 的
   inner hooks 里我们的命令和运维自己的命令共用同一个 matcher 时,把人家的也一起删了。现在遍历全部条目、只摘我们的 inner 命令、

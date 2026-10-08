@@ -3,7 +3,9 @@
 // "the description says A but the code does B" mismatches that static rules miss.
 //
 // Hard constraints (must never be relaxed):
-//   - OFF by default: runs only when config enables it AND `scan --llm` is passed.
+//   - OFF by default: runs only when config enables it AND `--llm` is passed to `scan` or
+//     `check`. The load-time gate never passes it: a hook that fires on every load, under a
+//     deadline, must not wait on a model or spend money nobody asked to spend.
 //   - Every byte sent is passed through detect.Redact first (§16.3). Redaction is BEST-EFFORT
 //     (known secret shapes + high-entropy tokens); it is not a guarantee, so enabling the judge
 //     against a NON-LOCAL endpoint means best-effort-redacted skill content leaves the machine.

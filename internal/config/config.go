@@ -54,7 +54,7 @@ type GateConfig struct {
 // client-side file the user can edit, so it protects the user's own time and bill — it is
 // not, and must never be sold as, a security or cost control (spec §11).
 type LLMConfig struct {
-	Enabled  bool   `yaml:"enabled"`  // default false — must be true AND `scan --llm`
+	Enabled  bool   `yaml:"enabled"`  // default false — must be true AND `--llm` (scan or check)
 	Provider string `yaml:"provider"` // "openai_compatible", or a preset name (see Presets)
 	BaseURL  string `yaml:"base_url"` // endpoint root; a preset fills it in when left at the default
 	Model    string `yaml:"model"`    // a preset fills in its default when empty
