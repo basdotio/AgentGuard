@@ -74,10 +74,11 @@ type scanOpts struct {
 	// scan/clean, where root is the operator's OWN environment, and FALSE for check, where
 	// root is the untrusted target — see resolveIgnorePath.
 	autoBaseline bool
-	// home is the home directory the judge strips from what it sends (judge.Options.Home). The
-	// environment scan's is root's parent, the anchor collect and detect already use for the
-	// user-level config; a Downloads candidate's root is the candidate, so scanInbox sets the
-	// user's own.
+	// home is the scan's home, which the judge strips from what it sends IN ADDITION to the OS
+	// user's home (judge.Options.Home; the user's is stripped whatever this says). The environment
+	// scan's is root's parent, the anchor collect and detect already use for the user-level config.
+	// check and the Downloads pass leave it empty: their root is the target, whose parent names
+	// nothing in particular.
 	home string
 }
 
@@ -91,7 +92,11 @@ func scanEnv(root string, o scanOpts) (model.ScanResult, error) {
 		return model.ScanResult{}, err
 	}
 	o.autoBaseline = true
-	o.home = filepath.Dir(root)
+	// From the ABSOLUTE root: filepath.Dir(".claude") is ".", which the judge used to read as "no
+	// home" and so replaced nothing; and for --root . the parent of "." is "." again, the root itself.
+	if abs, err := filepath.Abs(root); err == nil {
+		o.home = filepath.Dir(abs)
+	}
 	return analyze(root, collect.CollectAll(root), o)
 }
 

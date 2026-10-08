@@ -34,31 +34,43 @@ import (
 // Only the home is replaced, never the bare username: it can be an ordinary word, and replacing
 // it in prose would rewrite the content under review. The one structural exception is detect's
 // relPath fallback, `<username>/<file>`, rewritten in file positions only (file).
+//
+// WHICH homes: the OS user's, always (Run), and the scan's, when the caller names one
+// (Options.Home). The user's is the default rather than an option because the scrub has to be
+// safe when a caller forgets: an empty Options.Home used to mean "send paths unchanged", and
+// `check --llm` never set it.
 type egress struct {
-	homes   []string // the home as given and with symlinks resolved, longest first
+	homes   []string // every spelling of every home, longest first
 	encoded []string // the same in Claude Code's project-directory encoding; none for a one-segment home
-	user    string   // the home's last segment, for the relPath fallback only
+	users   []string // each home's last segment, for the relPath fallback only
 }
 
-// newEgress prepares the scrub for one home. An empty, relative or root home yields the zero
-// value, which changes nothing: replacing "/" would rewrite every absolute path in the excerpt.
-func newEgress(home string) egress {
-	if home == "" {
-		return egress{}
-	}
-	home = filepath.Clean(home)
-	if !filepath.IsAbs(home) || home == string(filepath.Separator) {
-		return egress{}
-	}
-	forms := []string{home}
-	if r, err := filepath.EvalSymlinks(home); err == nil && r != home {
-		forms = append(forms, r)
+// newEgress prepares the scrub for the given homes, the OS user's first. Each is made absolute — a
+// relative home is resolved against the working directory, where the scan resolved its root, not
+// dropped — and taken as given and with symlinks resolved. An empty home, or one that is the
+// filesystem root, adds nothing: replacing "/" would rewrite every absolute path in the excerpt.
+//
+// A spelling that lies inside an EARLIER home's is dropped: CLAUDE_CONFIG_DIR=~/.config/claude makes
+// the scan's home ~/.config, and replacing it with `~` as well would send ~/.config/claude/x as
+// ~/claude/x, a path the judge would read as somewhere else. The earlier home already covers it.
+// Only in that direction — a scan home that CONTAINS the user's (--root /Users/.claude) keeps both,
+// or /Users/alice/x would go out as ~/alice/x.
+func newEgress(homes ...string) egress {
+	var e egress
+	var kept []string
+	for _, h := range homes {
+		for _, f := range homeSpellings(h) {
+			if !within(f, kept) {
+				kept = append(kept, f)
+				e.users = appendNew(e.users, filepath.Base(f))
+			}
+		}
 	}
 	// Longest first: /private/var/…/alice contains /var/…/alice, and replacing the shorter one
 	// first would leave "/private~".
-	sort.SliceStable(forms, func(i, j int) bool { return len(forms[i]) > len(forms[j]) })
-	e := egress{homes: forms, user: filepath.Base(home)}
-	for _, f := range forms {
+	sort.SliceStable(kept, func(i, j int) bool { return len(kept[i]) > len(kept[j]) })
+	e.homes = kept
+	for _, f := range kept {
 		// `-root` (from /root) is too much like a command-line option to replace safely; the raw
 		// form /root/… still is.
 		if strings.Count(f, string(filepath.Separator)) >= 2 {
@@ -66,6 +78,42 @@ func newEgress(home string) egress {
 		}
 	}
 	return e
+}
+
+// homeSpellings returns a home made absolute, and again with symlinks resolved when that differs.
+// None for an empty home or the filesystem root.
+func homeSpellings(h string) []string {
+	if h == "" {
+		return nil
+	}
+	abs, err := filepath.Abs(h)
+	if err != nil || abs == string(filepath.Separator) {
+		return nil
+	}
+	out := []string{abs}
+	if r, err := filepath.EvalSymlinks(abs); err == nil && r != abs && r != string(filepath.Separator) {
+		out = append(out, r)
+	}
+	return out
+}
+
+// within reports whether p is one of dirs or lies under one of them.
+func within(p string, dirs []string) bool {
+	for _, d := range dirs {
+		if p == d || strings.HasPrefix(p, d+string(filepath.Separator)) {
+			return true
+		}
+	}
+	return false
+}
+
+func appendNew(xs []string, x string) []string {
+	for _, y := range xs {
+		if y == x {
+			return xs
+		}
+	}
+	return append(xs, x)
 }
 
 // projectDirName is how Claude Code names a project's directory under ~/.claude/projects: the
@@ -108,11 +156,10 @@ func (e egress) redact(s string) string { return detect.Redact(e.scrub(s)) }
 // segments — becomes `~/<file>`; a third segment or a longer first one is some other path.
 func (e egress) file(f string) string {
 	f = e.scrub(f)
-	if e.user == "" {
-		return f
-	}
-	if rest, ok := strings.CutPrefix(f, e.user+"/"); ok && rest != "" && !strings.Contains(rest, "/") {
-		return "~/" + rest
+	for _, u := range e.users {
+		if rest, ok := strings.CutPrefix(f, u+"/"); ok && rest != "" && !strings.Contains(rest, "/") {
+			return "~/" + rest
+		}
 	}
 	return f
 }
