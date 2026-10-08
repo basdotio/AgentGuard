@@ -182,9 +182,11 @@ skill 与 plugin 用树哈希(按相对路径排序 + 每个文件的 sha256);�
 artifact 种类跑这些趟:隐藏注入、意图不符、去混淆(**只解码、绝不执行**)、跨文件串通、hook 能力、
 MCP 配置、triage 标签。被扫内容按**敌对**处理:每次调用用 `crypto/rand` 生成 **nonce barrier**
 把内容围成惰性数据块;nonce 生成失败时**让该次调用失败**,而不是退化成一个可被猜到的围栏。
-出网之前还有一步 `detect.Redact` 管不到的(`judge/egress.go`):摘录**构造时**先把被扫环境的家目录(原样、解析软链后、
-Claude Code 项目目录编码三种写法)换成 `~` 再脱敏,triage 证据里的静态 `File` 同样处理;MCP 配置按排序的 `key=value`
-行发(`detect.ConfigLines`,与静态读同一批叶子),键名是凭据名的值不发。这一步不进 `Redact`:那是所有静态 snippet 的收口。
+出网之前还有一步 `detect.Redact` 管不到的(`judge/egress.go`):摘录**构造时**把两个家目录换成 `~`——OS 用户的(每次都换)
+和被扫环境的(`judge.Options.Home`,绝对 `--root` 的上一级),各自原样、解析软链后、Claude Code 项目目录编码三种写法;这一步在脱敏
+**之后**,让熵规则对每段字符的判断和报告一样,triage 证据里的静态 `File` 同样处理。MCP 配置按 `key=value` 行发(`detect.ConfigLines`,
+与静态读同一批叶子):command、args、env、url、headers 排最前,每行截到 500 字节,截了出 `LLM-000`,键名是凭据名的值不发。
+这一步不进 `Redact`:那是所有静态 snippet 的收口。
 
 有两条比"跑了哪几趟"更重要:
 
