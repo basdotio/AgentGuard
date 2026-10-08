@@ -59,7 +59,7 @@ skill 还可以是 `git clone` 进来的、`cp` 进来的、或者你在某个�
 ```bash
 aguard approve ./some-skill        # 信任这一份确切的字节
 aguard approvals                   # 列出已信任的
-aguard approvals forget <hash>     # 撤销一条
+aguard approvals forget <hash>     # 撤销一条;前缀也行,包括闸门消息里打印的短哈希
 aguard approvals forget all
 ```
 

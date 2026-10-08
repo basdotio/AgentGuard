@@ -62,7 +62,7 @@ So the gate does not try to stop a download. It stops the artifact from speaking
 ```bash
 aguard approve ./some-skill        # trust these exact bytes
 aguard approvals                   # list what has been trusted
-aguard approvals forget <hash>     # withdraw one
+aguard approvals forget <hash>     # withdraw one; a prefix works, including the short hash a gate message printed
 aguard approvals forget all
 ```
 
