@@ -154,7 +154,7 @@ func TestRulesDocHeaderPutsTheJudgeOutsideRulesVersion(t *testing.T) {
 	h := rulesDocHeader(t)
 	for _, want := range []string{
 		"It covers deterministic detection only.",
-		"The LLM entries (every `LLM-` ID, notes included) are outside `rules_version` entirely",
+		"**Outside `rules_version` entirely:** every `LLM-` ID",
 		"today a report identifies the judge's code only through `tool_version`",
 	} {
 		if !strings.Contains(h, want) {
@@ -166,23 +166,86 @@ func TestRulesDocHeaderPutsTheJudgeOutsideRulesVersion(t *testing.T) {
 	}
 }
 
-// TestRulesDocHeaderSaysWhatTheHashCovers: only the engine rules are hashed. The page also lists
-// structural checks, permission checks and notes that are built inline in code, and a header that
-// said "it hashes what decides a finding" over all of them would promise that changing EXFIL-001's
-// logic moves the version — it does not unless someone bumps the epoch. The count is detect's own,
-// so the sentence cannot go stale when a rule is added.
+// TestRulesDocHeaderSaysWhatTheHashCovers: the header sorts every ID a report can carry into one of
+// three classes and states each class once — hashed (the engine rules), covered only by the epoch
+// (structural, permission, the non-LLM notes), outside rules_version (every LLM- ID). The previous
+// wording put "scan-note and gate entries" on the epoch and, a sentence later, "every LLM- ID,
+// notes included" outside it; LLM-000/002/005 are scan notes, so on a first read the two
+// contradicted each other. It also claimed the epoch for GATE-000, a hook reply that no report
+// carries, which promised nothing.
+//
+// The classes are built here from the generator's own tables, the header must state each with its
+// count, and every ID on the page must land in exactly one class or be GATE-000. A new gate message,
+// or an LLM- ID filed under a deterministic group, then fails here instead of falling under
+// whichever sentence a reader finds first. The counts are the tables' own, so they cannot go stale.
 func TestRulesDocHeaderSaysWhatTheHashCovers(t *testing.T) {
+	const (
+		notInAReport = "GATE-000" // a hook reply (internal/gate); no scan result carries it
+		scanGate     = "GATE-001" // raised by `scan` (internal/gate/status.go)
+	)
+	classes := map[string][]string{}
+	put := func(id, class string) {
+		classes[id] = append(classes[id], class)
+		if strings.HasPrefix(id, "LLM-") && class != "outside" {
+			classes[id] = append(classes[id], "outside") // the header puts every LLM- ID outside
+		}
+	}
+	rules := detect.Rules()
+	for _, r := range rules {
+		put(r.ID, "hashed")
+	}
+	for _, e := range append(append([]entry{}, structural...), permission...) {
+		put(e.id, "epoch")
+	}
+	epochNotes, llmNotes := 0, 0
+	for _, e := range notes {
+		if strings.HasPrefix(e.id, "LLM-") {
+			llmNotes++
+			put(e.id, "outside")
+			continue
+		}
+		epochNotes++
+		put(e.id, "epoch")
+	}
+	for _, e := range llm {
+		put(e.id, "outside")
+	}
+	for _, e := range gateNotes {
+		switch e.id {
+		case scanGate:
+			put(e.id, "epoch")
+		case notInAReport:
+			put(e.id, "in no report")
+		}
+	}
+	page := []string{}
+	for _, r := range rules {
+		page = append(page, r.ID)
+	}
+	for _, e := range allDocumented() {
+		page = append(page, e.id)
+	}
+	for _, id := range page {
+		if c := classes[id]; len(c) != 1 {
+			t.Errorf("%s is in %d header classes %v, want exactly one — say in hack/gen-rules where rules_version leaves it", id, len(c), c)
+		}
+	}
+
 	h := rulesDocHeader(t)
 	for _, want := range []string{
-		fmt.Sprintf("It hashes the %d engine rules' ID, dimension, severity, flags and pattern", len(detect.Rules())),
-		"The structural, permission, scan-note and gate entries on this page are covered only by that epoch",
+		fmt.Sprintf("**Hashed:** the %d engine rules — each one's ID, dimension, severity, flags and pattern", len(rules)),
+		fmt.Sprintf("**Covered only by the epoch:** the %d structural checks, the %d permission checks, the %d scan notes that are not `LLM-` IDs, and `%s`",
+			len(structural), len(permission), epochNotes, scanGate),
+		fmt.Sprintf("**Outside `rules_version` entirely:** every `LLM-` ID — the %d judge findings and the %d `LLM-` scan notes", len(llm), llmNotes),
 	} {
 		if !strings.Contains(h, want) {
 			t.Errorf("docs/rules.md header does not say %q — fix hack/gen-rules, then run `make docs`", want)
 		}
 	}
-	if strings.Contains(h, "It hashes what decides a finding") {
-		t.Error("docs/rules.md header still says the hash covers \"what decides a finding\"; it covers the engine rules only")
+	for _, gone := range []string{"It hashes what decides a finding", "scan-note and gate entries", "notes included", notInAReport} {
+		if strings.Contains(h, gone) {
+			t.Errorf("docs/rules.md header still says %q — state each ID class once, and nothing about %s, which no report carries", gone, notInAReport)
+		}
 	}
 }
 

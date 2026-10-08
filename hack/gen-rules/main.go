@@ -143,6 +143,11 @@ var gateNotes = []entry{
 		"settings.json registers the gate, but the command it names is gone — the binary moved, a build directory was cleaned, a dotfile repo landed on a machine that never had it. Claude Code then runs nothing at those interception points: every skill loads unaudited, and the silence looks exactly like a clean result. Raised by `scan` rather than left to `aguard hook status`, because nobody runs a status command on a schedule. Dimension 0: a dead hook makes the REPORT less trustworthy, it does not make any artifact more dangerous."},
 }
 
+// scanGateNote is the one gate message a scan result carries: `scan` raises it from
+// internal/gate/status.go, so it is deterministic output the rules epoch covers. GATE-000 is a hook
+// reply that no report holds, so the header claims nothing about it either way.
+const scanGateNote = "GATE-001"
+
 // allDocumented is every hand-maintained group, for the drift test.
 func allDocumented() []entry {
 	out := append([]entry{}, structural...)
@@ -208,29 +213,7 @@ func main() {
 	p("These counts are generated from the same tables the drift check reads, so if a count\n")
 	p("anywhere else in this repository disagrees with this line, that other count is stale.\n\n")
 
-	// The rules version, so a report can be matched to the table that produced it. It lives in
-	// the header and not only in reports because the drift check then covers it: a pattern change
-	// that leaves every title alone still changes this line, so it cannot ship without `make docs`.
-	// The wording says only what the hash guarantees; internal/detect's rulesEpoch says what it cannot.
-	// The judge is outside it (spec §5.1): the version is for recomputing overall, which no LLM
-	// entry on this page can move, so the header has to say which side of the line they are on —
-	// and must not point at the judge summary instead, which records whether the judge ran but not
-	// which one; only tool_version pins the judge's code today.
-	// Only the engine rules are hashed; everything else this page lists is built inline in code
-	// and rides on the epoch alone, so the header names which is which instead of "what decides
-	// a finding", which would promise the hash sees EXFIL-001's logic. The count is detect's own.
-	p("**Rules version `%s`** — reports from this build carry it as `rules_version` (`--json`),\n",
-		detect.RulesVersion())
-	p("and `aguard version` prints it. It covers deterministic detection only. It hashes the %d\n",
-		len(rules))
-	p("engine rules' ID, dimension, severity, flags and pattern — not the titles and explanations\n")
-	p("below — plus an epoch the maintainers bump when deterministic detection code outside that\n")
-	p("table changes. The structural, permission, scan-note and gate entries on this page are\n")
-	p("covered only by that epoch, and nothing checks that it was bumped. The LLM entries (every\n")
-	p("`LLM-` ID, notes included) are outside `rules_version` entirely: the judge moves only\n")
-	p("`overall_effective`, and today a report identifies the judge's code only through\n")
-	p("`tool_version`. Two reports that disagree here were produced by different rules; two that\n")
-	p("agree were produced by the same engine rule table.\n\n")
+	writeRulesVersion(p, rules)
 
 	byDim := map[int][]entry{}
 	for _, r := range rules {
@@ -320,6 +303,49 @@ func hookOnlyNote(r detect.Rule) string {
 		return ""
 	}
 	return " Runs on hook commands only: unremarkable in a script, telling in a hook."
+}
+
+// writeRulesVersion writes the header's rules-version paragraph, so a report can be matched to the
+// table that produced it. It lives in the header and not only in reports because the drift check
+// then covers it: a pattern change that leaves every title alone still changes this line, so it
+// cannot ship without `make docs`.
+//
+// The wording says only what the hash guarantees; internal/detect's rulesEpoch says what it
+// cannot. Each ID a report can carry is stated once, in one of three classes: the engine rules are
+// hashed; the rest of deterministic detection is built inline and rides on the epoch alone; every
+// LLM- ID is outside, since the version is for recomputing overall, which the judge cannot move
+// (spec §5.1). The notes are split by prefix because "scan notes" on the epoch and "LLM- notes"
+// outside it, in two sentences, read as a contradiction. Nothing else is offered for the judge:
+// only tool_version pins its code today. GATE-000 is left out on purpose — no report carries it.
+// TestRulesDocHeaderSaysWhatTheHashCovers checks that the classes partition the page.
+func writeRulesVersion(p func(string, ...any), rules []detect.Rule) {
+	epochNotes, llmNotes := 0, 0
+	for _, e := range notes {
+		if strings.HasPrefix(e.id, "LLM-") {
+			llmNotes++
+		} else {
+			epochNotes++
+		}
+	}
+	p("**Rules version `%s`** — reports from this build carry it as `rules_version` (`--json`),\n",
+		detect.RulesVersion())
+	p("and `aguard version` prints it. It covers deterministic detection only. Each ID a report can\n")
+	p("carry falls in exactly one class:\n\n")
+	p("- **Hashed:** the %d engine rules — each one's ID, dimension, severity, flags and pattern, not\n",
+		len(rules))
+	p("  the titles and explanations below.\n")
+	p("- **Covered only by the epoch:** the %d structural checks, the %d permission checks, the %d\n",
+		len(structural), len(permission), epochNotes)
+	p("  scan notes that are not `LLM-` IDs, and `%s` (the gate message `scan` raises). The epoch is\n",
+		scanGateNote)
+	p("  an integer folded into the hash, which the maintainers bump when deterministic detection\n")
+	p("  code outside the engine rule table changes; nothing checks that they did.\n")
+	p("- **Outside `rules_version` entirely:** every `LLM-` ID — the %d judge findings and the %d\n",
+		len(llm), llmNotes)
+	p("  `LLM-` scan notes. The judge moves only `overall_effective`, and today a report identifies\n")
+	p("  the judge's code only through `tool_version`.\n\n")
+	p("Two reports whose rules versions differ were produced by different rules; two whose versions\n")
+	p("agree were produced by the same engine rule table.\n\n")
 }
 
 func table(p func(string, ...any), es []entry) {
