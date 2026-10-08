@@ -485,6 +485,43 @@ func TestRun_ShortenedMCPExcerptIsDisclosed(t *testing.T) {
 	}
 }
 
+// TestRun_DroppedMCPLinesAreDisclosedWithoutACap: the two cuts are disclosed separately, and the
+// padded config above trips only the line cap — so a note that fired only on a capped line kept
+// that test green. Here every line is short and none is capped: 600 args, each well under the line
+// cap, overrun the excerpt budget by themselves and push env.NODE_OPTIONS — a lead key, but after
+// args — out. That gap is what this note exists for.
+func TestRun_DroppedMCPLinesAreDisclosedWithoutACap(t *testing.T) {
+	args := make([]string, 600)
+	for i := range args {
+		args[i] = fmt.Sprintf(`"--flag-%04d"`, i)
+	}
+	cfg := writeFile(t, filepath.Join(t.TempDir(), ".claude.json"),
+		`{"mcpServers":{"x":{"command":"node","args":[`+strings.Join(args, ",")+`],`+
+			`"env":{"NODE_OPTIONS":"--require /tmp/preload.js"}}}}`)
+	art := model.ArtifactReport{Kind: model.KindMCP, Name: "x", Path: cfg}
+
+	modes, _ := modesFor(art)
+	got := modes[ModeMCPConfig].Behavior
+	if strings.Contains(got, "env.NODE_OPTIONS") || !strings.Contains(got, "line(s) omitted") || strings.Contains(got, "bytes omitted)") {
+		t.Fatalf("precondition: env must be pushed out by lines that are dropped, none of them capped:\n%.300s", got)
+	}
+
+	notes, _ := Run(context.Background(), &fakeClient{}, []model.ArtifactReport{art}, Options{})
+	found := false
+	for _, n := range notes {
+		if n.RuleID != "LLM-000" || !strings.Contains(n.Why, "mcp:x") {
+			continue
+		}
+		found = true
+		if !strings.Contains(n.Why, "line(s) past the 6000-byte excerpt not sent") || strings.Contains(n.Why, "cut to") {
+			t.Errorf("the note must say lines were dropped, and nothing about a cap that never fired: %q", n.Why)
+		}
+	}
+	if !found {
+		t.Errorf("MCP lines dropped past the excerpt budget must be disclosed as an LLM-000 naming the server, got %+v", notes)
+	}
+}
+
 // TestPlan_DeclaredIsCappedOnARuneBoundary: a SKILL.md description was sent whole — up to the
 // 1 MiB the frontmatter reader takes — once per pass. The cap must not split a UTF-8 sequence,
 // and the unit grounding checks a quote against must be the capped bytes that were sent.
