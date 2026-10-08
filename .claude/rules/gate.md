@@ -39,6 +39,12 @@ paths:
 - **批准只能覆盖"给人看过的那份字节"。** `PreToolUse` 把判决按 `tool_use_id` 停在 `pending` 里,
   `PostToolUse` 重新读一遍目标、哈希仍然一致才提升为批准。**不要图省事直接在 PostToolUse 记当前哈希**
   —— 那样目标在弹窗和加载之间被换掉,就会拿一个针对别的内容的"同意"去认证它。
+- **pending 只活在文件里**(2026-10-08,P-007)。Claude Code 每个 hook 事件起一个**新进程**,`PreToolUse` 停下的判决
+  要到另一个进程的 `PostToolUse` 才兑现,两者之间只有 approvals 文件。`LoadStore` 以前只读 `approvals` 不读 `pending`,
+  于是**弹窗里的同意从没被记下过**,Post 还一个字都不说 —— 而全部测试是绿的,因为它们把**同一个内存 Store** 交给 Pre 和 Post。
+  **测 Pre→Post 的测试必须让每个事件从磁盘新读一个 Store**(`internal/gate/pending_test.go` 的 `nextProcess`;
+  `cmd/aguard/gate_pending_test.go` 走两次 `runHook`)。读回的卫生:空 id、空哈希、无日期、未来日期、过期的行丢掉;
+  过期规则只有 `expired()` 一份,`pend` 修剪和 `LoadStore` 读回都调它 —— **不要在别处再写一遍 `now-asked > TTL`**。
 - **放行不等于记住**(2026-09-16,P-005)。`Verdict.Remembered()`:有 medium 及以上确定性发现的放行**不写 approvals**,
   每次加载重审并出 `UnrememberedLine`(规则 ID、不带 snippet、给出 `aguard approve` 那条命令);干净和只有 low 的才记。
   **不要把这条并回阈值** —— "拦不拦"和"记不记"是两个决定,P-005 之前它们是一个:四个 ToB 样本各以一条 medium 通过
