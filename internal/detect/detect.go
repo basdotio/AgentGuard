@@ -67,7 +67,11 @@ func New() *Engine { return &Engine{rules: builtinRules()} }
 // and per-artifact findings stay DETERMINISTIC regardless of completion order. Each worker
 // touches only its own slot + its own local note slice, so no shared mutable state races.
 // It NEVER executes content and never reads a file whose target escapes the skill root.
+//
+// root is anchored once, here, before any worker sees it (anchorRoot): which scripts a hook or a
+// grant pulls in, and where the boundary sits, must not depend on how the caller typed the root.
 func (e *Engine) Run(root string, arts []model.ArtifactReport) ([]model.ArtifactReport, []model.Finding) {
+	root = anchorRoot(root)
 	out := make([]model.ArtifactReport, len(arts))
 	noteSlices := make([][]model.Finding, len(arts))
 
@@ -1385,6 +1389,21 @@ func collectStrings(raw json.RawMessage, out *[]string) {
 // first (so /tmp vs /private/tmp doesn't produce ugly ../../../ paths), and falls back to
 // the last two path segments rather than leaking a system-absolute path (review §3.6).
 func relPath(root, p string) string {
+	// Run hands every caller an anchored (absolute) root, while collect builds its paths from the
+	// root as typed — for `--root .claude` or `check ./skill` they are relative to the working
+	// directory. Rel cannot relate the two frames, and every evidence line fell back to its two-segment
+	// tail. So p joins root's frame: Abs, then the directory resolved the way root is just below, so
+	// a working directory reached through a symlink still lines up with the resolved root. The file's
+	// own name is kept, so a symlinked script is shown by the name the artifact uses. An absolute p
+	// takes none of this and is handled exactly as before.
+	if filepath.IsAbs(root) && !filepath.IsAbs(p) {
+		if ap, err := filepath.Abs(p); err == nil {
+			p = ap
+			if dir, err := filepath.EvalSymlinks(filepath.Dir(p)); err == nil {
+				p = filepath.Join(dir, filepath.Base(p))
+			}
+		}
+	}
 	if rr, err := filepath.EvalSymlinks(root); err == nil {
 		root = rr
 	}
