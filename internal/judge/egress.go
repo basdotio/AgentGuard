@@ -24,10 +24,14 @@ import (
 //   - Here, never inside detect.Redact. Redact produces every static snippet; teaching it about
 //     homes would change text/JSON/SARIF output and re-key SARIF fingerprints for a problem that
 //     exists only on the way out of the process.
-//   - BEFORE Redact, at unit construction. Redact's entropy class includes '/', so a long,
-//     digit-bearing home can lose its head and keep its tail — the username — and a scrub run
-//     afterwards could no longer recognise it. (Static snippets reach triage already redacted and
-//     clipped; repairHalves covers the shapes that leaves.)
+//   - AFTER Redact, on text Redact has seen whole, at unit construction. Redact's entropy rule
+//     decides on the length of a run, and a home is part of the run it sits in:
+//     `/Users/alice/Xk9mQ2vL8pR4tZ7wB3n` is redacted, while `~/Xk9mQ2vL8pR4tZ7wB3n` leaves a
+//     20-byte run under the 24-byte floor — scrubbing first, as this did at first, made the
+//     judge's view of a line LESS redacted than the report's. The price: Redact's class includes
+//     '/', so a long digit-bearing home can lose its head and keep its tail, the username
+//     (`<REDACTED>.d/alice`). The scrub completes the shapes such a cut leaves (repairHalves) —
+//     the same shapes static snippets reach triage in, since they were redacted at detect time.
 //   - Into the unit, not just the request. Grounding (ground.go) checks a quote against the units,
 //     so they must hold the bytes that were sent: a quote of `~/notes` must ground.
 //
@@ -132,7 +136,8 @@ func projectDirName(p string) string {
 	}, p)
 }
 
-// scrub replaces every form of the home in s with `~`.
+// scrub replaces every form of the home in s with `~`. s has already been through Redact — at
+// detect time for a static snippet, in redact otherwise — which is what repairHalves assumes.
 func (e egress) scrub(s string) string {
 	if len(e.homes) == 0 || s == "" {
 		return s
@@ -146,16 +151,17 @@ func (e egress) scrub(s string) string {
 	return e.repairHalves(s)
 }
 
-// redact is the one call the excerpt builders make on raw artifact text: scrub, then Redact.
+// redact is the one call the excerpt builders make on raw artifact text: Redact, then scrub.
 // The order is the point — see the type comment.
-func (e egress) redact(s string) string { return detect.Redact(e.scrub(s)) }
+func (e egress) redact(s string) string { return e.scrub(detect.Redact(s)) }
 
-// file scrubs a path in a FILE position (a static finding's Evidence.File) and, there only,
-// rewrites detect.relPath's two-segment fallback: a file directly in the home, rendered from a
-// root below it, reads `<username>/<file>`. Exactly that shape — the username as the first of two
-// segments — becomes `~/<file>`; a third segment or a longer first one is some other path.
+// file redacts and scrubs a path in a FILE position (a static finding's Evidence.File, which detect
+// stores unredacted) and, there only, rewrites detect.relPath's two-segment fallback: a file
+// directly in the home, rendered from a root below it, reads `<username>/<file>`. Exactly that
+// shape — the username as the first of two segments — becomes `~/<file>`; a third segment or a
+// longer first one is some other path.
 func (e egress) file(f string) string {
-	f = e.scrub(f)
+	f = e.redact(f)
 	for _, u := range e.users {
 		if rest, ok := strings.CutPrefix(f, u+"/"); ok && rest != "" && !strings.Contains(rest, "/") {
 			return "~/" + rest

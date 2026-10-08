@@ -196,9 +196,9 @@ func hookExcerpt(file string, h model.Hook, eg egress) (declared, behavior strin
 		matcher = "* (every tool)"
 	}
 	declared = declaredPurpose("event: "+h.Event+"\nmatcher: "+matcher, eg)
-	behavior = boundedRedact(eg.scrub(h.Command), maxExcerptBytes)
+	behavior = boundedRedact(h.Command, maxExcerptBytes, eg)
 	if behavior == "" && h.URL != "" {
-		behavior = boundedRedact(eg.scrub(h.URL), maxExcerptBytes)
+		behavior = boundedRedact(h.URL, maxExcerptBytes, eg)
 	}
 	return declared, behavior, []sourceUnit{{
 		file: detect.Redact(filepath.Base(file)), text: behavior, firstLine: 0, collapsed: true,
@@ -221,7 +221,7 @@ func mcpExcerpt(path, name string, eg egress) (string, []sourceUnit) {
 	for i, l := range lines {
 		masked[i] = maskCredentialValue(l)
 	}
-	text := boundedRedact(eg.scrub(strings.Join(masked, "\n")), maxExcerptBytes)
+	text := boundedRedact(strings.Join(masked, "\n"), maxExcerptBytes, eg)
 	return text, []sourceUnit{{
 		file: detect.Redact(filepath.Base(path)), text: text, firstLine: 0, collapsed: true,
 	}}
@@ -305,11 +305,12 @@ func capabilityDigest(a model.ArtifactReport, eg egress) (string, []sourceUnit) 
 	return strings.Join(lines, "\n"), units
 }
 
-// boundedRedact redacts s (best-effort, see judge.go header) then caps it to max bytes.
-// Redaction happens BEFORE truncation so a secret straddling the cap can't survive as a
-// sub-threshold partial. Used for the SKILL.md instruction body (injection mode).
-func boundedRedact(s string, max int) string {
-	red := detect.Redact(s)
+// boundedRedact redacts s (best-effort, see judge.go header), strips the home, then caps it to max
+// bytes. Redaction happens BEFORE truncation so a secret straddling the cap can't survive as a
+// sub-threshold partial, and before the scrub so it sees each run whole (egress.go). Used for the
+// one-line behaviors: a hook's command or URL, an MCP server's configuration.
+func boundedRedact(s string, max int, eg egress) string {
+	red := eg.redact(s)
 	if len(red) > max {
 		red = red[:max]
 	}
