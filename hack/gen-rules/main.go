@@ -213,7 +213,9 @@ func main() {
 	// that leaves every title alone still changes this line, so it cannot ship without `make docs`.
 	// The wording says only what the hash guarantees; internal/detect's rulesEpoch says what it cannot.
 	// The judge is outside it (spec §5.1): the version is for recomputing overall, which no LLM
-	// entry on this page can move, so the header has to say which side of the line they are on.
+	// entry on this page can move, so the header has to say which side of the line they are on —
+	// and must not point at the judge summary instead, which records whether the judge ran but not
+	// which one; only tool_version pins the judge's code today.
 	// Only the engine rules are hashed; everything else this page lists is built inline in code
 	// and rides on the epoch alone, so the header names which is which instead of "what decides
 	// a finding", which would promise the hash sees EXFIL-001's logic. The count is detect's own.
@@ -226,9 +228,9 @@ func main() {
 	p("table changes. The structural, permission, scan-note and gate entries on this page are\n")
 	p("covered only by that epoch, and nothing checks that it was bumped. The LLM entries (every\n")
 	p("`LLM-` ID, notes included) are outside `rules_version` entirely: the judge moves only\n")
-	p("`overall_effective`, and a report's `judge` summary says how it ran. Two reports that\n")
-	p("disagree here were produced by different rules; two that agree were produced by the same\n")
-	p("engine rule table.\n\n")
+	p("`overall_effective`, and today a report identifies the judge's code only through\n")
+	p("`tool_version`. Two reports that disagree here were produced by different rules; two that\n")
+	p("agree were produced by the same engine rule table.\n\n")
 
 	byDim := map[int][]entry{}
 	for _, r := range rules {

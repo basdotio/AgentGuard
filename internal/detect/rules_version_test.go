@@ -237,10 +237,11 @@ func constDoc(t *testing.T, file, name string) string {
 
 // TestRulesEpoch_ScopeIsDeterministicOnly pins where the epoch's duty stops (spec §5.1). The
 // rules version exists so the deterministic score, overall, can be matched to the rules that
-// produced it; the judge moves only overall_effective, and the report's judge summary says how
-// it ran. A doc comment that lists judge internals as epoch-covered code obliges every judge
-// change to bump the epoch — a coupling nobody editing internal/judge can see — and a judge
-// change that skipped the bump would leave the version vouching for detection it does not track.
+// produced it; the judge moves only overall_effective, and nothing in a report but tool_version
+// identifies its code. A doc comment that lists judge internals as epoch-covered code obliges
+// every judge change to bump the epoch — a coupling nobody editing internal/judge can see — and a
+// judge change that skipped the bump would leave the version vouching for detection it does not
+// track.
 func TestRulesEpoch_ScopeIsDeterministicOnly(t *testing.T) {
 	doc := constDoc(t, "rules_version.go", "rulesEpoch")
 	for _, want := range []string{

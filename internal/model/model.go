@@ -461,8 +461,9 @@ type ScanResult struct {
 	// RulesVersion names the rule table that produced the deterministic findings
 	// (detect.RulesVersion, spec §8): tool_version names a commit, and commits that touch no rule
 	// — or touch a rule's comment only — are the common case, so two reports could not say whether
-	// the rules changed between them. The judge is not covered; Judge says how it ran. Always
-	// present; a report without the key predates the field.
+	// the rules changed between them. The judge is not covered, and today a report identifies the
+	// judge's code only through tool_version. Always present; a report without the key predates
+	// the field.
 	RulesVersion string           `json:"rules_version"`
 	Env          EnvSummary       `json:"env"`
 	Artifacts    []ArtifactReport `json:"artifacts"`

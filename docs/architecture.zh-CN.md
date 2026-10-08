@@ -165,7 +165,7 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
 `overall` 的来源。**改 `builtinRules()` 之外的确定性检测代码时**——结构化/形状检查、角色门、词法层、读哪些文件、`permcheck`——
 只要改变了某个输入产出哪些发现,或发现的 ID/维度/严重度,**同一个提交里把 `rulesEpoch` 加一。** 没有东西强制它;忘了加,
 两份报告就会自称同一版规则,而产出它们的代码其实不同。LLM 判官完全不在里面——提示词、证据落地、共识、严重度钳制都算:
-判官只动 `overall_effective`,怎么跑的由报告的 `judge` 摘要说明,所以改判官从不加 epoch。
+判官只动 `overall_effective`,所以改判官从不加 epoch;今天报告只通过 `tool_version` 标识判官的代码。
 
 ## Canonical 哈希
 

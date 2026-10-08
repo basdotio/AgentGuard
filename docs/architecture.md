@@ -198,8 +198,9 @@ structural or shape checks, the role gate, the lexical layer, which files are re
 in a way that changes which findings an input produces or their ID/dimension/severity, **bump
 `rulesEpoch` in the same commit.** Nothing enforces it; a forgotten bump lets two reports claim the
 same rules while different code produced them. The LLM judge is outside it altogether — prompts,
-grounding, consensus and severity clamping included: the judge moves only `overall_effective`, and
-the report's `judge` summary says how it ran, so a judge change never bumps the epoch.
+grounding, consensus and severity clamping included: the judge moves only `overall_effective`, so
+a judge change never bumps the epoch, and today a report identifies the judge's code only through
+`tool_version`.
 
 ## Canonical hashing
 
