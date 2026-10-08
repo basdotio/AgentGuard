@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/basdotio/AgentGuard/internal/detect"
 )
@@ -68,16 +69,19 @@ func newEgress(home string) egress {
 }
 
 // projectDirName is how Claude Code names a project's directory under ~/.claude/projects: the
-// working directory with every byte that is not a letter or digit turned into '-'. Inferred from
-// the directories it creates, not documented — if Claude Code changes it, this form leaks again.
+// working directory with every CHARACTER that is not an ASCII letter or digit turned into one
+// '-'. Per character, not per byte: /Users/josé is -Users-jos-, and the byte-wise -Users-jos--
+// names no directory Claude Code makes, so a non-ASCII home's encoded form went out unreplaced.
+// Inferred from the directories it creates, not documented — if Claude Code changes it, this form
+// leaks again. (A character outside the Basic Multilingual Plane has not been observed; it is
+// mapped to one '-' like any other.)
 func projectDirName(p string) string {
-	b := []byte(p)
-	for i, c := range b {
-		if !alnum(c) {
-			b[i] = '-'
+	return strings.Map(func(r rune) rune {
+		if r < utf8.RuneSelf && alnum(byte(r)) {
+			return r
 		}
-	}
-	return string(b)
+		return '-'
+	}, p)
 }
 
 // scrub replaces every form of the home in s with `~`.
