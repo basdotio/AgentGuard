@@ -153,6 +153,11 @@ type Hook struct {
 	// machine produced 54 warnings saying a second stage went unread, for files the same scan
 	// had already read and raised EXEC-001 on.
 	OwnerRoot string
+	// Entry is this hook's JSON object exactly as the settings file wrote it — every field, not
+	// only the four above. The content hash binds the whole entry (a changed type, timeout or
+	// header is a different hook), the way an MCP server's hash binds its whole entry. A string,
+	// not []byte, so Hook stays a comparable value.
+	Entry string
 }
 
 // ArtifactReport is one scanned artifact plus its findings and score.

@@ -19,11 +19,31 @@ import (
 // spec §4 models both, because an HTTP hook still receives the full event payload.
 type hookGroup struct {
 	Matcher string `json:"matcher"`
-	Hooks   []struct {
-		Type    string `json:"type"`
-		Command string `json:"command"`
-		URL     string `json:"url"`
-	} `json:"hooks"`
+	// Raw, so each entry can be kept as written (model.Hook.Entry); hookEntries decodes them.
+	Hooks []json.RawMessage `json:"hooks"`
+}
+
+// hookEntry is the part of one hooks entry the scan reads.
+type hookEntry struct {
+	Type    string `json:"type"`
+	Command string `json:"command"`
+	URL     string `json:"url"`
+}
+
+// hookEntries decodes every entry of every group, or reports that one did not decode. All or
+// nothing on purpose: that is what decoding the event into typed groups in one call used to do, and
+// an event that cannot be read whole is a PARSE-000 for the event, not a partial artifact list.
+func hookEntries(groups []hookGroup) ([][]hookEntry, bool) {
+	out := make([][]hookEntry, len(groups))
+	for i, g := range groups {
+		out[i] = make([]hookEntry, len(g.Hooks))
+		for j, raw := range g.Hooks {
+			if json.Unmarshal(raw, &out[i][j]) != nil {
+				return nil, false
+			}
+		}
+	}
+	return out, true
 }
 
 // collectHooks turns a settings file's hooks section into ONE ARTIFACT PER ENTRY
@@ -52,14 +72,20 @@ func collectHooks(path, nameSuffix, ownerRoot string, hooks map[string]json.RawM
 			notes = append(notes, hookShapeNote(path, event))
 			continue
 		}
+		entries, ok := hookEntries(groups)
+		if !ok {
+			notes = append(notes, hookShapeNote(path, event))
+			continue
+		}
 		n, skipped := 0, 0
-		for _, g := range groups {
-			for _, h := range g.Hooks {
+		for gi, g := range groups {
+			for hi, h := range entries[gi] {
 				hk, ok := hookFromEntry(event, g.Matcher, ownerRoot, h.Type, h.Command, h.URL)
 				if !ok {
 					skipped++ // unknown/future hook type, or http with no url
 					continue
 				}
+				hk.Entry = string(g.Hooks[hi])
 				n++
 				a := artifact(model.KindHook, hookName(hk, n)+nameSuffix, path, "")
 				a.Hook = hk
