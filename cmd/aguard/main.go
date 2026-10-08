@@ -552,7 +552,7 @@ func writeReport(w io.Writer, out model.ScanResult, verbose bool) {
 }
 
 func main() {
-	var root, cfgPath, ignorePath, scanFailOn, scanFailOnLLM, checkFailOn, htmlOut, inboxDir string
+	var root, cfgPath, ignorePath, scanFailOn, scanFailOnLLM, checkFailOn, checkFailOnLLM, htmlOut, inboxDir string
 	var autoReport bool
 	var asJSON, quiet, verbose, useLLM, zombie, noRep bool
 	var sarifOut, mdOut string
@@ -660,10 +660,10 @@ func main() {
 
 	checkCmd := &cobra.Command{
 		Use:   "check <path>",
-		Short: "Pre-install gate: statically scan a single skill/dir/file (static only)",
+		Short: "Pre-install gate: scan a single skill/dir/file (static; --llm adds the judge)",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			out, err := checkTarget(args[0], scanOpts{cfgPath: cfgPath, ignorePath: ignorePath, noReputation: noRep})
+			out, err := checkTarget(args[0], scanOpts{cfgPath: cfgPath, ignorePath: ignorePath, noReputation: noRep, llm: useLLM, quiet: quiet})
 			if err != nil {
 				return err
 			}
@@ -687,14 +687,22 @@ func main() {
 			} else if !quiet && mdOut != "-" {
 				writeReport(os.Stdout, out, verbose)
 			}
-			// `check` is static-only by contract (spec §3): no judge, so no effective gate.
-			return failGate(out, checkFailOn, "", false)
+			// The same two gates as scan (spec §3): --fail-on reads deterministic findings only,
+			// whether or not --llm ran, and --fail-on-llm needs the config's explicit authority.
+			// What check takes and the load-time gate never does is --llm itself — see gateOptions.
+			cfg, cerr := config.LoadUser(cfgPath)
+			if cerr != nil {
+				return cerr
+			}
+			return failGate(out, checkFailOn, checkFailOnLLM, cfg.LLM.MayEscalate())
 		},
 	}
 	checkCmd.Flags().StringVar(&sarifOut, "sarif", "", "also write a SARIF 2.1.0 log to this path (for GitHub Code Scanning / any SARIF viewer)")
 	checkCmd.Flags().StringVar(&mdOut, "md", "", mdFlagHelp)
 	checkCmd.Flags().BoolVar(&asJSON, "json", false, "output JSON")
-	checkCmd.Flags().StringVar(&checkFailOn, "fail-on", "high", "exit 1 when a finding is at/above this level")
+	checkCmd.Flags().StringVar(&checkFailOn, "fail-on", "high", "exit 1 when a DETERMINISTIC finding is at/above this level (low|medium|high|critical)")
+	checkCmd.Flags().BoolVar(&useLLM, "llm", false, "also run the LLM intent judge on this target — advisory only, same opt-in as scan --llm (redacted excerpts are sent to the configured endpoint; never moves the deterministic score or --fail-on)")
+	checkCmd.Flags().StringVar(&checkFailOnLLM, "fail-on-llm", "", "exit 1 when a finding INCLUDING qualified LLM ones is at/above this level; needs config llm.authority: escalate (default: off)")
 
 	var apply, dryRun, keepBoth, ask bool
 	var undoBatch, resolveID, keepSide string
