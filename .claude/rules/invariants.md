@@ -21,10 +21,15 @@
    `baselines/tools.yaml` 那句和 spec §16.4 里。
 
    **它只看得见经过 `judge.Transport` 或 `http.DefaultTransport` 的请求**,不是"进程内所有 `net/http` 请求"。看不见的,逐条:
-   - **自带 `http.Transport` 的 client**:两个计数器都不经过。产品代码这一条由 `TestZeroDial_NoClientOutsideTheJudge`
+   - **自带 `http.Transport` 的 client**:两个计数器都不经过。本模块的产品代码由 `TestZeroDial_NoClientOutsideTheJudge`
      (`cmd/aguard/zero_dial_source_test.go`)从源码上堵住:`cmd/`、`internal/` 的非测试文件里,`internal/judge` 之外
-     不许出现 `net/http` 的 `Client`/`Transport` 类型,`judge.Transport` 只许在 `_test.go` 里赋值;判官自己的 client
-     换了 Transport,正对照会红;
+     不许出现 `net/http` 的 `Client`/`Transport` 类型;`internal/judge` 里不许出现 `http.Transport`,`http.Client` 只许是
+     `NewHTTP` 里**唯一那一个** `http.Client{Transport: Transport}` 字面量的类型,或 `*http.Client` 字段/参数/返回值的类型
+     (声明,不造 client);`judge.Transport` 只许在 `_test.go` 里赋值。判官包不能豁免:正对照只看着它自己那几条路径用的
+     client,判官包里再造一个自带 transport 的 client、从零表里任何一个入口调用,照样拨出去而三条测试全绿;
+   - **依赖在它自己代码里造的 client**:源码检查读的是本模块,不读它 import 的东西。今天二进制里别的模块都不 import
+     `net/http` 或 `os/exec`(`pflag` import `net` 只为 IP 类型的 flag)—— 这是读代码的结论,不是测试的结论;
+     **加第四个直接依赖之前,要先照这一条读它**;
    - **裸 `net.Dial`、子进程**:今天产品代码里都没有,但那是读代码的结论;能看见它们的是在网络隔离下跑的 CI job,
      本仓库还没有;
    - **晚到的异步请求**:每一行开始时两个计数器必须已经是空的,表跑完再等 50 ms 收一次,所以入口返回之后才落地的
