@@ -74,7 +74,7 @@ echo '{"hook_event_name":"PreToolUse","tool_name":"Skill","tool_input":{"skill":
 | [score.md](.claude/rules/score.md) | 评分(`internal/score`) | `internal/score/**` |
 | [detect.md](.claude/rules/detect.md) | 检测引擎(`internal/detect`) | `internal/detect/**`、`hack/gen-rules/**` |
 | [reputation.md](.claude/rules/reputation.md) | 声誉白名单(`internal/reputation`) | `internal/reputation/**`、`hack/reputation-refresh/**` |
-| [hash.md](.claude/rules/hash.md) | Canonical 哈希(`internal/collect/hash.go`) | `internal/collect/**` |
+| [hash.md](.claude/rules/hash.md) | Canonical 哈希(`internal/collect/hash.go`) | `internal/collect/**`、`internal/detect/contenthash*.go` |
 | [report.md](.claude/rules/report.md) | 终端报告的两种模式(`internal/report/text.go`) | `internal/report/**` |
 | [judge.md](.claude/rules/judge.md) | LLM judge(`internal/judge`,可选) | `internal/judge/**` |
 | [plugin.md](.claude/rules/plugin.md) | Claude Code 插件(`plugin/`) | `plugin/**`、`.claude-plugin/**` |
