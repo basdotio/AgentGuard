@@ -63,16 +63,25 @@ func archiveView(res model.ScanResult, dir, archive string) model.ScanResult {
 
 // archiveEvidence returns findings whose absolute evidence paths inside dir are made relative to
 // it — the archive's root — as every other evidence path already is.
+//
+// Text is rewritten too. A note that quotes an I/O error quotes the path it failed on
+// ("fdopendir <dir>/skills: not a directory"), and the snippet is part of the SARIF fingerprint:
+// left alone, the random directory reopened that alert on every run. The directory is replaced by
+// the archive's file name, so the text reads as a path inside the archive. Only that tool-built
+// prefix is replaced; nothing read from the archive is added, and redaction has already run.
 func archiveEvidence(fs []model.Finding, dir, archive string) []model.Finding {
 	if fs == nil {
 		return nil
 	}
+	name := filepath.Base(archive)
 	out := make([]model.Finding, len(fs))
 	for i, f := range fs {
+		f.Why = strings.ReplaceAll(f.Why, dir, name)
 		if f.Evidence != nil {
 			ev := make([]model.Evidence, len(f.Evidence))
 			for j, e := range f.Evidence {
 				e.File = archiveMember(e.File, dir, archive)
+				e.Snippet = strings.ReplaceAll(e.Snippet, dir, name)
 				ev[j] = e
 			}
 			f.Evidence = ev
