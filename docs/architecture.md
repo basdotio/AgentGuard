@@ -212,8 +212,9 @@ and checkouts. **Changing the hashing logic invalidates every entry in
 
 ## LLM judge (optional, off by default)
 
-Requires **both** `llm.enabled: true` in config **and** `--llm`; `check` and `clean` never call
-it. Per artifact kind it runs passes for hidden injection, intent mismatch, deobfuscation
+Requires **both** `llm.enabled: true` in config **and** `--llm`, which `scan` and `check` both
+take; `clean` and the load-time gate never call it (the gate's scanners never set `llm`, pinned by
+`TestGateScannerNeverEnablesLLM`). Per artifact kind it runs passes for hidden injection, intent mismatch, deobfuscation
 (decode only, never execute), cross-file collusion, hook capability, MCP configuration, and
 triage labelling. Scanned content is treated as **hostile**: every call fences it inside a
 `crypto/rand` nonce barrier as inert data, and a nonce generation failure fails the call rather

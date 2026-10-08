@@ -15,8 +15,10 @@ cp config.example.yaml config.yaml     # edit base_url / model to taste
 aguard scan --llm --config config.yaml
 ```
 
-Off by default. Needs **both** `llm.enabled: true` in config **and** `--llm` on the CLI. Only
-the `scan` command uses it — `check` and `clean` are always static-only.
+Off by default. Needs **both** `llm.enabled: true` in config **and** `--llm` on the CLI, on
+`scan` or on `check` for a single target (`aguard check ./some-skill --llm`). `clean` never uses
+it, and neither does the load-time gate: `aguard hook` and `aguard approve` run `check`'s static
+path only.
 
 ## The iron law (why you can trust it)
 
@@ -164,6 +166,9 @@ everything on your machine. That trade-off is yours.
   `~/Downloads` (already read and scored by the static check) get the same passes; the rest of
   the folder is still never read. The Downloads section says whether the judge ran and carries
   its own `LLM-002` when the endpoint is not local.
+- **`check --llm` sends the target's excerpts the same way.** In CI the target is usually
+  someone else's pull request: with a non-local endpoint, its redacted excerpts leave the
+  runner, and the report carries the same `LLM-002` to say so.
 
 ## Honesty & failure behavior
 
@@ -256,6 +261,11 @@ acting on the judge got its own switch rather than a change to the existing one.
 `escalate`. Passing the flag without granting authority is **refused with an error**, not
 ignored — a gate that silently never fires is worse than no gate at all, because the pipeline
 goes green forever and everyone believes they are covered.
+
+Both flags mean the same thing on `scan` and on `check`. A pull-request job that wants the
+judge's say runs `aguard check ./skill --llm --fail-on-llm high`: a deterministic high still
+fails it through `--fail-on` (`high` by default on `check`), and a qualified LLM high fails it
+through `--fail-on-llm`. The load-time gate takes neither — it never consults a model.
 
 Authority is your declaration because a self-hosted endpoint is opaque to us: `model` is free
 text that can claim anything, so inferring capability from it would be unreliable *and*

@@ -2,7 +2,7 @@
 # 加载时闸门
 
 `aguard hook` 在 **agent 加载一个 skill 之前**审它，凡是带发现的都会先问你一句。用的是
-`aguard check` 那套静态扫描 —— 不调模型、不联网、不执行任何东西 —— 只是把答案送到它真正值钱的
+`aguard check` 不带 `--llm` 时那套静态扫描 —— 不调模型、不联网、不执行任何东西 —— 只是把答案送到它真正值钱的
 那一刻。
 
 英文版：[install-gate.md](install-gate.md)。
