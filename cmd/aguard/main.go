@@ -74,6 +74,11 @@ type scanOpts struct {
 	// scan/clean, where root is the operator's OWN environment, and FALSE for check, where
 	// root is the untrusted target — see resolveIgnorePath.
 	autoBaseline bool
+	// home is the home directory the judge strips from what it sends (judge.Options.Home). The
+	// environment scan's is root's parent, the anchor collect and detect already use for the
+	// user-level config; a Downloads candidate's root is the candidate, so scanInbox sets the
+	// user's own.
+	home string
 }
 
 // scanEnv audits a whole .claude root (the `scan` and `clean` commands).
@@ -86,6 +91,7 @@ func scanEnv(root string, o scanOpts) (model.ScanResult, error) {
 		return model.ScanResult{}, err
 	}
 	o.autoBaseline = true
+	o.home = filepath.Dir(root)
 	return analyze(root, collect.CollectAll(root), o)
 }
 
@@ -245,7 +251,7 @@ func entryLabel(e reputation.Entry) string {
 // starving the rest of the plan, while the total timeout is only a backstop against an endpoint
 // that is neither answering nor failing. The budget — not the clock — is what bounds cost, and
 // whatever either one cuts short is reported, never silently dropped.
-func runJudge(cfg config.Config, arts []model.ArtifactReport, quiet bool) ([]model.Finding, *model.JudgeSummary) {
+func runJudge(cfg config.Config, arts []model.ArtifactReport, home string, quiet bool) ([]model.Finding, *model.JudgeSummary) {
 	summary := &model.JudgeSummary{Artifacts: len(arts), Endpoint: cfg.LLM.BaseURL}
 	notRun := func(title string, err error) ([]model.Finding, *model.JudgeSummary) {
 		summary.Reason = err.Error()
@@ -280,6 +286,7 @@ func runJudge(cfg config.Config, arts []model.ArtifactReport, quiet bool) ([]mod
 		MaxCalls:    cfg.LLM.MaxCalls,
 		MaxRetries:  cfg.LLM.MaxRetries,
 		Samples:     cfg.LLM.Samples,
+		Home:        home,
 	})
 	summary.Ran = true
 	summary.Calls, summary.Failed, summary.Skipped = stats.Calls, stats.Failed, stats.Skipped
@@ -437,7 +444,7 @@ func analyze(root string, res collect.Result, o scanOpts) (model.ScanResult, err
 						cfg.LLM.BaseURL),
 				})
 			}
-			jn, js := runJudge(cfg, arts, o.quiet)
+			jn, js := runJudge(cfg, arts, o.home, o.quiet)
 			covNotes = append(covNotes, jn...)
 			judgeSummary = js
 		} else {
