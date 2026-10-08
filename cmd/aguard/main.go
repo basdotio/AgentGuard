@@ -808,14 +808,7 @@ func main() {
 	versionCmd := &cobra.Command{
 		Use:   "version",
 		Short: "version info",
-		Run: func(_ *cobra.Command, _ []string) {
-			fmt.Println(binaryVersionLine(version, commit, date, reputation.Load().Len(), detect.RulesVersion()))
-			// Offline by construction: compares against the plugin already on disk, never a
-			// release feed. The plugin auto-updates through Claude Code; the binary does not.
-			if line := pluginVersionLine(root, version); line != "" {
-				fmt.Println(line)
-			}
-		},
+		Run:   func(_ *cobra.Command, _ []string) { runVersion(os.Stdout, root) },
 	}
 
 	// hash computes the canonical hash of a skill/dir/file — the key a maintainer adds to
