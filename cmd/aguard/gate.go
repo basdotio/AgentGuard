@@ -21,8 +21,14 @@ import (
 //
 // The two scanners are the SAME functions `check` and `scan` call — not a lighter variant.
 // A gate whose verdict differs from what `aguard check` prints for the same path would make
-// both numbers useless, so there is deliberately no fast path here: the judge is off (it is
-// off for `check` too), and nothing else is trimmed.
+// both numbers useless, so there is deliberately no fast path here and nothing is trimmed.
+//
+// The judge is the one thing left out, and it stays out even though `check --llm` exists: the
+// gate fires on every load under a deadline and fails open, so a model call would make each
+// load slower, cost money nobody asked to spend, and give a verdict that depends on whether an
+// endpoint answered. None of these scanOpts — nor approvePath's — may set llm; the gate's
+// verdict is what `check` prints without --llm, which is also the deterministic half of what
+// it prints with it (TestGateScannerNeverEnablesLLM).
 func gateOptions(root, cfgPath string, store *gate.Store, now func() int64) (gate.Options, error) {
 	cfg, err := config.LoadUser(cfgPath)
 	if err != nil {
