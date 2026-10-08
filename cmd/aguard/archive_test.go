@@ -332,10 +332,19 @@ func TestCheckZip_DoesNotReadTheSharedTempDir(t *testing.T) {
 	if !sawSkill {
 		t.Fatalf("the archive's own skill was not collected — the root-shaped path was not taken: %+v", res.Artifacts)
 	}
+	// Both spellings of the temp dir: the extraction path is symlink-resolved (/private/var on
+	// macOS), the TMPDIR value is not.
+	realTmp, err := filepath.EvalSymlinks(tmp)
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, l := range res.Locations {
-		if strings.HasPrefix(l.Path, tmp) {
+		if strings.HasPrefix(l.Path, tmp) || strings.HasPrefix(l.Path, realTmp) {
 			t.Errorf("location %q points into the temp dir: %s", l.Name, l.Path)
 		}
+	}
+	if len(res.Locations) != 1 || res.Locations[0].Path != zp {
+		t.Errorf("locations = %+v, want only the archive as the config root", res.Locations)
 	}
 }
 
@@ -421,5 +430,30 @@ func TestScanInbox_ZipEvidenceIsArchiveRelative(t *testing.T) {
 	j, _ := json.Marshal(ib)
 	if bytes.Contains(j, []byte("aguard-inbox-")) {
 		t.Errorf("the Downloads section names the temporary extraction directory:\n%s", j)
+	}
+}
+
+// TestCheckZip_AbsoluteEvidenceNamesTheArchive: the one note that cites the root by absolute path —
+// "nothing to audit under this root", for a root-shaped archive with nothing in it — cites the
+// archive, not the deleted extraction directory.
+func TestCheckZip_AbsoluteEvidenceNamesTheArchive(t *testing.T) {
+	zp := filepath.Join(t.TempDir(), "root.zip")
+	writeZip(t, zp, map[string]string{"plugins/installed_plugins.json": `{"version":2,"plugins":{}}`})
+	res := mustCheck(t, zp)
+	var files []string
+	for _, n := range res.Notes {
+		if n.RuleID == "COV-000" {
+			for _, e := range n.Evidence {
+				files = append(files, e.File)
+			}
+		}
+	}
+	if len(files) == 0 {
+		t.Fatalf("no COV-000 for an empty root-shaped archive: %+v", res.Notes)
+	}
+	for _, f := range files {
+		if f != "root.zip" {
+			t.Errorf("COV-000 evidence = %q, want root.zip", f)
+		}
 	}
 }
