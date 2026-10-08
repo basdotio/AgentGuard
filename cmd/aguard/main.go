@@ -112,17 +112,16 @@ func checkTarget(path string, o scanOpts) (model.ScanResult, error) {
 	if fi, err := os.Stat(path); err == nil && !fi.IsDir() && inbox.IsZip(path) {
 		// A downloaded zip is checked as the folder it would unpack to: extracted into a private
 		// temporary directory under the archive caps (see internal/inbox), never executed, removed
-		// when the check ends.
+		// when the check ends — and reported as the archive, never as that directory.
 		dir, notes, cleanup, err := inbox.ExtractZip(path)
 		if err != nil {
 			return model.ScanResult{}, fmt.Errorf("%s: %w", path, err)
 		}
 		defer cleanup()
-		out, err := checkTarget(dir, o)
+		out, err := checkExtracted(dir, path, o)
 		if err != nil {
 			return out, err
 		}
-		out.Root = path
 		out.Notes = append(out.Notes, notes...)
 		return out, nil
 	}

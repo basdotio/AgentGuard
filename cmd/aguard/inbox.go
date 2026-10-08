@@ -97,19 +97,21 @@ func checkCandidate(c inbox.Candidate, o scanOpts, judge *model.JudgeSummary) mo
 	it := model.InboxItem{Name: c.Name, Path: c.Path, Kind: c.Kind, Archive: c.Archive, Findings: []model.Finding{}, Notes: []model.Finding{}}
 	o.autoBaseline = false // the target is untrusted; it must not bring its own baseline (as for check)
 	o.ignorePath = ""
-	target := c.Path
+	var res model.ScanResult
+	var err error
 	if c.Archive {
-		dir, notes, cleanup, err := inbox.ExtractZip(c.Path)
-		if err != nil {
-			it.Error = "archive could not be opened: " + err.Error()
+		dir, notes, cleanup, xerr := inbox.ExtractZip(c.Path)
+		if xerr != nil {
+			it.Error = "archive could not be opened: " + xerr.Error()
 			return it
 		}
 		defer cleanup()
 		it.Notes = append(it.Notes, notes...)
 		it.Hash = collect.FileHash(c.Path)
-		target = dir
+		res, err = checkExtracted(dir, c.Path, o)
+	} else {
+		res, err = checkTarget(c.Path, o)
 	}
-	res, err := checkTarget(target, o)
 	if err != nil {
 		it.Error = err.Error()
 		return it
