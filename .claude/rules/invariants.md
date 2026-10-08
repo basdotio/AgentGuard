@@ -16,8 +16,18 @@
    `llm.enabled: false`、`check`、`hook` 的 `PreToolUse`/`PostToolUse` 重扫/`SessionStart`、`approve`、`approvals`、
    `llm setup`、`llm status`、`version`、`hash`。**加一条出网路径,就改这张清单,并把它从零表挪进正对照**;
    零表里的入口一旦出网就红,但**新加的命令要自己进表**,测试不会替你发现它。`TestZeroDial_ClaimsNameTheTest` 让这里
-   和 `baselines/tools.yaml` 都必须写那条测试的真名。它看得见的是进程内经过 `net/http` 的请求:裸 `net.Dial` 和
-   子进程不在视野里(今天产品代码里都没有;能看见它们的是在网络隔离下跑的 CI job,本仓库还没有)。
+   和 `baselines/tools.yaml` 都必须写那条测试的真名。
+
+   **它只看得见经过 `judge.Transport` 或 `http.DefaultTransport` 的请求**,不是"进程内所有 `net/http` 请求"。看不见的,逐条:
+   - **自带 `http.Transport` 的 client**:两个计数器都不经过。产品代码这一条由 `TestZeroDial_NoClientOutsideTheJudge`
+     (`cmd/aguard/zero_dial_source_test.go`)从源码上堵住:`cmd/`、`internal/` 的非测试文件里,`internal/judge` 之外
+     不许出现 `net/http` 的 `Client`/`Transport` 类型,`judge.Transport` 只许在 `_test.go` 里赋值;判官自己的 client
+     换了 Transport,正对照会红;
+   - **裸 `net.Dial`、子进程**:今天产品代码里都没有,但那是读代码的结论;能看见它们的是在网络隔离下跑的 CI job,
+     本仓库还没有;
+   - **异步请求**:入口返回之后才落地的请求,会被下一行开头的清零吞掉,或记在下一行头上;
+   - **只写在 cobra `RunE` 闭包里的代码**:表里每一行调的是命令调用的那个函数(`scanEnv`、`checkTarget`、`runHook`、
+     `runVersion`…),闭包里在那个函数之外多出的一行请求不在视野里。
 2. **符号链接边界收敛,出错即拒(fail-closed)。** `collect.withinDir` 与 `detect.inBoundary` 都会
    先解析符号链接再判断越界。skill *内部*文件不得指向 skill root 之外;skill 目录*本身*是符号链接
    属于合法的安装方式,但解析后必须落在 `$HOME` 之内(否则报 `SCOPE-001`)。解析失败一律拒绝。
