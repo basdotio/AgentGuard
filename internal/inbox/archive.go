@@ -71,12 +71,12 @@ func ExtractZip(path string) (dir string, notes []model.Finding, cleanup func(),
 		return "", nil, func() {}, err
 	}
 	cleanup = func() { _ = os.RemoveAll(tmp) }
-	real, err := filepath.EvalSymlinks(tmp)
+	resolved, err := filepath.EvalSymlinks(tmp)
 	if err != nil {
 		cleanup()
 		return "", nil, func() {}, err
 	}
-	dir = filepath.Join(real, filepath.Base(path))
+	dir = filepath.Join(resolved, filepath.Base(path))
 	if err := os.Mkdir(dir, 0o700); err != nil {
 		cleanup()
 		return "", nil, func() {}, err
