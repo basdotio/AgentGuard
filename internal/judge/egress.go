@@ -44,9 +44,17 @@ import (
 // safe when a caller forgets: an empty Options.Home used to mean "send paths unchanged", and
 // `check --llm` never set it.
 type egress struct {
-	homes   []string // every spelling of every home, longest first
-	encoded []string // the same in Claude Code's project-directory encoding; none for a one-segment home
-	users   []string // each home's last segment, for the relPath fallback only
+	homes   []string      // every spelling of every home, longest first
+	encoded []encodedHome // the same in Claude Code's project-directory encoding; none for a one-segment home
+	users   []string      // each home's last segment, for the relPath fallback only
+}
+
+// encodedHome is one home in Claude Code's project-directory encoding, with where its username
+// starts — which cannot be read back from the encoded form: every separator became '-', and so
+// did every '.' or '-' a username can hold. The clip repair needs it (repairHalves).
+type encodedHome struct {
+	form   string
+	userAt int // first byte of the username segment in form
 }
 
 // newEgress prepares the scrub for the given homes, the OS user's first. Each is made absolute — a
@@ -78,7 +86,8 @@ func newEgress(homes ...string) egress {
 		// `-root` (from /root) is too much like a command-line option to replace safely; the raw
 		// form /root/… still is.
 		if strings.Count(f, string(filepath.Separator)) >= 2 {
-			e.encoded = append(e.encoded, projectDirName(f))
+			userAt := strings.LastIndexByte(f, filepath.Separator) + 1
+			e.encoded = append(e.encoded, encodedHome{projectDirName(f), len(projectDirName(f[:userAt]))})
 		}
 	}
 	return e
@@ -155,7 +164,7 @@ func (e egress) scrubCut(s string, clipped bool) string {
 		s = replaceBounded(s, h, "~", startsPath, endsPath)
 	}
 	for _, enc := range e.encoded {
-		s = replaceBounded(s, enc, "~", startsPath, endsEncoded)
+		s = replaceBounded(s, enc.form, "~", startsPath, endsEncoded)
 	}
 	return e.repairHalves(s, clipped)
 }
@@ -193,13 +202,15 @@ const (
 //     `<REDACTED>.d/alice`. The run can also start at such a byte and eat the end instead:
 //     `/home/first.<REDACTED>`.
 //   - detect's snippet cap — on static snippets only (clipped), see snippet. It cuts at 200 bytes and
-//     appends `…`, wherever that lands: `/Users/ali…`. Only a snippet that ENDS in the marker was
-//     clipped; one with `…` anywhere else is prose.
+//     appends `…`, wherever that lands: `/Users/ali…`, and in the encoded spelling just the same,
+//     `projects/-Users-ali…`. Only a snippet that ENDS in the marker was clipped; one with `…`
+//     anywhere else is prose.
 //
 // Each cut leaves a known shape, so only those are replaced: a cut point is a byte outside the
 // entropy class, and a clipped fragment counts only once it reaches into the username (a clipped
 // `/Users/…` names nobody, and replacing it would be a guess). Nothing fuzzier: a near-match is some
-// other path.
+// other path. The encoded spelling has only the clipped shape: it is letters, digits and '-', inside
+// the entropy class end to end, so the entropy rule takes all of it or none and leaves no half.
 func (e egress) repairHalves(s string, clipped bool) string {
 	hasRed, hasClip := strings.Contains(s, redactedMark), clipped && strings.HasSuffix(s, clipMark)
 	if !hasRed && !hasClip {
@@ -227,6 +238,11 @@ func (e egress) repairHalves(s string, clipped bool) string {
 			for b := len(h) - 1; hasClip && b > userAt && b > st.at; b-- {
 				s = replaceBounded(s, st.mark+h[st.at:b]+clipMark, "~"+clipMark, st.check, atEnd) // clipped
 			}
+		}
+	}
+	for _, enc := range e.encoded {
+		for b := len(enc.form) - 1; hasClip && b > enc.userAt; b-- {
+			s = replaceBounded(s, enc.form[:b]+clipMark, "~"+clipMark, startsPath, atEnd) // encoded, clipped
 		}
 	}
 	return s
