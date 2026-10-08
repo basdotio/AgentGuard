@@ -33,6 +33,10 @@ type Options struct {
 	// and every grounded verdict counts. >1 asks N times and requires a MAJORITY before a
 	// finding may affect the effective score — it costs N times as much, so it is opt-in.
 	Samples int
+	// Home is the scanned environment's home directory. Every spelling of it is replaced by `~`
+	// in what is sent (egress.go), so a request body does not name the user. Empty sends paths as
+	// they are — fine for a test, wrong for a scan: the caller knows which home it scanned.
+	Home string
 }
 
 func (o Options) defaults() Options {
@@ -226,7 +230,7 @@ func Run(ctx context.Context, c Client, arts []model.ArtifactReport, opts Option
 	// snapshots each artifact's static findings before advisory ones are appended (triage must
 	// judge the deterministic findings, not the judge's own output), and it makes the budget
 	// cut deterministic — a counter raced by workers would drop a different set each run.
-	tasks := buildTasks(arts, opts.Samples)
+	tasks := buildTasks(arts, opts.Samples, newEgress(opts.Home))
 	var notes []model.Finding
 	stats := Stats{}
 	if over := len(tasks) - opts.MaxCalls; opts.MaxCalls > 0 && over > 0 {
@@ -348,11 +352,11 @@ const crossFileChainRule = "EXFIL-002"
 // each question into `samples` independent calls. Samples of one question stay consecutive and
 // share a group id, so the votes can be counted without disturbing the order everything else
 // depends on.
-func buildTasks(arts []model.ArtifactReport, samples int) []task {
+func buildTasks(arts []model.ArtifactReport, samples int, eg egress) []task {
 	var tasks []task
 	group := 0
 	for i := range arts {
-		for _, t := range planFor(i, arts[i]) {
+		for _, t := range planFor(i, arts[i], eg) {
 			if t.kind == taskTriage {
 				// Triage produces display labels, not findings — there is no vote to take, and
 				// paying N times for a label that cannot move a number would be waste.
@@ -380,7 +384,11 @@ func buildTasks(arts []model.ArtifactReport, samples int) []task {
 //     precisely the blind spot it exists to cover. Its scope is one file, so it is affordable.
 //   - The expensive whole-tree passes (intent, collusion) ARE gated on a static signal, which
 //     is a reasonable prior once a call costs real money.
-func planFor(i int, a model.ArtifactReport) []task {
+//
+// Every piece of artifact text below goes through eg.redact (scrub the home, then Redact) as it
+// is turned into a request and its units, so the two hold the same bytes. The label is not sent:
+// it names the artifact in the report and in LLM-000/LLM-005 notes, never in a request body.
+func planFor(i int, a model.ArtifactReport, eg egress) []task {
 	label := detect.Redact(string(a.Kind) + ":" + a.Name)
 	var out []task
 	ask := func(req Request, units []sourceUnit) {
@@ -391,21 +399,21 @@ func planFor(i int, a model.ArtifactReport) []task {
 	switch a.Kind {
 	case model.KindSkill:
 		skill := parse.ReadSkill(a.Path)
-		declared := detect.Redact(skill.Description)
-		behavior, behaviorUnits := behaviorExcerpt(a.Path)
+		declared := eg.redact(skill.Description)
+		behavior, behaviorUnits := behaviorExcerpt(a.Path, eg)
 		// The declared purpose is part of what the model saw, so a verdict may legitimately
 		// quote it; it lives in SKILL.md's frontmatter, near the top.
 		intentUnits := append([]sourceUnit{{file: "SKILL.md", text: declared, firstLine: 1, collapsed: true}}, behaviorUnits...)
 		ask(Request{Mode: ModeIntent, Declared: declared, Behavior: behavior}, intentUnits)
 
-		body, bodyLM := condense("SKILL.md", detect.Redact(skill.Body), false)
+		body, bodyLM := condense("SKILL.md", eg.redact(skill.Body), false)
 		body, bodyLM = capHeadTail(body, bodyLM, maxExcerptBytes)
 		// The description is the second side here too: "beyond what it says it is for" is a
 		// far sharper question than "contains instructions", which every skill body does.
 		ask(Request{Mode: ModeInjection, Declared: declared, Behavior: body},
 			[]sourceUnit{{file: "SKILL.md", text: body, firstLine: skill.BodyLine, lineMap: offsetLines(bodyLM, skill.BodyLine-1)}})
 
-		if payloads := decodedPayloads(a.Path); len(payloads) > 0 {
+		if payloads := decodedPayloads(a.Path, eg); len(payloads) > 0 {
 			texts := make([]string, len(payloads))
 			for k, p := range payloads {
 				texts[k] = p.text
@@ -416,7 +424,7 @@ func planFor(i int, a model.ArtifactReport) []task {
 		// Collusion: only once the static screen has seen the two halves land in DIFFERENT
 		// files. The digest describes what each file can do; it does not ship the files.
 		if hasFinding(a, crossFileChainRule) {
-			if digest, units := capabilityDigest(a); len(units) > 0 {
+			if digest, units := capabilityDigest(a, eg); len(units) > 0 {
 				ask(Request{Mode: ModeCollusion, Declared: declared, Behavior: digest},
 					append([]sourceUnit{{file: "SKILL.md", text: declared, firstLine: 1, collapsed: true}}, units...))
 			}
@@ -433,9 +441,9 @@ func planFor(i int, a model.ArtifactReport) []task {
 		// prompt itself. Omitting them would leave the surfaces where a REWRITTEN injection hides
 		// best covered by regex only — the blind spot the judge exists for — and silently, since a
 		// kind that generates no task also generates no LLM-000 coverage note.
-		if text, units := singleFileExcerpt(a.Path); text != "" {
+		if text, units := singleFileExcerpt(a.Path, eg); text != "" {
 			ask(Request{Mode: ModeInjection,
-				Declared: detect.Redact(parse.ReadMarkdown(a.Path).Description),
+				Declared: eg.redact(parse.ReadMarkdown(a.Path).Description),
 				Behavior: text}, units)
 		}
 
@@ -446,10 +454,10 @@ func planFor(i int, a model.ArtifactReport) []task {
 		// connector is for" has a second side. The judge sees the same rendering the static
 		// pass scans (detect.ConnectorText), capped head+tail like any excerpt.
 		if text := detect.ConnectorText(a.Connector); text != "" {
-			text, lm := condense(a.Name+".txt", detect.Redact(text), false)
+			text, lm := condense(a.Name+".txt", eg.redact(text), false)
 			text, _ = capHeadTail(text, lm, maxExcerptBytes)
 			ask(Request{Mode: ModeInjection,
-				Declared: detect.Redact("Remote MCP connector \"" + a.Name + "\": the tool list its server sent (names, descriptions, parameter descriptions)"),
+				Declared: eg.redact("Remote MCP connector \"" + a.Name + "\": the tool list its server sent (names, descriptions, parameter descriptions)"),
 				Behavior: text}, []sourceUnit{{file: detect.Redact(a.Name) + " (connector)", text: text, firstLine: 0, collapsed: true}})
 		}
 	case model.KindHook:
@@ -457,7 +465,7 @@ func planFor(i int, a model.ArtifactReport) []task {
 		// capability (is the command proportionate to its interception point?). It does NOT
 		// get intent: an event name declares WHEN a hook runs, never what it ought to do, so
 		// a mismatch comparison would have nothing honest on the other side.
-		declared, behavior, units := hookExcerpt(a.Path, a.Hook)
+		declared, behavior, units := hookExcerpt(a.Path, a.Hook, eg)
 		if behavior != "" {
 			ask(Request{Mode: ModeInjection, Behavior: behavior}, units)
 			ask(Request{Mode: ModeCapability, Declared: declared, Behavior: behavior}, units)
@@ -467,7 +475,7 @@ func planFor(i int, a model.ArtifactReport) []task {
 		// Configuration only. What the server's TOOLS do is invisible without connecting to
 		// it, which this tool never does — the prompt says so, so a verdict cannot be read as
 		// a statement about the server's behavior.
-		if text, units := mcpExcerpt(a.Path, a.Name); text != "" {
+		if text, units := mcpExcerpt(a.Path, a.Name, eg); text != "" {
 			ask(Request{Mode: ModeMCPConfig, Behavior: text}, units)
 		}
 	}
@@ -477,7 +485,7 @@ func planFor(i int, a model.ArtifactReport) []task {
 	// the plan is built, is what keeps triage judging the deterministic findings rather than
 	// the judge's own output.
 	if static := staticFindings(a.Findings); len(static) > 0 {
-		out = append(out, task{kind: taskTriage, artifact: i, label: label, items: triageItems(static)})
+		out = append(out, task{kind: taskTriage, artifact: i, label: label, items: triageItems(static, eg)})
 	}
 	return out
 }
@@ -717,13 +725,16 @@ func staticFindings(fs []model.Finding) []model.Finding {
 }
 
 // triageItems builds the redacted (RuleID, evidence) pairs sent for triage. The evidence
-// snippet is already redacted at detect time; we re-redact defensively.
-func triageItems(fs []model.Finding) []TriageItem {
+// snippet is already redacted at detect time; we re-redact defensively. The File field is
+// whatever the static pass recorded — an absolute path for EXFIL-005, `<username>/.claude.json`
+// for a config in the home, an encoded project directory for a memory file — so it is scrubbed
+// as a file position; the report keeps its own copy untouched.
+func triageItems(fs []model.Finding, eg egress) []TriageItem {
 	items := make([]TriageItem, 0, len(fs))
 	for _, f := range fs {
 		ev := ""
 		if len(f.Evidence) > 0 {
-			ev = fmt.Sprintf("%s:%d %s", f.Evidence[0].File, f.Evidence[0].Line, f.Evidence[0].Snippet)
+			ev = fmt.Sprintf("%s:%d %s", eg.file(f.Evidence[0].File), f.Evidence[0].Line, eg.scrub(f.Evidence[0].Snippet))
 		}
 		items = append(items, TriageItem{RuleID: f.RuleID, Evidence: detect.Redact(ev)})
 	}

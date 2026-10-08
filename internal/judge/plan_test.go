@@ -15,7 +15,7 @@ import (
 func modesFor(a model.ArtifactReport) (map[Mode]Request, bool) {
 	modes := map[Mode]Request{}
 	triage := false
-	for _, t := range planFor(0, a) {
+	for _, t := range planFor(0, a, egress{}) {
 		if t.kind == taskTriage {
 			triage = true
 			continue
@@ -149,7 +149,7 @@ func TestPlan_TriageRunsForAnyKindWithFindings(t *testing.T) {
 		Findings: []model.Finding{{RuleID: "PERM-006", Dimension: 2, Severity: model.SevMedium,
 			Source: model.SrcPermission, Evidence: []model.Evidence{{File: "settings.json", Snippet: "Bash(git *)"}}}}}
 
-	tasks := planFor(0, art)
+	tasks := planFor(0, art, egress{})
 	if len(tasks) != 1 || tasks[0].kind != taskTriage {
 		t.Fatalf("permission with findings should plan exactly one triage call, got %d task(s)", len(tasks))
 	}
@@ -233,7 +233,7 @@ func TestPlan_EveryKindIsFencedAndRedacted(t *testing.T) {
 
 	planned := 0
 	for i, a := range arts {
-		for _, task := range planFor(i, a) {
+		for _, task := range planFor(i, a, egress{}) {
 			if task.kind != taskJudge {
 				continue
 			}
@@ -375,7 +375,7 @@ func TestPlan_DeclaredIsCappedOnARuneBoundary(t *testing.T) {
 	art := model.ArtifactReport{Kind: model.KindSkill, Name: "s", Path: skill}
 
 	intent := false
-	for _, task := range planFor(0, art) {
+	for _, task := range planFor(0, art, egress{}) {
 		if task.kind != taskJudge || task.req.Declared == "" {
 			continue
 		}

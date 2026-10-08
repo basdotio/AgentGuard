@@ -33,7 +33,7 @@ var (
 // to mostly-printable text, and returns each decoded string REDACTED, with the file and line
 // the blob sat on. This surfaces "what an obfuscated payload actually says" — a stated static
 // blind spot. Bounded and dedup'd.
-func decodedPayloads(dir string) []sourceUnit {
+func decodedPayloads(dir string, eg egress) []sourceUnit {
 	seen := map[string]bool{}
 	var out []sourceUnit
 	scanned := 0 // total raw bytes read across the skill — a total-work bound so a hostile
@@ -71,7 +71,7 @@ func decodedPayloads(dir string) []sourceUnit {
 				continue
 			}
 			seen[dec.text] = true
-			red := detect.Redact(dec.text)
+			red := eg.redact(dec.text)
 			if len(red) > maxDecodedBytes {
 				red = red[:maxDecodedBytes]
 			}

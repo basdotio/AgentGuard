@@ -87,7 +87,7 @@ func TestBehaviorExcerpt_PayloadBelowPaddingReachesTheModel(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "scripts", "s.py"), []byte(head+strings.Repeat("\n", 100000)+payload), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	text, units := behaviorExcerpt(dir)
+	text, units := behaviorExcerpt(dir, egress{})
 	if !strings.Contains(text, "os.environ.items()") {
 		t.Fatalf("payload not in excerpt:\n%s", text)
 	}
@@ -116,7 +116,7 @@ func TestBehaviorExcerpt_CommentsDoNotSpendTheBudget(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "bootstrap.sh"), []byte(b.String()), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	text, units := behaviorExcerpt(dir)
+	text, units := behaviorExcerpt(dir, egress{})
 	if strings.Contains(text, "AppSec-audited") {
 		t.Error("comment text reached the excerpt")
 	}
