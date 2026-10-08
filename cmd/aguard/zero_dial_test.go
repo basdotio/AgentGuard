@@ -174,6 +174,21 @@ func newZeroDialFixture(t *testing.T) zeroDialFixture {
 	return fx
 }
 
+// zeroDialSeededApproval names the approval the `approvals` row writes into the store before
+// listing it, so that row has an entry to read back whichever rows ran before it.
+const zeroDialSeededApproval = "zero-dial-seeded"
+
+// seedApproval records one approval under root the way the store keeps them, without going
+// through `approve` (which scans its target, and is a row of its own).
+func seedApproval(root, name string) error {
+	store := gate.LoadStore(gate.ApprovalsPath(root))
+	if store.Corrupt != "" {
+		return errors.New(store.Corrupt)
+	}
+	store.Approve(gate.Approval{Hash: strings.Repeat("5eed", 16), Name: name, Kind: "skill", Verdict: gate.VerdictClean, ToolVersion: version})
+	return store.Save()
+}
+
 type dialCase struct {
 	name string
 	run  func() error
@@ -337,13 +352,17 @@ func TestZeroDial_OnlyTheJudgeConnects(t *testing.T) {
 		})},
 		{"approve", func() error { return approvePath(io.Discard, fx.root, fx.on, fx.skill) }},
 		{"approvals", func() error {
-			// The row above approved test-runner, so the store has one entry to read back and list.
+			// The row seeds the entry it lists, rather than counting on the `approve` row having
+			// run first: -run can select this row alone, and then the store would be empty.
+			if err := seedApproval(fx.root, zeroDialSeededApproval); err != nil {
+				return err
+			}
 			var out bytes.Buffer
 			if err := listApprovals(&out, fx.root, true); err != nil {
 				return err
 			}
-			if !strings.Contains(out.String(), "test-runner") {
-				return fmt.Errorf("approvals did not list the skill approved in the row above, so it read nothing: %q", out.String())
+			if !strings.Contains(out.String(), zeroDialSeededApproval) {
+				return fmt.Errorf("approvals did not list the approval this row seeded (%s), so it read nothing: %q", zeroDialSeededApproval, out.String())
 			}
 			return nil
 		}},
