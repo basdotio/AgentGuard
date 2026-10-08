@@ -342,7 +342,7 @@ type ScanResult struct {
     Overall          int  // 环境总分,纯确定性、可复现 —— attestation 只取这个
     OverallEffective int  // 含合格 LLM 发现;恒 ≤ Overall;不开 --llm 时二者相等
     ToolVersion string
-    Judge     *JudgeSummary `json:",omitempty"` // --llm 时必填:跑没跑、判了几个、几次调用、补了几条、没跑的原因(§16.8 用在判官自己身上:「跑了没发现」和「没跑」以前在报告上一模一样)
+    Judge     *JudgeSummary `json:",omitempty"` // --llm 时必填:跑没跑、判了几个、几次调用(其中 triage 几次、重试几次)、端点自报的 token(没报则缺省)、补了几条、没跑的原因(§16.8 用在判官自己身上:「跑了没发现」和「没跑」以前在报告上一模一样)
     Inbox     *InboxReport  `json:",omitempty"` // 下载目录那条流水线的结果(§4.1),永不进 Overall
     Locations []Location    `json:",omitempty"` // 扫了哪里,各标 read/absent/off(§4.3);check 不填
     Sandbox   *SandboxInfo  `json:",omitempty"` // 在云端沙箱里跑时的判断依据(§4.2);nil = 本机
