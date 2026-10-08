@@ -225,3 +225,63 @@ func TestClaudeRulesProblemsAreCaught(t *testing.T) {
 		t.Fatalf("fixture has %d lines, want %d", n, maxRuleLines+1)
 	}
 }
+
+// TestEpochRuleLoadsWhereCoveredCodeIsEdited: detect.rulesEpoch is the only thing that moves the
+// rules version when deterministic detection outside builtinRules() changes, and nothing enforces
+// the bump. Its doc comment sits in internal/detect/rules_version.go, which a change to permcheck,
+// collect or cmd/aguard never opens — so the rule has to be in a rules file that loads when that
+// code is edited, on one line that names the constant, the table it does not cover and the
+// regeneration step.
+func TestEpochRuleLoadsWhereCoveredCodeIsEdited(t *testing.T) {
+	const rulesFile = ".claude/rules/pipeline.md"
+	b, err := os.ReadFile(filepath.Join(repoRoot(), rulesFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	globs, err := frontmatterPaths(string(b))
+	if err != nil {
+		t.Fatalf("%s: %v", rulesFile, err)
+	}
+	// One file per place deterministic findings are decided outside the rule table.
+	for _, covered := range []string{
+		"internal/detect/shape.go",        // shape checks
+		"internal/detect/hooks.go",        // hook checks
+		"internal/detect/logical.go",      // lexical layer
+		"internal/collect/imports.go",     // EXFIL-005
+		"internal/permcheck/permcheck.go", // PERM-*
+		"internal/gate/status.go",         // GATE-001, raised by scan
+		"cmd/aguard/main.go",              // analyze(): which stages run
+	} {
+		if _, err := os.Stat(filepath.Join(repoRoot(), covered)); err != nil {
+			t.Fatalf("%s is gone; point this test at the file that now holds that check: %v", covered, err)
+		}
+		// No leading frontmatter means an always-loaded rule (frontmatterPaths), which loads
+		// wherever anything is edited; a paths list has to reach this file.
+		loaded := globs == nil
+		for _, g := range globs {
+			re, err := globToRegexp(g)
+			if err != nil {
+				t.Fatalf("%s: paths entry %q: %v", rulesFile, g, err)
+			}
+			if re.MatchString(covered) {
+				loaded = true
+				break
+			}
+		}
+		if !loaded {
+			t.Errorf("%s does not load when %s is edited (paths: %v)", rulesFile, covered, globs)
+		}
+	}
+	found := false
+	for _, line := range strings.Split(string(b), "\n") {
+		if strings.Contains(line, "`detect.rulesEpoch`") && strings.Contains(line, "`builtinRules()`") &&
+			strings.Contains(line, "`make docs`") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("%s has no line naming `detect.rulesEpoch`, `builtinRules()` and `make docs` — "+
+			"whoever changes deterministic detection outside the table is never told to bump the epoch", rulesFile)
+	}
+}

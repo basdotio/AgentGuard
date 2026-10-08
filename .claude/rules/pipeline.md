@@ -14,6 +14,7 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
 (§4)       (§5.1)   (§7)         (D11)        (.aguardignore)   (§5.2)         (§6)      (§5.3)  (§9)
 ```
 
+- **改了确定性发现就加 epoch**(P-002,spec §5.1):在 `builtinRules()` 之外改变了某个输入产出哪些确定性发现,或它们的 ID/维度/严重度/advisory,同一个提交里把 `detect.rulesEpoch` 加一并跑 `make docs` —— 没有任何东西替你拦;判官(`internal/judge`)不在 `rules_version` 里,改它不加。
 - **permission 的两半分别由两个包管**:`permcheck` 只看 allow 条目的**文本形状**(它从不开文件);
   `detect.permissionUnits` 负责**跟进 allow 项引用的本地脚本** —— `Bash(./scripts/deploy.sh *)`
   这条授权有多危险,取决于 `deploy.sh` 干什么,那是"把文件读进来跑规则",不是语义判断,所以是静态
