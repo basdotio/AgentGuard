@@ -186,6 +186,16 @@ hash walk and the scan walk because the canonical hash is the reputation key and
 rebuild; the compensating check is `SUP-004`, which fires when an artifact *points the agent
 into* an excluded directory.
 
+**The rule table has a version.** [`rules_version.go`](../internal/detect/rules_version.go) hashes
+what decides a finding — each rule's ID, dimension, severity, flags and pattern source, in engine
+order, but not its title or explanation — plus an integer `rulesEpoch`. Scan reports carry it as
+`rules_version`, `aguard version` prints it, and the `rules.md` header shows it, so a pattern change
+cannot ship without `make docs`. **When you change detection code outside `builtinRules()`** —
+structural or shape checks, the role gate, the lexical layer, which files are read, `permcheck`,
+the judge's rule mapping — in a way that changes which findings an input produces or their
+ID/dimension/severity, **bump `rulesEpoch` in the same commit.** Nothing enforces it; a forgotten
+bump lets two reports claim the same rules while different code produced them.
+
 ## Canonical hashing
 
 Skills and plugins get a tree hash (relative paths sorted, plus each file's sha256); a single

@@ -195,7 +195,9 @@ npm launcher exactly as for the bare binary.
 **Got a finding and want to know what it means?** [`docs/rules.md`](docs/rules.md) lists every
 rule ID the tool can print — dimension, severity, and why it fires. It is generated from the
 engine's own rule set and CI fails if it drifts, so the severity you read there is the severity
-that will gate your build.
+that will gate your build. Its header names the **rules version**, the same value a report carries
+as `rules_version` (`--json`) and `aguard version` prints: when two reports differ and their rules
+versions differ too, the rules changed between them.
 
 ## Cleanup (`clean`)
 
