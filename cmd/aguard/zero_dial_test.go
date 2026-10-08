@@ -33,11 +33,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -161,6 +164,38 @@ type dialCase struct {
 	run  func() error
 }
 
+// controlCase is a positive-control row: an entry point that takes one of the outbound paths
+// invariant #1 lists, and that path written exactly as the list writes it (between backticks).
+// TestZeroDial_ClaimsNameTheTest holds the two to one set, so a path cannot join the control
+// without joining the list, nor stay on the list once no row watches it connect.
+type controlCase struct {
+	path string
+	dialCase
+}
+
+// zeroDialControl is the positive control. These paths are SUPPOSED to connect, so the judge
+// counter has to see them — and see all of them, the default counter none. A test whose counter
+// is not wired to the judge's client would pass the zero table while asserting nothing.
+func zeroDialControl(fx zeroDialFixture) []controlCase {
+	return []controlCase{
+		{"scan --llm", dialCase{"scan --llm", func() error {
+			_, err := scanEnv(fx.root, scanOpts{cfgPath: fx.on, llm: true, quiet: true})
+			return err
+		}}},
+		{"scan --llm", dialCase{"scan --llm, Downloads items", func() error {
+			_, err := scanInbox(fx.downloads, true, scanOpts{cfgPath: fx.on, llm: true, quiet: true})
+			return err
+		}}},
+		{"llm test", dialCase{"llm test", func() error {
+			// Refused by the counter, so it must report the endpoint as not answering.
+			if err := runLLMTest(io.Discard, fx.on); err == nil || !strings.Contains(err.Error(), "did not answer") {
+				return fmt.Errorf("want the refused call reported as not answering, got %v", err)
+			}
+			return nil
+		}}},
+	}
+}
+
 // lateRequestSettle is how long the run waits after its last row before reading the counters a
 // final time. A request that lands after its entry point returned is still a request; this is the
 // window in which it is reported instead of lost when the counters are put back.
@@ -184,27 +219,8 @@ func TestZeroDial_OnlyTheJudgeConnects(t *testing.T) {
 		}
 	}
 
-	// The positive control, first: these paths are SUPPOSED to connect, so the judge counter has
-	// to see them — and see all of them, the default counter none. A test whose counter is not
-	// wired to the judge's client would pass the zero table below while asserting nothing.
-	allowed := []dialCase{
-		{"scan --llm", func() error {
-			_, err := scanEnv(fx.root, scanOpts{cfgPath: fx.on, llm: true, quiet: true})
-			return err
-		}},
-		{"scan --llm, Downloads items", func() error {
-			_, err := scanInbox(fx.downloads, true, scanOpts{cfgPath: fx.on, llm: true, quiet: true})
-			return err
-		}},
-		{"llm test", func() error {
-			// Refused by the counter, so it must report the endpoint as not answering.
-			if err := runLLMTest(io.Discard, fx.on); err == nil || !strings.Contains(err.Error(), "did not answer") {
-				return fmt.Errorf("want the refused call reported as not answering, got %v", err)
-			}
-			return nil
-		}},
-	}
-	for _, c := range allowed {
+	// The positive control, first: until it has been seen, a zero below says nothing (zeroDialControl).
+	for _, c := range zeroDialControl(fx) {
 		nothingPending("connects/" + c.name)
 		t.Run("connects/"+c.name, func(t *testing.T) {
 			err := c.run()
@@ -347,9 +363,15 @@ func TestZeroDial_OnlyTheJudgeConnects(t *testing.T) {
 	nothingPending("the counters are put back")
 }
 
-// TestZeroDial_ClaimsNameTheTest keeps the two places that say invariant #1 is enforced honest
-// about by WHAT. The name comes from the function value, not a literal, so renaming the test
-// without updating them is red here instead of a dangling citation in every run.yaml.
+// outboundPathBullet matches one entry of invariant #1's list of paths that may connect out:
+// "   - `scan --llm`:…". The blind-spot bullets below it start with "**", so they do not match.
+var outboundPathBullet = regexp.MustCompile("(?m)^\\s+- `([^`]+)`:")
+
+// TestZeroDial_ClaimsNameTheTest keeps the places that say invariant #1 is enforced honest about
+// by WHAT, and about WHICH paths. The test's name comes from the function value, not a literal,
+// so renaming the test without updating them is red here instead of a dangling citation in every
+// run.yaml. The paths come from the positive control itself, so a path added to it — `check
+// --llm`, say — is red here until the list, the registry line and spec §16.4 all name it.
 func TestZeroDial_ClaimsNameTheTest(t *testing.T) {
 	full := runtime.FuncForPC(reflect.ValueOf(TestZeroDial_OnlyTheJudgeConnects).Pointer()).Name()
 	name := full[strings.LastIndex(full, ".")+1:]
@@ -386,7 +408,52 @@ func TestZeroDial_ClaimsNameTheTest(t *testing.T) {
 	if start < 0 || end < start {
 		t.Fatalf("invariant #1 not found in .claude/rules/invariants.md")
 	}
-	if !strings.Contains(s[start:end], name) {
-		t.Errorf("invariant #1 does not name the test that pins it (%s):\n%s", name, s[start:end])
+	inv1 := s[start:end]
+	if !strings.Contains(inv1, name) {
+		t.Errorf("invariant #1 does not name the test that pins it (%s):\n%s", name, inv1)
+	}
+
+	spec, err := os.ReadFile(filepath.Join(repoRoot(), "docs", "spec", "spec.zh-CN.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var paths164 string
+	for _, line := range strings.Split(string(spec), "\n") {
+		if strings.Contains(line, "**出网的路径只有") {
+			paths164 = line
+		}
+	}
+	if paths164 == "" {
+		t.Fatal("spec §16.4 has no line starting the list of outbound paths (\"**出网的路径只有\")")
+	}
+
+	// One set, checked in both directions: a path in the control that the list does not name, and
+	// a listed path no row watches connect, are both red.
+	listed := map[string]bool{}
+	for _, m := range outboundPathBullet.FindAllStringSubmatch(inv1, -1) {
+		listed[m[1]] = true
+	}
+	if len(listed) == 0 {
+		t.Fatalf("invariant #1 lists no outbound path as a \"   - `path`:\" bullet, so there is nothing to hold the control to:\n%s", inv1)
+	}
+	control := map[string]bool{}
+	for _, c := range zeroDialControl(zeroDialFixture{}) {
+		control[c.path] = true
+	}
+	for _, p := range slices.Sorted(maps.Keys(control)) {
+		if !listed[p] {
+			t.Errorf("the positive control watches `%s` connect, but invariant #1 does not list it among the paths that may connect out", p)
+		}
+		if !strings.Contains(basis, p) {
+			t.Errorf("baselines/tools.yaml's no-upload basis does not name `%s`, a path that connects out:\n%s", p, basis)
+		}
+		if !strings.Contains(paths164, "`"+p+"`") {
+			t.Errorf("spec §16.4 does not name `%s` among the outbound paths:\n%s", p, paths164)
+		}
+	}
+	for _, p := range slices.Sorted(maps.Keys(listed)) {
+		if !control[p] {
+			t.Errorf("invariant #1 lists `%s` as a path that may connect out, but no positive-control row watches it connect", p)
+		}
 	}
 }

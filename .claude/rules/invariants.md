@@ -16,7 +16,9 @@
    `llm.enabled: false`、`check`、`hook` 的 `PreToolUse`/`PostToolUse` 重扫/`SessionStart`、`approve`、`approvals`、
    `llm setup`、`llm status`、`version`、`hash`。**加一条出网路径,就改这张清单,并把它从零表挪进正对照**;
    零表里的入口一旦出网就红,但**新加的命令要自己进表**,测试不会替你发现它。`TestZeroDial_ClaimsNameTheTest` 让这里
-   和 `baselines/tools.yaml` 都必须写那条测试的真名。
+   和 `baselines/tools.yaml` 都必须写那条测试的真名,并且**上面那张路径清单与正对照(`zeroDialControl`)是同一个集合**:
+   正对照多一条路径而清单没写、清单写了而没有正对照看着它出网,两个方向都红;每条路径还必须出现在
+   `baselines/tools.yaml` 那句和 spec §16.4 里。
 
    **它只看得见经过 `judge.Transport` 或 `http.DefaultTransport` 的请求**,不是"进程内所有 `net/http` 请求"。看不见的,逐条:
    - **自带 `http.Transport` 的 client**:两个计数器都不经过。产品代码这一条由 `TestZeroDial_NoClientOutsideTheJudge`
