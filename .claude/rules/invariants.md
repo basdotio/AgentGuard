@@ -4,7 +4,20 @@
 
 这些是本工具可信的根据;其中多条在**不止一处**被强制执行,改动时必须**全部**一起改。
 
-1. **绝不执行被扫描内容,绝不外连**(除显式开启的 LLM judge)。全程只读。
+1. **绝不执行被扫描内容,绝不外连**(除显式开启的 LLM judge)。全程只读。"除判官"今天**只有两条路径**,
+   两条都要 config `llm.enabled: true` **加上**一条显式的命令:
+   - `scan --llm`:环境扫描,以及它覆盖的下载目录候选项(`scanInbox`,每项走同一个 `analyze`);
+   - `llm test`:一次 `HTTPClient.Ping`,不带任何被扫内容。
+
+   其余入口**即使配置里开着判官也一个请求都不发**。钉住它的是 `TestZeroDial_OnlyTheJudgeConnects`
+   (`cmd/aguard/zero_dial_test.go`):`judge.Transport`(测试接缝,生产里恒为 nil)和 `http.DefaultTransport` 各换成
+   一个只计数、拒绝请求的 RoundTripper,**先**断言上面两条路径确实被判官那个计数器看见(否则测试是瞎的),**再**断言
+   零表里每个入口两个计数器都是 0:`scan`(`clean` 用的同一个 `scanEnv`)、不带 `--llm` 的下载项、`scan --llm` 但
+   `llm.enabled: false`、`check`、`hook` 的 `PreToolUse`/`PostToolUse` 重扫/`SessionStart`、`approve`、`approvals`、
+   `llm setup`、`llm status`、`version`、`hash`。**加一条出网路径,就改这张清单,并把它从零表挪进正对照**;
+   零表里的入口一旦出网就红,但**新加的命令要自己进表**,测试不会替你发现它。`TestZeroDial_ClaimsNameTheTest` 让这里
+   和 `baselines/tools.yaml` 都必须写那条测试的真名。它看得见的是进程内经过 `net/http` 的请求:裸 `net.Dial` 和
+   子进程不在视野里(今天产品代码里都没有;能看见它们的是在网络隔离下跑的 CI job,本仓库还没有)。
 2. **符号链接边界收敛,出错即拒(fail-closed)。** `collect.withinDir` 与 `detect.inBoundary` 都会
    先解析符号链接再判断越界。skill *内部*文件不得指向 skill root 之外;skill 目录*本身*是符号链接
    属于合法的安装方式,但解析后必须落在 `$HOME` 之内(否则报 `SCOPE-001`)。解析失败一律拒绝。
