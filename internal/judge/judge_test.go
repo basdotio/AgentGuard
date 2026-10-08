@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/basdotio/AgentGuard/internal/model"
 	"github.com/basdotio/AgentGuard/internal/report"
@@ -369,5 +370,65 @@ func TestRun_BenignTriageStillGates(t *testing.T) {
 	}
 	if r.Artifacts[0].Score == 100 {
 		t.Error("iron law: the static high finding must still lower the score despite the benign label")
+	}
+}
+
+// TestClampSeverity_IgnoresCase: a model that answers "High" meant high. Case-sensitive
+// matching turned it into medium — a silent downgrade of the model's own claim.
+func TestClampSeverity_IgnoresCase(t *testing.T) {
+	cases := map[string]model.Severity{
+		"High": model.SevHigh, "CRITICAL": model.SevHigh, " low ": model.SevLow, "LOW": model.SevLow, "Medium": model.SevMedium,
+	}
+	for in, want := range cases {
+		if got := clampSeverity(in); got != want {
+			t.Errorf("clampSeverity(%q)=%s want %s", in, got, want)
+		}
+	}
+}
+
+// TestClampLabel_LeadingTokenDecides: a label is benign only when it LEADS with the exact token
+// likely-benign and never says likely-real. Substring matching read "likely-real, not benign" as
+// benign — the unsafe side, the opposite of what the function promises.
+func TestClampLabel_LeadingTokenDecides(t *testing.T) {
+	cases := map[string]string{
+		"likely-real, not benign":              model.LabelReal,
+		"not likely-benign":                    model.LabelReal,
+		"likely-benign or likely-real":         model.LabelReal,
+		"benign":                               model.LabelReal,
+		"Likely-Benign":                        model.LabelBenign,
+		"likely-benign: documentation example": model.LabelBenign,
+	}
+	for in, want := range cases {
+		if got := clampLabel(in); got != want {
+			t.Errorf("clampLabel(%q)=%s want %s", in, got, want)
+		}
+	}
+}
+
+// TestParseTriage_ReasonIsRedactedAndBounded: the reason is model output stored for display. It
+// goes through the same redaction as everything else the model hands back, and is capped on a
+// rune boundary, before it is stored — so JSON carries the bounded, redacted text too.
+func TestParseTriage_ReasonIsRedactedAndBounded(t *testing.T) {
+	const secret = "ghp_abcdefghijklmnopqrstuvwxyz0123456789"
+	reason := "doc example " + secret + " " + strings.Repeat("ü", 5000)
+	content, err := json.Marshal(map[string]any{"labels": []map[string]string{
+		{"rule_id": "EXEC-001", "label": "likely-benign", "reason": reason},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	labels := parseTriage(string(content))
+	if len(labels) != 1 || labels[0].RuleID != "EXEC-001" || labels[0].Label != model.LabelBenign {
+		t.Fatalf("labels = %+v, want one likely-benign EXEC-001", labels)
+	}
+	got := labels[0].Reason
+	if strings.Contains(got, secret) {
+		t.Errorf("triage reason kept a secret: %q", got)
+	}
+	if len(got) > reasonBound || !utf8.ValidString(got) {
+		t.Errorf("triage reason is %d bytes (valid UTF-8: %v), want at most %d", len(got), utf8.ValidString(got), reasonBound)
+	}
+	if !strings.HasPrefix(got, "doc example ") {
+		t.Errorf("triage reason lost its head: %q", got)
 	}
 }

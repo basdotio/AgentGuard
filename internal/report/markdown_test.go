@@ -116,6 +116,9 @@ func TestMarkdown_AttackerTextIsInert(t *testing.T) {
 	r.Artifacts[0].Name = "evil‮​"
 	r.Artifacts[0].Findings[0].Evidence[0].Snippet = payload
 	r.Artifacts[0].Findings[0].Evidence[0].File = "skills/evil/" + payload + ".sh"
+	// The judge's triage reason is model output too, and it can carry its own newlines.
+	r.Artifacts[0].Advisory = []model.AdvisoryLabel{{RuleID: "EXEC-001", Label: model.LabelBenign,
+		Reason: "doc example\n\n![x](http://evil.example/px.png) @octocat"}}
 	out := renderMD(t, r)
 
 	for _, bad := range []string{"‮", "​"} {
@@ -130,6 +133,21 @@ func TestMarkdown_AttackerTextIsInert(t *testing.T) {
 	for _, bad := range []string{"@octocat", "](", "<img", "onerror", "#4242", "``"} {
 		if strings.Contains(stripped, bad) {
 			t.Errorf("%q appears outside a code span:\n%s", bad, out)
+		}
+	}
+	// The same check line by line. A code span cannot cross a blank line, so a value that brought
+	// "\n\n" with it ends its span early and renders the rest as markdown — the triage reason above
+	// would be a tracking pixel in a PR comment. The whole-output regex cannot see that: it happily
+	// matches a "span" across the paragraph break.
+	if !strings.Contains(out, "evil.example/px.png") {
+		t.Fatalf("the triage reason was dropped rather than neutralised:\n%s", out)
+	}
+	for _, line := range strings.Split(out, "\n") {
+		bare := codeSpan.ReplaceAllString(line, "")
+		for _, bad := range []string{"@octocat", "](", "<img", "onerror"} {
+			if strings.Contains(bare, bad) {
+				t.Errorf("%q appears outside a code span on line %q", bad, line)
+			}
 		}
 	}
 	// Table shape: every row of the findings table has the same number of unescaped pipes.

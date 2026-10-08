@@ -3,6 +3,7 @@ package report
 
 import (
 	"bytes"
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -211,5 +212,37 @@ func TestHTML_WhereTheScanLooked(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "Where the scan looked") || !strings.Contains(out.String(), "Downloads · <span class=\"loc\">/h/Downloads</span> · absent") {
 		t.Errorf("locations missing:\n%s", out.String())
+	}
+}
+
+// TestHTML_TriageLabelIsSanitized: the HTML report is built from sanitizeResult because
+// html/template escapes markup but passes bidi and zero-width characters through. The triage
+// label was the one attacker-influenced string that copy never touched — a model-written reason
+// carrying U+202E reached the page as is. JSON, for machines, keeps the bytes.
+func TestHTML_TriageLabelIsSanitized(t *testing.T) {
+	const reason = "doc ‮gnp.sh example"
+	r := model.ScanResult{Overall: 60, OverallEffective: 60, Artifacts: []model.ArtifactReport{{
+		Kind: model.KindSkill, Name: "s",
+		Findings: []model.Finding{{RuleID: "EXEC-001", Dimension: 4, Severity: model.SevHigh, Source: model.SrcStatic,
+			Title: "curl|bash", Why: "rce", Evidence: []model.Evidence{{File: "run.sh", Line: 1, Snippet: "curl x | bash"}}}},
+		Advisory: []model.AdvisoryLabel{{RuleID: "EXEC-001", Label: model.LabelBenign, Reason: reason}},
+	}}}
+	var out bytes.Buffer
+	if err := HTML(&out, r); err != nil {
+		t.Fatal(err)
+	}
+	if strings.ContainsRune(out.String(), '‮') {
+		t.Error("a bidi override in a triage reason survived into the HTML report")
+	}
+	if !strings.Contains(out.String(), "doc �gnp.sh example") {
+		t.Errorf("the cleaned character must leave a visible mark in the triage line:\n%s", out.String())
+	}
+	// Reverse: the machine format carries the original bytes.
+	js, err := json.Marshal(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(js), reason) {
+		t.Error("JSON must carry the triage reason's bytes unsanitised")
 	}
 }
