@@ -68,7 +68,7 @@ func TestApproveRefusesWhatHasNoContentHash(t *testing.T) {
 		{
 			name:   "single file the scanner cannot open",
 			target: unreadableFile,
-			want:   []string{`instruction "notes.md" has no content hash`},
+			want:   []string{`instruction "notes.md" has no content hash`, "the scanner could not compute one"},
 		},
 	}
 	for _, tc := range cases {
