@@ -128,7 +128,7 @@ aguard version                                         # 版本 + 与已装插�
    **报告里只有包,没有解压目录**(`check x.zip` 同理,2026-10-08 P-016):解到私有临时目录里**以包文件名命名的子目录**(`…/x.zip/`,
    临时根先解析软链,里面只有这一个子目录)。于是 artifact 名 = 包文件名,证据路径 = 包内路径(与把同一棵树当目录查相同),
    root 形状的包以那个私有空目录为 home、不读共享 `$TMPDIR`;查完 `root`、artifact `path`、"Config root" 改写为包路径,
-   home 推出来的几处位置不列。同一个 zip 查两遍,SARIF / text / markdown 逐字节相同,JSON 只差 `scanned_at`;规范哈希仍是解出那棵树的
+   home 推出来的几处位置不列,引用了解压目录的 I/O 错误文本里那段路径换成包文件名(片段进指纹)。同一个 zip 查两遍,SARIF 与终端报告逐字节相同,markdown 与 JSON 只差扫描时间;规范哈希仍是解出那棵树的
    `TreeHash`,与目录名无关。
 
 默认目录不存在是无事(CI 没有 Downloads);显式 `--inbox` 不存在是错误,与 `--root` 打错同一条。常驻监控、通知、自动隔离**刻意没做**:常驻进程改变信任模型,macOS 会弹 Downloads 权限,通知的误报代价高,见 `direction.zh-CN.md` §4。
