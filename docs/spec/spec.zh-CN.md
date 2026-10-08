@@ -560,6 +560,7 @@ v1 写的 `internal/rules/` 从未存在:规则表就在 `detect/rules_data.go`,
 - **只有 `PreToolUse[Skill]` 能真的拦住东西**;插件自带的 hook、MCP server、远程 connector 从会话第一轮就是活的,没有加载事件。所以 `SessionStart` 那半必须在,且消息里**必须继续写着「这些没有被拦住」**,并且在没有告警时也发(最需要知道这句话的正是环境干净的人)。hook/MCP/permission 有了内容哈希(§8,P-009)之后,`SessionStart` 对其中**已批准**的同样跳过,配置或跟进的脚本改一个字节就重新列出;批准入口不变(`aguard approve`),没有新的写入路径。
 - **批准只能覆盖「给人看过的那份字节」**:`PreToolUse` 把判决按 `tool_use_id` 停在 pending,`PostToolUse` 重读目标、哈希一致才提升为批准。**pending 必须经过文件**(2026-10-08,P-007):每个 hook 事件是一个新进程,两次调用之间只共享 approvals 文件,所以 `LoadStore` 要把 pending 读回 —— 没有 id、没有哈希、无日期或日期在未来、超过一小时的行丢掉(过期规则与写入时的修剪是同一个函数)。此前 `LoadStore` 只读 approvals,弹窗里的同意从未被记下。
 - **有 medium 及以上确定性发现的放行不写批准**(2026-09-16,P-005):阈值决定拦不拦,记忆是另一个决定。只有零 medium 以上发现的内容记为 `clean`;否则每次加载重审并出声(带规则 ID,不带 snippet),直到内容干净或人用 `aguard approve` 显式接受(记为 `accepted-risk`)。low 仍记住。起因:四个专门为之写规则的恶意样本各以一条 medium 通过 high 阈值,并被永久记为已信任。
+- **没有内容哈希的东西批准不了,而且要说出来**(P-011):批准库拒收空 key(`Approved("")` 恒 false),所以 `aguard approve` 选中的最差 artifact 哈希为空(解析失败的配置、打不开的文件)时**拒绝**:点名 artifact 和原因,运行错误(退出码 2),不写批准库;不退到另一个有哈希的 artifact(那是批准一份判决没描述的内容)。以前它照样打印 `approved`,而什么都没存。
 - **`ask` 在会自动答应的权限模式下等于放行,所以升级成 `deny`**(`auto`/`acceptEdits`/`bypassPermissions`/`dontAsk`);不认识的模式不升级。
 - **本包 fail-open 且出声**,与工具其他部分相反:名字解析不了、扫描失败、超过 30s deadline,一律放行并出 `GATE-000`;一个 aguard 一有 bug 就让编辑器加载不了 skill 的闸门当天就会被卸掉。唯一反向例外:坏掉的 approvals 文件读成空。
 - **`hook install` 只合并不覆盖** settings.json,读不懂就报错;`uninstall` 删掉每一份自己的注册、只删自己的 inner 命令;备份两个槽位,`.aguard-bak` 是 aguard 碰之前的原始文件、永不覆盖,`.aguard-bak.prev` 存最近一次改动前的状态。
