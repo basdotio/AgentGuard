@@ -386,7 +386,7 @@ func TestEgress_RedactsBeforeItStripsTheHome(t *testing.T) {
 		},
 		"mcp": func() string {
 			p := writeFile(t, filepath.Join(t.TempDir(), ".claude.json"), `{"mcpServers":{"x":{"command":"`+line+`"}}}`)
-			text, _ := mcpExcerpt(p, "x", e)
+			text, _, _ := mcpExcerpt(p, "x", e)
 			return text
 		},
 		"triage file": func() string {

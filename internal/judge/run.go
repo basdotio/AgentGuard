@@ -135,6 +135,9 @@ type task struct {
 	// queued N times, and the votes are counted per group at merge time. Samples of a group
 	// are consecutive in the table, so counting them stays order-stable.
 	group int
+	// shortened says what this call's excerpt left out of the artifact, when that is a gap the
+	// operator must be told about rather than an ordinary cap (an MCP configuration cut to fit).
+	shortened string
 }
 
 // result is one task's outcome. `done` distinguishes "ran and produced nothing" from
@@ -240,6 +243,9 @@ func Run(ctx context.Context, c Client, arts []model.ArtifactReport, opts Option
 			opts.MaxCalls, over, artifactSpan(tasks[opts.MaxCalls:]))))
 		stats.Skipped = over
 		tasks = tasks[:opts.MaxCalls]
+	}
+	if n, ok := shortenedNote(tasks); ok {
+		notes = append(notes, n)
 	}
 	if len(tasks) == 0 {
 		return notes, stats
@@ -486,8 +492,9 @@ func planFor(i int, a model.ArtifactReport, eg egress) []task {
 		// Configuration only. What the server's TOOLS do is invisible without connecting to
 		// it, which this tool never does — the prompt says so, so a verdict cannot be read as
 		// a statement about the server's behavior.
-		if text, units := mcpExcerpt(a.Path, a.Name, eg); text != "" {
+		if text, units, shortened := mcpExcerpt(a.Path, a.Name, eg); text != "" {
 			ask(Request{Mode: ModeMCPConfig, Behavior: text}, units)
+			out[len(out)-1].shortened = shortened
 		}
 	}
 
@@ -764,6 +771,30 @@ func coverageNote(msg string) model.Finding {
 		Title:     "LLM judge: partial coverage",
 		Why:       msg,
 	}
+}
+
+// shortenedNote collapses every planned call whose excerpt had to leave part of its artifact out
+// into one LLM-000 (invariant #5: a gap in what the judge saw is never silent). Counted once per
+// question, not per sample, and only for calls that will be made — a call the budget refused is
+// already in that note.
+func shortenedNote(tasks []task) (model.Finding, bool) {
+	seen := map[int]bool{}
+	var parts []string
+	for _, t := range tasks {
+		if t.shortened == "" || t.kind != taskJudge || seen[t.group] {
+			continue
+		}
+		seen[t.group] = true
+		parts = append(parts, t.label+" ("+t.shortened+")")
+	}
+	if len(parts) == 0 {
+		return model.Finding{}, false
+	}
+	if len(parts) > 3 {
+		parts = append(parts[:3], fmt.Sprintf("and %d more", len(parts)-3))
+	}
+	return coverageNote("the judge saw a shortened MCP configuration for " + strings.Join(parts, "; ") +
+		". The static scan read every value; a configuration that does not fit has been padded or is unusually large."), true
 }
 
 // unquotedSuffix renders the failed quotes for LLM-005, or nothing when none were captured.
