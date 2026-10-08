@@ -224,6 +224,7 @@ func TestZeroDial_OnlyTheJudgeConnects(t *testing.T) {
 			_, err := scanEnv(fx.root, scanOpts{cfgPath: fx.on, quiet: true})
 			return err
 		}},
+		{"scan: the gate-liveness probe it appends", func() error { _ = gateLivenessNote(fx.root); return nil }},
 		{"scan, Downloads items (no --llm)", func() error {
 			_, err := scanInbox(fx.downloads, true, scanOpts{cfgPath: fx.on, quiet: true})
 			return err
