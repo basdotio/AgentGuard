@@ -5,7 +5,8 @@ paths:
 ---
 ## LLM judge(`internal/judge`,可选)
 
-必须同时满足 config `llm.enabled: true` **和** `--llm` 才会启用;`check`/`clean` 永不调用它。
+必须同时满足 config `llm.enabled: true` **和** `--llm` 才会启用;`scan` 和 `check` 都接受 `--llm`(`check` 自 P-004),
+`clean`、加载时闸门和 `aguard approve` 永不调用它。
 **配置和密钥(2026-09-04 改)**:不传 `--config` 时读 `$XDG_CONFIG_HOME/aguard/config.yaml`,否则
 `~/.config/aguard/config.yaml`(`config.LoadUser`;`config.Load` 保持纯函数给测试用)—— 放在扫描 root **之外**,
 放进 `~/.claude` 会被当成无人认领的散落文件每次披露。`provider` 可以是预设名(`config.Presets`,只填
