@@ -23,10 +23,13 @@ These counts are generated from the same tables the drift check reads, so if a c
 anywhere else in this repository disagrees with this line, that other count is stale.
 
 **Rules version `43f245966105`** — reports from this build carry it as `rules_version` (`--json`),
-and `aguard version` prints it. It hashes what decides a finding — each rule's ID, dimension,
-severity, flags and pattern, not the titles and explanations below — plus an epoch the
-maintainers bump when detection code outside this table changes. Two reports that disagree
-here were produced by different rules; two that agree were produced by the same rule table.
+and `aguard version` prints it. It covers deterministic detection only. It hashes what
+decides a finding — each rule's ID, dimension, severity, flags and pattern, not the titles
+and explanations below — plus an epoch the maintainers bump when deterministic detection
+code outside this table changes. The LLM entries (every `LLM-` ID, notes included) are
+outside `rules_version` entirely: the judge moves only `overall_effective`, and a report's
+`judge` summary says how it ran. Two reports that disagree here were produced by different
+rules; two that agree were produced by the same rule table.
 
 ## Contents
 

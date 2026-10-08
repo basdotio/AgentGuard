@@ -212,12 +212,17 @@ func main() {
 	// the header and not only in reports because the drift check then covers it: a pattern change
 	// that leaves every title alone still changes this line, so it cannot ship without `make docs`.
 	// The wording says only what the hash guarantees; internal/detect's rulesEpoch says what it cannot.
+	// The judge is outside it (spec §5.1): the version is for recomputing overall, which no LLM
+	// entry on this page can move, so the header has to say which side of the line they are on.
 	p("**Rules version `%s`** — reports from this build carry it as `rules_version` (`--json`),\n",
 		detect.RulesVersion())
-	p("and `aguard version` prints it. It hashes what decides a finding — each rule's ID, dimension,\n")
-	p("severity, flags and pattern, not the titles and explanations below — plus an epoch the\n")
-	p("maintainers bump when detection code outside this table changes. Two reports that disagree\n")
-	p("here were produced by different rules; two that agree were produced by the same rule table.\n\n")
+	p("and `aguard version` prints it. It covers deterministic detection only. It hashes what\n")
+	p("decides a finding — each rule's ID, dimension, severity, flags and pattern, not the titles\n")
+	p("and explanations below — plus an epoch the maintainers bump when deterministic detection\n")
+	p("code outside this table changes. The LLM entries (every `LLM-` ID, notes included) are\n")
+	p("outside `rules_version` entirely: the judge moves only `overall_effective`, and a report's\n")
+	p("`judge` summary says how it ran. Two reports that disagree here were produced by different\n")
+	p("rules; two that agree were produced by the same rule table.\n\n")
 
 	byDim := map[int][]entry{}
 	for _, r := range rules {

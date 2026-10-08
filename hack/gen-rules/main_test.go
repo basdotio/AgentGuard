@@ -125,6 +125,37 @@ func TestRulesDocHeaderCarriesRulesVersion(t *testing.T) {
 	}
 }
 
+// rulesDocHeader is the committed docs/rules.md up to its table of contents, whitespace-folded so
+// a phrase can be asserted however the generator wraps it.
+func rulesDocHeader(t *testing.T) string {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join(repoRoot(t), "docs", "rules.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	head, _, ok := strings.Cut(string(b), "## Contents")
+	if !ok {
+		t.Fatal("docs/rules.md has no `## Contents` heading, so the header has no end to cut at")
+	}
+	return strings.Join(strings.Fields(head), " ")
+}
+
+// TestRulesDocHeaderPutsTheJudgeOutsideRulesVersion: the rules version covers deterministic
+// detection only, and this page lists the LLM entries next to the engine rules, so the header has
+// to say which side of that line they are on. A reader who took LLM-001 to be covered would read
+// two equal versions as "the judge was the same", which nothing in the hash supports.
+func TestRulesDocHeaderPutsTheJudgeOutsideRulesVersion(t *testing.T) {
+	h := rulesDocHeader(t)
+	for _, want := range []string{
+		"It covers deterministic detection only.",
+		"The LLM entries (every `LLM-` ID, notes included) are outside `rules_version` entirely",
+	} {
+		if !strings.Contains(h, want) {
+			t.Errorf("docs/rules.md header does not say %q — fix hack/gen-rules, then run `make docs`", want)
+		}
+	}
+}
+
 func dedupe(in []string) []string {
 	seen := map[string]bool{}
 	var out []string

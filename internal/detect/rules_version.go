@@ -13,18 +13,24 @@ import (
 
 // rulesEpoch is the part of the rules version that the rule table cannot see for itself (spec §5.1).
 //
-// RulesVersion hashes builtinRules(), but a good share of what decides a finding lives outside
-// that table: the structural and shape checks (the exfiltration chain, hooks, SUP-004/005/006,
+// The rules version covers DETERMINISTIC detection only: the findings overall is computed from,
+// so that a report's overall can be recomputed against the rules that produced it. RulesVersion
+// hashes builtinRules(), but a good share of deterministic detection lives outside that table:
+// the structural and shape checks (the exfiltration chain, hooks, SUP-004/005/006,
 // OBF-004/006/007), the role gate (roleAllows, roleForPath), the lexical layer (logical.go),
 // comment handling, which files the reader opens, the credential-import check in
-// internal/collect (EXFIL-005), internal/permcheck, and the judge's rule mapping
-// (clampSeverity, the fixed LLM-007 severity).
+// internal/collect (EXFIL-005), and internal/permcheck.
+//
+// The LLM judge is outside the rules version, and so outside this epoch: nothing in
+// internal/judge — prompts, grounding, consensus, severity clamping — is covered, and changing it
+// does not bump this. The judge moves only overall_effective, and how it ran is told by the
+// report's judge summary and the llm config, not by this value.
 //
 // BUMP IT, in the same commit, whenever a change outside builtinRules() alters — for some input —
-// which findings are produced, or a finding's rule ID, dimension, severity or advisory flag.
-// Do NOT bump it for titles, explanations, evidence formatting or score weights: those do not
-// decide a finding, and a version that moves without the rules moving says "the rules changed"
-// when they did not.
+// which deterministic findings are produced, or a finding's rule ID, dimension, severity or
+// advisory flag. Do NOT bump it for titles, explanations, evidence formatting or score weights:
+// those do not decide a finding, and a version that moves without the rules moving says "the
+// rules changed" when they did not.
 //
 // Nothing enforces this mechanically. Hashing the source would move on every comment edit, which
 // is the false alarm this value exists to avoid; the cost is that a forgotten bump lets two
@@ -44,7 +50,8 @@ var rulesVersionOnce = sync.OnceValue(func() string { return rulesVersion(builti
 // and what the docs/rules.md header carries.
 //
 // Two values that differ mean the rules changed. Two values that agree mean the rule table is the
-// same; the detection code around it is the same only as far as rulesEpoch has been kept.
+// same; the deterministic detection code around it is the same only as far as rulesEpoch has been
+// kept, and the judge is not covered at all.
 func RulesVersion() string { return rulesVersionOnce() }
 
 // rulesVersion is RulesVersion over an arbitrary table, so tests can mutate one.
