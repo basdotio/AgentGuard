@@ -222,7 +222,11 @@ everything on your machine. That trade-off is yours.
 | `LLM-009` | MCP server configuration risk — source, pinning, transport, credentials (dim 5). **Advisory only**: shown with the model's severity, never escalates, whatever the vote. Unpinned `npx -y` packages holding a token are what real configs look like — measured on 500 benign configs it was the only judge rule to flag benign input (P-019). |
 
 Triage labels (`likely-real` / `likely-benign`) render inline under the matching finding as
-`⚖ triage (LLM, advisory)`; they are display-only.
+`⚖ triage (LLM, advisory)`; they are display-only. A label counts as `likely-benign` only when
+it starts with exactly that word and never says `likely-real`; anything else reads as
+`likely-real`. The reason is redacted and capped at 256 bytes, and the human-read reports
+sanitize it like any other attacker-influenced text. In SARIF, a judge rule is described by the
+tool's own definition, never by one finding's reason.
 
 ## Evidence grounding (why a finding can disappear)
 
@@ -231,7 +235,11 @@ can tell it from a real one. So every flagged verdict must **quote** what trigge
 that quote is checked against the text the model was actually sent:
 
 - **Found** → the finding is kept and gains a real `file:line` (it used to say line 0, i.e.
-  "somewhere in this artifact — go look yourself").
+  "somewhere in this artifact — go look yourself"). What the report shows as its evidence is
+  **the line it landed on, as it was sent** (redacted, at most 512 bytes) — not the model's quote.
+  A quote that fails as a whole is retried line by line and the first line that lands is the
+  citation; the rest of what the model wrote is not shown, so a real line cannot vouch for
+  invented ones beside it.
 - **Not found** → the finding is **discarded**, and the count surfaces as `LLM-005`. A silent
   drop would make a paraphrasing model look like a clean environment.
 
@@ -239,7 +247,9 @@ Matching ignores whitespace and case — models reflow and re-case freely, and n
 what a line says — but nothing beyond that: a paraphrase does not match, which is the point.
 The comparison is against the **redacted** text that left the machine, never the file on disk;
 re-reading the original would put unredacted content back in play after the single redaction
-chokepoint.
+chokepoint. The excerpt's own "N line(s) omitted" marker is in that text but in no file, so a
+quote of it does not ground. The model's reason (`why`) is redacted and capped at 512 bytes
+before the consensus vote is appended; a blank one is replaced by the rule's own definition.
 
 This is an accuracy filter, not authority: a grounded finding is still `Source=llm`, still
 advisory, still excluded from the score and from `--fail-on`.
