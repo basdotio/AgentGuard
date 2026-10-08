@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"unicode/utf8"
 
@@ -129,6 +130,10 @@ func condense(path, text string, stripComments bool) (string, []int) {
 	return strings.Join(out, "\n"), lm
 }
 
+// omittedLinesMarker is the line an excerpt carries where it left lines out, so the model is told
+// the text it sees is not the whole file (capHeadTail) or the whole configuration (mcpExcerpt).
+const omittedLinesMarker = "# … %d line(s) omitted …"
+
 // capHeadTail bounds text to max bytes by keeping the first two-thirds of the budget from the
 // head and the last third from the tail, with a marker between. A cap that keeps only a prefix
 // has a known blind spot — the end of the file — and the end of the file is where `head`, an
@@ -145,9 +150,8 @@ func capHeadTail(text string, lm []int, max int) (string, []int) {
 			lm[i] = i + 1
 		}
 	}
-	marker := "# … %d line(s) omitted …"
 	headBudget := max * 2 / 3
-	tailBudget := max - headBudget - len(marker) - 8
+	tailBudget := max - headBudget - len(omittedLinesMarker) - 8
 	i, used := 0, 0
 	for ; i < len(lines) && used+len(lines[i])+1 <= headBudget; i++ {
 		used += len(lines[i]) + 1
@@ -169,7 +173,7 @@ func capHeadTail(text string, lm []int, max int) (string, []int) {
 	out = append(out, lines[:i]...)
 	outLM = append(outLM, lm[:i]...)
 	if j > i {
-		out = append(out, fmt.Sprintf(marker, j-i))
+		out = append(out, fmt.Sprintf(omittedLinesMarker, j-i))
 		outLM = append(outLM, lm[i])
 	}
 	out = append(out, lines[j:]...)
@@ -205,26 +209,99 @@ func hookExcerpt(file string, h model.Hook, eg egress) (declared, behavior strin
 	}}
 }
 
-// mcpExcerpt returns an MCP server's configuration as sorted `key=value` lines — the SAME string
-// leaves the static engine scans (detect.ConfigLines), keyed and ordered. It used to be the bare
+// mcpExcerpt returns an MCP server's configuration as `key=value` lines — the SAME string leaves
+// the static engine scans (detect.ConfigLines), keyed and in a fixed order. It used to be the bare
 // values in Go's map order: keyless, `{"DB_PASS":"hunter2"}` went out as `hunter2`, which no
 // keyed redaction can recognise, and the same config gave a different request body each run.
 //
-// A value whose key names a credential is not sent at all (maskCredentialValue), before the
-// whole text goes through Redact as usual.
-func mcpExcerpt(path, name string, eg egress) (string, []sourceUnit) {
+// What the server runs and where it connects comes first (mcpLeadKeys), then every other key in
+// sorted order; each line is capped at maxConfigLineBytes; lines go in while they fit the excerpt
+// budget, and the rest are counted in a marker line. Sorted alone, with a cap on the head of the
+// whole text, one padded key that sorts first ("aaa": 6 KB) kept command and env out of the
+// excerpt on every run. Each line is masked (maskCredentialValue), redacted and scrubbed BEFORE it
+// is capped, so a cap can split neither a secret nor the home.
+//
+// shortened says what was left out, empty when nothing was: the caller discloses it (LLM-000),
+// since a real configuration fits and one that does not has been shaped.
+func mcpExcerpt(path, name string, eg egress) (text string, units []sourceUnit, shortened string) {
 	lines := detect.ConfigLines(path, "mcpServers", name)
 	if len(lines) == 0 {
-		return "", nil
+		return "", nil, ""
 	}
-	masked := make([]string, len(lines))
+	lines = mcpLeadFirst(lines)
+	budget := maxExcerptBytes - len(omittedLinesMarker) - 8
+	out := make([]string, 0, len(lines))
+	used, capped, dropped := 0, 0, 0
 	for i, l := range lines {
-		masked[i] = maskCredentialValue(l)
+		l = eg.redact(maskCredentialValue(l))
+		if c := capLine(l, maxConfigLineBytes); c != l {
+			l = c
+			capped++
+		}
+		if used+len(l)+1 > budget {
+			dropped = len(lines) - i
+			out = append(out, fmt.Sprintf(omittedLinesMarker, dropped))
+			break
+		}
+		out = append(out, l)
+		used += len(l) + 1
 	}
-	text := boundedRedact(strings.Join(masked, "\n"), maxExcerptBytes, eg)
+	text = strings.Join(out, "\n")
+	var cut []string
+	if capped > 0 {
+		cut = append(cut, fmt.Sprintf("%d value(s) cut to %d bytes", capped, maxConfigLineBytes))
+	}
+	if dropped > 0 {
+		cut = append(cut, fmt.Sprintf("%d line(s) past the %d-byte excerpt not sent", dropped, maxExcerptBytes))
+	}
 	return text, []sourceUnit{{
 		file: detect.Redact(filepath.Base(path)), text: text, firstLine: 0, collapsed: true,
-	}}
+	}}, strings.Join(cut, ", ")
+}
+
+// maxConfigLineBytes caps one `key=value` line of the MCP excerpt — a value or a key — so no single
+// setting can spend the excerpt's budget. Real values (a command, an argument, a URL, an env var)
+// are far shorter.
+const maxConfigLineBytes = 500
+
+// mcpLeadKeys are the top-level settings that say what an MCP server runs and where it connects,
+// sent first and in this order. command, args and url are a string or a list of strings, so their
+// lines carry exactly the key; env and headers are objects, whose lines read `env.NAME`. A
+// top-level key that merely starts with one of these (`command.x`) ranks with the rest: matching
+// it as a lead key would let padding under such names take the lead keys' place.
+var mcpLeadKeys = []struct {
+	key    string
+	object bool
+}{{"command", false}, {"args", false}, {"env", true}, {"url", false}, {"headers", true}}
+
+// mcpLeadFirst orders ConfigLines output: lead keys first, in mcpLeadKeys order, then the rest.
+// Stable, so within a rank the lines keep ConfigLines' sorted order — and since "env" sorts before
+// "env.<anything>", the real env object's lines come before any top-level key named like them.
+func mcpLeadFirst(lines []string) []string {
+	rank := func(line string) int {
+		key, _, _ := strings.Cut(line, "=")
+		for i, k := range mcpLeadKeys {
+			if key == k.key || k.object && strings.HasPrefix(key, k.key+".") {
+				return i
+			}
+		}
+		return len(mcpLeadKeys)
+	}
+	out := append([]string(nil), lines...)
+	sort.SliceStable(out, func(i, j int) bool { return rank(out[i]) < rank(out[j]) })
+	return out
+}
+
+// capLine cuts s to at most max bytes on a character boundary and says how much it left out.
+func capLine(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	cut := max
+	for cut > 0 && !utf8.RuneStart(s[cut]) {
+		cut--
+	}
+	return s[:cut] + fmt.Sprintf(" … (%d bytes omitted)", len(s)-cut)
 }
 
 // credentialKeyRE and credentialSegmentRE recognise a configuration key that names a credential.

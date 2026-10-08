@@ -2,6 +2,7 @@
 package judge
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -362,6 +363,92 @@ func TestPlan_MCPExcerptIsKeyedAndByteStable(t *testing.T) {
 	}
 	if strings.Contains(first, "hunter2") {
 		t.Errorf("the password under DB_PASS reached the prompt:\n%s", first)
+	}
+}
+
+// paddedMCPConfig is an MCP entry whose first key in sorted order carries 6 KB — the whole excerpt
+// budget — ahead of what the server runs. The padding has no digits, so Redact leaves it alone and
+// only the excerpt's own shape decides what survives.
+func paddedMCPConfig(t *testing.T) string {
+	return writeFile(t, filepath.Join(t.TempDir(), ".claude.json"),
+		`{"mcpServers":{"x":{"aaa":"`+strings.Repeat("pad ", 1500)+`","command":"node","args":["server.js"],`+
+			`"env":{"NODE_OPTIONS":"--require /tmp/preload.js"},"url":"https://mcp.example.com","headers":{"X-Trace":"on"},"zzz":"last"}}}`)
+}
+
+// TestPlan_MCPExcerptLeadsWithWhatTheServerRuns: sorted keys and a head-only cap let a padded key
+// that sorts first ("aaa": 6 KB) push command and env out of the excerpt on every run. What the
+// server runs and where it connects goes first, in a fixed order, then the rest sorted; and no one
+// line may spend more than 500 bytes, cut on a character boundary and marked.
+func TestPlan_MCPExcerptLeadsWithWhatTheServerRuns(t *testing.T) {
+	art := model.ArtifactReport{Kind: model.KindMCP, Name: "x", Path: paddedMCPConfig(t)}
+	modes, _ := modesFor(art)
+	got := modes[ModeMCPConfig].Behavior
+	order := []string{"command=node", "args=server.js", "env.NODE_OPTIONS=--require /tmp/preload.js",
+		"url=https://mcp.example.com", "headers.X-Trace=on", "aaa=pad", "zzz=last"}
+	at := -1
+	for _, want := range order {
+		i := strings.Index(got, want)
+		if i < 0 {
+			t.Errorf("MCP excerpt is missing %q", want)
+			continue
+		}
+		if i < at {
+			t.Errorf("%q is out of order: want command, args, env, url, headers, then the rest sorted", want)
+		}
+		at = i
+	}
+	if len(got) > maxExcerptBytes {
+		t.Errorf("MCP excerpt is %d bytes, over the %d-byte budget", len(got), maxExcerptBytes)
+	}
+	for _, l := range strings.Split(got, "\n") {
+		if len(l) > maxConfigLineBytes+len(" … (99999 bytes omitted)") || !utf8.ValidString(l) {
+			t.Errorf("a %d-byte line (valid UTF-8: %v) — no line may spend more than %d bytes", len(l), utf8.ValidString(l), maxConfigLineBytes)
+		}
+	}
+	if !strings.Contains(got, "bytes omitted)") {
+		t.Errorf("the padded value should be cut with a marker saying so:\n%.300s", got)
+	}
+
+	// Many padded keys that sort first: each is capped, so they can only fill the budget, and what
+	// the server runs is already in. Whatever is left out is marked in the text.
+	var keys strings.Builder
+	for i := 0; i < 30; i++ {
+		keys.WriteString(`"a` + string(rune('a'+i%26)) + string(rune('a'+i/26)) + `":"` + strings.Repeat("pad ", 200) + `",`)
+	}
+	cfg := writeFile(t, filepath.Join(t.TempDir(), ".claude.json"),
+		`{"mcpServers":{"x":{`+keys.String()+`"command":"node","env":{"NODE_OPTIONS":"--require /tmp/preload.js"}}}}`)
+	modes, _ = modesFor(model.ArtifactReport{Kind: model.KindMCP, Name: "x", Path: cfg})
+	got = modes[ModeMCPConfig].Behavior
+	if !strings.Contains(got, "command=node") || !strings.Contains(got, "env.NODE_OPTIONS=--require /tmp/preload.js") {
+		t.Errorf("thirty padded keys pushed what the server runs out of the excerpt:\n%.400s", got)
+	}
+	if !strings.Contains(got, "line(s) omitted") || len(got) > maxExcerptBytes {
+		t.Errorf("an excerpt cut to the budget must say how many lines it left out and stay within %d bytes (got %d)", maxExcerptBytes, len(got))
+	}
+}
+
+// TestRun_ShortenedMCPExcerptIsDisclosed: an MCP excerpt that had to be cut is a gap in what the
+// judge saw, so it is reported as an LLM-000 like every other judge shortfall (invariant #5). The
+// reverse half matters as much: a real configuration fits, and a note on every scan would teach the
+// reader to skip it.
+func TestRun_ShortenedMCPExcerptIsDisclosed(t *testing.T) {
+	notes, _ := Run(context.Background(), &fakeClient{},
+		[]model.ArtifactReport{{Kind: model.KindMCP, Name: "x", Path: paddedMCPConfig(t)}}, Options{})
+	found := false
+	for _, n := range notes {
+		if n.RuleID == "LLM-000" && n.Dimension == 0 && strings.Contains(n.Why, "mcp:x") && strings.Contains(n.Why, "500") {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("a shortened MCP excerpt must be disclosed as an LLM-000 naming the server, got %+v", notes)
+	}
+
+	plain := writeFile(t, filepath.Join(t.TempDir(), ".claude.json"),
+		`{"mcpServers":{"db":{"command":"npx","args":["-y","@acme/db-mcp@1.2.3"],"env":{"LOG_LEVEL":"debug"}}}}`)
+	if notes, _ := Run(context.Background(), &fakeClient{},
+		[]model.ArtifactReport{{Kind: model.KindMCP, Name: "db", Path: plain}}, Options{}); len(notes) != 0 {
+		t.Errorf("an MCP config that fits must not produce a note, got %+v", notes)
 	}
 }
 
