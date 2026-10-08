@@ -109,7 +109,8 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
   是最私人的目录,理由和不读 `sessions/` 同一条;**深度检查只跑候选**(2026-09-08 起,`--llm` 时由 `analyze()` 顺路跑,`checkCandidate`
   不要再调一次 `runJudge`——第一版就是这么付了双份钱),候选是已经被读过打过分的东西,其余文件不进判官;(3) zip 先看索引再决定要不要解,解到 0700 的临时
   目录、单文件 1 MiB、总量 64 MiB、条目 2000 上限,任何带 `..` 段或绝对路径的条目一律拒(不清洗)、软链/特殊文件不重建、
-  按实际写入的字节而不是索引声明的大小计数(zip 炸弹撒谎的正是索引),查完删干净。默认目录不存在是**无事**(CI 没有
+  按实际写入的字节而不是索引声明的大小计数(zip 炸弹撒谎的正是索引),查完删干净;解到私有临时目录里以包文件名命名的子目录,
+  查完经 `archiveView` 把路径改写成包——**报告里不许出现解压目录**,它的随机名曾让同一个 zip 每次的 SARIF 指纹都不同(P-016)。默认目录不存在是**无事**(CI 没有
   Downloads),显式 `--inbox` 不存在是错误,和 `--root` 打错同一条。常驻监控和自动隔离是刻意没做的下一步,见 ROADMAP。
 - **`synced/` 在沙箱里比在网页深一层,采集器要能穿过 uuid。** `skills/synced/<name>/SKILL.md` 是 claude.ai 网页启用的 skill
   (深一层);Cowork/云端沙箱把整个账号的 skill 按会话 uuid 分组,变成 `skills/synced/<uuid>/<name>/SKILL.md`(再深一层),插件
