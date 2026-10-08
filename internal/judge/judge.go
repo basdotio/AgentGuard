@@ -120,9 +120,10 @@ type Client interface {
 
 // clampSeverity maps a model-reported severity to a safe advisory level. Unknown →
 // medium; anything the model calls "critical" is capped to high, because an LLM guess
-// must never present as a confirmed critical.
+// must never present as a confirmed critical. Case and surrounding space carry no meaning:
+// "High" is the model saying high, and reading it as unknown silently lowered its claim.
 func clampSeverity(s string) model.Severity {
-	switch s {
+	switch strings.ToLower(strings.TrimSpace(s)) {
 	case "low":
 		return model.SevLow
 	case "high", "critical":
