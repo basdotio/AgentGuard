@@ -247,6 +247,9 @@ func TestCollectPlugins_BundledMCPServersAreCounted(t *testing.T) {
 	if len(mcp) != 1 || mcp[0].Name != "figma (plugin figma@mkt)" {
 		t.Fatalf("plugin-bundled MCP servers = %+v, want one named \"figma (plugin figma@mkt)\"", mcp)
 	}
+	if mcp[0].MCPServer != "figma" {
+		t.Errorf("MCPServer = %q, want the bare key \"figma\": the name carries a suffix the config does not", mcp[0].MCPServer)
+	}
 	if res.Env.MCPServers != 1 {
 		t.Errorf("env.mcp_servers = %d, want 1 — the count operators reason from must include plugin servers", res.Env.MCPServers)
 	}
