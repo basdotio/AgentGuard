@@ -122,7 +122,9 @@ func TestEgress_LeavesWhatIsNotTheHome(t *testing.T) {
 // `<username>/.claude.json`. That exact structural prefix — and only in a file position — is
 // rewritten; the same string inside text is left alone.
 func TestEgress_FileRewritesOnlyTheTwoSegmentFallback(t *testing.T) {
-	home, _ := symlinkedHome(t)
+	// A digit-free home, as real ones are: a file position is redacted before it is scrubbed, and
+	// a TempDir home has no byte outside the entropy class, so Redact takes it whole.
+	const home = "/Users/alicemarker"
 	e := newEgress(home)
 	cases := []struct{ in, want string }{
 		{"alicemarker/.claude.json", "~/.claude.json"},
@@ -139,6 +141,12 @@ func TestEgress_FileRewritesOnlyTheTwoSegmentFallback(t *testing.T) {
 	}
 	if got := e.scrub("alicemarker/.claude.json"); got != "alicemarker/.claude.json" {
 		t.Errorf("the fallback rewrite belongs to file positions only, scrub gave %q", got)
+	}
+	// The TempDir spelling: Redact takes the whole digit-bearing home and its trailing '/', leaving
+	// no fragment to complete — the path loses its `~`, and still names nobody.
+	tmp, _ := symlinkedHome(t)
+	if got := newEgress(tmp).file(tmp + "/.claude/CLAUDE.md"); strings.Contains(got, "alicemarker") || !strings.HasSuffix(got, ".claude/CLAUDE.md") {
+		t.Errorf("file(%q) = %q", tmp+"/.claude/CLAUDE.md", got)
 	}
 }
 
@@ -296,6 +304,61 @@ func TestRun_ScanHomeInsideTheUserHomeKeepsItsPlace(t *testing.T) {
 	}
 	if !strings.Contains(got, "~/notes/a.md") {
 		t.Errorf("a path in the user's home outside the config dir should go as ~/…:\n%s", got)
+	}
+}
+
+// TestEgress_RedactsBeforeItStripsTheHome pins the order. Redact's entropy rule decides on the
+// length of a run, and a home is part of the run it sits in: `/Users/alicemarker/<19 chars>` is
+// long enough to be redacted, `~/<19 chars>` leaves a 20-byte run under the 24-byte floor. Scrubbing
+// first made the judge's view of a line LESS redacted than the report's. Every builder that takes
+// artifact text is checked, and the file position triage sends.
+func TestEgress_RedactsBeforeItStripsTheHome(t *testing.T) {
+	const home = "/Users/alicemarker"
+	const token = "Xk9mQ2vL8pR4tZ7wB3n" // 19 bytes: under the floor alone, over it with the home in front
+	line := "cat " + home + "/" + token
+	if red := detect.Redact(line); strings.Contains(red, token) {
+		t.Fatalf("precondition: the static view redacts the token, got %q", red)
+	}
+	if red := detect.Redact("cat ~/" + token); !strings.Contains(red, token) {
+		t.Fatalf("precondition: with the home already gone the run is under the floor, got %q", red)
+	}
+	e := newEgress(home)
+	builders := map[string]func() string{
+		"redact":   func() string { return e.redact(line) },
+		"declared": func() string { return declaredPurpose(line, e) },
+		"hook": func() string {
+			_, b, _ := hookExcerpt("settings.json", model.Hook{Event: "PostToolUse", Command: line}, e)
+			return b
+		},
+		"instruction file": func() string {
+			text, _ := singleFileExcerpt(writeFile(t, filepath.Join(t.TempDir(), "CLAUDE.md"), line+"\n"), e)
+			return text
+		},
+		"skill tree": func() string {
+			dir := t.TempDir()
+			writeFile(t, filepath.Join(dir, "run.sh"), line+"\n")
+			text, _ := behaviorExcerpt(dir, e)
+			return text
+		},
+		"mcp": func() string {
+			p := writeFile(t, filepath.Join(t.TempDir(), ".claude.json"), `{"mcpServers":{"x":{"command":"`+line+`"}}}`)
+			text, _ := mcpExcerpt(p, "x", e)
+			return text
+		},
+		"triage file": func() string {
+			items := triageItems([]model.Finding{{RuleID: "EXEC-001", Dimension: 4,
+				Evidence: []model.Evidence{{File: home + "/" + token + ".sh", Line: 3, Snippet: "sh x"}}}}, e)
+			return items[0].Evidence
+		},
+	}
+	for name, build := range builders {
+		got := build()
+		if got == "" {
+			t.Errorf("%s: built nothing", name)
+		}
+		if strings.Contains(got, token) || strings.Contains(got, "alicemarker") {
+			t.Errorf("%s: %q reached the judge", name, got)
+		}
 	}
 }
 

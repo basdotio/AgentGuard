@@ -396,7 +396,7 @@ func buildTasks(arts []model.ArtifactReport, samples int, eg egress) []task {
 //   - The expensive whole-tree passes (intent, collusion) ARE gated on a static signal, which
 //     is a reasonable prior once a call costs real money.
 //
-// Every piece of artifact text below goes through eg.redact (scrub the home, then Redact) as it
+// Every piece of artifact text below goes through eg.redact (Redact, then strip the home) as it
 // is turned into a request and its units, so the two hold the same bytes. The label is not sent:
 // it names the artifact in the report and in LLM-000/LLM-005 notes, never in a request body.
 func planFor(i int, a model.ArtifactReport, eg egress) []task {
