@@ -10,7 +10,40 @@ import (
 	"testing"
 
 	"github.com/basdotio/AgentGuard/internal/detect"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
+
+// TestEveryJudgeRuleHasADefinition: SARIF describes a judge rule (Source=llm) with the tool's own
+// definition, model.JudgeRuleText, and a judge rule without one is described by nothing — never
+// by a finding's Why, which is one model's sentence about one artifact. Which ids are judge rules
+// is read from this generator's own llm and notes tables, not listed: TestEveryRuleIDIsDocumented
+// already forces every id the code can emit into those tables, so the chain is closed — a new
+// judge rule cannot reach Code Scanning without help text because a hand-kept list in a report
+// test was not updated.
+//
+// The two texts are separate copies for different readers (this table writes the reference, the
+// model table the one-sentence SARIF help); merging them is a recorded follow-up (P-006).
+func TestEveryJudgeRuleHasADefinition(t *testing.T) {
+	ids := make([]string, 0, len(llm)+len(notes))
+	for _, e := range llm {
+		ids = append(ids, e.id)
+	}
+	judgeNotes := 0
+	for _, e := range notes {
+		if strings.HasPrefix(e.id, "LLM-") {
+			ids = append(ids, e.id)
+			judgeNotes++
+		}
+	}
+	if len(llm) == 0 || judgeNotes == 0 {
+		t.Fatalf("found %d judge rules and %d judge notes — the tables moved, not the definitions", len(llm), judgeNotes)
+	}
+	for _, id := range ids {
+		if model.JudgeRuleText(id) == "" {
+			t.Errorf("judge rule %s is in the reference but has no model.JudgeRuleText entry, so SARIF would describe it with nothing", id)
+		}
+	}
+}
 
 // idLiteral matches a rule-ID string literal as the code writes it: "EXEC-001", "COV-000".
 var idLiteral = regexp.MustCompile(`"([A-Z]{2,10}-[0-9]{3})"`)

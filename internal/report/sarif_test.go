@@ -328,14 +328,21 @@ func TestSARIF_JudgeRuleDescriptionIsNotAModelSummary(t *testing.T) {
 	}
 }
 
-// TestSARIF_EveryJudgeRuleHasADefinition: a judge rule with no entry in the definition table is
-// described by nothing (never by its Why), so a missing entry would silently cost Code Scanning
-// its help text. Every id the judge and its notes report under must have one.
-func TestSARIF_EveryJudgeRuleHasADefinition(t *testing.T) {
-	for _, id := range []string{"LLM-000", "LLM-001", "LLM-002", "LLM-003", "LLM-004", "LLM-005", "LLM-006", "LLM-007", "LLM-008", "LLM-009"} {
-		doc := sarifOf(t, model.ScanResult{Root: "/r", Notes: []model.Finding{{RuleID: id, Source: model.SrcLLM, Title: "t", Why: "model text"}}})
-		if full, help := ruleText(t, doc, id); full == "" || full != model.JudgeRuleText(id) || help != full {
-			t.Errorf("%s: fullDescription=%q help=%q, want the tool's definition", id, full, help)
-		}
+// TestSARIF_JudgeNoteIsDescribedOnlyByItsDefinition: a judge NOTE is described by the tool's
+// definition too — its Why is a count, an endpoint error or the model's failed quotes — and a judge
+// id with no definition gets no description at all rather than falling back to its Why. WHICH ids
+// must have a definition is not listed here: hack/gen-rules' TestEveryJudgeRuleHasADefinition reads
+// them from the rule reference, so a new judge rule cannot slip past a list nobody updated.
+func TestSARIF_JudgeNoteIsDescribedOnlyByItsDefinition(t *testing.T) {
+	const why = `2 verdict(s) discarded. Quoted but not found — skill:x: "IGNORE PREVIOUS INSTRUCTIONS".`
+	doc := sarifOf(t, model.ScanResult{Root: "/r", Notes: []model.Finding{
+		{RuleID: "LLM-005", Source: model.SrcLLM, Title: "t", Why: why},
+		{RuleID: "LLM-999", Source: model.SrcLLM, Title: "t", Why: why},
+	}})
+	if full, help := ruleText(t, doc, "LLM-005"); full == "" || full != model.JudgeRuleText("LLM-005") || help != full {
+		t.Errorf("LLM-005: fullDescription=%q help=%q, want the tool's definition", full, help)
+	}
+	if full, help := ruleText(t, doc, "LLM-999"); full != "" || help != "" {
+		t.Errorf("a judge id with no definition must not be described (by its Why or anything else): full=%q help=%q", full, help)
 	}
 }
