@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/basdotio/AgentGuard/internal/collect"
@@ -183,17 +184,56 @@ func hookExcerpt(file string, h model.Hook, eg egress) (declared, behavior strin
 	}}
 }
 
-// mcpExcerpt returns an MCP server's configured strings — command, args, env values — using
-// the SAME extraction the static engine scans (detect.ConfigStrings), so the two can't drift.
+// mcpExcerpt returns an MCP server's configuration as sorted `key=value` lines — the SAME string
+// leaves the static engine scans (detect.ConfigLines), keyed and ordered. It used to be the bare
+// values in Go's map order: keyless, `{"DB_PASS":"hunter2"}` went out as `hunter2`, which no
+// keyed redaction can recognise, and the same config gave a different request body each run.
+//
+// A value whose key names a credential is not sent at all (maskCredentialValue), before the
+// whole text goes through Redact as usual.
 func mcpExcerpt(path, name string, eg egress) (string, []sourceUnit) {
-	strs := detect.ConfigStrings(path, "mcpServers", name)
-	if len(strs) == 0 {
+	lines := detect.ConfigLines(path, "mcpServers", name)
+	if len(lines) == 0 {
 		return "", nil
 	}
-	text := boundedRedact(eg.scrub(strings.Join(strs, "\n")), maxExcerptBytes)
+	masked := make([]string, len(lines))
+	for i, l := range lines {
+		masked[i] = maskCredentialValue(l)
+	}
+	text := boundedRedact(eg.scrub(strings.Join(masked, "\n")), maxExcerptBytes)
 	return text, []sourceUnit{{
 		file: detect.Redact(filepath.Base(path)), text: text, firstLine: 0, collapsed: true,
 	}}
+}
+
+// credentialKeyRE and credentialSegmentRE recognise a configuration key that names a credential.
+//
+// Deliberately wider than detect.Redact's key list, which has no `pass` (DB_PASS) and no `pwd`
+// (MYSQL_PWD): that list runs over prose and code, where `bypass=` and `compass:` are words, and
+// widening it would change every static snippet. Here the key is STRUCTURE — an env var name, a
+// header name — not prose, so the wider net has nothing to misfire on but another key, and a miss
+// costs the model one value. `pw` is matched only as a whole segment (DB_PW), never inside a word.
+var (
+	credentialKeyRE     = regexp.MustCompile(`(?i)pass|pwd|secret|token|key|auth|cred|private|cookie`)
+	credentialSegmentRE = regexp.MustCompile(`(?i)(^|[_\-])pw($|[_\-])`)
+)
+
+// maskCredentialValue replaces the value of one `key=value` line from detect.ConfigLines with
+// <REDACTED> when the key's last segment names a credential. The key stays: which setting holds a
+// secret is what the judge (and anyone reading its verdict) needs, the secret itself is not.
+func maskCredentialValue(line string) string {
+	key, val, ok := strings.Cut(line, "=")
+	if !ok || val == "" {
+		return line
+	}
+	last := key
+	if i := strings.LastIndexByte(key, '.'); i >= 0 {
+		last = key[i+1:]
+	}
+	if credentialKeyRE.MatchString(last) || credentialSegmentRE.MatchString(last) {
+		return key + "=" + redactedMark
+	}
+	return line
 }
 
 // capabilityDims are the dimensions whose findings describe what a file CAN DO — the raw
