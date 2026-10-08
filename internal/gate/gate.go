@@ -232,6 +232,12 @@ func clip(s string, n int) string {
 	return string(r[:n]) + "…"
 }
 
+// hashPrefix is the short hash in the form a COMMAND takes: the same characters as shortHash
+// shows, without the ellipsis, so an instruction printed with it can be pasted as it is.
+func hashPrefix(h string) string {
+	return h[:min(hashDisplayLen, len(h))]
+}
+
 func shortHash(h string) string {
 	if len(h) > hashDisplayLen {
 		return h[:hashDisplayLen] + "…"
