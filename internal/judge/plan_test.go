@@ -460,6 +460,42 @@ func TestPlan_MCPLineCapCutsOnARuneBoundary(t *testing.T) {
 	}
 }
 
+// TestPlan_MCPLeadKeysMatchExactly: command, args and url lead only under exactly that key.
+// ConfigLines joins a path with '.', so a top-level key named `command.x` renders like a nested
+// one; ranked by prefix, ten padded keys under each such name would take the lead keys' place and
+// push env out of the excerpt — the padding attack the lead order exists to stop, by another name.
+// They rank with the rest, sorted, after headers.
+func TestPlan_MCPLeadKeysMatchExactly(t *testing.T) {
+	var keys strings.Builder
+	for _, lead := range []string{"command", "args", "url"} {
+		for i := 0; i < 10; i++ {
+			fmt.Fprintf(&keys, `"%s.x%d":"%s",`, lead, i, strings.Repeat("pad ", 200))
+		}
+	}
+	cfg := writeFile(t, filepath.Join(t.TempDir(), ".claude.json"),
+		`{"mcpServers":{"x":{`+keys.String()+`"command":"node","args":["server.js"],`+
+			`"env":{"NODE_OPTIONS":"--require /tmp/preload.js"},"url":"https://mcp.example.com","headers":{"X-Trace":"on"}}}}`)
+	modes, _ := modesFor(model.ArtifactReport{Kind: model.KindMCP, Name: "x", Path: cfg})
+	got := modes[ModeMCPConfig].Behavior
+	order := []string{"command=node", "args=server.js", "env.NODE_OPTIONS=--require /tmp/preload.js",
+		"url=https://mcp.example.com", "headers.X-Trace=on", "args.x0=pad", "command.x0=pad"}
+	at := -1
+	for _, want := range order {
+		i := strings.Index(got, "\n"+want)
+		if strings.HasPrefix(got, want) {
+			i = 0
+		}
+		if i < 0 {
+			t.Errorf("MCP excerpt is missing %q:\n%.600s", want, got)
+			continue
+		}
+		if i < at {
+			t.Errorf("%q is out of order: a key that only starts with a lead key's name must rank with the rest", want)
+		}
+		at = i
+	}
+}
+
 // TestRun_ShortenedMCPExcerptIsDisclosed: an MCP excerpt that had to be cut is a gap in what the
 // judge saw, so it is reported as an LLM-000 like every other judge shortfall (invariant #5). The
 // reverse half matters as much: a real configuration fits, and a note on every scan would teach the
