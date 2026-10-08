@@ -78,6 +78,11 @@ type Verdict struct {
 	Findings []model.Finding
 	// Omitted counts scoring findings beyond the cap, so a trimmed list never reads complete.
 	Omitted int
+	// Unhashed says why Hash is empty, and is "" whenever it is not. An approval is keyed by
+	// the hash (invariant 1) and Store.Approve drops an empty key without a word, so a caller
+	// about to record this verdict must refuse out loud rather than report a success that
+	// stored nothing. It is set here because only Summarize knows which artifact it chose.
+	Unhashed string
 }
 
 // Summarize reduces a scan result to the verdict for its worst artifact.
@@ -120,6 +125,9 @@ func Summarize(res model.ScanResult, threshold model.Severity) (Verdict, bool) {
 		Score: a.Score,
 		Level: score.Level(a.Score),
 	}
+	if a.Hash == "" {
+		v.Unhashed = unhashedReason(a)
+	}
 	if threshold.Rank() > 0 {
 		for _, f := range scoring {
 			if f.Severity.Rank() >= threshold.Rank() {
@@ -134,6 +142,19 @@ func Summarize(res model.ScanResult, threshold model.Severity) (Verdict, bool) {
 	}
 	v.Findings = scoring
 	return v, true
+}
+
+// unhashedReason names why an artifact carries no hash, as far as the artifact itself can say.
+// A parse failure is the one cause it records; anything else (a file that could not be opened,
+// an artifact kind this build does not hash) gets no guess — guessing by kind would turn false
+// the day that kind gains a hash, and the scan's coverage notes already name what was unread.
+func unhashedReason(a model.ArtifactReport) string {
+	for _, f := range a.Findings {
+		if f.Source == model.SrcParseError {
+			return "it did not parse, so it was not fully read"
+		}
+	}
+	return "the scanner could not compute one"
 }
 
 // Remembered reports whether a passing verdict may be recorded as trusted. Only content with

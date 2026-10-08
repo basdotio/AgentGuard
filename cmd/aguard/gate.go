@@ -232,7 +232,9 @@ func newGateCommands(root, cfgPath *string, quiet *bool) []*cobra.Command {
 		Short: "Trust the exact current contents of a skill/dir/file, so the gate stops asking about it",
 		Long: "Scans the target and records its canonical hash as approved.\n\n" +
 			"The approval covers those BYTES, not that name: an update, a re-install or an edit\n" +
-			"produces a different hash and the gate asks again by itself.",
+			"produces a different hash and the gate asks again by itself.\n\n" +
+			"A target with no content hash (a config file that did not parse, a file that could not\n" +
+			"be read) is refused with exit 2: there is nothing to key an approval on.",
 		Args: cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			return approvePath(os.Stdout, *root, *cfgPath, args[0])
@@ -358,6 +360,17 @@ func approvePath(w io.Writer, root, cfgPath, target string) error {
 	v, ok := gate.Summarize(res, model.Severity(cfg.Gate.FailOn))
 	if !ok {
 		return fmt.Errorf("nothing could be collected from %s — refusing to approve a target that was not read", target)
+	}
+	// No hash, no approval. The store is keyed by content and drops an empty key without a
+	// word, so carrying on printed "approved" over a store that held nothing, and the gate kept
+	// asking about content the operator had just been told was trusted. Refuse before the store
+	// is opened, so a call that approved nothing writes nothing. The worst artifact is the one
+	// the verdict describes: falling back to another, hashable one would approve content nobody
+	// named. %q escapes control and bidi characters in the borrowed name (invariant #7); the
+	// check hint repeats the operator's own argument, which v.Path may have clipped.
+	if v.Hash == "" {
+		return fmt.Errorf("%s %q has no content hash: %s; nothing was approved (aguard check %q shows what was not read)",
+			v.Kind, v.Name, v.Unhashed, target)
 	}
 	store := gate.LoadStore(gate.ApprovalsPath(root))
 	if store.Corrupt != "" {
