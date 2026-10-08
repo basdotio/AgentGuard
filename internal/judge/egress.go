@@ -25,8 +25,8 @@ import (
 //     exists only on the way out of the process.
 //   - BEFORE Redact, at unit construction. Redact's entropy class includes '/', so a long,
 //     digit-bearing home can lose its head and keep its tail — the username — and a scrub run
-//     afterwards could no longer recognise it. (Static snippets reach triage already redacted;
-//     repairHalves covers the two shapes that leaves.)
+//     afterwards could no longer recognise it. (Static snippets reach triage already redacted and
+//     clipped; repairHalves covers the shapes that leaves.)
 //   - Into the unit, not just the request. Grounding (ground.go) checks a quote against the units,
 //     so they must hold the bytes that were sent: a quote of `~/notes` must ground.
 //
@@ -91,10 +91,7 @@ func (e egress) scrub(s string) string {
 	for _, enc := range e.encoded {
 		s = replaceBounded(s, enc, "~", startsPath, endsEncoded)
 	}
-	if strings.Contains(s, redactedMark) {
-		s = e.repairHalves(s)
-	}
-	return s
+	return e.repairHalves(s)
 }
 
 // redact is the one call the excerpt builders make on raw artifact text: scrub, then Redact.
@@ -116,23 +113,53 @@ func (e egress) file(f string) string {
 	return f
 }
 
-const redactedMark = "<REDACTED>"
+const (
+	redactedMark = "<REDACTED>"
+	clipMark     = "…" // detect's snippet cap: 200 bytes, then this, at the very end
+)
 
-// repairHalves completes a home that Redact already cut in two. Its entropy token class is
-// [A-Za-z0-9+/_-], so a long digit-bearing run is replaced up to the first byte outside that class
-// and no further: `/var/…/T/Test123/001/home.d/alice` comes out as `<REDACTED>.d/alice`, the
-// username intact. A home can only be cut at such a byte, so the two shapes it can leave are known
-// exactly — the marker followed by the home's tail from a cut point, or the home's head up to a cut
-// point followed by the marker — and only those are replaced. Nothing fuzzier: a near-match is
-// some other path.
+// repairHalves completes a home that a static snippet already cut. Static snippets reach triage and
+// the collusion digest after two operations that can each split a path, and a split home can keep
+// exactly the part that names the user:
+//
+//   - Redact's entropy token class is [A-Za-z0-9+/_-], so a long digit-bearing run is replaced up to
+//     the first byte outside that class and no further: `/var/…/T/Test123/001/home.d/alice` comes out
+//     as `<REDACTED>.d/alice`. The run can also start at such a byte and eat the end instead:
+//     `/home/first.<REDACTED>`.
+//   - The snippet cap cuts at 200 bytes and appends `…`, wherever that lands: `/Users/ali…`. Only a
+//     text that ENDS in the marker was clipped; one with `…` anywhere else is prose.
+//
+// Each cut leaves a known shape, so only those are replaced: a cut point is a byte outside the
+// entropy class, and a clipped fragment counts only once it reaches into the username (a clipped
+// `/Users/…` names nobody, and replacing it would be a guess). Nothing fuzzier: a near-match is some
+// other path.
 func (e egress) repairHalves(s string) string {
+	hasRed, hasClip := strings.Contains(s, redactedMark), strings.HasSuffix(s, clipMark)
+	if !hasRed && !hasClip {
+		return s
+	}
 	for _, h := range e.homes {
-		for i := 0; i < len(h); i++ {
+		userAt := strings.LastIndexByte(h, '/') + 1 // first byte of the username segment
+		// Where a surviving fragment of h can begin: at h's own start, or — after Redact ate the
+		// head — right behind the marker, at a cut point.
+		type start struct {
+			at    int
+			mark  string
+			check func(string, int) bool
+		}
+		starts := []start{{0, "", startsPath}}
+		for i := 1; hasRed && i < len(h); i++ {
 			if entropyByte(h[i]) {
 				continue
 			}
-			s = replaceBounded(s, redactedMark+h[i:], "~", anywhere, endsPath)
-			s = replaceBounded(s, h[:i+1]+redactedMark, "~/"+redactedMark, startsPath, anywhere)
+			starts = append(starts, start{i, redactedMark, anywhere})
+			s = replaceBounded(s, redactedMark+h[i:], "~", anywhere, endsPath)                   // head eaten
+			s = replaceBounded(s, h[:i+1]+redactedMark, "~/"+redactedMark, startsPath, anywhere) // tail eaten
+		}
+		for _, st := range starts {
+			for b := len(h) - 1; hasClip && b > userAt && b > st.at; b-- {
+				s = replaceBounded(s, st.mark+h[st.at:b]+clipMark, "~"+clipMark, st.check, atEnd) // clipped
+			}
 		}
 	}
 	return s
@@ -184,6 +211,10 @@ func endsPath(s string, j int) bool {
 func endsEncoded(s string, j int) bool { return j == len(s) || !alnum(s[j]) }
 
 func anywhere(string, int) bool { return true }
+
+// atEnd: the cap's marker is appended to the end of a snippet, and a snippet ends every line this
+// repairs (triage's `file:line snippet`, the digest's `file:line [RULE] snippet`).
+func atEnd(s string, j int) bool { return j == len(s) }
 
 func alnum(c byte) bool { return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' }
 

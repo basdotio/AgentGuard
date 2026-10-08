@@ -220,7 +220,7 @@ type Rule struct {
 **出网前去掉"这台机器是谁的"**(2026-10-08,`judge/egress.go`):脱敏只认 secret 形状,`/Users/alice/…` 不是 secret,却是用户名。
 判官**构造摘录的那一刻**把被扫环境的家目录(给定写法、`EvalSymlinks` 之后、Claude Code 项目目录编码 `-Users-alice-…`)换成 `~`,
 **先换再 `Redact`**(熵规则的字符类含 `/`,先脱敏会吃掉带数字的长路径前半截、留下用户名那半截;已脱敏的静态 snippet 进 triage 时,
-只补「`<REDACTED>` 紧跟家目录在断点后的尾巴」与「家目录到断点为止的头紧跟 `<REDACTED>`」两种形态);triage 证据里的静态 `File`
+只补「`<REDACTED>` 紧跟家目录在断点后的尾巴」「家目录到断点为止的头紧跟 `<REDACTED>`」与「snippet 200 字节截断落在用户名里、半截家目录紧跟 `…`」三种形态);triage 证据里的静态 `File`
 按文件位置处理,`relPath` 兜底的 `<用户名>/<文件>` 只在这个两段式结构上改成 `~/<文件>`,**裸用户名一律不替换**。
 `sourceUnit` 存的是替换后的字节,落地比对的仍是发出去的东西。家目录:环境扫描取 `--root` 的上一级(与 collect/detect 同一锚点),
 Downloads 取用户家目录。MCP 配置按 `detect.ConfigLines` 渲染成排好序的 `key=value` 行(与静态读同一批字符串叶子,字节稳定),

