@@ -112,8 +112,10 @@ llm:
 | `authority` | `advisory` (default) or `escalate`. Whether this endpoint's opinion may gate a build — see [Gating on the judge](#gating-on-the-judge-fail-on-llm). |
 
 Every run prints one line to stderr — `N call(s) in 12.4s (p50 …, p95 …) · 0 retry · 0 failed
-· 41k tokens in / 900 out` — because cost is the one thing about `--llm` the report itself
-can't show you. `--quiet` suppresses it.
+· 41k tokens in / 900 out`; `--quiet` suppresses it. The same cost is in the JSON summary
+whether or not you pass `--quiet` (see [What the report says about the judge](#what-the-report-says-about-the-judge)),
+so a quiet run — every Downloads item is one — is still accounted for. Token counts are what the
+endpoint reports: a baseline, not a bill.
 
 ### Choosing a model / endpoint
 
@@ -296,7 +298,10 @@ With `--llm` the summary carries one line about the judge itself — `LLM judge 
 artifact(s) in M call(s) and had nothing to add`, `… and added K advisory leads`, or `LLM judge
 did not run: <reason>` — and the "LLM judge leads" section is present even when empty, carrying
 that line. JSON has the same as `judge` (`ran`, `reason`, `artifacts`, `calls`, `failed`,
-`skipped`, `findings`, `endpoint`). Without `--llm` none of this appears: a judge that ran and
+`skipped`, `findings`, `endpoint`), plus what it cost: `triage_calls` (the part of `calls` that
+was triage, asked once where a question is asked `samples` times), `retries`, and
+`prompt_tokens` / `completion_tokens` — the last two absent when the endpoint reported no usage,
+rather than a 0 that would read as a measurement. Without `--llm` none of this appears: a judge that ran and
 found nothing and a judge that never ran used to look identical, which is the one distinction a
 reader of a clean report needs.
 

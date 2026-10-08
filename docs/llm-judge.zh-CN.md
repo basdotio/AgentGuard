@@ -101,7 +101,9 @@ llm:
 | `authority` | `advisory`(默认)或 `escalate`。这个端点的意见能不能卡构建 —— 见[用判官卡闸门](#用判官卡闸门-fail-on-llm)。 |
 
 每次跑完会往 stderr 打一行 —— `N call(s) in 12.4s (p50 …, p95 …) · 0 retry · 0 failed ·
-41k tokens in / 900 out` —— 因为"这次花了多少"是报告本身唯一看不到的东西。`--quiet` 可关掉。
+41k tokens in / 900 out`;`--quiet` 可关掉。同样的成本不论加不加 `--quiet` 都在 JSON 摘要里
+(见[报告怎么说判官](#报告怎么说判官)),所以静默运行——Downloads 的每一项都是——也有账可查。token 数是端点自报的:
+是基线,不是账单。
 
 ### 选模型 / 端点
 
@@ -247,7 +249,9 @@ triage 标签(`likely-real` / `likely-benign`)以 `⚖ triage (LLM, advisory)` �
 开了 `--llm`,摘要会多一行说判官自己 —— `LLM judge ran over N artifact(s) in M call(s) and had nothing
 to add`、`… and added K advisory leads`,或 `LLM judge did not run: <原因>` —— 并且 "LLM judge leads"
 那一节即使为空也会出现,里面就是这一行。JSON 里对应 `judge` 字段(`ran`、`reason`、`artifacts`、`calls`、
-`failed`、`skipped`、`findings`、`endpoint`)。不开 `--llm` 这些一律不出现。以前"判官跑了没发现"和"判官
+`failed`、`skipped`、`findings`、`endpoint`),外加成本:`triage_calls`(`calls` 里属于 triage 的部分——
+triage 只问一次,判官的题问 `samples` 次)、`retries`、`prompt_tokens` / `completion_tokens`——端点没报用量时
+后两个键不出现,而不是写一个看起来像测量值的 0。不开 `--llm` 这些一律不出现。以前"判官跑了没发现"和"判官
 没跑"在报告上长得一样,而这正是读一份干净报告的人最需要分清的一件事。
 
 ## 第二个数
