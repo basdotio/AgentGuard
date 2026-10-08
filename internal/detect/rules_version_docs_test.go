@@ -86,6 +86,40 @@ func TestRulesVersionDocs_IdentifyTheJudgeOnlyByToolVersion(t *testing.T) {
 	}
 }
 
+// TestEpochTriggerIsStatedAlike: the architecture pair restates when to bump rulesEpoch, and a
+// restatement that drops part of the trigger tells the next editor a change is exempt when it is
+// not. Spec §5.1 and the constant's doc comment bump it for a change to a finding's ID, dimension,
+// severity or advisory flag, and name collect's credential-import check (EXFIL-005) among the
+// detection code outside builtinRules(). The pair said ID/dimension/severity and left collect out,
+// so making EXFIL-005 advisory read as needing no bump on both counts. Spec §5.1 and the doc
+// comment are held to the same trigger, as the statements the pair restates.
+func TestEpochTriggerIsStatedAlike(t *testing.T) {
+	const (
+		enTrigger = "ID/dimension/severity/advisory"
+		enCollect = "collect's credential-import check (EXFIL-005)"
+		zhTrigger = "ID/维度/严重度/advisory"
+		zhCollect = "collect 的凭据 import 检查(EXFIL-005)"
+	)
+	for _, c := range []struct{ file, start, trigger, collect string }{
+		{"docs/architecture.md", "**The rule table has a version.**", enTrigger, enCollect},
+		{"docs/architecture.zh-CN.md", "**规则表有版本号。**", zhTrigger, zhCollect},
+		{"docs/spec/spec.zh-CN.md", "**`rulesEpoch` 的纪律**", zhTrigger, zhCollect},
+	} {
+		p := docPassage(t, c.file, c.start, false)
+		for _, want := range []string{c.trigger, c.collect} {
+			if !strings.Contains(p, want) {
+				t.Errorf("%s (%q…) does not say %q; when to bump rulesEpoch must read the same as spec §5.1", c.file, c.start, want)
+			}
+		}
+	}
+	doc := constDoc(t, "rules_version.go", "rulesEpoch")
+	for _, want := range []string{"severity or advisory flag", "the credential-import check in internal/collect (EXFIL-005)"} {
+		if !strings.Contains(doc, want) {
+			t.Errorf("rulesEpoch's doc comment does not say %q; it is the statement the docs restate", want)
+		}
+	}
+}
+
 // TestArchitectureEpochNotesExcludeLLM: the architecture pair says which checks only the epoch
 // covers, and a few lines later puts the judge outside rules_version. "The structural, permission
 // and note checks … the epoch is all that covers them" took in LLM-000/002/005, which are notes,
