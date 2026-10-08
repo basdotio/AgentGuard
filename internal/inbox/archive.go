@@ -44,20 +44,43 @@ func PeekZip(path string) (bool, error) {
 	return false, nil
 }
 
-// ExtractZip unpacks a zip into a fresh private temporary directory and returns it with a cleanup
-// function the caller must run. Refused entries are counted and disclosed in notes; nothing is
-// made executable; the destination is 0700 and every file 0600.
+// ExtractZip unpacks a zip and returns the directory it unpacked into, with a cleanup function the
+// caller must run. Refused entries are counted and disclosed in notes; nothing is made executable;
+// directories are 0700 and every file 0600.
+//
+// The directory is named after the archive (x.zip unpacks into …/x.zip/) and sits alone inside a
+// fresh private temporary directory, on a symlink-resolved path. A report about the archive is built
+// from this directory, so its shape is part of the output:
+//   - its name is the artifact's name, and a random one made every check of the same zip disagree;
+//   - its path is what evidence is made relative to, after resolving symlinks — left unresolved
+//     under macOS's /var → /private/var, the relative path failed and evidence named the random
+//     directory instead of the file inside the archive;
+//   - its parent is the "home" a root-shaped archive is collected under, and must hold nothing but
+//     the archive: the shared temp dir held whatever .claude.json anyone had left there.
+//
+// The archive's own file name can never be ".claude" (it ends in .zip), so it cannot make an
+// archive look like a config root.
 func ExtractZip(path string) (dir string, notes []model.Finding, cleanup func(), err error) {
 	r, err := zip.OpenReader(path)
 	if err != nil {
 		return "", nil, func() {}, err
 	}
 	defer r.Close()
-	dir, err = os.MkdirTemp("", "aguard-inbox-")
+	tmp, err := os.MkdirTemp("", "aguard-inbox-")
 	if err != nil {
 		return "", nil, func() {}, err
 	}
-	cleanup = func() { _ = os.RemoveAll(dir) }
+	cleanup = func() { _ = os.RemoveAll(tmp) }
+	real, err := filepath.EvalSymlinks(tmp)
+	if err != nil {
+		cleanup()
+		return "", nil, func() {}, err
+	}
+	dir = filepath.Join(real, filepath.Base(path))
+	if err := os.Mkdir(dir, 0o700); err != nil {
+		cleanup()
+		return "", nil, func() {}, err
+	}
 
 	var total int64
 	unsafe, special, oversize := 0, 0, 0
