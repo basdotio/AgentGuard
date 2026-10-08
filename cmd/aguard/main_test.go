@@ -882,6 +882,27 @@ func TestUpdateHint(t *testing.T) {
 	}
 }
 
+// TestBinaryVersionLine_RulesComeAfterTheExistingFields: `aguard version` names the rule table, and
+// does it at the END. Two readers parse this line: the release workflow takes `awk '{print $2}'`
+// as the version and fails the release if it is not the tag, and the baselines adapter stores the
+// whole first line as tool_version. So the old line must survive as an exact prefix.
+func TestBinaryVersionLine_RulesComeAfterTheExistingFields(t *testing.T) {
+	got := binaryVersionLine("v1.2.3", "abc1234", "2026-10-08T00:00:00Z", 18, "0123456789ab")
+	if f := strings.Fields(got); len(f) < 2 || f[1] != "v1.2.3" {
+		t.Errorf("$2 of %q is not the version — release.yml's tag check reads it", got)
+	}
+	const before = "aguard v1.2.3 (commit abc1234, built 2026-10-08T00:00:00Z) · reputation entries=18"
+	if !strings.HasPrefix(got, before) {
+		t.Errorf("version line = %q, want the existing fields unchanged as its prefix %q", got, before)
+	}
+	if !strings.HasSuffix(got, " · rules=0123456789ab") {
+		t.Errorf("version line = %q, want it to end with the rules version", got)
+	}
+	if strings.Contains(got, "\n") {
+		t.Errorf("version line = %q must be one line; the baselines adapter keeps only the first", got)
+	}
+}
+
 // TestDefaultReportPath: --report lands under the config dir, outside the scan root, in a
 // directory only the owner can read, with a timestamp so scans do not overwrite each other.
 func TestDefaultReportPath(t *testing.T) {

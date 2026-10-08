@@ -110,6 +110,21 @@ func TestDocumentedMetadataMatchesEngine(t *testing.T) {
 	}
 }
 
+// TestRulesDocHeaderCarriesRulesVersion: the reference a reader opens names the same rules version
+// a report carries, so a report can be matched to the table that produced it. The drift check
+// (make verify, CI) proves the committed file is what the generator writes; this proves the
+// generator writes the version at all, and fails in a plain `go test` too.
+func TestRulesDocHeaderCarriesRulesVersion(t *testing.T) {
+	b, err := os.ReadFile(filepath.Join(repoRoot(t), "docs", "rules.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	v := detect.RulesVersion()
+	if !strings.Contains(string(b), "**Rules version `"+v+"`**") {
+		t.Errorf("docs/rules.md does not name rules version %s in its header — run `make docs`", v)
+	}
+}
+
 func dedupe(in []string) []string {
 	seen := map[string]bool{}
 	var out []string

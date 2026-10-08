@@ -30,6 +30,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/basdotio/AgentGuard/internal/detect"
 	"github.com/basdotio/AgentGuard/internal/model"
 )
 
@@ -474,5 +475,42 @@ func TestE2E_FIFOSkillManifestDoesNotHang(t *testing.T) {
 		}
 	case <-time.After(15 * time.Second):
 		t.Fatal("scan blocked on a FIFO SKILL.md")
+	}
+}
+
+// TestE2E_ReportNamesItsRules: a report says which rule table produced it, on both entry points
+// (`scan` and `check` meet in analyze), and the key is on the wire. Before this, the only stamp
+// was tool_version — a commit, not a rule table — so two reports that differed could not say
+// whether the rules had changed between them.
+func TestE2E_ReportNamesItsRules(t *testing.T) {
+	root := buildTestRunnerSkill(t, false)
+	want := detect.RulesVersion()
+
+	scanned, err := scanEnv(root, scanOpts{quiet: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked, err := checkTarget(filepath.Join(root, "skills", "test-runner"), scanOpts{quiet: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, out := range map[string]model.ScanResult{"scan": scanned, "check": checked} {
+		if out.RulesVersion != want {
+			t.Errorf("%s: rules_version = %q, want %q (detect.RulesVersion)", name, out.RulesVersion, want)
+		}
+		b, err := json.Marshal(out)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wire map[string]json.RawMessage
+		if err := json.Unmarshal(b, &wire); err != nil {
+			t.Fatal(err)
+		}
+		if got := string(wire["rules_version"]); got != `"`+want+`"` {
+			t.Errorf("%s --json: rules_version = %s, want %q", name, got, want)
+		}
+		if _, ok := wire["tool_version"]; !ok {
+			t.Errorf("%s --json lost tool_version; rules_version sits beside it, not in its place", name)
+		}
 	}
 }
