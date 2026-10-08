@@ -277,8 +277,8 @@ var capabilityDims = map[int]bool{
 // cheapest question the judge asks.
 //
 // The digest line carries the static File and Snippet, so both are scrubbed for sending (the
-// File as a file position); the unit keeps the static File as its citation, since that is what
-// the report shows for the same line.
+// File as a file position, the Snippet as the clipped static snippet it is); the unit keeps the
+// static File as its citation, since that is what the report shows for the same line.
 func capabilityDigest(a model.ArtifactReport, eg egress) (string, []sourceUnit) {
 	var lines []string
 	var units []sourceUnit
@@ -291,7 +291,7 @@ func capabilityDigest(a model.ArtifactReport, eg egress) (string, []sourceUnit) 
 			if e.File == "" || e.Snippet == "" {
 				continue
 			}
-			line := fmt.Sprintf("%s:%d [%s] %s", eg.file(e.File), e.Line, f.RuleID, eg.redact(e.Snippet))
+			line := fmt.Sprintf("%s:%d [%s] %s", eg.file(e.File), e.Line, f.RuleID, eg.snippet(e.Snippet))
 			if seen[line] {
 				continue
 			}

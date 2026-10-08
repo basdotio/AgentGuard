@@ -136,9 +136,18 @@ func projectDirName(p string) string {
 	}, p)
 }
 
-// scrub replaces every form of the home in s with `~`. s has already been through Redact — at
-// detect time for a static snippet, in redact otherwise — which is what repairHalves assumes.
-func (e egress) scrub(s string) string {
+// scrub replaces every form of the home in s with `~`, completing a home Redact cut in two. s has
+// already been through Redact (see redact), which is what that completion assumes.
+func (e egress) scrub(s string) string { return e.scrubCut(s, false) }
+
+// snippet scrubs a static finding's snippet, which detect redacted and then CLIPPED to 200 bytes
+// plus `…`: a home here can also end at the clip mark. Only these get that repair — raw artifact
+// text is never clipped by detect, so a `…` at its end is something the author wrote, and
+// completing the path before it would rewrite the content under review on a guess. Redacted once
+// more on the way in, defensively; Redact is idempotent.
+func (e egress) snippet(s string) string { return e.scrubCut(detect.Redact(s), true) }
+
+func (e egress) scrubCut(s string, clipped bool) string {
 	if len(e.homes) == 0 || s == "" {
 		return s
 	}
@@ -148,7 +157,7 @@ func (e egress) scrub(s string) string {
 	for _, enc := range e.encoded {
 		s = replaceBounded(s, enc, "~", startsPath, endsEncoded)
 	}
-	return e.repairHalves(s)
+	return e.repairHalves(s, clipped)
 }
 
 // redact is the one call the excerpt builders make on raw artifact text: Redact, then scrub.
@@ -175,23 +184,24 @@ const (
 	clipMark     = "…" // detect's snippet cap: 200 bytes, then this, at the very end
 )
 
-// repairHalves completes a home that a static snippet already cut. Static snippets reach triage and
-// the collusion digest after two operations that can each split a path, and a split home can keep
-// exactly the part that names the user:
+// repairHalves completes a home that was already cut when the scrub sees it. Two operations can
+// split a path, and a split home can keep exactly the part that names the user:
 //
-//   - Redact's entropy token class is [A-Za-z0-9+/_-], so a long digit-bearing run is replaced up to
-//     the first byte outside that class and no further: `/var/…/T/Test123/001/home.d/alice` comes out
-//     as `<REDACTED>.d/alice`. The run can also start at such a byte and eat the end instead:
+//   - Redact — on every path, since everything is redacted before it is scrubbed. Its entropy token
+//     class is [A-Za-z0-9+/_-], so a long digit-bearing run is replaced up to the first byte outside
+//     that class and no further: `/var/…/T/Test123/001/home.d/alice` comes out as
+//     `<REDACTED>.d/alice`. The run can also start at such a byte and eat the end instead:
 //     `/home/first.<REDACTED>`.
-//   - The snippet cap cuts at 200 bytes and appends `…`, wherever that lands: `/Users/ali…`. Only a
-//     text that ENDS in the marker was clipped; one with `…` anywhere else is prose.
+//   - detect's snippet cap — on static snippets only (clipped), see snippet. It cuts at 200 bytes and
+//     appends `…`, wherever that lands: `/Users/ali…`. Only a snippet that ENDS in the marker was
+//     clipped; one with `…` anywhere else is prose.
 //
 // Each cut leaves a known shape, so only those are replaced: a cut point is a byte outside the
 // entropy class, and a clipped fragment counts only once it reaches into the username (a clipped
 // `/Users/…` names nobody, and replacing it would be a guess). Nothing fuzzier: a near-match is some
 // other path.
-func (e egress) repairHalves(s string) string {
-	hasRed, hasClip := strings.Contains(s, redactedMark), strings.HasSuffix(s, clipMark)
+func (e egress) repairHalves(s string, clipped bool) string {
+	hasRed, hasClip := strings.Contains(s, redactedMark), clipped && strings.HasSuffix(s, clipMark)
 	if !hasRed && !hasClip {
 		return s
 	}

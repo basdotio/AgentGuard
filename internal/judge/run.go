@@ -736,7 +736,8 @@ func staticFindings(fs []model.Finding) []model.Finding {
 }
 
 // triageItems builds the redacted (RuleID, evidence) pairs sent for triage. The evidence
-// snippet is already redacted at detect time; we re-redact defensively. The File field is
+// snippet is already redacted (and clipped) at detect time, so it is scrubbed as a static snippet;
+// the whole line is re-redacted defensively, which can only remove more. The File field is
 // whatever the static pass recorded — an absolute path for EXFIL-005, `<username>/.claude.json`
 // for a config in the home, an encoded project directory for a memory file — so it is scrubbed
 // as a file position; the report keeps its own copy untouched.
@@ -745,7 +746,7 @@ func triageItems(fs []model.Finding, eg egress) []TriageItem {
 	for _, f := range fs {
 		ev := ""
 		if len(f.Evidence) > 0 {
-			ev = fmt.Sprintf("%s:%d %s", eg.file(f.Evidence[0].File), f.Evidence[0].Line, eg.scrub(f.Evidence[0].Snippet))
+			ev = fmt.Sprintf("%s:%d %s", eg.file(f.Evidence[0].File), f.Evidence[0].Line, eg.snippet(f.Evidence[0].Snippet))
 		}
 		items = append(items, TriageItem{RuleID: f.RuleID, Evidence: detect.Redact(ev)})
 	}
