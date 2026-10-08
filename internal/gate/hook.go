@@ -344,7 +344,7 @@ func handlePost(ev Event, o Options) (Output, bool) {
 	})
 	return Output{SystemMessage: fmt.Sprintf(
 		"AgentGuard: risk accepted for %s %q (%d/100) · content %s · undo with: aguard approvals forget %s",
-		v.Kind, v.Name, v.Score, shortHash(v.Hash), shortHash(v.Hash))}, true
+		v.Kind, v.Name, v.Score, shortHash(v.Hash), hashPrefix(v.Hash))}, true
 }
 
 // handleSessionStart is the inventory half (plan A): it takes stock of the whole root rather
