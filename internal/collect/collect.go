@@ -461,6 +461,10 @@ func collectMCP(home string, env *model.EnvSummary) ([]model.ArtifactReport, []m
 // artifact scores a clean 100 — so labelling a project-level server " (project)" made the newly
 // collected servers strictly worse than not collecting them: unscanned, unflagged, and averaged
 // into `overall` as perfect. The two scopes stay distinguishable by Path.
+//
+// A plugin's servers are the exception the rule above describes: they arrive with nameSuffix
+// " (plugin …)", so a lookup by Name misses them. MCPServer always holds the bare key; the content
+// hash looks the entry up by it, and the rule engine's lookup by Name is still the gap.
 func mcpServersFrom(path, nameSuffix string, env *model.EnvSummary) ([]model.ArtifactReport, []model.Finding) {
 	b, err := safeio.ReadFile(path, safeio.MaxConfigBytes)
 	if err != nil {
@@ -482,7 +486,9 @@ func mcpServersFrom(path, nameSuffix string, env *model.EnvSummary) ([]model.Art
 	sort.Strings(names)
 	var out []model.ArtifactReport
 	for _, name := range names {
-		out = append(out, artifact(model.KindMCP, name+nameSuffix, path, ""))
+		a := artifact(model.KindMCP, name+nameSuffix, path, "")
+		a.MCPServer = name // the key itself: a plugin server's Name carries nameSuffix
+		out = append(out, a)
 		env.MCPServers++
 	}
 	return out, nil

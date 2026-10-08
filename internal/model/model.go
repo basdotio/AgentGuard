@@ -172,6 +172,11 @@ type ArtifactReport struct {
 	// Connector is set for KindConnector artifacts only: the advertised tool list. Scan input,
 	// never serialized — the report carries findings about it, not a copy of it.
 	Connector *Connector `json:"-"`
+	// MCPServer is set for KindMCP artifacts only: the server's key under `mcpServers` in Path.
+	// Name is not that key for a server a plugin ships — it carries a " (plugin …)" suffix so two
+	// plugins' servers stay apart in the report — so anything that looks the entry up must use
+	// this. Scan input, never serialized.
+	MCPServer string `json:"-"`
 	// Advisory carries DISPLAY-ONLY annotations (e.g. LLM triage labels, spec §5.2.1). They
 	// reference findings by RuleID but NEVER alter them — findings and Score are computed
 	// only from Findings. Advisory annotations can't move the score or the --fail-on gate.
