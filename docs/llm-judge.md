@@ -242,17 +242,25 @@ that quote is checked against the text the model was actually sent:
   citation; the rest of what the model wrote is not shown, so a real line cannot vouch for
   invented ones beside it. A line longer than 512 bytes is cut to a window **around the quoted
   text**, each cut end marked `…` — not to its first 512 bytes, which let a directive padded with
-  prose show only the prose. When it is a whitespace run *inside* the quote that makes it too long
-  for the window, the snippet shows the line with every whitespace run collapsed to one space —
-  the same normalisation matching used — so a directive padded from within still shows whole; such
-  a snippet is that line as matching saw it, not byte for byte as sent. A quote longer than the
-  window even with its whitespace collapsed shows only its beginning, cut in bytes as sent, so a
-  long whitespace run at its start can leave little of the quote in view.
+  prose show only the prose. When it is a run of whitespace or invisible characters *inside* the
+  quote that makes it too long for the window, the snippet shows the line the way matching read it
+  — every whitespace run collapsed to one space, invisible characters removed — so a directive
+  padded from within still shows whole; such a snippet is that line as matching saw it, not byte
+  for byte as sent. A quote longer than the window even when read that way shows only its
+  beginning, cut in bytes as sent, so a long run of whitespace or invisible characters at its start
+  can leave little of the quote in view.
 - **Not found** → the finding is **discarded**, and the count surfaces as `LLM-005`. A silent
   drop would make a paraphrasing model look like a clean environment.
 
 Matching ignores whitespace and case — models reflow and re-case freely, and neither changes
 what a line says — but nothing beyond that: a paraphrase does not match, which is the point.
+"Whitespace" is every character Unicode calls a space, not only ASCII: ideographic (U+3000),
+em (U+2003) and no-break spaces collapse like a tab does, so a directive padded with them still
+matches a quote that wrote the padding as one space. Invisible characters — zero-width spaces and
+joiners, the soft hyphen, the BOM, bidi controls; the same set the `INJ-004` rule reports in file
+contents — are ignored on both sides, as they are on screen. Case is ASCII only. The minimum quote
+length (16 bytes, unless the quote is the whole of a shorter text) is measured after all of this,
+so padding a short quote with such characters does not lengthen it.
 The comparison is against the **redacted** text that left the machine, never the file on disk;
 re-reading the original would put unredacted content back in play after the single redaction
 chokepoint. The excerpt's own "N line(s) omitted" marker is in that text but in no file, so a
