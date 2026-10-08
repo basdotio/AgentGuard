@@ -399,7 +399,7 @@ func planFor(i int, a model.ArtifactReport, eg egress) []task {
 	switch a.Kind {
 	case model.KindSkill:
 		skill := parse.ReadSkill(a.Path)
-		declared := eg.redact(skill.Description)
+		declared := declaredPurpose(skill.Description, eg)
 		behavior, behaviorUnits := behaviorExcerpt(a.Path, eg)
 		// The declared purpose is part of what the model saw, so a verdict may legitimately
 		// quote it; it lives in SKILL.md's frontmatter, near the top.
@@ -443,7 +443,7 @@ func planFor(i int, a model.ArtifactReport, eg egress) []task {
 		// kind that generates no task also generates no LLM-000 coverage note.
 		if text, units := singleFileExcerpt(a.Path, eg); text != "" {
 			ask(Request{Mode: ModeInjection,
-				Declared: eg.redact(parse.ReadMarkdown(a.Path).Description),
+				Declared: declaredPurpose(parse.ReadMarkdown(a.Path).Description, eg),
 				Behavior: text}, units)
 		}
 
@@ -457,7 +457,7 @@ func planFor(i int, a model.ArtifactReport, eg egress) []task {
 			text, lm := condense(a.Name+".txt", eg.redact(text), false)
 			text, _ = capHeadTail(text, lm, maxExcerptBytes)
 			ask(Request{Mode: ModeInjection,
-				Declared: eg.redact("Remote MCP connector \"" + a.Name + "\": the tool list its server sent (names, descriptions, parameter descriptions)"),
+				Declared: declaredPurpose("Remote MCP connector \""+a.Name+"\": the tool list its server sent (names, descriptions, parameter descriptions)", eg),
 				Behavior: text}, []sourceUnit{{file: detect.Redact(a.Name) + " (connector)", text: text, firstLine: 0, collapsed: true}})
 		}
 	case model.KindHook:

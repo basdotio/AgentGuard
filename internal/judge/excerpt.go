@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/basdotio/AgentGuard/internal/collect"
 	"github.com/basdotio/AgentGuard/internal/detect"
@@ -21,7 +22,27 @@ const (
 	maxFileRead     = 1 << 20 // hard ceiling on bytes read from any one file (memory-DoS guard);
 	// a hostile skill can ship a multi-GB blob — never materialize it. 1 MiB comfortably
 	// covers real scripts, so redaction still sees whole secrets before truncation.
+	// maxDeclaredBytes bounds the declared side of a comparison (a description, an interception
+	// point). It had no cap: a SKILL.md description went out whole — up to the 1 MiB the
+	// frontmatter reader takes — once per pass that compares against it. A purpose that needs more
+	// than a thousand bytes to state is not being stated, it is being padded.
+	maxDeclaredBytes = 1000
 )
+
+// declaredPurpose prepares the declared side of a request: scrub and redact, THEN cap — the
+// redact-before-truncate order every excerpt keeps — cutting on a rune boundary so a description
+// in any script never ends in half a character.
+func declaredPurpose(s string, eg egress) string {
+	s = eg.redact(s)
+	if len(s) <= maxDeclaredBytes {
+		return s
+	}
+	cut := maxDeclaredBytes
+	for cut > 0 && !utf8.RuneStart(s[cut]) {
+		cut--
+	}
+	return s[:cut]
+}
 
 // readAtMost reads up to max bytes of a file (never the whole thing) — the memory guard for
 // a hostile scanned tree. Returns the bytes read; a read error yields nil.
@@ -174,7 +195,7 @@ func hookExcerpt(file string, h model.Hook, eg egress) (declared, behavior strin
 	if matcher == "" {
 		matcher = "* (every tool)"
 	}
-	declared = eg.redact("event: " + h.Event + "\nmatcher: " + matcher)
+	declared = declaredPurpose("event: "+h.Event+"\nmatcher: "+matcher, eg)
 	behavior = boundedRedact(eg.scrub(h.Command), maxExcerptBytes)
 	if behavior == "" && h.URL != "" {
 		behavior = boundedRedact(eg.scrub(h.URL), maxExcerptBytes)
