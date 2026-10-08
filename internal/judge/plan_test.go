@@ -3,6 +3,7 @@ package judge
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -424,6 +425,38 @@ func TestPlan_MCPExcerptLeadsWithWhatTheServerRuns(t *testing.T) {
 	}
 	if !strings.Contains(got, "line(s) omitted") || len(got) > maxExcerptBytes {
 		t.Errorf("an excerpt cut to the budget must say how many lines it left out and stay within %d bytes (got %d)", maxExcerptBytes, len(got))
+	}
+}
+
+// TestPlan_MCPLineCapCutsOnARuneBoundary: the 500-byte line cap walks back to a character start, so
+// a value in any language never goes out ending in half a character. The padding above is ASCII,
+// where every byte starts a character and the cap lands on a boundary by itself; here byte 500 of
+// the line falls INSIDE a 3-byte character, so deleting the walk-back sends invalid UTF-8.
+func TestPlan_MCPLineCapCutsOnARuneBoundary(t *testing.T) {
+	line := "aaa=" + strings.Repeat("中", 400)
+	if utf8.RuneStart(line[maxConfigLineBytes]) {
+		t.Fatalf("precondition: byte %d of the line must fall inside a character", maxConfigLineBytes)
+	}
+	cfg := writeFile(t, filepath.Join(t.TempDir(), ".claude.json"),
+		`{"mcpServers":{"x":{"command":"node","aaa":"`+strings.Repeat("中", 400)+`"}}}`)
+	modes, _ := modesFor(model.ArtifactReport{Kind: model.KindMCP, Name: "x", Path: cfg})
+	got := modes[ModeMCPConfig].Behavior
+	var sent string
+	for _, l := range strings.Split(got, "\n") {
+		if strings.HasPrefix(l, "aaa=") {
+			sent = l
+		}
+	}
+	kept, marker, ok := strings.Cut(sent, " … (")
+	if !ok {
+		t.Fatalf("the 1,204-byte line should be cut with a marker:\n%s", got)
+	}
+	if !utf8.ValidString(kept) || len(kept) > maxConfigLineBytes || len(kept) < maxConfigLineBytes-utf8.UTFMax {
+		t.Errorf("kept %d bytes (valid UTF-8: %v); want valid, ≤ %d, and at most one character given back",
+			len(kept), utf8.ValidString(kept), maxConfigLineBytes)
+	}
+	if want := strings.TrimPrefix(line, kept); !strings.HasPrefix(line, kept) || marker != fmt.Sprintf("%d bytes omitted)", len(want)) {
+		t.Errorf("the marker must count exactly the bytes left out: got %q after %d kept bytes", marker, len(kept))
 	}
 }
 
