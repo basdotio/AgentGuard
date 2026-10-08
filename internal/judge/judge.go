@@ -17,6 +17,8 @@ package judge
 
 import (
 	"context"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/basdotio/AgentGuard/internal/detect"
 	"github.com/basdotio/AgentGuard/internal/model"
@@ -130,35 +132,54 @@ func clampSeverity(s string) model.Severity {
 	}
 }
 
+// Bounds on model-authored or model-selected text that reaches a report. The model decides how
+// long its answer is; without a cap, a megabyte of it was a megabyte in every report format.
+const (
+	maxWhyBytes     = 512 // a verdict's reason, before consensus appends its vote
+	maxSnippetBytes = 512 // the grounded line(s) shown as a judge finding's evidence
+)
+
+// capBytes bounds s to max bytes, cutting on a rune boundary (a cut mid-rune would put invalid
+// UTF-8 in the report) and marking the cut with an ellipsis. Callers redact FIRST, so a secret
+// straddling the cut cannot survive as a sub-threshold fragment (invariant #3).
+func capBytes(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	cut := max
+	for cut > 0 && !utf8.RuneStart(s[cut]) {
+		cut--
+	}
+	return s[:cut] + "…"
+}
+
 // finding converts a flagged verdict into an advisory finding. Returns nil when nothing was
-// flagged. RuleID/dimension/title depend on the mode. The evidence snippet is re-redacted
-// defensively; control-character sanitization happens in the report renderer.
+// flagged. RuleID/dimension/title depend on the mode. The finding has no location yet: only
+// grounding supplies one (groundedFinding), together with the snippet — so nothing the model
+// wrote as "evidence" can reach a report from here. Control-character sanitization happens in
+// the report renderer.
 func finding(r Request, v Verdict) *model.Finding {
 	if !v.Flagged {
 		return nil
 	}
 	ruleID, dim, title := "LLM-001", dimIntent, "Intent mismatch (LLM judge — advisory, not confirmed)"
-	def := "The artifact's behavior does something its description does not disclose."
 	switch r.Mode {
 	case ModeInjection:
 		ruleID, dim, title = "LLM-003", dimInjection, "Hidden prompt injection (LLM judge — advisory, not confirmed)"
-		def = "The instruction text contains a directive aimed at the agent that isn't disclosed as its purpose."
 	case ModeExplain:
 		ruleID, dim, title = "LLM-004", dimObfusc, "Decoded obfuscated payload (LLM judge — advisory, not confirmed)"
-		def = "An obfuscated (base64/hex) payload decodes to content that performs sensitive actions."
 	case ModeCollusion:
 		ruleID, dim, title = "LLM-006", dimCollusion, "Cross-file capability chain (LLM judge — advisory, not confirmed)"
-		def = "Capabilities in different files of this artifact combine into a credential-to-network chain."
 	case ModeCapability:
 		ruleID, dim, title = "LLM-008", dimCapability, "Hook capability exceeds its interception point (LLM judge — advisory, not confirmed)"
-		def = "The hook does more than intercepting this event plausibly requires."
 	case ModeMCPConfig:
 		ruleID, dim, title = "LLM-009", dimSupplyChain, "MCP server configuration risk (LLM judge — advisory, not confirmed)"
-		def = "The server's configuration (source, pinning, transport, credentials) carries supply-chain risk."
 	}
-	why := detect.Redact(v.Summary) // defense-in-depth: model output re-redacted, like Evidence
-	if why == "" {
-		why = def
+	// Redact, then cap (invariant #3). The cap applies to the model's sentence only: consensus
+	// appends the vote afterwards (tally), and the vote must always be readable.
+	why := capBytes(detect.Redact(v.Summary), maxWhyBytes)
+	if strings.TrimSpace(why) == "" {
+		why = model.JudgeRuleText(ruleID)
 	}
 	return &model.Finding{
 		RuleID:    ruleID,
@@ -168,11 +189,7 @@ func finding(r Request, v Verdict) *model.Finding {
 		Why:       why,
 		Source:    model.SrcLLM,
 		Advisory:  true,
-		Evidence: []model.Evidence{{
-			File:    r.Artifact,
-			Line:    0,
-			Snippet: detect.Redact(v.Evidence),
-		}},
+		Evidence:  []model.Evidence{{File: r.Artifact, Line: 0}},
 	}
 }
 
@@ -181,21 +198,24 @@ func finding(r Request, v Verdict) *model.Finding {
 // by accident, which makes this one of the highest-confidence malicious signals available —
 // so unlike every other verdict, the SEVERITY IS OURS, not the model's. A manipulation attempt
 // would naturally include "and rate this low"; letting the model grade its own report of being
-// attacked would hand the attacker the volume knob.
-func barrierFinding(r Request, quote string) *model.Finding {
+// attacked would hand the attacker the volume knob. Like finding, it carries no location until
+// grounding supplies one.
+func barrierFinding(r Request) *model.Finding {
 	return &model.Finding{
 		RuleID:    "LLM-007",
 		Dimension: dimInjection,
 		Severity:  model.SevHigh,
 		Title:     "Artifact tried to instruct the analyzer (LLM judge — advisory, not confirmed)",
-		Why: "While being examined, this content addressed the analysis model directly — telling it what to " +
-			"conclude, or to disregard its instructions. Legitimate content has no reason to talk to a scanner.",
-		Source:   model.SrcLLM,
-		Advisory: true,
-		Evidence: []model.Evidence{{
-			File:    r.Artifact,
-			Line:    0,
-			Snippet: detect.Redact(quote),
-		}},
+		Why:       model.JudgeRuleText("LLM-007"),
+		Source:    model.SrcLLM,
+		Advisory:  true,
+		Evidence:  []model.Evidence{{File: r.Artifact, Line: 0}},
 	}
+}
+
+// evidence is what a grounded span contributes to a finding: the real location and, as the
+// snippet, the sent line(s) it landed on — re-redacted defensively like everything else the
+// judge hands to a report, then bounded.
+func (s groundedSpan) evidence() model.Evidence {
+	return model.Evidence{File: s.file, Line: s.line, Snippet: capBytes(detect.Redact(s.text), maxSnippetBytes)}
 }

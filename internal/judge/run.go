@@ -156,8 +156,9 @@ type result struct {
 
 // groundedFinding turns a verdict into a finding ONLY if the text it quotes can be located in
 // what was actually sent (ground.go). A grounded finding gets the real file:line it came from,
-// replacing the artifact-level "line 0" that told a reader nothing; an unquotable one is
-// dropped and counted, never rendered.
+// replacing the artifact-level "line 0" that told a reader nothing, and shows as its evidence the
+// sent line it landed on — not the quote, which may carry anything around that line; an
+// unquotable one is dropped and counted, never rendered.
 //
 // This does NOT give the judge any authority: a grounded finding is still Source=llm, still
 // advisory, still excluded from the score and from --fail-on (§5.2.1). Grounding buys
@@ -168,8 +169,8 @@ type result struct {
 // not the first fired: content can be perfectly benign and still argue with the scanner.
 func groundedFinding(t task, v Verdict) (verdict, barrier *model.Finding, dropped bool, unquoted string) {
 	if f := finding(t.req, v); f != nil {
-		if file, line, ok := ground(v.Evidence, t.units); ok {
-			f.Evidence[0].File, f.Evidence[0].Line = file, line
+		if s, ok := groundSpan(v.Evidence, t.units); ok {
+			f.Evidence[0] = s.evidence()
 			verdict = f
 		} else {
 			dropped = true
@@ -177,9 +178,9 @@ func groundedFinding(t task, v Verdict) (verdict, barrier *model.Finding, droppe
 		}
 	}
 	if quote := strings.TrimSpace(v.BarrierEvidence); quote != "" {
-		if file, line, ok := ground(quote, t.units); ok {
-			b := barrierFinding(t.req, quote)
-			b.Evidence[0].File, b.Evidence[0].Line = file, line
+		if s, ok := groundSpan(quote, t.units); ok {
+			b := barrierFinding(t.req)
+			b.Evidence[0] = s.evidence()
 			barrier = b
 		} else {
 			// Same bar as any other claim. A manipulation attempt nobody can point at is not
