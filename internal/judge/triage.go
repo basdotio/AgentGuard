@@ -7,10 +7,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/basdotio/AgentGuard/internal/detect"
 	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 const maxTriageItems = 40 // cap findings sent per artifact (keeps the prompt bounded)
+
+// maxReasonBytes bounds a triage label's reason. The prompt asks for "<short>"; the model decides.
+const maxReasonBytes = 256
 
 const triageTask = "You are a security reviewer triaging STATIC findings for one artifact (each line in the data " +
 	"block is one finding: [RULE-ID] evidence). For EACH distinct rule id, judge whether it looks like a real risk or " +
@@ -60,6 +64,9 @@ func (c *HTTPClient) Triage(ctx context.Context, artifact string, items []Triage
 
 // parseTriage extracts the labels object from a reply, tolerating prose/fences around it.
 // A label the model omits simply yields no annotation for that rule (finding still shows).
+// The reason is model output stored for display, so it gets what every other piece of model
+// output gets before it is kept: redaction, then a bound — here, so JSON carries the same text
+// the human renderers do (they additionally sanitize it, report.sanitizeResult).
 func parseTriage(content string) []model.AdvisoryLabel {
 	start := strings.IndexByte(content, '{')
 	end := strings.LastIndexByte(content, '}')
@@ -78,7 +85,7 @@ func parseTriage(content string) []model.AdvisoryLabel {
 		out = append(out, model.AdvisoryLabel{
 			RuleID: l.RuleID,
 			Label:  clampLabel(l.Label),
-			Reason: l.Reason,
+			Reason: capBytes(detect.Redact(l.Reason), maxReasonBytes),
 		})
 	}
 	return out
