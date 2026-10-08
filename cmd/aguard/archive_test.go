@@ -88,10 +88,13 @@ func mustCheck(t *testing.T, path string) model.ScanResult {
 	return res
 }
 
-// renderAll renders a check the four ways `aguard check` can: SARIF, terminal text, markdown,
-// and JSON with scanned_at zeroed (a wall-clock stamp is the one field allowed to differ).
+// renderAll renders a check the four ways `aguard check` can: SARIF, terminal text, markdown and
+// JSON. The scan time is zeroed first: it is the one thing allowed to differ between two runs, and
+// it appears in JSON (scanned_at) and in markdown (to the minute — two checks either side of a
+// minute boundary would otherwise differ). SARIF and text do not print it.
 func renderAll(t *testing.T, res model.ScanResult) map[string][]byte {
 	t.Helper()
+	res.ScannedAt = 0
 	out := map[string][]byte{}
 	var b bytes.Buffer
 	if err := report.SARIF(&b, res, "test", ""); err != nil {
@@ -106,7 +109,6 @@ func renderAll(t *testing.T, res model.ScanResult) map[string][]byte {
 		t.Fatal(err)
 	}
 	out["markdown"] = append([]byte(nil), b.Bytes()...)
-	res.ScannedAt = 0
 	j, err := json.MarshalIndent(res, "", "  ")
 	if err != nil {
 		t.Fatal(err)
@@ -187,8 +189,8 @@ func resultArtifact(r map[string]any) string {
 	return s
 }
 
-// TestCheckZip_TwiceIsByteIdentical: the same zip checked twice gives the same SARIF, text and
-// markdown byte for byte, and the same JSON but for scanned_at — for a zip with SKILL.md at its
+// TestCheckZip_TwiceIsByteIdentical: the same zip checked twice gives the same SARIF and text byte
+// for byte, and the same markdown and JSON but for the scan time — for a zip with SKILL.md at its
 // root and for one that wraps the skill in a folder. No rendering names the extraction directory.
 // The finding itself still fires at the level it always had.
 func TestCheckZip_TwiceIsByteIdentical(t *testing.T) {
@@ -455,5 +457,48 @@ func TestCheckZip_AbsoluteEvidenceNamesTheArchive(t *testing.T) {
 		if f != "root.zip" {
 			t.Errorf("COV-000 evidence = %q, want root.zip", f)
 		}
+	}
+}
+
+// TestCheckZip_ErrorTextNamesTheArchive: a note that quotes an I/O error quotes a path, and for an
+// archive that path is inside the extraction directory. The snippet is part of the SARIF
+// fingerprint, so a random directory name in it reopened the alert on every run. The note itself
+// must still be there — an unreadable manifest is a coverage gap, and it says so.
+func TestCheckZip_ErrorTextNamesTheArchive(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		files  map[string]string
+		wantIO bool
+	}{
+		// The manifest is a directory: read by Go's own bounded reader, same error on every OS.
+		{"manifest is a directory", map[string]string{"plugins/installed_plugins.json/": ""}, true},
+		// A file where the skills directory belongs: the OS's ReadDir error, wording varies by OS.
+		{"skills is a file", map[string]string{"plugins/installed_plugins.json": `{"version":2,"plugins":{}}`, "skills": "x\n"}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			zp := filepath.Join(t.TempDir(), "root.zip")
+			writeZip(t, zp, tc.files)
+			r1, r2 := mustCheck(t, zp), mustCheck(t, zp)
+			a, b := renderAll(t, r1), renderAll(t, r2)
+			for _, k := range []string{"sarif", "text", "markdown", "json"} {
+				if !bytes.Equal(a[k], b[k]) {
+					t.Errorf("%s differs between two checks of the same zip:\n%s", k, firstDiff(a[k], b[k]))
+				}
+				if bytes.Contains(a[k], []byte("aguard-inbox-")) {
+					t.Errorf("%s names the temporary extraction directory", k)
+				}
+			}
+			var io []string
+			for _, n := range r1.Notes {
+				if n.RuleID == "IO-000" {
+					for _, e := range n.Evidence {
+						io = append(io, e.Snippet)
+					}
+				}
+			}
+			if tc.wantIO && (len(io) == 0 || !strings.Contains(io[0], "root.zip/plugins/installed_plugins.json")) {
+				t.Errorf("IO-000 snippets = %q, want the unreadable manifest named inside root.zip", io)
+			}
+		})
 	}
 }
