@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"time"
 
 	"github.com/basdotio/AgentGuard/internal/safeio"
 )
@@ -54,6 +55,12 @@ const (
 // re-reads the target and promotes the entry only if the hash still matches (see handlePost).
 // Without the correlation the gate would record whatever is on disk after the load, which is
 // not necessarily what anyone was shown.
+//
+// It only works if it survives the FILE. Claude Code starts the hook afresh for every event, so
+// the process that parked the verdict has exited before anyone answers; PostToolUse finds it
+// only because LoadStore reads it back. A test that hands one in-memory Store to both events
+// cannot see whether that happens, which is why the cross-process tests (pending_test.go)
+// give every event a store freshly loaded from disk.
 type Pending struct {
 	Hash    string `json:"hash"`
 	Name    string `json:"name"`
@@ -67,6 +74,14 @@ type Pending struct {
 // leaves an entry behind, and an unbounded map in a file written on every skill load grows
 // without a ceiling; an hour is far longer than any prompt stays on screen.
 const pendingTTL = 3600
+
+// expired is THE expiry rule for a parked verdict: pend prunes with it on the way in and
+// LoadStore drops with it on the way back out of the file, so an entry cannot be fresh in one
+// place and stale in the other. A zero on either side never expires anything, which is why
+// LoadStore refuses undated rows outright (see pendingRowOK) rather than keeping them forever.
+func expired(askedAt, now int64) bool {
+	return now > 0 && askedAt > 0 && now-askedAt > pendingTTL
+}
 
 // Store is the approvals set. The zero value is a usable empty store.
 type Store struct {
@@ -93,6 +108,10 @@ func ApprovalsPath(root string) string { return filepath.Join(root, ApprovalsFil
 // fail-closed rule, because here the two failure directions are not symmetric: forgetting
 // approvals costs the operator some prompts, while honouring a store we cannot parse would
 // hand a silent allow to whatever wrote the garbage.
+//
+// Parked verdicts are read back too (readPending), judged against this process's own wall
+// clock — the clock the hook runner also hands the gate as Options.Now, so a verdict is aged
+// by one clock from the moment it is parked to the moment it is answered.
 func LoadStore(path string) *Store {
 	s := &Store{Version: storeVersion, Approvals: map[string]Approval{}, path: path}
 	b, err := safeio.ReadFile(path, safeio.MaxConfigBytes)
@@ -121,7 +140,44 @@ func LoadStore(path string) *Store {
 		}
 		s.Approvals[k] = v
 	}
+	s.Pending = readPending(on.Pending, time.Now().Unix())
 	return s
+}
+
+// readPending keeps the parked verdicts from the file that PostToolUse could still honour.
+// It builds a new map (nil when nothing survives, so a store with no open prompt writes no
+// "pending" key) rather than filtering the decoded one in place.
+func readPending(rows map[string]Pending, now int64) map[string]Pending {
+	var out map[string]Pending
+	for id, p := range rows {
+		if !pendingRowOK(id, p, now) {
+			continue
+		}
+		if out == nil {
+			out = make(map[string]Pending, len(rows))
+		}
+		out[id] = p
+	}
+	return out
+}
+
+// pendingRowOK is the read-back hygiene for one parked verdict, in the spirit of the approvals
+// rule above: a row this gate could not have written is dropped, at the cost of one more
+// prompt, rather than kept.
+//
+//   - no tool_use_id: nothing to correlate an answer with;
+//   - no hash: nothing PostToolUse could compare its re-scan against;
+//   - undated, or dated in the future: not a time this gate's clock wrote, and expired() would
+//     keep it forever (a clock stepped back between the two events costs one prompt);
+//   - expired: the same rule pend prunes with.
+func pendingRowOK(id string, p Pending, now int64) bool {
+	if id == "" || p.Hash == "" {
+		return false
+	}
+	if p.AskedAt <= 0 || p.AskedAt > now {
+		return false
+	}
+	return !expired(p.AskedAt, now)
 }
 
 // Approved reports whether these exact bytes have been accepted before. An empty hash is
@@ -144,14 +200,18 @@ func (s *Store) pend(toolUseID string, v Verdict, now int64) {
 		s.Pending = map[string]Pending{}
 	}
 	for id, p := range s.Pending {
-		if now > 0 && p.AskedAt > 0 && now-p.AskedAt > pendingTTL {
+		if expired(p.AskedAt, now) {
 			delete(s.Pending, id)
 		}
 	}
 	s.Pending[toolUseID] = Pending{Hash: v.Hash, Name: v.Name, Kind: v.Kind, Path: v.Path, Score: v.Score, AskedAt: now}
 }
 
-// pendingFor returns the verdict parked against a tool call, if it has not expired.
+// pendingFor returns the verdict parked against a tool call.
+//
+// It does not judge age itself: expiry is applied where an entry enters a store — when it is
+// parked (pend) and when it is read back from the file (LoadStore). Every hook event is its own
+// process, so no store lives long enough for an entry to expire inside it.
 func (s *Store) pendingFor(toolUseID string) (Pending, bool) {
 	if s == nil || toolUseID == "" {
 		return Pending{}, false
