@@ -156,8 +156,12 @@ everything on your machine. That trade-off is yours.
 - **Two home directories become `~`, and nothing else does.** On every judged run — `scan`,
   the Downloads pass, a judged `check` — your own home (the OS user's, `$HOME`) is replaced; on
   `scan`, so is the scanned environment's (`--root`'s parent, taken from the absolute root; for the
-  default root that is your home again). Each in three spellings: as given, with symlinks
-  resolved, and as Claude Code's encoded project directory (`-Users-you-…`). Replaced in content
+  default root that is your home again). Each in up to three spellings: made absolute (a relative
+  one is resolved against the working directory, and the path is cleaned), with symlinks resolved,
+  and as Claude Code's encoded project directory (`-Users-you-…`). A home one segment deep has no
+  encoded spelling replaced, deliberately: with `HOME=/root`, `/root/…` goes as `~/…` but `-root`
+  is sent as written, because it reads like a command-line option (`-root-dir`) and replacing it
+  would rewrite the command under review. Replaced in content
   and in triage evidence, *after* redaction, so redaction weighs each line as the report does; a
   file in the home that a static finding names as `<username>/<file>` goes as `~/<file>`. When the
   scanned home lies inside yours (`CLAUDE_CONFIG_DIR=~/.config/claude` makes it `~/.config`), only

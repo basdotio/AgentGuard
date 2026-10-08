@@ -221,7 +221,9 @@ triage labelling. Scanned content is treated as **hostile**: every call fences i
 than degrading to a guessable fence. One step before egress is outside `detect.Redact`'s reach
 (`judge/egress.go`): as each excerpt is built, two home directories become `~` — the OS user's,
 on every run, and the scanned environment's (`judge.Options.Home`, the absolute `--root`'s parent)
-— each as given, symlinks resolved, and in Claude Code's encoded project-directory form. It runs
+— each made absolute, with symlinks resolved, and in Claude Code's encoded project-directory form
+(that last one not for a one-segment home such as `/root`: `-root` reads like a command-line option,
+so it is sent as written while `/root/…` is still replaced). It runs
 *after* redaction, so the entropy rule weighs each run as the report does, and so does the same
 replacement on the static `File` fields in triage evidence. MCP configuration goes as `key=value`
 lines (`detect.ConfigLines`, the same leaves the static pass reads): command, args, env, url and

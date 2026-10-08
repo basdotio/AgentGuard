@@ -57,10 +57,12 @@ type encodedHome struct {
 	userAt int // first byte of the username segment in form
 }
 
-// newEgress prepares the scrub for the given homes, the OS user's first. Each is made absolute — a
-// relative home is resolved against the working directory, where the scan resolved its root, not
-// dropped — and taken as given and with symlinks resolved. An empty home, or one that is the
-// filesystem root, adds nothing: replacing "/" would rewrite every absolute path in the excerpt.
+// newEgress prepares the scrub for the given homes, the OS user's first. Each is made absolute
+// (filepath.Abs, which also cleans it) — a relative home is resolved against the working directory,
+// where the scan resolved its root, not dropped — and replaced in that form and again with symlinks
+// resolved; a spelling only the caller's bytes had (`/Users/./alice`) is not one of them. An empty
+// home, or one that is the filesystem root, adds nothing: replacing "/" would rewrite every
+// absolute path in the excerpt.
 //
 // A spelling that lies inside an EARLIER home's is dropped: CLAUDE_CONFIG_DIR=~/.config/claude makes
 // the scan's home ~/.config, and replacing it with `~` as well would send ~/.config/claude/x as
