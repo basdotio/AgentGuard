@@ -175,6 +175,13 @@ skill 与 plugin 用树哈希(按相对路径排序 + 每个文件的 sha256);�
 [`reputation.json`](../internal/reputation/data/reputation.json) 里的每一条记录全部失效**,须用
 `aguard hash` 重新生成。`test/` 故意**不**排除 —— payload 会藏在那里。
 
+hook、MCP server、permission 列表用的是**内容哈希**([`detect/contenthash.go`](../internal/detect/contenthash.go)),
+由 `analyze()` 在规则引擎跑完后紧接着填,先于信誉、闸门 `SessionStart`、`aguard approve` 和 Downloads 那一路读它。
+定义是 `sha256(<种类域> 0x00 <规范 JSON>)`,只覆盖配置本身 —— 不含路径、不含 artifact 名 —— 所以同一份配置在两台机器上
+是同一个身份。hook 的输入包含它运行的脚本内容(读不到时是一个说明原因的标记);secret 在哈希前由 `Redact` 的凭据那一半
+换掉,所以只改 secret 不重键,而改 `Redact` 的那一半会让这三类全部重键。配置 parse 失败的 artifact 仍是空哈希,
+任何批准和信誉条目都匹配不到它。
+
 ## LLM judge(可选,默认关)
 
 必须同时满足配置里 `llm.enabled: true` **和** `--llm` 才会启用,`scan` 和 `check` 都接受 `--llm`;`clean`

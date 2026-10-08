@@ -72,9 +72,9 @@ aguard version                                         # 版本 + 与已装插�
 | 类型 `ArtifactKind` | 来源路径 | 采集内容 |
 |---|---|---|
 | `skill` | `<root>/skills/*/SKILL.md` + 同目录脚本/资源 | frontmatter(name/description/allowed-tools/version)、脚本文件列表、bin/、node_modules 存在性 |
-| `mcp` | `~/.claude.json` → `mcpServers` | 每个 server 的 command/args/env(env 值脱敏) |
-| `hook` | `<root>/settings.json` → `hooks` | 每条 hook 的 matcher + command(type=command),或 type=http 时的 matcher + url。HTTP hook 把完整事件 payload(工具输入、命令行、授权提示)POST 到该 url,仍是一等审计对象 |
-| `permission` | `<root>/settings.json` → `permissions.allow/deny`;另有一个同 kind、名为 `settings env` 的 artifact 承载 `env` 块(P-016,2026-09-23) | 规则条目原文;`env` 块渲染为 `KEY=VALUE` 行进全部规则,permcheck 不在它上面重跑 |
+| `mcp` | `~/.claude.json` → `mcpServers` | 每个 server 的 command/args/env(env 值脱敏)。哈希 = 该条目的内容哈希(§8),不含 server 名与文件路径 |
+| `hook` | `<root>/settings.json` → `hooks` | 每条 hook 的 matcher + command(type=command),或 type=http 时的 matcher + url。HTTP hook 把完整事件 payload(工具输入、命令行、授权提示)POST 到该 url,仍是一等审计对象。哈希 = 内容哈希(§8):event + matcher + type + command/url + 它跟进的脚本内容 |
+| `permission` | `<root>/settings.json` → `permissions.allow/deny`;另有一个同 kind、名为 `settings env` 的 artifact 承载 `env` 块(P-016,2026-09-23) | 规则条目原文;`env` 块渲染为 `KEY=VALUE` 行进全部规则,permcheck 不在它上面重跑。哈希 = 内容哈希(§8):整个 `permissions` 对象 + allow 引用的脚本内容;`env` 块单独一个域 |
 | `subagent` | `<root>/agents/*` | 定义文件全文 |
 | `command` | `<root>/commands/*` | 定义文件全文 |
 | `plugin` | `<root>/plugins/installed_plugins.json` → 各条 `installPath` | 插件打包的 skills/commands/hooks/MCP —— 展开后按对应 kind 再扫(B4,不可整块漏)。**只采「已安装」的那份**:marketplace 镜像不进任何会话,扫了只是噪声。`installPath` 出自配置文件、可被影响,须过 §16.2 边界收敛 |
@@ -350,7 +350,12 @@ type ArtifactReport struct {
     Path     string
     Hash     string      // canonical hash —— 预留信誉库比对/上链。作用域:skill/plugin=整目录 canonical tree hash
                           // (SKILL.md + 全部脚本/资源,排序后逐文件 sha256 再汇总);单文件 artifact=文件 sha256。
-                          // 风险主要在脚本,故不能只哈希 SKILL.md(B3-应修)。
+                          // 风险主要在脚本,故不能只哈希 SKILL.md(B3-应修)。connector=工具清单哈希。
+                          // hook/mcp/permission=内容哈希(P-009,detect 阶段算,先于信誉/闸门):
+                          //   sha256(<域> 0x00 <规范 JSON>),域 aguard:{hook,mcp,permission,settings-env}:v1;
+                          //   不含任何路径和 artifact 名;secret 先过 Redact 的凭据那一半(不含高熵兜底);
+                          //   hook/permission 带上跟进脚本的 sha256,读不到按原因记 unresolved/outside-home/unreadable。
+                          //   parse 失败的 artifact 仍为 ""(""=没读过,永不匹配批准或信誉)。
     Score          int   // 0–100,只由确定性发现计算
     ScoreEffective int   // 0–100,含合格 LLM 发现;恒 ≤ Score(§5.3)
     Findings []Finding
@@ -358,6 +363,7 @@ type ArtifactReport struct {
     Reputation *ReputationMatch `json:",omitempty"` // 命中内嵌信誉名单时的审计元数据,让 100 分的「被信任」和「本来干净」在数据里分得开
     Hook      Hook       `json:"-"` // KindHook:事件/matcher/命令,扫描内部输入,不序列化
     Connector *Connector `json:"-"` // KindConnector:通告的工具清单(name/description/参数 description),不序列化;报告带的是关于它的发现,不是它的副本
+    MCPServer string     `json:"-"` // KindMCP:server 在 mcpServers 里的 key;插件自带的 server 的 Name 带 " (plugin …)" 后缀,按 key 找条目要用它
 }
 
 type ScanResult struct {
@@ -550,7 +556,7 @@ v1 写的 `internal/rules/` 从未存在:规则表就在 `detect/rules_data.go`,
 `aguard hook` 注册成 Claude Code 的 hook,在 agent **加载**一个 skill 之前跑一遍 `check` 的静态路径。**闸门永不开判官**,`check --llm` 存在(P-004)不改变这一点:闸门每次加载都触发、有 deadline、fail-open,一次模型调用会让每次加载变慢、花一笔没人要求花的钱,而一个取决于端点有没有回话的答案不是闸门。`gateOptions` 与 `approvePath` 构造的 `scanOpts` 永不设 `llm`(`TestGateScannerNeverEnablesLLM` 用计数端点钉住);闸门的判决等于不带 `--llm` 的 `check`,也就是带 `--llm` 时的确定性那一半。名字叫「加载时」而不是「安装时」是结论不是措辞:Claude Code 没有安装时事件,而 skill 还可以 `git clone`/`cp` 进来;守得住的是加载,且那恰好是要紧的边界(磁盘上的 skill 是惰性的)。
 
 - **批准的 key 是 canonical 哈希,永远不是名字或路径**:改一个字节哈希就变,闸门自己重新问;「按名字记住」会重新打开「换掉内容、留着名字」这条最便宜的规避。
-- **只有 `PreToolUse[Skill]` 能真的拦住东西**;插件自带的 hook、MCP server、远程 connector 从会话第一轮就是活的,没有加载事件。所以 `SessionStart` 那半必须在,且消息里**必须继续写着「这些没有被拦住」**,并且在没有告警时也发(最需要知道这句话的正是环境干净的人)。
+- **只有 `PreToolUse[Skill]` 能真的拦住东西**;插件自带的 hook、MCP server、远程 connector 从会话第一轮就是活的,没有加载事件。所以 `SessionStart` 那半必须在,且消息里**必须继续写着「这些没有被拦住」**,并且在没有告警时也发(最需要知道这句话的正是环境干净的人)。hook/MCP/permission 有了内容哈希(§8,P-009)之后,`SessionStart` 对其中**已批准**的同样跳过,配置或跟进的脚本改一个字节就重新列出;批准入口不变(`aguard approve`),没有新的写入路径。
 - **批准只能覆盖「给人看过的那份字节」**:`PreToolUse` 把判决按 `tool_use_id` 停在 pending,`PostToolUse` 重读目标、哈希一致才提升为批准。
 - **有 medium 及以上确定性发现的放行不写批准**(2026-09-16,P-005):阈值决定拦不拦,记忆是另一个决定。只有零 medium 以上发现的内容记为 `clean`;否则每次加载重审并出声(带规则 ID,不带 snippet),直到内容干净或人用 `aguard approve` 显式接受(记为 `accepted-risk`)。low 仍记住。起因:四个专门为之写规则的恶意样本各以一条 medium 通过 high 阈值,并被永久记为已信任。
 - **`ask` 在会自动答应的权限模式下等于放行,所以升级成 `deny`**(`auto`/`acceptEdits`/`bypassPermissions`/`dontAsk`);不认识的模式不升级。
