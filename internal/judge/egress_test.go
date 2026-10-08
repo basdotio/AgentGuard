@@ -257,6 +257,45 @@ func TestEgress_ClipRepairIsForStaticSnippetsOnly(t *testing.T) {
 	}
 }
 
+// TestEgress_RepairsAnEncodedHomeTheSnippetCapCut: the snippet cap cuts Claude Code's encoded
+// spelling of the home as readily as the raw one — a hook that reads a memory file under
+// ~/.claude/projects/-Users-alicemarker-work/ can end its 200 bytes at `-Users-alicem…`. The raw
+// spellings were completed and the encoded one went out with the username's head. Same rule as the
+// raw form: completed once the fragment reaches into the username, never before it, never in raw
+// text. The username starts where the ENCODED form says — a non-ASCII parent directory is one '-'
+// there and two or more bytes in the raw path — and a one-segment home has no encoded form at all.
+func TestEgress_RepairsAnEncodedHomeTheSnippetCapCut(t *testing.T) {
+	const home = "/Users/alicemarker"
+	long := "cat ~/.claude/projects/" + encodedDir(home) + "-work/memory/MEMORY.md"
+	clipped := long[:strings.Index(long, "alicemarker")+6] + "…"
+	if !strings.HasSuffix(clipped, "/-Users-alicem…") {
+		t.Fatalf("precondition: %q", clipped)
+	}
+	for _, c := range []struct{ home, in, want string }{
+		{home, clipped, "cat ~/.claude/projects/~…"},
+		{home, "x -Users-a…", "x ~…"},                                      // one byte into the username
+		{"/home/é/alicemarker", "x -home---a…", "x ~…"},                    // é: one '-' encoded, two bytes raw
+		{"/home/first.last", "x projects/-home-first-l…", "x projects/~…"}, // a '.' in the username is a '-' too
+		{home, "x -Users-…", "x -Users-…"},                                 // stops before the username: names nobody
+		{home, "x -Users-al", "x -Users-al"},                               // not clipped: a different directory
+		{home, "x data-Users-alicem…", "x data-Users-alicem…"},             // the tail of a longer name
+		{"/root", "x -roo…", "x -roo…"},                                    // a one-segment home has no encoded form
+	} {
+		if got := newEgress(c.home).snippet(c.in); got != c.want {
+			t.Errorf("home %q: snippet(%q) = %q, want %q", c.home, c.in, got, c.want)
+		}
+	}
+	e := newEgress(home)
+	if got := e.scrub(clipped); got != clipped {
+		t.Errorf("raw text ending in an encoded home fragment was rewritten: %q", got)
+	}
+	items := triageItems([]model.Finding{{RuleID: "HOOK-001", Dimension: 2,
+		Evidence: []model.Evidence{{File: "settings.json", Snippet: clipped}}}}, e)
+	if got, want := items[0].Evidence, "settings.json:0 cat ~/.claude/projects/~…"; got != want {
+		t.Errorf("triage: got %q, want %q", got, want)
+	}
+}
+
 // TestEgress_NoHomeIsIdentity: the zero value, no home, an empty home and a home that is the
 // filesystem root change nothing — replacing "/" would rewrite every absolute path. (A relative
 // home is not "no home": it is resolved, see TestEgress_RelativeHomeIsResolved.) A one-segment
