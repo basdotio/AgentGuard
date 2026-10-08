@@ -17,6 +17,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -224,12 +225,8 @@ func TestGateScannerNeverEnablesLLM(t *testing.T) {
 	if res.Judge != nil {
 		t.Errorf("the gate's session-start scanner ran with --llm: %+v", res.Judge)
 	}
-	for _, ev := range []map[string]any{
-		{"hook_event_name": "PreToolUse", "tool_name": "Skill", "tool_use_id": "c1",
-			"tool_input": map[string]any{"skill": "test-runner"}},
-		{"hook_event_name": "SessionStart", "source": "startup"},
-	} {
-		in, err := json.Marshal(ev)
+	for _, tc := range gateAuditedEvents {
+		in, err := json.Marshal(tc.event)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -237,9 +234,7 @@ func TestGateScannerNeverEnablesLLM(t *testing.T) {
 		if err := runHook(bytes.NewReader(in), &reply, root, cfg); err != nil {
 			t.Fatalf("runHook: %v", err)
 		}
-		if reply.Len() == 0 {
-			t.Errorf("%s produced no reply, so this test did not watch it scan", ev["hook_event_name"])
-		}
+		assertGateAudited(t, tc.name, tc.want, reply.Bytes())
 	}
 
 	// Last, so an approval cannot make the hook replies above go quiet.
@@ -250,6 +245,44 @@ func TestGateScannerNeverEnablesLLM(t *testing.T) {
 
 	if n := calls.Load(); n != 0 {
 		t.Errorf("the load-time gate made %d call(s) to a judge endpoint; it must never consult a model", n)
+	}
+}
+
+// gateAuditedEvents are the two hook events TestGateScannerNeverEnablesLLM drives, each with the
+// shape its reply takes only when the gate actually scanned: the PreToolUse verdict names the
+// skill with a score, the SessionStart one says what it audited.
+var gateAuditedEvents = []struct {
+	name  string
+	event map[string]any
+	want  *regexp.Regexp
+}{
+	{"PreToolUse", map[string]any{"hook_event_name": "PreToolUse", "tool_name": "Skill", "tool_use_id": "c1",
+		"tool_input": map[string]any{"skill": "test-runner"}}, regexp.MustCompile(`"?test-runner"? +\d+/100`)},
+	{"SessionStart", map[string]any{"hook_event_name": "SessionStart", "source": "startup"},
+		regexp.MustCompile(`^AgentGuard audited .+ at session start`)},
+}
+
+// assertGateAudited reads a hook reply for proof that the gate SCANNED, not merely answered. The
+// zero-request count beside it only means something if a scan ran: a GATE-000 "loaded WITHOUT an
+// audit" — a skill it could not resolve, a config it could not load — is also a non-empty reply,
+// and it makes zero requests because it read nothing.
+func assertGateAudited(t *testing.T, event string, want *regexp.Regexp, reply []byte) {
+	t.Helper()
+	var out gate.Output
+	if err := json.Unmarshal(reply, &out); err != nil {
+		t.Errorf("%s: reply is not a hook output (%v): %q", event, err, reply)
+		return
+	}
+	text := out.SystemMessage
+	if hs := out.HookSpecificOutput; hs != nil {
+		text += "\n" + hs.PermissionDecisionReason
+	}
+	if strings.Contains(text, "GATE-000") {
+		t.Errorf("%s: the gate did not audit, so a zero request count proves nothing:\n%s", event, text)
+		return
+	}
+	if !want.MatchString(text) {
+		t.Errorf("%s: reply does not read as an audit (want %s), so this test did not watch it scan:\n%s", event, want, text)
 	}
 }
 
