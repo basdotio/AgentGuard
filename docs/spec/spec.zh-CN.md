@@ -73,7 +73,7 @@ aguard version                                         # 版本 + 与已装插�
 |---|---|---|
 | `skill` | `<root>/skills/*/SKILL.md` + 同目录脚本/资源 | frontmatter(name/description/allowed-tools/version)、脚本文件列表、bin/、node_modules 存在性 |
 | `mcp` | `~/.claude.json` → `mcpServers` | 每个 server 的 command/args/env(env 值脱敏)。哈希 = 该条目的内容哈希(§8),不含 server 名与文件路径 |
-| `hook` | `<root>/settings.json` → `hooks` | 每条 hook 的 matcher + command(type=command),或 type=http 时的 matcher + url。HTTP hook 把完整事件 payload(工具输入、命令行、授权提示)POST 到该 url,仍是一等审计对象。哈希 = 内容哈希(§8):event + matcher + type + command/url + 它跟进的脚本内容 |
+| `hook` | `<root>/settings.json` → `hooks` | 每条 hook 的 matcher + command(type=command),或 type=http 时的 matcher + url。HTTP hook 把完整事件 payload(工具输入、命令行、授权提示)POST 到该 url,仍是一等审计对象。哈希 = 内容哈希(§8):event + matcher + 整个条目 + 它跟进的脚本内容 |
 | `permission` | `<root>/settings.json` → `permissions.allow/deny`;另有一个同 kind、名为 `settings env` 的 artifact 承载 `env` 块(P-016,2026-09-23) | 规则条目原文;`env` 块渲染为 `KEY=VALUE` 行进全部规则,permcheck 不在它上面重跑。哈希 = 内容哈希(§8):整个 `permissions` 对象 + allow 引用的脚本内容;`env` 块单独一个域 |
 | `subagent` | `<root>/agents/*` | 定义文件全文 |
 | `command` | `<root>/commands/*` | 定义文件全文 |
@@ -353,7 +353,8 @@ type ArtifactReport struct {
                           // 风险主要在脚本,故不能只哈希 SKILL.md(B3-应修)。connector=工具清单哈希。
                           // hook/mcp/permission=内容哈希(P-009,detect 阶段算,先于信誉/闸门):
                           //   sha256(<域> 0x00 <规范 JSON>),域 aguard:{hook,mcp,permission,settings-env}:v1;
-                          //   不含任何路径和 artifact 名;secret 先过 Redact 的凭据那一半(不含高熵兜底);
+                          //   hook 与 mcp 哈希整个条目;不含任何路径和 artifact 名;secret 先过 Redact 的凭据那一半
+                          //   (不含高熵兜底),且替换不许拿走结构字符(shell 元字符、授权通配、URL 分隔符);
                           //   hook/permission 带上跟进脚本的 sha256,读不到按原因记 unresolved/outside-home/unreadable。
                           //   parse 失败的 artifact 仍为 ""(""=没读过,永不匹配批准或信誉)。
     Score          int   // 0–100,只由确定性发现计算
@@ -361,7 +362,7 @@ type ArtifactReport struct {
     Findings []Finding
     Advisory []AdvisoryLabel // триаж标签:展示通道,永不进 Findings(§5.2.1 铁律 #2)
     Reputation *ReputationMatch `json:",omitempty"` // 命中内嵌信誉名单时的审计元数据,让 100 分的「被信任」和「本来干净」在数据里分得开
-    Hook      Hook       `json:"-"` // KindHook:事件/matcher/命令,扫描内部输入,不序列化
+    Hook      Hook       `json:"-"` // KindHook:事件/matcher/命令,以及原样的条目 JSON(Entry,内容哈希绑它),扫描内部输入,不序列化
     Connector *Connector `json:"-"` // KindConnector:通告的工具清单(name/description/参数 description),不序列化;报告带的是关于它的发现,不是它的副本
     MCPServer string     `json:"-"` // KindMCP:server 在 mcpServers 里的 key;插件自带的 server 的 Name 带 " (plugin …)" 后缀,按 key 找条目要用它
 }

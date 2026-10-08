@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/basdotio/AgentGuard/internal/collect"
@@ -30,13 +31,17 @@ import (
 //   - The domain is per kind, so byte-equal inputs of two kinds never share a digest.
 //   - Canonical JSON: decoded with UseNumber (numbers as written), keys sorted, no HTML escaping,
 //     arrays in order. Not RFC 8785: numbers are not normalised and keys sort by UTF-8 bytes.
+//   - Whole entries: a hook's own JSON object and an MCP server's, every field — a changed type,
+//     timeout or header is a different thing to approve.
 //   - No path is part of the input — not the config file's, not OwnerRoot, not a resolved script's —
 //     so one configuration on two machines is one identity. The artifact Name is not either: it is a
 //     label (a "#n" index, a plugin suffix, a server name), as a skill's directory name is not part
 //     of its tree hash.
-//   - Secrets are replaced before hashing (hashView). The hash is published in the JSON report and
-//     stored in the approvals file, and a digest over a low-entropy secret is a commitment anyone can
-//     brute-force. Consequence, intended: changing ONLY a replaced secret does not re-key.
+//   - Secrets are replaced before hashing (see guardedView). The hash is published in the JSON
+//     report and stored in the approvals file, and a digest over a low-entropy secret is a commitment
+//     anyone can brute-force. Consequence, intended: changing ONLY a replaced secret does not re-key.
+//     The rule that keeps that from becoming "changing the code does not re-key": a replacement may
+//     forget a secret, never structure.
 //   - A followed script is folded in by its sha256, or by a marker saying why it could not be.
 
 // Domains. The version suffix is the definition's: bump it with any change to what goes in.
@@ -57,8 +62,32 @@ const (
 	scriptUnreadable  = "unreadable"   // it is there and could not be opened
 )
 
-// shellMeta are the characters that make a span of a shell command line code rather than a literal.
-const shellMeta = "$`();|&<>\\"
+// How a value is read by whatever consumes it, which decides what in it is STRUCTURE — characters a
+// replacement must not take away, because a span holding them is not a literal secret.
+type viewMode int
+
+const (
+	// viewLiteral is a value read as data (an env value, a header, a URL). Only URL delimiters are
+	// structure: `https://other.example:443#@good.example/` connects to other.example, and with the
+	// `443#` span replaced it would hash like a URL with a password that connects to good.example.
+	viewLiteral viewMode = iota
+	// viewShell is a value a shell interprets (a hook command; an MCP command and its args). In an
+	// unquoted, replaceable span `$(`, a glob, a `;` are code: `-u admin:$(curl …|sh)` must not hash
+	// like `-u admin:hunter2`.
+	viewShell
+	// viewGrant is a permission entry. `Tool(pattern)` is unwrapped and the pattern — matched against
+	// the commands the agent runs — gets the shell view, so `admin:*)` cannot hash like `admin:pw)`:
+	// widening an exact grant into a wildcard is the change an approval exists to catch.
+	viewGrant
+)
+
+const (
+	literalStructure = "#?\\"
+	shellStructure   = "$`();|&<>\\*?#[]{}"
+)
+
+// grantRE splits a permission entry into its tool and its pattern: `Bash(curl -u a:b *)`.
+var grantRE = regexp.MustCompile(`(?s)^([A-Za-z][A-Za-z0-9_]*)\((.*)\)$`)
 
 const redacted = "<REDACTED>"
 
@@ -69,10 +98,7 @@ const redacted = "<REDACTED>"
 //
 // cmd/aguard.analyze calls this immediately after Run, before anything reads Hash.
 func ContentHashes(root string, arts []model.ArtifactReport) []model.ArtifactReport {
-	// Cleaned as CollectAll cleans it: `--root ~/.claude/` (shell completion adds the slash) would
-	// otherwise make home == root, resolve `~/…` scripts against the wrong directory, and give one
-	// configuration two identities depending on how its path was typed.
-	root = filepath.Clean(root)
+	root = absRoot(root)
 	out := make([]model.ArtifactReport, len(arts))
 	docs := map[string]configDoc{}
 	for i, a := range arts {
@@ -85,6 +111,17 @@ func ContentHashes(root string, arts []model.ArtifactReport) []model.ArtifactRep
 		}
 	}
 	return out
+}
+
+// absRoot makes the scripts' anchor independent of how the root was typed. `--root ~/.claude/`
+// (shell completion adds the slash) made home == root, and `aguard hash .` made home ".", so `~/…`
+// scripts resolved somewhere else and one configuration got a second identity. An Abs that fails
+// still cleans.
+func absRoot(root string) string {
+	if abs, err := filepath.Abs(root); err == nil {
+		return abs
+	}
+	return filepath.Clean(root)
 }
 
 // contentDigest is the one place the domain separator is applied.
@@ -114,32 +151,24 @@ func contentHashInput(root string, a model.ArtifactReport, docs map[string]confi
 	return "", nil, false
 }
 
-// hookHashInput: when the hook fires (event, matcher), what kind it is, what it runs, and what the
-// scripts it names contain. The command is shell, so it gets the shell view.
+// hookHashInput: when the hook fires (event, matcher), its whole entry as written, and what the
+// scripts its command names contain. The entry comes from collect (model.Hook.Entry); a hook
+// artifact without one was not built from a settings file and gets no hash.
 func hookHashInput(root string, h model.Hook) (string, []byte, bool) {
-	in := map[string]any{"event": h.Event, "matcher": h.Matcher}
-	if strings.EqualFold(strings.TrimSpace(h.Type), "http") {
-		u := strings.TrimSpace(h.URL)
-		if u == "" {
-			return "", nil, false
-		}
-		in["type"] = "http"
-		in["url"] = hashView(u)
-	} else {
-		cmd := strings.TrimSpace(h.Command)
-		if cmd == "" {
-			return "", nil, false
-		}
-		in["type"] = "command"
-		in["command"] = shellHashView(cmd)
-		in["scripts"] = scriptDigests(root, h.OwnerRoot, scriptRefs(cmd))
+	entry, ok := decodeJSON([]byte(h.Entry))
+	if !ok {
+		return "", nil, false
+	}
+	in := map[string]any{"event": h.Event, "matcher": h.Matcher, "entry": redactEntry(entry)}
+	if !strings.EqualFold(strings.TrimSpace(h.Type), "http") {
+		// The same command hookUnits follows scripts out of — so the same scripts are bound.
+		in["scripts"] = scriptDigests(root, h.OwnerRoot, scriptRefs(strings.TrimSpace(h.Command)))
 	}
 	canon, ok := canonicalJSON(in)
 	return domainHook, canon, ok
 }
 
-// mcpHashInput: the server's whole entry under mcpServers. `command` and `args` are what gets
-// executed — through a shell when the command is one — so they get the shell view.
+// mcpHashInput: the server's whole entry under mcpServers.
 func mcpHashInput(a model.ArtifactReport, docs map[string]configDoc) (string, []byte, bool) {
 	key := a.MCPServer
 	if key == "" {
@@ -161,17 +190,26 @@ func mcpHashInput(a model.ArtifactReport, docs map[string]configDoc) (string, []
 	if !ok {
 		return "", nil, false
 	}
+	canon, ok := canonicalJSON(redactEntry(v))
+	return domainMCP, canon, ok
+}
+
+// redactEntry views a hook or MCP server entry: `command` and `args` are what gets executed —
+// through a shell when the command is one — so they get the shell view; everything else is data.
+func redactEntry(v any) any {
 	entry, isObject := v.(map[string]any)
 	if !isObject {
-		canon, ok := canonicalJSON(redactTree(v, "", false))
-		return domainMCP, canon, ok
+		return redactTree(v, "", viewLiteral)
 	}
-	view := make(map[string]any, len(entry))
+	out := make(map[string]any, len(entry))
 	for k, e := range entry {
-		view[k] = redactTree(e, k, k == "command" || k == "args")
+		mode := viewLiteral
+		if k == "command" || k == "args" {
+			mode = viewShell
+		}
+		out[k] = redactTree(e, k, mode)
 	}
-	canon, ok := canonicalJSON(view)
-	return domainMCP, canon, ok
+	return out
 }
 
 // permissionHashInput: the whole permissions object — allow, deny, ask, defaultMode, anything else
@@ -191,7 +229,7 @@ func permissionHashInput(root string, a model.ArtifactReport, docs map[string]co
 		return "", nil, false
 	}
 	in := map[string]any{
-		"permissions": redactTree(v, "", false),
+		"permissions": redactTree(v, "", viewGrant),
 		"scripts":     scriptDigests(root, "", allowScriptRefs(v)),
 	}
 	canon, ok := canonicalJSON(in)
@@ -212,7 +250,7 @@ func sectionHashInput(path, section, domain string, docs map[string]configDoc) (
 	if !ok {
 		return "", nil, false
 	}
-	canon, ok := canonicalJSON(redactTree(v, "", false))
+	canon, ok := canonicalJSON(redactTree(v, "", viewLiteral))
 	return domain, canon, ok
 }
 
@@ -269,28 +307,23 @@ func scriptDigest(root, home, ownerRoot, ref string) string {
 	return scriptUnreadable
 }
 
-// hashView is what of a value goes into a content hash: Redact's credential half. Not the entropy
-// catch-all — see Redact for why a hash must not replace an opaque token it cannot leak.
-func hashView(s string) string { return redactCredentials(s) }
-
-// shellHashView is hashView for a value a shell will interpret. A replacement that would remove a
-// shell metacharacter is refused and the value goes in as written: in an unquoted, replaceable span
-// of a command line, `$(` is code and not a literal password — `-u admin:$(curl …|sh)` would
-// otherwise hash exactly like `-u admin:hunter2`, and the payload could be swapped under an approval.
-func shellHashView(s string) string {
+// guardedView is what of a value goes into a content hash: Redact's credential half — not the
+// entropy catch-all, see Redact for why — with every replacement that would take away a character
+// of structure refused, in which case the value goes in as written.
+func guardedView(s, structure string) string {
 	v := redactCredentials(s)
-	if metaSkeleton(s) != metaSkeleton(v) {
+	if skeleton(s, structure) != skeleton(v, structure) {
 		return s
 	}
 	return v
 }
 
-// metaSkeleton is the sequence of shell metacharacters in s, ignoring the replacement marker's own.
-func metaSkeleton(s string) string {
+// skeleton is the sequence of structure characters in s, ignoring the replacement marker's own.
+func skeleton(s, structure string) string {
 	s = strings.ReplaceAll(s, redacted, "")
 	var b strings.Builder
 	for _, r := range s {
-		if strings.ContainsRune(shellMeta, r) {
+		if strings.ContainsRune(structure, r) {
 			b.WriteRune(r)
 		}
 	}
@@ -300,16 +333,15 @@ func metaSkeleton(s string) string {
 // redactTree returns a copy of a decoded JSON value with every string replaced by its view. A string
 // under an object key is viewed as `KEY=VALUE` — for an env block the key is the signal, and
 // `hunter2` alone announces nothing while `DB_PASSWORD=hunter2` does. A string right after an array
-// element that starts with "-" is viewed as `flag value` (`["--api-key", "…"]`). shell selects the
-// shell view for values a shell will interpret.
-func redactTree(v any, key string, shell bool) any {
+// element that starts with "-" is viewed as `flag value` (`["--api-key", "…"]`).
+func redactTree(v any, key string, mode viewMode) any {
 	switch t := v.(type) {
 	case string:
-		return viewIn(key, "=", t, shell)
+		return viewString(key, "=", t, mode)
 	case map[string]any:
 		out := make(map[string]any, len(t))
 		for k, e := range t {
-			out[k] = redactTree(e, k, shell)
+			out[k] = redactTree(e, k, mode)
 		}
 		return out
 	case []any:
@@ -318,7 +350,7 @@ func redactTree(v any, key string, shell bool) any {
 		for i, e := range t {
 			s, ok := e.(string)
 			if !ok {
-				out[i] = redactTree(e, "", shell)
+				out[i] = redactTree(e, "", mode)
 				prev = ""
 				continue
 			}
@@ -326,7 +358,7 @@ func redactTree(v any, key string, shell bool) any {
 			if strings.HasPrefix(prev, "-") {
 				flag = prev
 			}
-			out[i] = viewIn(flag, " ", s, shell)
+			out[i] = viewString(flag, " ", s, mode)
 			prev = s
 		}
 		return out
@@ -335,21 +367,32 @@ func redactTree(v any, key string, shell bool) any {
 	}
 }
 
+// viewString views one string in its mode. A grant is unwrapped first; a string in grant mode that
+// is not a grant (defaultMode, a directory) is data.
+func viewString(ctx, sep, s string, mode viewMode) string {
+	if mode == viewGrant {
+		if m := grantRE.FindStringSubmatch(s); m != nil {
+			return m[1] + "(" + viewIn("", "", m[2], shellStructure) + ")"
+		}
+		return viewIn(ctx, sep, s, literalStructure)
+	}
+	if mode == viewShell {
+		return viewIn(ctx, sep, s, shellStructure)
+	}
+	return viewIn(ctx, sep, s, literalStructure)
+}
+
 // viewIn views s in the context that announces it, if any: the joined `ctx+sep+s` is redacted and
 // the part after the unchanged prefix is kept. When the context changes nothing, or is itself
 // rewritten, s is viewed alone.
-func viewIn(ctx, sep, s string, shell bool) string {
-	view := hashView
-	if shell {
-		view = shellHashView
-	}
+func viewIn(ctx, sep, s, structure string) string {
 	if ctx != "" {
 		prefix := ctx + sep
-		if jv := view(prefix + s); strings.HasPrefix(jv, prefix) && jv[len(prefix):] != s {
+		if jv := guardedView(prefix+s, structure); strings.HasPrefix(jv, prefix) && jv[len(prefix):] != s {
 			return jv[len(prefix):]
 		}
 	}
-	return view(s)
+	return guardedView(s, structure)
 }
 
 // configDoc is one config file's top level, read once per ContentHashes call: ~/.claude.json holds

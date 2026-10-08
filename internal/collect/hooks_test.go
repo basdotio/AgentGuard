@@ -41,9 +41,15 @@ func TestCollectHooks_PerCommand(t *testing.T) {
 		t.Fatalf("hook artifacts = %d, want %d", len(arts), len(want))
 	}
 	for i, w := range want {
-		if arts[i].Hook != w {
-			t.Errorf("artifact %d (%s) hook = %+v, want %+v", i, arts[i].Name, arts[i].Hook, w)
+		got := arts[i].Hook
+		got.Entry = "" // the raw entry is checked below; the four fields are the point here
+		if got != w {
+			t.Errorf("artifact %d (%s) hook = %+v, want %+v", i, arts[i].Name, got, w)
 		}
+	}
+	// Entry is the hook's own JSON object as written — what the content hash binds.
+	if e := arts[1].Hook.Entry; e != `{"type":"command","command":"echo b"}` {
+		t.Errorf("artifact 1 Entry = %s, want the entry exactly as written", e)
 	}
 	// Names must identify the interception point, so a finding can be attributed.
 	for i, wantName := range []string{
