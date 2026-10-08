@@ -125,6 +125,11 @@ aguard version                                         # 版本 + 与已装插�
 1. **不进 `Overall`**。分数的含义是「agent 会加载的东西」,一个下了没装的恶意 zip 不能把环境压到 49,一堆干净下载也不能稀释真发现。
 2. **只读候选,其余只计数、不读、不列名**。Downloads 是最私人的目录,理由和不读 `sessions/` 同一条。开 `--llm` 时判官只跑候选,不碰其余文件;端点非本地时该节带自己的 `LLM-002`。
 3. **zip 先看索引再决定要不要解**;解到 0700 临时目录,单文件 1 MiB、总量 64 MiB、条目 2000 上限;任何带 `..` 段或绝对路径的条目**一律拒,不清洗**;软链/特殊文件不重建;按实际写入字节计数(zip 炸弹撒谎的正是索引);查完删干净。
+   **报告里只有包,没有解压目录**(`check x.zip` 同理,2026-10-08 P-016):解到私有临时目录里**以包文件名命名的子目录**(`…/x.zip/`,
+   临时根先解析软链,里面只有这一个子目录)。于是 artifact 名 = 包文件名,证据路径 = 包内路径(与把同一棵树当目录查相同),
+   root 形状的包以那个私有空目录为 home、不读共享 `$TMPDIR`;查完 `root`、artifact `path`、"Config root" 改写为包路径,
+   home 推出来的几处位置不列。同一个 zip 查两遍,SARIF / text / markdown 逐字节相同,JSON 只差 `scanned_at`;规范哈希仍是解出那棵树的
+   `TreeHash`,与目录名无关。
 
 默认目录不存在是无事(CI 没有 Downloads);显式 `--inbox` 不存在是错误,与 `--root` 打错同一条。常驻监控、通知、自动隔离**刻意没做**:常驻进程改变信任模型,macOS 会弹 Downloads 权限,通知的误报代价高,见 `direction.zh-CN.md` §4。
 
@@ -347,7 +352,7 @@ type Finding struct {
 type ArtifactReport struct {
     Kind     ArtifactKind // skill|mcp|hook|permission|subagent|command|plugin|instruction|rule|workflow|output_style|memory|quarantined|directory|connector
     Name     string
-    Path     string
+    Path     string      // 磁盘上能找到它的地方;来自 zip 的 artifact 是包本身的路径(§4.1),不是查完即删的解压目录
     Hash     string      // canonical hash —— 预留信誉库比对/上链。作用域:skill/plugin=整目录 canonical tree hash
                           // (SKILL.md + 全部脚本/资源,排序后逐文件 sha256 再汇总);单文件 artifact=文件 sha256。
                           // 风险主要在脚本,故不能只哈希 SKILL.md(B3-应修)。connector=工具清单哈希。
