@@ -128,6 +128,10 @@ func checkCandidate(c inbox.Candidate, o scanOpts, judge *model.JudgeSummary) mo
 			judge.Failed += res.Judge.Failed
 			judge.Skipped += res.Judge.Skipped
 			judge.Findings += res.Judge.Findings
+			judge.TriageCalls += res.Judge.TriageCalls
+			judge.Retries += res.Judge.Retries
+			judge.PromptTokens += res.Judge.PromptTokens
+			judge.CompletionTokens += res.Judge.CompletionTokens
 			if res.Judge.Reason != "" && judge.Reason == "" {
 				judge.Reason = res.Judge.Reason
 			}
