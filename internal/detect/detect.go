@@ -1216,26 +1216,31 @@ func readCapped(path, relBase string) ([]byte, *model.Finding) {
 	return b, nil
 }
 
-// ConfigStrings returns the string leaves under section[name] of a JSON config file, in
-// document order — the scannable content of one MCP server / hook entry.
-//
-// Exported so the LLM judge can send the SAME view this engine scans. Two independent
-// extractions would drift, and then a judge verdict would be about text the static pass
-// never saw (or vice versa) with nothing to reveal the mismatch.
-func ConfigStrings(path, section, name string) []string {
+// configEntry reads section[name] of a JSON config file — one MCP server, one permissions list.
+// It is the single reader behind both views of an entry (configStrings for this engine,
+// ConfigLines for the LLM judge), so the two cannot be reading different bytes.
+func configEntry(path, section, name string) (json.RawMessage, bool) {
 	b, err := safeio.ReadFile(path, safeio.MaxConfigBytes)
 	if err != nil {
-		return nil
+		return nil, false
 	}
 	var doc map[string]json.RawMessage
 	if json.Unmarshal(b, &doc) != nil {
-		return nil
+		return nil, false
 	}
 	sec := map[string]json.RawMessage{}
 	if raw, ok := doc[section]; ok {
 		_ = json.Unmarshal(raw, &sec)
 	}
 	raw, ok := sec[name]
+	return raw, ok
+}
+
+// configStrings returns the string leaves under section[name] of a JSON config file — the
+// scannable content of one MCP server / hook entry. Keys are dropped and map order is Go's, so
+// this is a bag of values for line rules, not a rendering to show anyone.
+func configStrings(path, section, name string) []string {
+	raw, ok := configEntry(path, section, name)
 	if !ok {
 		return nil
 	}
@@ -1244,10 +1249,65 @@ func ConfigStrings(path, section, name string) []string {
 	return strs
 }
 
-// jsonStrings wraps ConfigStrings into one synthetic unit. Marked synthetic: evidence Line
+// ConfigStrings is configStrings for the LLM judge's MCP excerpt until it moves to ConfigLines.
+func ConfigStrings(path, section, name string) []string { return configStrings(path, section, name) }
+
+// ConfigLines renders section[name] as `key=value` lines: exactly the string leaves configStrings
+// returns, each prefixed with where it sits in the entry (`command`, `args`, `env.DB_PASS`).
+// Object keys are sorted and array elements keep their order, so the text is byte-stable from run
+// to run, which configStrings' map walk is not.
+//
+// Exported for the LLM judge, which sends this instead of the bag of values. The keys are why:
+// keyed redaction can only fire on a value whose key it can see, and a bare `hunter2` from an env
+// block is indistinguishable from any other argument. Same leaves as this engine scans
+// (TestConfigLines_SameLeavesAsConfigStrings), so a verdict is never about text the static pass
+// did not read. Values are raw — redaction is the caller's job, at its own egress.
+func ConfigLines(path, section, name string) []string {
+	raw, ok := configEntry(path, section, name)
+	if !ok {
+		return nil
+	}
+	var v any
+	if json.Unmarshal(raw, &v) != nil {
+		return nil
+	}
+	var out []string
+	var walk func(key string, x any)
+	walk = func(key string, x any) {
+		switch t := x.(type) {
+		case string:
+			if key == "" {
+				out = append(out, t)
+				return
+			}
+			out = append(out, key+"="+t)
+		case []any:
+			for _, e := range t {
+				walk(key, e)
+			}
+		case map[string]any:
+			keys := make([]string, 0, len(t))
+			for k := range t {
+				keys = append(keys, k)
+			}
+			sort.Strings(keys)
+			for _, k := range keys {
+				if key != "" {
+					walk(key+"."+k, t[k])
+					continue
+				}
+				walk(k, t[k])
+			}
+		}
+	}
+	walk("", v)
+	return out
+}
+
+// jsonStrings wraps configStrings into one synthetic unit. Marked synthetic: evidence Line
 // is 0 (JSON values have no meaningful per-line number in this blob).
 func jsonStrings(path, section, name string) []unit {
-	strs := ConfigStrings(path, section, name)
+	strs := configStrings(path, section, name)
 	if len(strs) == 0 {
 		return nil
 	}
