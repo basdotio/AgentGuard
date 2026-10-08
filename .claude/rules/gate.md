@@ -29,6 +29,13 @@ paths:
   干净路径**不套 `gateNote`**(`GATE-000` 的意思是"有东西审不了",盖在正常启动上等于把一切正常
   渲染成一次失败),**也不进 `AdditionalContext`** —— 受众是运维、文本是固定串、没有攻击者写的字,
   所以既不需要围栏,也没有理由花会话上下文去告诉模型闸门管不着什么。`resume`/`compact` 仍然整段跳过。
+- **hook、MCP、permission 现在也能被"认识"了(P-009),但入口没变。** 它们以前哈希是 `""`,`Approved("")` 恒 false,
+  于是 `SessionStart` 永远列它们,`aguard approve <root>` 在最差 artifact 是它们时打印 `approved` 却什么都没存
+  (`Store.Approve` 丢掉空 key)。现在它们有内容哈希(`.claude/rules/hash.md`),同一条 `approve` 真的存下,`SessionStart`
+  随后跳过 —— 直到配置或 hook 跟进的脚本改了一个字节(`TestGate_ApprovedHookLeavesSessionStart` 两个方向都钉)。
+  **本包代码一行没动**:没有新的写批准路径,`SessionStart` 仍只告知。**例外要知道**:哈希换掉了 secret,只改 secret
+  不重键 —— 对 hook 这意味着批准覆盖"同一条命令、不同密码";`PARSE-000` 的 artifact 仍是 `""`,`approve` 对它们仍会
+  空打印一句 `approved`(由 P-011 单独处理)。
 - **批准只能覆盖"给人看过的那份字节"。** `PreToolUse` 把判决按 `tool_use_id` 停在 `pending` 里,
   `PostToolUse` 重新读一遍目标、哈希仍然一致才提升为批准。**不要图省事直接在 PostToolUse 记当前哈希**
   —— 那样目标在弹窗和加载之间被换掉,就会拿一个针对别的内容的"同意"去认证它。

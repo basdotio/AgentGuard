@@ -210,6 +210,16 @@ and checkouts. **Changing the hashing logic invalidates every entry in
 [`reputation.json`](../internal/reputation/data/reputation.json)**; regenerate with
 `aguard hash`. `test/` is deliberately *not* excluded — payloads hide there.
 
+Hooks, MCP servers and permission lists get a **content hash** instead
+([`detect/contenthash.go`](../internal/detect/contenthash.go)), filled by `analyze()` right after
+the rule engine runs and before reputation, the gate's `SessionStart`, `aguard approve` or the
+Downloads pass read it. It is `sha256(<kind domain> 0x00 <canonical JSON>)` over the configuration
+alone — no path, no artifact name — so one configuration on two machines is one identity. A hook's
+input includes the content of the script it runs (or a marker saying why that could not be read);
+secrets are replaced by `Redact`'s credential half before hashing, so changing only a secret does
+not re-key, and changing that half of `Redact` re-keys all three kinds. Artifacts whose config did
+not parse keep the empty hash, which no approval or reputation entry can match.
+
 ## LLM judge (optional, off by default)
 
 Requires **both** `llm.enabled: true` in config **and** `--llm`, which `scan` and `check` both
