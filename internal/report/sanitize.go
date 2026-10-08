@@ -5,7 +5,10 @@ import "github.com/basdotio/AgentGuard/internal/model"
 
 // sanitizeResult returns a copy of r with every string that originated on disk — artifact
 // names and paths, finding titles and evidence, notes, cleanup items, Downloads items, scan
-// locations — passed through Sanitize. The HTML renderer builds from this copy: html/template
+// locations — or from the judge's model (finding reasons, triage labels) passed through Sanitize.
+// The markdown renderer relies on it as much as HTML does: its code spans assume newlines are
+// gone, and a triage reason carrying "\n\n" used to end its span and render the rest as markup.
+// The HTML renderer builds from this copy: html/template
 // escapes markup but passes bidi and zero-width characters straight through, so without it
 // the HTML report could be spoofed by a file name exactly as the terminal could. JSON and
 // SARIF never see this copy: they are for machines, and the bytes they carry must be the
@@ -17,6 +20,7 @@ func sanitizeResult(r model.ScanResult) model.ScanResult {
 	for i, a := range r.Artifacts {
 		a.Name, a.Path = Sanitize(a.Name), Sanitize(a.Path)
 		a.Findings = sanitizeFindings(a.Findings)
+		a.Advisory = sanitizeLabels(a.Advisory)
 		out.Artifacts[i] = a
 	}
 	out.Notes = sanitizeFindings(r.Notes)
@@ -56,6 +60,18 @@ func sanitizeResult(r model.ScanResult) model.ScanResult {
 		j := *r.Judge
 		j.Reason = Sanitize(j.Reason)
 		out.Judge = &j
+	}
+	return out
+}
+
+// sanitizeLabels copies triage labels with every field sanitized: all three are model output.
+func sanitizeLabels(ls []model.AdvisoryLabel) []model.AdvisoryLabel {
+	if ls == nil {
+		return nil
+	}
+	out := make([]model.AdvisoryLabel, len(ls))
+	for i, l := range ls {
+		out[i] = model.AdvisoryLabel{RuleID: Sanitize(l.RuleID), Label: Sanitize(l.Label), Reason: Sanitize(l.Reason)}
 	}
 	return out
 }
