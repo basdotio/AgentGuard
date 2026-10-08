@@ -17,7 +17,13 @@ package main
 // What it cannot see — it counts requests through those two transports, not "every net/http
 // request in the process":
 //   - a client with an http.Transport of its own. TestZeroDial_NoClientOutsideTheJudge closes
-//     this for product code from the source side; inside the judge the positive control does.
+//     this for this module's product code from the source side, internal/judge included: the
+//     positive control only watches the client its own paths go through, so a second client the
+//     judge builds would dial unseen from any row below.
+//   - a dependency that builds such a client in its own code. The source check reads this
+//     module, not what it imports. Today no other module in the binary imports net/http or
+//     os/exec (pflag imports net, for its IP-typed flags) — a reading, not a test — so a fourth
+//     direct dependency has to be read for this before it is added.
 //   - a raw net.Dial, or a child process that dials. Neither exists in the product today (no
 //     os/exec import; net is used for ParseIP only), and a CI job under network isolation is the
 //     layer that would see them. This test does not claim to be that layer.
