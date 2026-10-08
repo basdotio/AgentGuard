@@ -68,6 +68,33 @@ func TestEgress_ReplacesEveryFormOfTheHome(t *testing.T) {
 	}
 }
 
+// TestEgress_NonASCIIHomeIsEncodedPerCharacter: Claude Code's project-directory name turns each
+// CHARACTER that is not an ASCII letter or digit into one '-', so /Users/josé is -Users-jos-. A
+// byte-by-byte encoding gave -Users-jos-- (é is two bytes in UTF-8), which matches no directory
+// Claude Code creates, and the encoded form of a non-ASCII home reached the request unreplaced.
+func TestEgress_NonASCIIHomeIsEncodedPerCharacter(t *testing.T) {
+	for _, c := range []struct{ home, enc, bytewise string }{
+		{"/Users/josémarker", "-Users-jos-marker", "-Users-jos--marker"},
+		{"/home/李雷marker", "-home---marker", "-home-------marker"},
+	} {
+		if got := encodedDir(c.home); got != c.enc {
+			t.Fatalf("precondition: the independent encoding of %q is %q, want %q", c.home, got, c.enc)
+		}
+		e := newEgress(c.home)
+		for _, r := range []struct{ in, want string }{
+			{"projects/" + c.enc + "-work/memory/MEMORY.md", "projects/~-work/memory/MEMORY.md"},
+			{"projects/" + c.enc + "/memory/MEMORY.md", "projects/~/memory/MEMORY.md"},
+			{"cat " + c.home + "/notes", "cat ~/notes"},
+			// Reverse: the byte-wise spelling is not a directory Claude Code makes, and is left alone.
+			{"projects/" + c.bytewise + "-work", "projects/" + c.bytewise + "-work"},
+		} {
+			if got := e.scrub(r.in); got != r.want {
+				t.Errorf("home %q: scrub(%q) = %q, want %q", c.home, r.in, got, r.want)
+			}
+		}
+	}
+}
+
 // TestEgress_LeavesWhatIsNotTheHome is the reverse half: only the home is replaced, never the bare
 // username (it may be an ordinary word) and never a path that merely starts with the same letters.
 func TestEgress_LeavesWhatIsNotTheHome(t *testing.T) {
@@ -127,6 +154,16 @@ func TestEgress_RepairsAHomeTheRedactorHalfAte(t *testing.T) {
 	}
 	if got := newEgress("/home/first.last").scrub("cat /home/first.<REDACTED>"); got != "cat ~/<REDACTED>" {
 		t.Errorf("tail eaten: got %q", got)
+	}
+	// A cut point is a CHARACTER outside the entropy class, and the run Redact eats starts after
+	// the whole of it — three bytes for 李, not one.
+	cjk := "/home/李Xk9mQ2vL8pR4tZ7wB3nP5sJ"
+	redCJK := detect.Redact("cat " + cjk + "/notes/today.md")
+	if !strings.Contains(redCJK, "/home/李<REDACTED>") {
+		t.Fatalf("precondition: Redact should eat the run after the CJK character, got %q", redCJK)
+	}
+	if got := newEgress(cjk).scrub(redCJK); strings.Contains(got, "李") {
+		t.Errorf("tail eaten after a non-ASCII character: scrub(%q) = %q", redCJK, got)
 	}
 	for _, c := range []struct{ home, in string }{
 		{tempHome, "<REDACTED>.d/alicemarker2/x"},
