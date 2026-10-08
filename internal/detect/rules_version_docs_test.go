@@ -85,3 +85,23 @@ func TestRulesVersionDocs_IdentifyTheJudgeOnlyByToolVersion(t *testing.T) {
 		}
 	}
 }
+
+// TestArchitectureEpochNotesExcludeLLM: the architecture pair says which checks only the epoch
+// covers, and a few lines later puts the judge outside rules_version. "The structural, permission
+// and note checks … the epoch is all that covers them" took in LLM-000/002/005, which are notes,
+// so the two sentences contradicted each other the way the rules.md header's did. The pair has to
+// name the notes it puts on the epoch as the ones that are not LLM- IDs.
+func TestArchitectureEpochNotesExcludeLLM(t *testing.T) {
+	for _, c := range []struct{ file, start, want, avoid string }{
+		{"docs/architecture.md", "**The rule table has a version.**", "the notes that are not LLM- IDs", "permission and note checks"},
+		{"docs/architecture.zh-CN.md", "**规则表有版本号。**", "不是 LLM- ID 的 note", "权限和 note"},
+	} {
+		p := docPassage(t, c.file, c.start, false)
+		if !strings.Contains(p, c.want) {
+			t.Errorf("%s (%q…) does not say %q; the notes the epoch covers exclude every LLM- ID", c.file, c.start, c.want)
+		}
+		if strings.Contains(p, c.avoid) {
+			t.Errorf("%s (%q…) still says %q, which puts the LLM- notes on the epoch", c.file, c.start, c.avoid)
+		}
+	}
+}

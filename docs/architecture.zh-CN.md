@@ -159,8 +159,8 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
 必须在重新构建后依然稳定;对应的补偿检查是 `SUP-004`:artifact 自己**把 agent 指进**被排除目录时报它。
 
 **规则表有版本号。** [`rules_version.go`](../internal/detect/rules_version.go) 按引擎顺序哈希"决定一条引擎规则发现的东西"——
-`builtinRules()` 里每条的 ID、维度、严重度、标志和正则源码,不含标题和解释——再加一个整数 `rulesEpoch`。结构化、权限和 note
-这几类检查写在代码里,覆盖它们的只有 epoch。扫描报告里叫 `rules_version`,
+`builtinRules()` 里每条的 ID、维度、严重度、标志和正则源码,不含标题和解释——再加一个整数 `rulesEpoch`。结构化检查、权限检查和
+不是 `LLM-` ID 的 note 写在代码里,覆盖它们的只有 epoch。扫描报告里叫 `rules_version`,
 `aguard version` 会打印它,`rules.md` 页眉也写着它,所以改了正则不跑 `make docs` 就过不了 CI。它**只覆盖确定性检测**——
 `overall` 的来源。**改 `builtinRules()` 之外的确定性检测代码时**——结构化/形状检查、角色门、词法层、读哪些文件、`permcheck`——
 只要改变了某个输入产出哪些发现,或发现的 ID/维度/严重度,**同一个提交里把 `rulesEpoch` 加一。** 没有东西强制它;忘了加,
