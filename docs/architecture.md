@@ -240,6 +240,11 @@ Two properties matter more than the passes:
   (`judge.Ground` back-fills a real `file:line`; ungroundable verdicts are discarded and
   counted as `LLM-005`) **and** k-of-n consensus across samples. `llm.authority` gates
   `--fail-on-llm`, not the number itself.
+- **What a judge finding shows is what was sent**: its snippet is the excerpt line(s) the quote
+  landed on (re-redacted, at most 512 bytes), never the model's quote; a quote of the excerpt's
+  "N line(s) omitted" marker does not ground; the model's reason is capped at 512 bytes; triage
+  labels go through the same sanitising as every other attacker-influenced string
+  (`report.sanitizeResult`).
 
 Full reference: [`docs/llm-judge.md`](llm-judge.md).
 
