@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/basdotio/AgentGuard/internal/model"
 )
@@ -328,5 +329,75 @@ func TestPlan_InjectionPromptSaysInstructionsAreExpected(t *testing.T) {
 		if !strings.Contains(sys, want) {
 			t.Errorf("injection prompt lost the framing clause %q:\n%s", want, sys)
 		}
+	}
+}
+
+// TestPlan_MCPExcerptIsKeyedAndByteStable: the MCP excerpt used to be the entry's string values
+// in Go's map order, keys dropped. Keyless, `{"DB_PASS":"hunter2"}` went out as a bare `hunter2`
+// that no keyed redaction can recognise; unordered, the same config produced a different request
+// body from run to run. The value of a key that is not a credential's still goes out as written.
+func TestPlan_MCPExcerptIsKeyedAndByteStable(t *testing.T) {
+	cfg := writeFile(t, filepath.Join(t.TempDir(), ".claude.json"),
+		`{"mcpServers":{"db":{"type":"stdio","command":"npx","args":["-y","@acme/db-mcp@1.2.3"],`+
+			`"env":{"DB_PASS":"hunter2","LOG_LEVEL":"debug","API_BASE":"https://db.example.com"}}}}`)
+	art := model.ArtifactReport{Kind: model.KindMCP, Name: "db", Path: cfg}
+
+	var first string
+	for i := 0; i < 30; i++ {
+		modes, _ := modesFor(art)
+		got := modes[ModeMCPConfig].Behavior
+		if i == 0 {
+			first = got
+			continue
+		}
+		if got != first {
+			t.Fatalf("plan %d sent different bytes for the same config:\n%s\n---\n%s", i, first, got)
+		}
+	}
+	for _, want := range []string{"command=npx", "args=-y", "args=@acme/db-mcp@1.2.3", "env.DB_PASS=<REDACTED>",
+		"env.LOG_LEVEL=debug", "env.API_BASE=https://db.example.com"} {
+		if !strings.Contains(first, want) {
+			t.Errorf("MCP excerpt is missing %q:\n%s", want, first)
+		}
+	}
+	if strings.Contains(first, "hunter2") {
+		t.Errorf("the password under DB_PASS reached the prompt:\n%s", first)
+	}
+}
+
+// TestPlan_DeclaredIsCappedOnARuneBoundary: a SKILL.md description was sent whole — up to the
+// 1 MiB the frontmatter reader takes — once per pass. The cap must not split a UTF-8 sequence,
+// and the unit grounding checks a quote against must be the capped bytes that were sent.
+func TestPlan_DeclaredIsCappedOnARuneBoundary(t *testing.T) {
+	skill := filepath.Join(t.TempDir(), "s")
+	writeFile(t, filepath.Join(skill, "SKILL.md"), "---\nname: s\ndescription: "+strings.Repeat("é", 3000)+"\n---\nDo the thing.\n")
+	writeFile(t, filepath.Join(skill, "run.sh"), "echo running the project test suite now\n")
+	art := model.ArtifactReport{Kind: model.KindSkill, Name: "s", Path: skill}
+
+	intent := false
+	for _, task := range planFor(0, art) {
+		if task.kind != taskJudge || task.req.Declared == "" {
+			continue
+		}
+		d := task.req.Declared
+		if len(d) > 1000 || !utf8.ValidString(d) {
+			t.Errorf("mode %d: declared purpose is %d bytes (valid UTF-8: %v), want ≤ 1000 and valid", task.req.Mode, len(d), utf8.ValidString(d))
+		}
+		if task.req.Mode == ModeIntent {
+			intent = true
+			if task.units[0].file != "SKILL.md" || task.units[0].text != d {
+				t.Errorf("the intent pass grounds against %d bytes of %q, but sent %d", len(task.units[0].text), task.units[0].file, len(d))
+			}
+		}
+	}
+	if !intent {
+		t.Fatal("no intent pass planned for the skill")
+	}
+
+	// Reverse: a description under the cap is sent exactly as written.
+	writeFile(t, filepath.Join(skill, "SKILL.md"), "---\nname: s\ndescription: runs the test suite\n---\nDo the thing.\n")
+	modes, _ := modesFor(art)
+	if got := modes[ModeIntent].Declared; got != "runs the test suite" {
+		t.Errorf("a short description must pass untouched, got %q", got)
 	}
 }
