@@ -191,8 +191,12 @@ func TestExtractZip_FolderNamedAfterTheArchive(t *testing.T) {
 		t.Errorf("entries are not at the folder's top: %v", err)
 	}
 	parent := filepath.Dir(out)
-	if filepath.Clean(parent) == filepath.Clean(os.TempDir()) {
-		t.Fatalf("extraction folder sits directly in the shared temp dir %s", parent)
+	// Both sides resolved: os.TempDir() is not (/var vs /private/var on macOS), and a regression
+	// back to an unresolved extraction path must not slip past this by spelling.
+	shared, serr := filepath.EvalSymlinks(os.TempDir())
+	rparent, perr := filepath.EvalSymlinks(parent)
+	if serr != nil || perr != nil || rparent == shared {
+		t.Fatalf("extraction folder sits directly in the shared temp dir %s (errs %v, %v)", parent, serr, perr)
 	}
 	ents, err := os.ReadDir(parent)
 	if err != nil || len(ents) != 1 || ents[0].Name() != "My Skill.zip" {
