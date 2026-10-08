@@ -81,7 +81,7 @@ func main() {
 		rawDir    = flag.String("raw", "", "keep each sample's scan JSON here (not committed)")
 		policy    = flag.String("policy", "", "the tool's policy file, when its pass/fail is policy-driven; hashed into run.yaml")
 		toolBin   = flag.String("bin", "", "binary for a non-aguard tool (default: the tool's own name on PATH)")
-		agExtra   = flag.String("aguard-extra-args", "", "LOCAL measurement only: extra args appended to every aguard invocation, space separated (e.g. \"--llm --config /path\")")
+		agExtra   = flag.String("aguard-extra-args", "", "LOCAL measurement only: extra args appended to every aguard scan invocation (never to check), space separated (e.g. \"--llm --config /path\")")
 		agEnv     = flag.String("aguard-env", "", "LOCAL measurement only: comma-separated NAME=VALUE pairs or NAMEs to copy from this process, added to aguard's isolated env")
 		agTimeout = flag.Duration("aguard-timeout", 0, "LOCAL measurement only: per-sample timeout override for aguard (a judge run needs minutes)")
 		scanArgv  = flag.String("scan-argv", "", "override the scan invocation, space separated, with {{sample}} for the path")
