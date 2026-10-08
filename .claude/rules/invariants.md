@@ -12,7 +12,7 @@
    其余入口**即使配置里开着判官也一个请求都不发**。钉住它的是 `TestZeroDial_OnlyTheJudgeConnects`
    (`cmd/aguard/zero_dial_test.go`):`judge.Transport`(测试接缝,生产里恒为 nil)和 `http.DefaultTransport` 各换成
    一个只计数、拒绝请求的 RoundTripper,**先**断言上面两条路径确实被判官那个计数器看见(否则测试是瞎的),**再**断言
-   零表里每个入口两个计数器都是 0:`scan`(`clean` 用的同一个 `scanEnv`)、不带 `--llm` 的下载项、`scan --llm` 但
+   零表里每个入口两个计数器都是 0:`scan`(含它追加的闸门存活探测;`clean` 用的是同一个 `scanEnv`)、不带 `--llm` 的下载项、`scan --llm` 但
    `llm.enabled: false`、`check`、`hook` 的 `PreToolUse`/`PostToolUse` 重扫/`SessionStart`、`approve`、`approvals`、
    `llm setup`、`llm status`、`version`、`hash`。**加一条出网路径,就改这张清单,并把它从零表挪进正对照**;
    零表里的入口一旦出网就红,但**新加的命令要自己进表**,测试不会替你发现它。`TestZeroDial_ClaimsNameTheTest` 让这里
