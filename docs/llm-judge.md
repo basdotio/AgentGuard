@@ -242,7 +242,12 @@ that quote is checked against the text the model was actually sent:
   citation; the rest of what the model wrote is not shown, so a real line cannot vouch for
   invented ones beside it. A line longer than 512 bytes is cut to a window **around the quoted
   text**, each cut end marked `…` — not to its first 512 bytes, which let a directive padded with
-  prose show only the prose. A quote that is itself longer than the window shows its beginning.
+  prose show only the prose. When it is a whitespace run *inside* the quote that makes it too long
+  for the window, the snippet shows the line with every whitespace run collapsed to one space —
+  the same normalisation matching used — so a directive padded from within still shows whole; such
+  a snippet is that line as matching saw it, not byte for byte as sent. A quote longer than the
+  window even with its whitespace collapsed shows only its beginning, cut in bytes as sent, so a
+  long whitespace run at its start can leave little of the quote in view.
 - **Not found** → the finding is **discarded**, and the count surfaces as `LLM-005`. A silent
   drop would make a paraphrasing model look like a clean environment.
 
