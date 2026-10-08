@@ -417,7 +417,7 @@ func TestParseTriage_ReasonIsRedactedAndBounded(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	labels := parseTriage(string(content))
+	labels := parseTriage(string(content), []TriageItem{{RuleID: "EXEC-001"}})
 	if len(labels) != 1 || labels[0].RuleID != "EXEC-001" || labels[0].Label != model.LabelBenign {
 		t.Fatalf("labels = %+v, want one likely-benign EXEC-001", labels)
 	}
@@ -430,5 +430,61 @@ func TestParseTriage_ReasonIsRedactedAndBounded(t *testing.T) {
 	}
 	if !strings.HasPrefix(got, "doc example ") {
 		t.Errorf("triage reason lost its head: %q", got)
+	}
+}
+
+// TestTriage_LabelOnlyForARuleThatWasSent: a label's rule_id is the model's text, and it is the
+// key the report joins on. The terminal joined on the raw id and the markdown/HTML reports on the
+// sanitized one, so "EXEC-001\a" labelled the EXEC-001 group in a PR comment and nowhere in the
+// terminal: two renderers of one result, disagreeing about what the judge said. A label now
+// counts only for a rule id that was sent for triage, byte for byte — the join key is ours.
+func TestTriage_LabelOnlyForARuleThatWasSent(t *testing.T) {
+	reply, err := json.Marshal(map[string]any{"labels": []map[string]string{
+		{"rule_id": "EXEC-001\a", "label": "likely-benign", "reason": "bell in the id"},
+		{"rule_id": "EXEC-001\u202e", "label": "likely-benign", "reason": "bidi in the id"},
+		{"rule_id": "exec-001", "label": "likely-benign", "reason": "re-cased id"},
+		{"rule_id": "NET-999", "label": "likely-benign", "reason": "never sent"},
+		{"rule_id": "SUP-001", "label": "likely-real", "reason": "unpinned install"},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(chatResponse{Choices: []struct {
+			Message chatMessage `json:"message"`
+		}{{Message: chatMessage{Content: string(reply)}}}})
+	}))
+	defer srv.Close()
+
+	items := []TriageItem{{RuleID: "EXEC-001", Evidence: "run.sh:1 curl x | bash"}, {RuleID: "SUP-001", Evidence: "run.sh:2 npx -y pkg"}}
+	labels, err := NewHTTP(srv.URL, "", "m", srv.Client()).Triage(context.Background(), "skill:s", items)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(labels) != 1 || labels[0].RuleID != "SUP-001" || labels[0].Label != model.LabelReal {
+		t.Errorf("labels = %q, want only the SUP-001 label — every other id was not one we sent", labels)
+	}
+
+	// Both human renderers of the same result show the same triage.
+	res := model.ScanResult{Artifacts: []model.ArtifactReport{{Kind: model.KindSkill, Name: "s", Advisory: labels,
+		Findings: []model.Finding{
+			{RuleID: "EXEC-001", Dimension: 4, Severity: model.SevHigh, Source: model.SrcStatic, Title: "curl|bash", Why: "rce",
+				Evidence: []model.Evidence{{File: "run.sh", Line: 1, Snippet: "curl x | bash"}}},
+			{RuleID: "SUP-001", Dimension: 5, Severity: model.SevMedium, Source: model.SrcStatic, Title: "unpinned", Why: "pin it",
+				Evidence: []model.Evidence{{File: "run.sh", Line: 2, Snippet: "npx -y pkg"}}},
+		}}}}
+	var text, md strings.Builder
+	report.Text(&text, res)
+	if err := report.Markdown(&md, res); err != nil {
+		t.Fatal(err)
+	}
+	for _, reason := range []string{"bell in the id", "bidi in the id", "re-cased id", "never sent", "unpinned install"} {
+		inText, inMD := strings.Contains(text.String(), reason), strings.Contains(md.String(), reason)
+		if inText != inMD {
+			t.Errorf("triage %q: terminal shows it %v, markdown %v — the renderers disagree", reason, inText, inMD)
+		}
+		if want := reason == "unpinned install"; inText != want || inMD != want {
+			t.Errorf("triage %q rendered (terminal %v, markdown %v), want %v", reason, inText, inMD, want)
+		}
 	}
 }

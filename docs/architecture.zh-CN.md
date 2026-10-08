@@ -198,7 +198,8 @@ MCP 配置、triage 标签。被扫内容按**敌对**处理:每次调用用 `cr
   不是分数本身。
 - **判官发现展示的是发出去的东西**:snippet 是引文落地的那几行摘录原文(再过一次 Redact,最多 512 字节;
   行太长时围绕引文所在位置开窗截取,截断的一端标 `…`,不从行首截),不是模型的引文;引摘录里 "N line(s) omitted" 标记的不算落地;模型的理由最多 512 字节;triage 标签和
-  其它攻击者可影响的字符串走同一道清洗(`report.sanitizeResult`)。
+  其它攻击者可影响的字符串走同一道清洗(`report.sanitizeResult`),且只保留规则 ID 与送去 triage 的某条逐字节相同的,
+  所以每个渲染器都把它挂在同一条发现上。
 
 完整参考:[`docs/llm-judge.zh-CN.md`](llm-judge.zh-CN.md)。
 
