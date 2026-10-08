@@ -99,3 +99,29 @@ func TestForgetRefusesAnEmptyPrefix(t *testing.T) {
 		}
 	}
 }
+
+// TestForgetStillRequiresAUniqueMatch is the reverse side: accepting the printed form must not
+// loosen matching. A prefix two approvals share is still refused, and one that matches nothing
+// still says so, ellipsis or not.
+func TestForgetStillRequiresAUniqueMatch(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".claude")
+	store := gate.LoadStore(gate.ApprovalsPath(root))
+	for _, h := range []string{
+		"a1e9cd5dbc1a0000000000000000000000000000000000000000000000000001",
+		"a1e9cd5dbc1a0000000000000000000000000000000000000000000000000002",
+	} {
+		store.Approve(gate.Approval{Hash: h, Name: "evil", Kind: "skill", Verdict: gate.VerdictAccepted})
+	}
+	if err := store.Save(); err != nil {
+		t.Fatal(err)
+	}
+	if err := forgetApproval(&bytes.Buffer{}, root, "a1e9cd5dbc1a…"); err == nil || !strings.Contains(err.Error(), "matches 2 approvals") {
+		t.Errorf("a shared prefix must be refused as ambiguous, got %v", err)
+	}
+	if err := forgetApproval(&bytes.Buffer{}, root, "ffff0000…"); err == nil || !strings.Contains(err.Error(), "no approval matches") {
+		t.Errorf("a prefix that matches nothing must say so, got %v", err)
+	}
+	if n := len(gate.LoadStore(gate.ApprovalsPath(root)).List()); n != 2 {
+		t.Errorf("%d approval(s) left, want both", n)
+	}
+}
