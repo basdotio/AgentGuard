@@ -37,67 +37,151 @@ type sourceUnit struct {
 // half the corpus, so accepting it would ground a hallucination on a coincidence.
 const minGroundedChars = 16
 
-// ground locates a model-supplied quote in the text that was sent and returns its real
-// position. Comparison is whitespace-insensitive and case-insensitive — models reflow and
-// re-case freely, and neither changes what the line SAYS — but it is not fuzzy beyond that:
-// a paraphrase does not match, which is exactly the intent.
+// groundedSpan is where a quote landed: the citation, plus the text of the line(s) it landed
+// on, taken from the unit — what was SENT, already redacted — and never from the quote. The
+// model's quote decides whether a verdict is kept; this is what the report shows as its evidence.
+// Showing the quote instead let a single real line vouch for anything written around it: a quote
+// that fails whole is retried line by line, so one real line plus invented ones was kept, and the
+// invented lines were rendered under a real file:line, indistinguishable from evidence.
+type groundedSpan struct {
+	file string
+	line int
+	text string
+}
+
+// ground is groundSpan without the text, for callers that only need the citation.
 func ground(evidence string, units []sourceUnit) (file string, line int, ok bool) {
-	if file, line, ok = groundOne(evidence, units); ok {
-		return file, line, true
+	s, ok := groundSpan(evidence, units)
+	return s.file, s.line, ok
+}
+
+// groundSpan locates a model-supplied quote in the text that was sent and returns its real
+// position and the sent line(s) it landed on. Comparison is whitespace-insensitive and
+// case-insensitive — models reflow and re-case freely, and neither changes what the line SAYS —
+// but it is not fuzzy beyond that: a paraphrase does not match, which is exactly the intent.
+func groundSpan(evidence string, units []sourceUnit) (groundedSpan, bool) {
+	prepared := normalizeUnits(units)
+	if s, ok := groundOne(evidence, prepared); ok {
+		return s, true
 	}
 	// A model asked for "the line" often answers with several, stitched together from
 	// different places in the file (seen on a registry-rewriting sample: its two
 	// registry writes and a chmod, 50 lines apart, as one quote). Each piece is still a literal
-	// quote held to the same bar; the first one that lands is the citation. Nothing here loosens
-	// the match — a paraphrase still fails line by line.
+	// quote held to the same bar; the first one that lands is the citation, and its line is all
+	// that is shown. Nothing here loosens the match — a paraphrase still fails line by line.
 	for _, part := range strings.Split(evidence, "\n") {
 		if strings.TrimSpace(part) == "" {
 			continue
 		}
-		if file, line, ok = groundOne(part, units); ok {
-			return file, line, true
+		if s, ok := groundOne(part, prepared); ok {
+			return s, true
 		}
 	}
-	return "", 0, false
+	return groundedSpan{}, false
+}
+
+// normalizedUnit is a unit prepared for matching once per quote rather than once per line of
+// it: a stitched quote is retried line by line, and re-normalizing every unit for every line made
+// a long quote cost the square of the model's verbosity.
+type normalizedUnit struct {
+	unit  sourceUnit
+	hay   string   // normalized text
+	lines []int    // for each hay byte, the 0-based line of unit.text it came from
+	src   []string // unit.text split into lines: what a span's text is cut from
+}
+
+func normalizeUnits(units []sourceUnit) []normalizedUnit {
+	out := make([]normalizedUnit, len(units))
+	for i, u := range units {
+		hay, lines := normalizeWithLines(u.text)
+		out[i] = normalizedUnit{unit: u, hay: hay, lines: lines, src: strings.Split(u.text, "\n")}
+	}
+	return out
 }
 
 // groundOne locates a single quote in the units.
-func groundOne(evidence string, units []sourceUnit) (file string, line int, ok bool) {
+func groundOne(evidence string, units []normalizedUnit) (groundedSpan, bool) {
 	needle, _ := normalizeWithLines(evidence)
 	if needle == "" {
-		return "", 0, false
+		return groundedSpan{}, false
 	}
 	if len(needle) < minGroundedChars {
 		// The floor exists to stop a coincidental FRAGMENT match, and quoting a whole short
 		// document is not a fragment. Without this, a hook whose command is shorter than the
 		// floor (`echo done`) could never be cited at all, and every verdict about it would be
 		// discarded for a reason that has nothing to do with whether it is true.
-		for _, u := range units {
-			if hay, _ := normalizeWithLines(u.text); hay != "" && hay == needle {
-				return u.file, u.firstLine, true
+		for _, n := range units {
+			if n.hay != "" && n.hay == needle {
+				if text, ok := n.text(0, len(n.hay)); ok {
+					return groundedSpan{file: n.unit.file, line: n.unit.firstLine, text: text}, true
+				}
 			}
 		}
-		return "", 0, false
+		return groundedSpan{}, false
 	}
-	for _, u := range units {
-		hay, lines := normalizeWithLines(u.text)
-		i := strings.Index(hay, needle)
-		if i < 0 {
-			continue
-		}
-		if u.collapsed {
-			return u.file, u.firstLine, true
-		}
-		if n := len(u.lineMap); n > 0 {
-			idx := lines[i]
-			if idx >= n {
-				idx = n - 1
+	for _, n := range units {
+		// Every occurrence, not just the first: one that touches an omission marker is refused,
+		// and a later one that does not is still a real citation.
+		for from := 0; from < len(n.hay); {
+			i := strings.Index(n.hay[from:], needle)
+			if i < 0 {
+				break
 			}
-			return u.file, u.lineMap[idx], true
+			i += from
+			if text, ok := n.text(i, i+len(needle)); ok {
+				return groundedSpan{file: n.unit.file, line: n.line(i), text: text}, true
+			}
+			from = i + 1
 		}
-		return u.file, u.firstLine + lines[i], true
 	}
-	return "", 0, false
+	return groundedSpan{}, false
+}
+
+// line is the ORIGINAL line that hay byte i came from.
+func (n normalizedUnit) line(i int) int {
+	u := n.unit
+	if u.collapsed {
+		return u.firstLine
+	}
+	if m := len(u.lineMap); m > 0 {
+		idx := n.lines[i]
+		if idx >= m {
+			idx = m - 1
+		}
+		return u.lineMap[idx]
+	}
+	return u.firstLine + n.lines[i]
+}
+
+// text returns the unit's own line(s) that hay bytes [i, j) came from. It refuses a match that
+// touches an omission marker: the marker is a line the excerpt builder inserted, so it is in the
+// text that was sent and in no file — a quote of it is not a quote of the artifact.
+func (n normalizedUnit) text(i, j int) (string, bool) {
+	src := n.src[n.lines[i] : n.lines[j-1]+1]
+	for _, l := range src {
+		if isOmissionMarker(l) {
+			return "", false
+		}
+	}
+	return strings.TrimSpace(strings.Join(src, "\n")), true
+}
+
+// isOmissionMarker reports whether a line is the marker capHeadTail puts where it cut an
+// excerpt ("# … N line(s) omitted …"). Recognized by its shape, so the excerpt builder stays the
+// only owner of the wording; TestGround_OmissionMarkerIsNotEvidence pins the two together against
+// capHeadTail's real output.
+func isOmissionMarker(line string) bool {
+	const head, tail = "# … ", " line(s) omitted …"
+	l := strings.TrimSpace(line)
+	if len(l) <= len(head)+len(tail) || !strings.HasPrefix(l, head) || !strings.HasSuffix(l, tail) {
+		return false
+	}
+	for _, c := range l[len(head) : len(l)-len(tail)] {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // normalizeWithLines lowercases s and collapses every whitespace run to a single space,
