@@ -30,7 +30,7 @@ import (
 // a grant pointing at a script and did not read it" must never look like "we read it and it
 // was clean".
 func permissionUnits(root string, a model.ArtifactReport) ([]unit, []model.Finding) {
-	entries := ConfigStrings(a.Path, "permissions", "allow")
+	entries := configStrings(a.Path, "permissions", "allow")
 	if len(entries) == 0 {
 		return nil, nil
 	}
