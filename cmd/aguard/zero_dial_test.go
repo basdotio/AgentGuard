@@ -21,7 +21,9 @@ package main
 //   - a raw net.Dial, or a child process that dials. Neither exists in the product today (no
 //     os/exec import; net is used for ParseIP only), and a CI job under network isolation is the
 //     layer that would see them. This test does not claim to be that layer.
-//   - an asynchronous send that lands after its entry point returned.
+//   - an asynchronous send that lands more than lateRequestSettle after the last row returned.
+//     One that lands sooner is reported, but under the row it landed after (or during), which
+//     need not be the row that sent it.
 //   - code that lives only in a cobra RunE closure: each row calls the function its command
 //     calls (scanEnv, checkTarget, runHook, runVersion…), not the closure around it.
 
@@ -39,6 +41,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"gopkg.in/yaml.v3"
 
@@ -158,12 +161,28 @@ type dialCase struct {
 	run  func() error
 }
 
+// lateRequestSettle is how long the run waits after its last row before reading the counters a
+// final time. A request that lands after its entry point returned is still a request; this is the
+// window in which it is reported instead of lost when the counters are put back.
+const lateRequestSettle = 50 * time.Millisecond
+
 // TestZeroDial_OnlyTheJudgeConnects pins invariant #1: with the judge ENABLED in the config, the
 // only entry points that send anything are `scan --llm` (the environment and the Downloads items
 // it covers) and `llm test`. Everything else sends nothing, however the config reads.
 func TestZeroDial_OnlyTheJudgeConnects(t *testing.T) {
 	judgeRT, defaultRT := installDialCounters(t)
 	fx := newZeroDialFixture(t)
+
+	// A row's counts are what landed while it ran, so both counters must already be empty when it
+	// starts: anything there landed after the previous row RETURNED. Resetting them at row start
+	// discarded exactly that — or, a moment later, charged it to whichever row was running.
+	prev := "the fixture was built"
+	nothingPending := func(before string) {
+		t.Helper()
+		if j, d := judgeRT.take(), defaultRT.take(); len(j)+len(d) != 0 {
+			t.Errorf("a request landed after %q returned, before %s (judge.Transport %v, http.DefaultTransport %v): something sends after its entry point has returned", prev, before, j, d)
+		}
+	}
 
 	// The positive control, first: these paths are SUPPOSED to connect, so the judge counter has
 	// to see them — and see all of them, the default counter none. A test whose counter is not
@@ -186,13 +205,13 @@ func TestZeroDial_OnlyTheJudgeConnects(t *testing.T) {
 		}},
 	}
 	for _, c := range allowed {
+		nothingPending("connects/" + c.name)
 		t.Run("connects/"+c.name, func(t *testing.T) {
-			judgeRT.take()
-			defaultRT.take()
-			if err := c.run(); err != nil {
+			err := c.run()
+			j, d := judgeRT.take(), defaultRT.take() // before any Fatal, so the next row starts empty
+			if err != nil {
 				t.Fatal(err)
 			}
-			j, d := judgeRT.take(), defaultRT.take()
 			if len(j) == 0 {
 				t.Errorf("%s sent nothing through judge.Transport: the counter is blind, and every zero below means nothing", c.name)
 			}
@@ -200,6 +219,7 @@ func TestZeroDial_OnlyTheJudgeConnects(t *testing.T) {
 				t.Errorf("%s sent %d request(s) around the seam, via http.DefaultTransport: %v", c.name, len(d), d)
 			}
 		})
+		prev = c.name
 	}
 
 	hook := func(event string, check func(gate.Output) error) func() error {
@@ -305,20 +325,26 @@ func TestZeroDial_OnlyTheJudgeConnects(t *testing.T) {
 		{"hash", func() error { _, err := collect.CollectTarget(fx.skill); return err }},
 	}
 	for _, c := range silent {
+		nothingPending("silent/" + c.name)
 		t.Run("silent/"+c.name, func(t *testing.T) {
-			judgeRT.take()
-			defaultRT.take()
-			if err := c.run(); err != nil {
+			err := c.run()
+			j, d := judgeRT.take(), defaultRT.take() // before any Fatal, so the next row starts empty
+			if err != nil {
 				t.Fatalf("the entry point failed, so a zero from it proves nothing: %v", err)
 			}
-			if j := judgeRT.take(); len(j) != 0 {
+			if len(j) != 0 {
 				t.Errorf("%s sent %d judge request(s) to %v — invariant #1 lists the only paths that may connect out", c.name, len(j), j)
 			}
-			if d := defaultRT.take(); len(d) != 0 {
+			if len(d) != 0 {
 				t.Errorf("%s sent %d request(s) through http.DefaultTransport to %v — a network path outside the judge", c.name, len(d), d)
 			}
 		})
+		prev = c.name
 	}
+	// The last row has no next row to notice what it left behind; the counters are put back when
+	// the test ends, and a request after that reaches the real transport unseen.
+	time.Sleep(lateRequestSettle)
+	nothingPending("the counters are put back")
 }
 
 // TestZeroDial_ClaimsNameTheTest keeps the two places that say invariant #1 is enforced honest
