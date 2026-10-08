@@ -455,11 +455,16 @@ type EnvSummary struct {
 // ScanResult is the full immutable output of a scan (spec §8). Serialized by --json;
 // consumed by the report layer.
 type ScanResult struct {
-	Root        string           `json:"root"`
-	ScannedAt   int64            `json:"scanned_at"` // Unix sec, injected by caller
-	ToolVersion string           `json:"tool_version"`
-	Env         EnvSummary       `json:"env"`
-	Artifacts   []ArtifactReport `json:"artifacts"`
+	Root        string `json:"root"`
+	ScannedAt   int64  `json:"scanned_at"` // Unix sec, injected by caller
+	ToolVersion string `json:"tool_version"`
+	// RulesVersion names the rule table that produced the findings (detect.RulesVersion, spec §8):
+	// tool_version names a commit, and commits that touch no rule — or touch a rule's comment
+	// only — are the common case, so two reports could not say whether the rules changed between
+	// them. Always present; a report without the key predates the field.
+	RulesVersion string           `json:"rules_version"`
+	Env          EnvSummary       `json:"env"`
+	Artifacts    []ArtifactReport `json:"artifacts"`
 	// Hygiene carries the cleanup items. The JSON key is unchanged, but the ELEMENT shape gained
 	// id/tier/locators and split from aggregate to one-per-decision, so a consumer that read the
 	// old array needs updating (spec §6).
