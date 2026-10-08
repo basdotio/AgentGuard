@@ -145,15 +145,24 @@ func rulesDocHeader(t *testing.T) string {
 // detection only, and this page lists the LLM entries next to the engine rules, so the header has
 // to say which side of that line they are on. A reader who took LLM-001 to be covered would read
 // two equal versions as "the judge was the same", which nothing in the hash supports.
+//
+// Nor may it send the reader elsewhere for the judge: "a report's judge summary says how it ran"
+// promised what no field holds. The judge summary records whether it ran, over how much and
+// against which endpoint — not its model, prompt version, samples or authority — so the only
+// thing in a report that pins the judge's code today is tool_version.
 func TestRulesDocHeaderPutsTheJudgeOutsideRulesVersion(t *testing.T) {
 	h := rulesDocHeader(t)
 	for _, want := range []string{
 		"It covers deterministic detection only.",
 		"The LLM entries (every `LLM-` ID, notes included) are outside `rules_version` entirely",
+		"today a report identifies the judge's code only through `tool_version`",
 	} {
 		if !strings.Contains(h, want) {
 			t.Errorf("docs/rules.md header does not say %q — fix hack/gen-rules, then run `make docs`", want)
 		}
+	}
+	if strings.Contains(h, "how it ran") {
+		t.Error("docs/rules.md header still says something in the report tells how the judge ran; nothing there identifies the judge but tool_version")
 	}
 }
 

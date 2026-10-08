@@ -23,8 +23,8 @@ import (
 //
 // The LLM judge is outside the rules version, and so outside this epoch: nothing in
 // internal/judge — prompts, grounding, consensus, severity clamping — is covered, and changing it
-// does not bump this. The judge moves only overall_effective, and how it ran is told by the
-// report's judge summary and the llm config, not by this value.
+// does not bump this. The judge moves only overall_effective, and this value does not identify
+// it: today a report identifies the judge's code only through tool_version.
 //
 // BUMP IT, in the same commit, whenever a change outside builtinRules() alters — for some input —
 // which deterministic findings are produced, or a finding's rule ID, dimension, severity or

@@ -29,9 +29,9 @@ below — plus an epoch the maintainers bump when deterministic detection code o
 table changes. The structural, permission, scan-note and gate entries on this page are
 covered only by that epoch, and nothing checks that it was bumped. The LLM entries (every
 `LLM-` ID, notes included) are outside `rules_version` entirely: the judge moves only
-`overall_effective`, and a report's `judge` summary says how it ran. Two reports that
-disagree here were produced by different rules; two that agree were produced by the same
-engine rule table.
+`overall_effective`, and today a report identifies the judge's code only through
+`tool_version`. Two reports that disagree here were produced by different rules; two that
+agree were produced by the same engine rule table.
 
 ## Contents
 
