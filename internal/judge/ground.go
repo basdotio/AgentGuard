@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MIT
 package judge
 
-import "strings"
+import (
+	"strings"
+	"unicode"
+	"unicode/utf8"
+)
 
 // A model can produce a fluent, plausible, entirely invented finding. Nothing downstream can
 // tell that apart from a real one — same shape, same severity, same confident sentence. So a
@@ -42,7 +46,8 @@ const minGroundedChars = 16
 // model's quote decides whether a verdict is kept; this is what the report shows as its evidence.
 // Showing the quote instead let a single real line vouch for anything written around it: a quote
 // that fails whole is retried line by line, so one real line plus invented ones was kept, and the
-// invented lines were rendered under a real file:line, indistinguishable from evidence.
+// invented lines were rendered under a real file:line, indistinguishable from evidence. Lines too
+// long to show whole are cut around the quoted bytes (normalizedUnit.window), never from the start.
 type groundedSpan struct {
 	file string
 	line int
@@ -87,21 +92,22 @@ type normalizedUnit struct {
 	unit  sourceUnit
 	hay   string   // normalized text
 	lines []int    // for each hay byte, the 0-based line of unit.text it came from
+	offs  []int    // for each hay byte, its byte offset in unit.text
 	src   []string // unit.text split into lines: what a span's text is cut from
 }
 
 func normalizeUnits(units []sourceUnit) []normalizedUnit {
 	out := make([]normalizedUnit, len(units))
 	for i, u := range units {
-		hay, lines := normalizeWithLines(u.text)
-		out[i] = normalizedUnit{unit: u, hay: hay, lines: lines, src: strings.Split(u.text, "\n")}
+		hay, lines, offs := normalizeWithLines(u.text)
+		out[i] = normalizedUnit{unit: u, hay: hay, lines: lines, offs: offs, src: strings.Split(u.text, "\n")}
 	}
 	return out
 }
 
 // groundOne locates a single quote in the units.
 func groundOne(evidence string, units []normalizedUnit) (groundedSpan, bool) {
-	needle, _ := normalizeWithLines(evidence)
+	needle, _, _ := normalizeWithLines(evidence)
 	if needle == "" {
 		return groundedSpan{}, false
 	}
@@ -153,9 +159,10 @@ func (n normalizedUnit) line(i int) int {
 	return u.firstLine + n.lines[i]
 }
 
-// text returns the unit's own line(s) that hay bytes [i, j) came from. It refuses a match that
-// touches an omission marker: the marker is a line the excerpt builder inserted, so it is in the
-// text that was sent and in no file — a quote of it is not a quote of the artifact.
+// text returns the unit's own line(s) that hay bytes [i, j) came from — or, when those lines are
+// longer than a snippet may be, a window of them cut around the matched bytes. It refuses a match
+// that touches an omission marker: the marker is a line the excerpt builder inserted, so it is in
+// the text that was sent and in no file — a quote of it is not a quote of the artifact.
 func (n normalizedUnit) text(i, j int) (string, bool) {
 	src := n.src[n.lines[i] : n.lines[j-1]+1]
 	for _, l := range src {
@@ -163,7 +170,57 @@ func (n normalizedUnit) text(i, j int) (string, bool) {
 			return "", false
 		}
 	}
-	return strings.TrimSpace(strings.Join(src, "\n")), true
+	if whole := strings.TrimSpace(strings.Join(src, "\n")); len(whole) <= maxSnippetBytes {
+		return whole, true
+	}
+	return n.window(n.offs[i], n.offs[j-1]+1), true
+}
+
+// window cuts a snippet out of the unit's text around the matched source bytes [from, to), for a
+// match whose whole lines do not fit in a snippet. Cutting the line from its START instead let an
+// author pad an injection line with prose: the quote grounded, the finding — a high LLM-007 among
+// them — was reported, and its evidence was the line's harmless first 512 bytes.
+//
+// The window keeps the matched text (for a quote longer than the window, its beginning), spends
+// the room left on context to either side, never reaches past the matched lines, falls on rune
+// boundaries, and marks each end it cut with an ellipsis; markers included it is at most
+// maxSnippetBytes. The unit text was redacted before it was sent, so this cuts redacted text
+// (invariant #3: redact, then truncate).
+func (n normalizedUnit) window(from, to int) string {
+	text := n.unit.text
+	// The matched lines' extent without surrounding whitespace — what text() would have shown.
+	lo := strings.LastIndexByte(text[:from], '\n') + 1
+	hi := len(text)
+	if k := strings.IndexByte(text[to:], '\n'); k >= 0 {
+		hi = to + k
+	}
+	lo = from - len(strings.TrimLeftFunc(text[lo:from], unicode.IsSpace))
+	hi = to + len(strings.TrimRightFunc(text[to:hi], unicode.IsSpace))
+
+	budget := maxSnippetBytes - 2*len(ellipsis)
+	if to-from >= budget {
+		to = from + budget
+	} else {
+		room := budget - (to - from)
+		left := min(room/2, from-lo)
+		right := min(room-left, hi-to)
+		left = min(room-right, from-lo) // room the right side could not use goes to the left
+		from, to = from-left, to+right
+	}
+	for from < to && !utf8.RuneStart(text[from]) {
+		from++
+	}
+	for to > from && to < len(text) && !utf8.RuneStart(text[to]) {
+		to--
+	}
+	s := strings.TrimSpace(text[from:to])
+	if from > lo {
+		s = ellipsis + s
+	}
+	if to < hi {
+		s += ellipsis
+	}
+	return s
 }
 
 // isOmissionMarker reports whether a line is the marker capHeadTail puts where it cut an
@@ -185,12 +242,16 @@ func isOmissionMarker(line string) bool {
 }
 
 // normalizeWithLines lowercases s and collapses every whitespace run to a single space,
-// returning the result plus, for each byte of it, the 0-based line of s it came from. The
-// line map is what turns "the quote is in here somewhere" into a citable line number.
-func normalizeWithLines(s string) (string, []int) {
+// returning the result plus, for each byte of it, the 0-based line of s it came from and its
+// byte offset in s. The line map is what turns "the quote is in here somewhere" into a citable
+// line number; the offsets are what lets a snippet be cut around the quoted bytes (window).
+// A collapsed space maps to the byte after its run: it can never begin or end a match, because a
+// normalized quote has no leading or trailing space.
+func normalizeWithLines(s string) (string, []int, []int) {
 	var b strings.Builder
 	b.Grow(len(s))
 	lines := make([]int, 0, len(s))
+	offs := make([]int, 0, len(s))
 	line, pendingSpace := 0, false
 	for i := 0; i < len(s); i++ {
 		c := s[i]
@@ -206,6 +267,7 @@ func normalizeWithLines(s string) (string, []int) {
 		if pendingSpace {
 			b.WriteByte(' ')
 			lines = append(lines, line)
+			offs = append(offs, i)
 			pendingSpace = false
 		}
 		if c >= 'A' && c <= 'Z' {
@@ -213,6 +275,7 @@ func normalizeWithLines(s string) (string, []int) {
 		}
 		b.WriteByte(c)
 		lines = append(lines, line)
+		offs = append(offs, i)
 	}
-	return b.String(), lines
+	return b.String(), lines, offs
 }
