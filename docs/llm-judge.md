@@ -260,7 +260,10 @@ acting on the judge got its own switch rather than a change to the existing one.
 `--fail-on-llm` is opt-in **twice**: the flag has to be passed *and* `llm.authority` has to say
 `escalate`. Passing the flag without granting authority is **refused with an error**, not
 ignored — a gate that silently never fires is worse than no gate at all, because the pipeline
-goes green forever and everyone believes they are covered.
+goes green forever and everyone believes they are covered. Both thresholds and the grant are
+checked before anything is scanned: a refusal (or a misspelt level) exits 2 without sending a
+single request or printing a report, and a deterministic finding tripping `--fail-on` cannot
+hide it behind exit 1.
 
 Both flags mean the same thing on `scan` and on `check`. A pull-request job that wants the
 judge's say runs `aguard check ./skill --llm --fail-on-llm high`: a deterministic high still

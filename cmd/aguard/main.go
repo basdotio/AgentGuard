@@ -578,6 +578,15 @@ func main() {
 		Use:   "scan",
 		Short: "Full scan: enumerate and check skills/MCP/hooks/permissions",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			// Both gates are checked before the scan, so a refusal costs no judge request and
+			// prints no report (validateFailGates).
+			cfg, err := config.LoadUser(cfgPath)
+			if err != nil {
+				return err
+			}
+			if _, _, err := validateFailGates(scanFailOn, scanFailOnLLM, cfg.LLM.MayEscalate()); err != nil {
+				return err
+			}
 			out, err := scanEnv(root, scanOpts{cfgPath: cfgPath, ignorePath: ignorePath, zombie: zombie, noReputation: noRep, llm: useLLM, quiet: quiet})
 			if err != nil {
 				return err
@@ -640,10 +649,6 @@ func main() {
 			} else if !quiet && mdOut != "-" {
 				writeReport(os.Stdout, out, verbose)
 			}
-			cfg, cerr := config.LoadUser(cfgPath)
-			if cerr != nil {
-				return cerr
-			}
 			return failGate(out, scanFailOn, scanFailOnLLM, cfg.LLM.MayEscalate())
 		},
 	}
@@ -663,6 +668,19 @@ func main() {
 		Short: "Pre-install gate: scan a single skill/dir/file (static; --llm adds the judge)",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
+			// The same two gates as scan (spec §3): --fail-on reads deterministic findings only,
+			// whether or not --llm ran, and --fail-on-llm needs the config's explicit authority.
+			// Both are checked before the target is read, as on scan: checked only at the end,
+			// check's default --fail-on high let a deterministic hit hide a bad --fail-on-llm
+			// behind exit 1. What check takes and the load-time gate never does is --llm itself
+			// — see gateOptions.
+			cfg, err := config.LoadUser(cfgPath)
+			if err != nil {
+				return err
+			}
+			if _, _, err := validateFailGates(checkFailOn, checkFailOnLLM, cfg.LLM.MayEscalate()); err != nil {
+				return err
+			}
 			out, err := checkTarget(args[0], scanOpts{cfgPath: cfgPath, ignorePath: ignorePath, noReputation: noRep, llm: useLLM, quiet: quiet})
 			if err != nil {
 				return err
@@ -686,13 +704,6 @@ func main() {
 				}
 			} else if !quiet && mdOut != "-" {
 				writeReport(os.Stdout, out, verbose)
-			}
-			// The same two gates as scan (spec §3): --fail-on reads deterministic findings only,
-			// whether or not --llm ran, and --fail-on-llm needs the config's explicit authority.
-			// What check takes and the load-time gate never does is --llm itself — see gateOptions.
-			cfg, cerr := config.LoadUser(cfgPath)
-			if cerr != nil {
-				return cerr
 			}
 			return failGate(out, checkFailOn, checkFailOnLLM, cfg.LLM.MayEscalate())
 		},
@@ -878,33 +889,45 @@ func (e *failExit) Error() string {
 // --fail-on-llm reads the effective set as well, and is opt-in twice over — the flag must be
 // passed AND the config must grant authority — because it is the only switch here that can
 // fail someone's build on a probabilistic opinion.
+//
+// Both gates are validated before either is evaluated. Returning exit 1 on a deterministic hit
+// first used to mean a typo or a missing grant on --fail-on-llm was never looked at — under
+// check's default --fail-on high that was the common case — so the pipeline read a findings
+// failure where it had a broken gate.
 func failGate(out model.ScanResult, failOn, failOnLLM string, mayEscalate bool) error {
-	sev, err := parseFailOn("--fail-on", failOn)
+	sev, llmSev, err := validateFailGates(failOn, failOnLLM, mayEscalate)
 	if err != nil {
 		return err
 	}
 	if sev != "" && report.HasAtLeast(out, sev) {
 		return &failExit{code: 1}
 	}
-
-	llmSev, err := parseFailOn("--fail-on-llm", failOnLLM)
-	if err != nil {
-		return err
-	}
-	if llmSev == "" {
-		return nil
-	}
-	if !mayEscalate {
-		// Refused, not ignored. A gate that silently never fires is worse than no gate: the
-		// pipeline goes green forever and everyone believes they are covered.
-		return fmt.Errorf("--fail-on-llm requires config llm.authority: %s (currently %q) — "+
-			"the judge may only gate a build when you have explicitly granted it that",
-			config.AuthorityEscalate, config.AuthorityAdvisory)
-	}
-	if report.HasAtLeastEffective(out, llmSev) {
+	if llmSev != "" && report.HasAtLeastEffective(out, llmSev) {
 		return &failExit{code: 1}
 	}
 	return nil
+}
+
+// validateFailGates parses both thresholds and checks the --fail-on-llm grant, returning the
+// parsed levels ("" = that gate is off). scan and check call it BEFORE anything is collected or
+// sent, so a gate the run cannot honour is refused with exit 2 — which spec §3 defines as "the
+// scan did not happen" — instead of after the judge has been paid for and a report printed.
+// failGate calls it again, so the up-front check and the final one cannot disagree.
+func validateFailGates(failOn, failOnLLM string, mayEscalate bool) (sev, llmSev model.Severity, err error) {
+	if sev, err = parseFailOn("--fail-on", failOn); err != nil {
+		return "", "", err
+	}
+	if llmSev, err = parseFailOn("--fail-on-llm", failOnLLM); err != nil {
+		return "", "", err
+	}
+	if llmSev != "" && !mayEscalate {
+		// Refused, not ignored. A gate that silently never fires is worse than no gate: the
+		// pipeline goes green forever and everyone believes they are covered.
+		return "", "", fmt.Errorf("--fail-on-llm requires config llm.authority: %s (currently %q) — "+
+			"the judge may only gate a build when you have explicitly granted it that",
+			config.AuthorityEscalate, config.AuthorityAdvisory)
+	}
+	return sev, llmSev, nil
 }
 
 // parseFailOn validates a threshold flag. Empty means the gate is off.

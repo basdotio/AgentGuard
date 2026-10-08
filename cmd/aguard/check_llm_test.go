@@ -252,3 +252,75 @@ func TestGateScannerNeverEnablesLLM(t *testing.T) {
 		t.Errorf("the load-time gate made %d call(s) to a judge endpoint; it must never consult a model", n)
 	}
 }
+
+// TestFailGateFlags_RefusedBeforeTheJudge: a --fail-on-llm the run cannot honour — a typo, or a
+// config that never granted llm.authority: escalate — is refused (exit 2) before anything is
+// scanned or sent, on check and on scan alike. The fixture carries a deterministic high on
+// purpose: under check's default --fail-on high it used to trip exit 1 first, so the bad flag was
+// never parsed at all and the pipeline read a findings failure where it had a broken gate. And
+// where the refusal did fire, it fired after the judge had already been paid for.
+func TestFailGateFlags_RefusedBeforeTheJudge(t *testing.T) {
+	root := buildTestRunnerSkill(t, true)
+	dir := filepath.Join(root, "skills", "test-runner")
+	mustWriteFile(t, filepath.Join(dir, "install.sh"), checkPayload)
+
+	for _, tc := range []struct {
+		name      string
+		authority string
+		args      []string
+		code      int
+		stderr    string // substring the refusal must carry; "" for the valid rows
+		calls     bool   // whether the judge endpoint must have been reached
+	}{
+		{"check/no authority", "advisory", []string{"check", dir, "--llm", "--fail-on-llm", "high"}, 2, "llm.authority: escalate", false},
+		{"check/no authority, no --llm", "advisory", []string{"check", dir, "--fail-on-llm", "high"}, 2, "llm.authority: escalate", false},
+		{"check/typo in --fail-on-llm", "escalate", []string{"check", dir, "--llm", "--fail-on-llm", "hgih"}, 2, `invalid --fail-on-llm "hgih"`, false},
+		{"check/typo in --fail-on", "escalate", []string{"check", dir, "--llm", "--fail-on", "hgih"}, 2, `invalid --fail-on "hgih"`, false},
+		{"scan/no authority", "advisory", []string{"scan", "--root", root, "--inbox", "off", "--llm", "--fail-on", "high", "--fail-on-llm", "high"}, 2, "llm.authority: escalate", false},
+		{"scan/typo in --fail-on-llm", "escalate", []string{"scan", "--root", root, "--inbox", "off", "--llm", "--fail-on-llm", "hgih"}, 2, `invalid --fail-on-llm "hgih"`, false},
+		// The reverse half: a gate the run CAN honour is unchanged — the judge runs, and the
+		// deterministic high fails the run through either gate.
+		{"check/valid escalate", "escalate", []string{"check", dir, "--llm", "--fail-on-llm", "high"}, 1, "", true},
+		{"scan/valid escalate", "escalate", []string{"scan", "--root", root, "--inbox", "off", "--llm", "--fail-on-llm", "high"}, 1, "", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			srv, calls := countingServer(t)
+			cfg := writeJudgeConfig(t, srv.URL, tc.authority)
+			so, se, code := runAguard(t, append(tc.args, "--config", cfg, "--json")...)
+			if code != tc.code {
+				t.Fatalf("exit %d, want %d; stderr:\n%s", code, tc.code, se)
+			}
+			if tc.stderr != "" && !strings.Contains(se, tc.stderr) {
+				t.Errorf("stderr does not carry %q:\n%s", tc.stderr, se)
+			}
+			if n := calls.Load(); (n > 0) != tc.calls {
+				t.Errorf("judge endpoint saw %d request(s); want any=%v — a refused gate must not cost a request", n, tc.calls)
+			}
+			if tc.code == 2 && so != "" {
+				t.Errorf("a refused run still scanned and printed a report:\n%.200s", so)
+			}
+		})
+	}
+}
+
+// TestFailGate_DeterministicHitDoesNotMaskARefusal is the same contract one level down: failGate
+// itself must refuse a gate it cannot honour even when --fail-on has already been met, or a
+// caller that skips the up-front check reads exit 1 for a broken configuration.
+func TestFailGate_DeterministicHitDoesNotMaskARefusal(t *testing.T) {
+	for _, tc := range []struct {
+		name, failOnLLM string
+		mayEscalate     bool
+	}{
+		{"typo", "hgih", true},
+		{"no authority", "high", false},
+	} {
+		err := failGate(withHigh(), "high", tc.failOnLLM, tc.mayEscalate)
+		if err == nil {
+			t.Errorf("%s: failGate passed", tc.name)
+			continue
+		}
+		if _, isExit := err.(*failExit); isExit {
+			t.Errorf("%s: failGate returned a findings failure (exit 1) for a gate it should have refused (exit 2)", tc.name)
+		}
+	}
+}
