@@ -327,3 +327,15 @@ func TestSARIF_JudgeRuleDescriptionIsNotAModelSummary(t *testing.T) {
 		t.Errorf("the judge rule's description depends on walk order:\n%q\n%q", seen[0], seen[1])
 	}
 }
+
+// TestSARIF_EveryJudgeRuleHasADefinition: a judge rule with no entry in the definition table is
+// described by nothing (never by its Why), so a missing entry would silently cost Code Scanning
+// its help text. Every id the judge and its notes report under must have one.
+func TestSARIF_EveryJudgeRuleHasADefinition(t *testing.T) {
+	for _, id := range []string{"LLM-000", "LLM-001", "LLM-002", "LLM-003", "LLM-004", "LLM-005", "LLM-006", "LLM-007", "LLM-008", "LLM-009"} {
+		doc := sarifOf(t, model.ScanResult{Root: "/r", Notes: []model.Finding{{RuleID: id, Source: model.SrcLLM, Title: "t", Why: "model text"}}})
+		if full, help := ruleText(t, doc, id); full == "" || full != model.JudgeRuleText(id) || help != full {
+			t.Errorf("%s: fullDescription=%q help=%q, want the tool's definition", id, full, help)
+		}
+	}
+}
