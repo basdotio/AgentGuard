@@ -9,6 +9,11 @@ package model
 // report package cannot import the judge (the judge's tests import the report), so a second copy
 // kept in step by a comment is the only alternative, and that is the drift this repository keeps
 // refusing.
+//
+// Completeness is a test, not this comment: hack/gen-rules' TestEveryJudgeRuleHasADefinition fails
+// when a judge rule in the rule reference has no entry here. The reference keeps its own, longer
+// text for the same ids — a second copy, for a different reader; folding the two into one is an
+// open follow-up, not something either side may assume has happened.
 var judgeRuleText = map[string]string{
 	"LLM-000": "The LLM judge was requested but some of its checks did not run (endpoint error, call budget, deadline); the gap is announced so an absent opinion is never read as a clean one.",
 	"LLM-001": "The artifact's behavior does something its description does not disclose.",
