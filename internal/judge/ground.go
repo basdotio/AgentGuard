@@ -5,6 +5,8 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/basdotio/AgentGuard/internal/detect"
 )
 
 // A model can produce a fluent, plausible, entirely invented finding. Nothing downstream can
@@ -61,9 +63,10 @@ func ground(evidence string, units []sourceUnit) (file string, line int, ok bool
 }
 
 // groundSpan locates a model-supplied quote in the text that was sent and returns its real
-// position and the sent line(s) it landed on. Comparison is whitespace-insensitive and
-// case-insensitive — models reflow and re-case freely, and neither changes what the line SAYS —
-// but it is not fuzzy beyond that: a paraphrase does not match, which is exactly the intent.
+// position and the sent line(s) it landed on. Comparison is whitespace-insensitive (any Unicode
+// space), blind to invisible characters, and ASCII case-insensitive (foldForMatch) — models reflow
+// and re-case freely, and none of that changes what the line SAYS — but it is not fuzzy beyond
+// that: a paraphrase does not match, which is exactly the intent.
 func groundSpan(evidence string, units []sourceUnit) (groundedSpan, bool) {
 	prepared := normalizeUnits(units)
 	if s, ok := groundOne(evidence, prepared); ok {
@@ -175,9 +178,9 @@ func (n normalizedUnit) text(i, j int) (string, bool) {
 	}
 	from, to := n.offs[i], n.offs[j-1]+1
 	if to-from > windowBudget && j-i <= windowBudget {
-		// The quote fits once its whitespace runs are collapsed, but not as source bytes: a run
-		// INSIDE it is what overflows the window. Cutting the source here put the cut inside the
-		// run, and trimming left the quote's first word as the whole of the evidence.
+		// The quote fits once folded (runs of whitespace collapsed, invisible runes gone), but not as
+		// source bytes: a run INSIDE it is what overflows the window. Cutting the source here put the
+		// cut inside the run, and trimming left the quote's first word as the whole of the evidence.
 		return n.collapsedWindow(from, to), true
 	}
 	return n.window(from, to), true
@@ -202,12 +205,13 @@ func (n normalizedUnit) window(from, to int) string {
 }
 
 // collapsedWindow is window for a match whose source bytes overflow the window only because of the
-// whitespace runs inside it. Measured in source bytes, the run alone could fill the window: the cut
-// fell inside it and trimming left "…Note:…" as the evidence of a directive that grounded. It
-// renders the matched lines with every run collapsed to one space — the normalisation grounding
-// compared them under (isMatchSpace), so this is the text the quote was found in, case aside — and
-// windows that around the quote. The collapsed match is exactly as long as the normalised quote, so
-// on text()'s path it always fits; should it not, the bound holds by showing its head and tail.
+// runs of whitespace or invisible runes inside it. Measured in source bytes, the run alone could fill
+// the window: the cut fell inside it and trimming left "…Note:…" as the evidence of a directive that
+// grounded. It renders the matched lines folded — every whitespace run one space, invisible runes
+// gone — by the same walk grounding compared them under (foldForMatch, via collapseRuns), so this
+// is the text the quote was found in, case aside, and windows that around the quote. The collapsed
+// match is exactly as long as the normalised quote, so on text()'s path it always fits; should it
+// not, the bound holds by showing its head and tail.
 func (n normalizedUnit) collapsedWindow(from, to int) string {
 	lo, hi := matchedLines(n.unit.text, from, to)
 	c, cf, ct := collapseRuns(n.unit.text[lo:hi], from-lo, to-lo)
@@ -259,32 +263,28 @@ func cutAround(text string, lo, from, to, hi int) string {
 	return s
 }
 
-// collapseRuns returns s with every run of match whitespace (isMatchSpace) replaced by one space,
-// and where s's bytes [from, to) landed in the result. s[from] and s[to-1] are not whitespace: a
-// grounded match never begins or ends on it.
+// collapseRuns returns s folded the way grounding reads it (foldForMatch: every run of match space
+// one space, ignored runes gone), case kept, and where s's bytes [from, to) landed in the result.
+// s[from] and s[to-1] belong to kept runes: a grounded match never begins or ends on a space or on
+// an ignored rune. Every space in the result is a collapsed run, never a kept byte, which is how
+// the one in front of the match is told apart from the match's first byte at the same offset.
 func collapseRuns(s string, from, to int) (out string, cf, ct int) {
 	var b strings.Builder
 	b.Grow(len(s))
-	pending := false
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if isMatchSpace(c) {
-			pending = pending || b.Len() > 0
-			continue
-		}
-		if pending {
-			b.WriteByte(' ')
-			pending = false
-		}
-		if i == from {
+	cf = -1
+	foldForMatch(s, func(c byte, off int) {
+		if cf < 0 && off >= from && c != ' ' {
 			cf = b.Len()
 		}
 		b.WriteByte(c)
-		if i == to-1 {
+		if off < to {
 			ct = b.Len()
 		}
+	})
+	if cf < 0 {
+		cf = b.Len()
 	}
-	return b.String(), cf, ct
+	return b.String(), cf, max(cf, ct)
 }
 
 // headTail shows c[cf:ct], a match too long for a window, as its head and its tail joined by an
@@ -328,48 +328,76 @@ func isOmissionMarker(line string) bool {
 	return true
 }
 
-// normalizeWithLines lowercases s and collapses every whitespace run to a single space,
+// normalizeWithLines folds s the way grounding reads it (foldForMatch) and lowercases ASCII,
 // returning the result plus, for each byte of it, the 0-based line of s it came from and its
 // byte offset in s. The line map is what turns "the quote is in here somewhere" into a citable
 // line number; the offsets are what lets a snippet be cut around the quoted bytes (window).
-// A collapsed space maps to the byte after its run: it can never begin or end a match, because a
-// normalized quote has no leading or trailing space.
+// A kept rune keeps its own bytes, each mapped to its own offset, so a multi-byte rune maps back
+// byte for byte. A collapsed space maps to the first byte of the rune after its run: it can never
+// begin or end a match, because a normalized quote has no leading or trailing space. Only ASCII is
+// lowercased: folding other letters can change their length, and the map is per byte.
 func normalizeWithLines(s string) (string, []int, []int) {
 	var b strings.Builder
 	b.Grow(len(s))
 	lines := make([]int, 0, len(s))
 	offs := make([]int, 0, len(s))
-	line, pendingSpace := 0, false
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if isMatchSpace(c) {
-			if c == '\n' {
-				line++
-			}
-			if b.Len() > 0 {
-				pendingSpace = true // collapse; leading whitespace is dropped entirely
-			}
-			continue
-		}
-		if pendingSpace {
-			b.WriteByte(' ')
-			lines = append(lines, line)
-			offs = append(offs, i)
-			pendingSpace = false
-		}
+	line, counted := 0, 0
+	foldForMatch(s, func(c byte, off int) {
+		line += strings.Count(s[counted:off], "\n") // offsets only grow, so each byte is counted once
+		counted = off
 		if c >= 'A' && c <= 'Z' {
 			c += 'a' - 'A'
 		}
 		b.WriteByte(c)
 		lines = append(lines, line)
-		offs = append(offs, i)
-	}
+		offs = append(offs, off)
+	})
 	return b.String(), lines, offs
 }
 
-// isMatchSpace is the whitespace grounding collapses. One predicate, read by normalizeWithLines to
-// match a quote and by collapseRuns to render one, so a snippet shown collapsed is collapsed exactly
-// the way the quote was found.
-func isMatchSpace(c byte) bool {
-	return c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '\v' || c == '\f'
+// foldForMatch walks s as grounding reads it and calls emit for each byte of the result: a run of
+// match space (isMatchSpace) becomes one ' ' — none before the first kept rune, none after the
+// last — a rune grounding ignores (isMatchIgnored) is skipped without ending a run, and every other
+// rune is kept as its own source bytes (an invalid byte is kept as itself). off is the offset in s
+// the byte came from; a collapsed space reports the first byte of the rune after its run.
+//
+// It is the one walk behind both sides of a snippet: normalizeWithLines folds the text and the
+// quote with it to match them, and collapseRuns folds the matched lines with it to show them. Two
+// walks sharing only a predicate can still disagree on where a run ends; one walk cannot.
+func foldForMatch(s string, emit func(c byte, off int)) {
+	started, pending := false, false
+	for i := 0; i < len(s); {
+		r, w := utf8.DecodeRuneInString(s[i:])
+		switch {
+		case isMatchSpace(r):
+			pending = started
+		case isMatchIgnored(r):
+			// Neither kept nor a space: a run it sits inside goes on, and it starts nothing.
+		default:
+			if pending {
+				emit(' ', i)
+				pending = false
+			}
+			for k := i; k < i+w; k++ {
+				emit(s[k], k)
+			}
+			started = true
+		}
+		i += w
+	}
 }
+
+// isMatchSpace is the whitespace grounding collapses: every rune unicode.IsSpace reports — ASCII
+// whitespace, and also NEL, NBSP, U+1680, U+2000–U+200A, U+2028/U+2029, U+202F, U+205F and U+3000.
+// ASCII alone let a directive be padded from within by U+3000: the pad stayed in the normalised
+// quote as ordinary bytes, the window cut inside it and showed "…Note:…", and a model that quoted
+// the pad as one space did not ground at all. Read only by foldForMatch, so a snippet shown
+// collapsed is collapsed exactly the way the quote was found.
+func isMatchSpace(r rune) bool { return unicode.IsSpace(r) }
+
+// isMatchIgnored is what grounding drops outright: the zero-width, joiner and bidi-control runes
+// INJ-004 reports in file contents and report.Sanitize neutralises in names — detect.Invisible,
+// the one table, not a copy. They occupy no visual space, so a model reading "ig<U+200B>nore"
+// quotes "ignore", and a run of them inside a directive would otherwise fill the window with
+// nothing a reader can see. Dropped, not collapsed: they separate no words on screen either.
+func isMatchIgnored(r rune) bool { return detect.Invisible(r) }
