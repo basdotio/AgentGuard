@@ -2,6 +2,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -153,6 +154,26 @@ func TestRulesDocHeaderPutsTheJudgeOutsideRulesVersion(t *testing.T) {
 		if !strings.Contains(h, want) {
 			t.Errorf("docs/rules.md header does not say %q — fix hack/gen-rules, then run `make docs`", want)
 		}
+	}
+}
+
+// TestRulesDocHeaderSaysWhatTheHashCovers: only the engine rules are hashed. The page also lists
+// structural checks, permission checks and notes that are built inline in code, and a header that
+// said "it hashes what decides a finding" over all of them would promise that changing EXFIL-001's
+// logic moves the version — it does not unless someone bumps the epoch. The count is detect's own,
+// so the sentence cannot go stale when a rule is added.
+func TestRulesDocHeaderSaysWhatTheHashCovers(t *testing.T) {
+	h := rulesDocHeader(t)
+	for _, want := range []string{
+		fmt.Sprintf("It hashes the %d engine rules' ID, dimension, severity, flags and pattern", len(detect.Rules())),
+		"The structural, permission, scan-note and gate entries on this page are covered only by that epoch",
+	} {
+		if !strings.Contains(h, want) {
+			t.Errorf("docs/rules.md header does not say %q — fix hack/gen-rules, then run `make docs`", want)
+		}
+	}
+	if strings.Contains(h, "It hashes what decides a finding") {
+		t.Error("docs/rules.md header still says the hash covers \"what decides a finding\"; it covers the engine rules only")
 	}
 }
 
