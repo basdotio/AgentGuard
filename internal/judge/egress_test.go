@@ -2,12 +2,14 @@
 package judge
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/basdotio/AgentGuard/internal/detect"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // encodedDir is Claude Code's project-directory naming, written out independently of egress.go:
@@ -203,20 +205,125 @@ func TestEgress_RepairsAHomeTheSnippetCapCut(t *testing.T) {
 	}
 }
 
-// TestEgress_NoHomeIsIdentity: the zero value and a home that is the filesystem root change
-// nothing — replacing "/" would rewrite every absolute path. A one-segment home keeps its raw
-// form replaced, but not its encoded one: `-root` is too much like a command-line option.
+// TestEgress_NoHomeIsIdentity: the zero value, no home, an empty home and a home that is the
+// filesystem root change nothing — replacing "/" would rewrite every absolute path. (A relative
+// home is not "no home": it is resolved, see TestEgress_RelativeHomeIsResolved.) A one-segment
+// home keeps its raw form replaced, but not its encoded one: `-root` is too much like an option.
 func TestEgress_NoHomeIsIdentity(t *testing.T) {
 	in := "/usr/bin/env -root-dir /root/x projects/-root-work"
 	if got := (egress{}).scrub(in); got != in {
 		t.Errorf("zero egress changed %q to %q", in, got)
 	}
-	for _, h := range []string{"", "/", "."} {
+	if got := newEgress().scrub(in); got != in {
+		t.Errorf("no home changed %q to %q", in, got)
+	}
+	for _, h := range []string{"", "/", "//"} {
 		if got := newEgress(h).scrub(in); got != in {
 			t.Errorf("home %q changed %q to %q", h, in, got)
 		}
 	}
 	if got, want := newEgress("/root").scrub(in), "/usr/bin/env -root-dir ~/x projects/-root-work"; got != want {
 		t.Errorf("one-segment home: got %q, want %q", got, want)
+	}
+}
+
+// judgedTexts runs the judge over one skill whose script is script and returns everything the
+// client was sent (declared and behavior sides of every call).
+func judgedTexts(t *testing.T, script string, opts Options) string {
+	t.Helper()
+	skill := filepath.Join(t.TempDir(), "s")
+	writeFile(t, filepath.Join(skill, "SKILL.md"), "---\nname: s\ndescription: reads notes\n---\nRead the notes.\n")
+	writeFile(t, filepath.Join(skill, "run.sh"), script)
+	fc := &fakeClient{}
+	Run(context.Background(), fc, []model.ArtifactReport{{Kind: model.KindSkill, Name: "s", Path: skill}}, opts)
+	if len(fc.reqs) == 0 {
+		t.Fatal("no request reached the client")
+	}
+	var b strings.Builder
+	for _, r := range fc.reqs {
+		b.WriteString(r.Declared + "\n" + r.Behavior + "\n")
+	}
+	return b.String()
+}
+
+// TestRun_EmptyHomeStillStripsTheUserHome: an empty Options.Home used to mean "send paths as they
+// are", so every caller that did not set it — `check`, anything new — sent the username. The OS
+// user's home is now stripped whatever the caller passes; Options.Home only ADDS the scan's home.
+func TestRun_EmptyHomeStillStripsTheUserHome(t *testing.T) {
+	home := filepath.Join(t.TempDir(), "home.d", "alicemarker")
+	t.Setenv("HOME", home)
+	got := judgedTexts(t, "#!/bin/sh\ncat "+home+"/notes/today.md\n", Options{})
+	if strings.Contains(got, "alicemarker") {
+		t.Errorf("Options{} sent the OS user's home:\n%s", got)
+	}
+	if !strings.Contains(got, "~/notes/today.md") {
+		t.Errorf("the path should reach the judge with the home as ~:\n%s", got)
+	}
+}
+
+// TestRun_ScanHomeAndUserHomeAreBothStripped: the scan's home (root's parent) and the OS user's
+// home are different directories whenever --root is not ~/.claude, and each can be named in the
+// content; both are replaced.
+func TestRun_ScanHomeAndUserHomeAreBothStripped(t *testing.T) {
+	user := filepath.Join(t.TempDir(), "home.d", "alicemarker")
+	scan := filepath.Join(t.TempDir(), "proj.d", "bobmarker")
+	t.Setenv("HOME", user)
+	got := judgedTexts(t, "#!/bin/sh\ncat "+user+"/notes/a.md "+scan+"/notes/b.md\n", Options{Home: scan})
+	for _, marker := range []string{"alicemarker", "bobmarker"} {
+		if strings.Contains(got, marker) {
+			t.Errorf("a home ending in %q reached the judge:\n%s", marker, got)
+		}
+	}
+	if !strings.Contains(got, "~/notes/a.md") || !strings.Contains(got, "~/notes/b.md") {
+		t.Errorf("both paths should reach the judge with their home as ~:\n%s", got)
+	}
+}
+
+// TestRun_ScanHomeInsideTheUserHomeKeepsItsPlace: with CLAUDE_CONFIG_DIR=~/.config/claude the scan's
+// home is ~/.config. Replacing it with `~` as well would turn ~/.config/claude/x into ~/claude/x — a
+// path the judge would read as somewhere else. A scan home inside the user's home is covered by the
+// user's home, so only that one becomes `~`.
+func TestRun_ScanHomeInsideTheUserHomeKeepsItsPlace(t *testing.T) {
+	user := filepath.Join(t.TempDir(), "home.d", "alicemarker")
+	t.Setenv("HOME", user)
+	got := judgedTexts(t, "#!/bin/sh\nsh "+user+"/.config/claude/hooks/a.sh\ncat "+user+"/notes/a.md\n",
+		Options{Home: filepath.Join(user, ".config")})
+	if strings.Contains(got, "alicemarker") {
+		t.Errorf("the user's home reached the judge:\n%s", got)
+	}
+	if !strings.Contains(got, "~/.config/claude/hooks/a.sh") || strings.Contains(got, "~/claude/") {
+		t.Errorf("the config dir should keep its place under ~:\n%s", got)
+	}
+	if !strings.Contains(got, "~/notes/a.md") {
+		t.Errorf("a path in the user's home outside the config dir should go as ~/…:\n%s", got)
+	}
+}
+
+// TestEgress_LaterHomeInsideAnEarlierIsDropped pins both directions of the nesting rule: a scan home
+// inside the user's adds nothing but a wrong `~`, so it is dropped; a scan home that CONTAINS the
+// user's must not displace it, or the username would survive as the first segment under `~`.
+func TestEgress_LaterHomeInsideAnEarlierIsDropped(t *testing.T) {
+	for _, c := range []struct{ user, scan, in, want string }{
+		{"/Users/alicemarker", "/Users/alicemarker/.config", "/Users/alicemarker/.config/claude/x", "~/.config/claude/x"},
+		{"/Users/alicemarker", "/Users/alicemarker", "/Users/alicemarker/x", "~/x"},
+		{"/Users/alicemarker", "/Users", "/Users/alicemarker/x /Users/bob/y", "~/x ~/bob/y"},
+		{"/Users/alicemarker", "/srv/proj", "/Users/alicemarker/x /srv/proj/y", "~/x ~/y"},
+	} {
+		if got := newEgress(c.user, c.scan).scrub(c.in); got != c.want {
+			t.Errorf("user %q, scan %q: scrub(%q) = %q, want %q", c.user, c.scan, c.in, got, c.want)
+		}
+	}
+}
+
+// TestEgress_RelativeHomeIsResolved: `scan --root .claude` made the scan's home ".", and a relative
+// home used to yield the zero egress — nothing replaced. It is resolved against the working
+// directory instead, which is where the scan resolved its root.
+func TestEgress_RelativeHomeIsResolved(t *testing.T) {
+	abs, err := filepath.Abs(filepath.Join("home.d", "alicemarker"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := newEgress(filepath.Join("home.d", "alicemarker")).scrub("cat " + abs + "/notes"); got != "cat ~/notes" {
+		t.Errorf("relative home: got %q, want %q", got, "cat ~/notes")
 	}
 }

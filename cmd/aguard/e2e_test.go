@@ -662,3 +662,130 @@ func TestScanInbox_JudgeBodiesCarryNoHome(t *testing.T) {
 		t.Error("the path should reach the judge with the home as ~")
 	}
 }
+
+// markedHome makes TempDir()/home.d/<marker> and returns it with symlinks resolved — the spelling
+// os.Getwd reports from inside it (on macOS TempDir is under /var, a link to /private/var).
+func markedHome(t *testing.T, marker string) string {
+	t.Helper()
+	home := filepath.Join(t.TempDir(), "home.d", marker)
+	if err := os.MkdirAll(home, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	resolved, err := filepath.EvalSymlinks(home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return resolved
+}
+
+// writeHomeNamingRoot fills root with content that names home in three places the judge reads: a
+// hook command (pointing at a script under root), CLAUDE.md, and a skill's description and script.
+func writeHomeNamingRoot(t *testing.T, root, home string) {
+	t.Helper()
+	mustWriteFile(t, filepath.Join(root, "settings.json"), `{"hooks":{"PostToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"`+
+		root+`/hooks/audit.sh --log `+home+`/logs/audit.log"}]}]}}`)
+	mustWriteFile(t, filepath.Join(root, "hooks", "audit.sh"), "#!/bin/sh\necho audited >> "+home+"/logs/audit.log\n")
+	mustWriteFile(t, filepath.Join(root, "CLAUDE.md"), "Project conventions.\nScratch files go to "+home+"/scratch.\n")
+	mustWriteFile(t, filepath.Join(root, "skills", "notes", "SKILL.md"),
+		"---\nname: notes\ndescription: Reads today's notes from "+home+"/notes and summarizes them.\n---\nSummarize the notes file.\n")
+	mustWriteFile(t, filepath.Join(root, "skills", "notes", "run.sh"), "#!/bin/sh\ncat "+home+"/notes/today.md\n")
+}
+
+// assertNoHomeSent fails for any request body carrying the marker (the username) or the home, and
+// requires the home to have arrived as `~` rather than been dropped.
+func assertNoHomeSent(t *testing.T, sent []string, home, marker string) {
+	t.Helper()
+	if len(sent) == 0 {
+		t.Fatal("no request reached the judge")
+	}
+	leaked := 0
+	for i, b := range sent {
+		if strings.Contains(b, marker) || strings.Contains(b, home) {
+			leaked++
+			t.Errorf("request %d carried the home or the username %q", i, marker)
+		}
+	}
+	t.Logf("%d of %d request bodies carried the home or %q", leaked, len(sent), marker)
+	if !strings.Contains(strings.Join(sent, "\n"), "~/notes") {
+		t.Error("no request body has ~/notes — the path should reach the judge with the home as ~")
+	}
+}
+
+// chdirFor switches the working directory for the rest of the test and restores it afterwards.
+// Registered after the directory's own TempDir cleanup, so it runs before that removal.
+func chdirFor(t *testing.T, dir string) {
+	t.Helper()
+	prev, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(prev); err != nil {
+			t.Errorf("restoring the working directory: %v", err)
+		}
+	})
+}
+
+// TestE2E_RelativeRootStillStripsTheHome: `scan --root .claude` made the scan's home
+// filepath.Dir(".claude") = ".", a relative home the egress treated as "no home" — every path went
+// out as written. The OS user's home is pointed elsewhere here, so only the scan's own home can
+// make this pass.
+func TestE2E_RelativeRootStillStripsTheHome(t *testing.T) {
+	home := markedHome(t, "alicemarker")
+	writeHomeNamingRoot(t, filepath.Join(home, ".claude"), home)
+	t.Setenv("HOME", t.TempDir())
+	chdirFor(t, home)
+
+	url, bodies := capturingJudge(t)
+	if _, err := scanEnv(".claude", scanOpts{cfgPath: writeJudgeConfig(t, url, "advisory"), llm: true, quiet: true}); err != nil {
+		t.Fatal(err)
+	}
+	assertNoHomeSent(t, bodies(), home, "alicemarker")
+}
+
+// TestE2E_ConfigDirUnderTheHomeStripsTheUserHome: with CLAUDE_CONFIG_DIR=~/.config/claude the scan's
+// home — root's parent — is ~/.config, so paths elsewhere in the user's home (~/notes, ~/logs) were
+// never replaced. The OS user's home is now stripped too, and the config dir keeps its place under
+// it: ~/.config/claude/…, not ~/claude/….
+func TestE2E_ConfigDirUnderTheHomeStripsTheUserHome(t *testing.T) {
+	home := markedHome(t, "carolmarker")
+	t.Setenv("HOME", home)
+	root := filepath.Join(home, ".config", "claude")
+	writeHomeNamingRoot(t, root, home)
+
+	url, bodies := capturingJudge(t)
+	if _, err := scanEnv(root, scanOpts{cfgPath: writeJudgeConfig(t, url, "advisory"), llm: true, quiet: true}); err != nil {
+		t.Fatal(err)
+	}
+	sent := bodies()
+	assertNoHomeSent(t, sent, home, "carolmarker")
+	all := strings.Join(sent, "\n")
+	if !strings.Contains(all, "~/.config/claude/hooks/audit.sh") || strings.Contains(all, "~/claude/") {
+		t.Error("the hook script should reach the judge as ~/.config/claude/hooks/audit.sh")
+	}
+}
+
+// TestCheckTarget_JudgeBodiesCarryNoHome: checkTarget never set a home for the judge, so a judged
+// check — the path the Downloads pass takes per candidate, and any caller that passes llm — sent
+// every path as written. The egress now strips the OS user's home whatever the caller says.
+func TestCheckTarget_JudgeBodiesCarryNoHome(t *testing.T) {
+	home := markedHome(t, "davemarker")
+	t.Setenv("HOME", home)
+	skill := filepath.Join(home, "work", "notes-skill")
+	mustWriteFile(t, filepath.Join(skill, "SKILL.md"),
+		"---\nname: notes\ndescription: Reads today's notes from "+home+"/notes and summarizes them.\n---\nSummarize the notes file.\n")
+	mustWriteFile(t, filepath.Join(skill, "run.sh"), "#!/bin/sh\ncat "+home+"/notes/today.md\n")
+
+	url, bodies := capturingJudge(t)
+	out, err := checkTarget(skill, scanOpts{cfgPath: writeJudgeConfig(t, url, "advisory"), llm: true, quiet: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.Judge == nil || !out.Judge.Ran {
+		t.Fatalf("the judge should have run on the target: %+v", out.Judge)
+	}
+	assertNoHomeSent(t, bodies(), home, "davemarker")
+}

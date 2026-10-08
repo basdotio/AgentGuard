@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand/v2"
+	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -33,9 +34,9 @@ type Options struct {
 	// and every grounded verdict counts. >1 asks N times and requires a MAJORITY before a
 	// finding may affect the effective score — it costs N times as much, so it is opt-in.
 	Samples int
-	// Home is the scanned environment's home directory. Every spelling of it is replaced by `~`
-	// in what is sent (egress.go), so a request body does not name the user. Empty sends paths as
-	// they are — fine for a test, wrong for a scan: the caller knows which home it scanned.
+	// Home is the scanned environment's home directory, replaced by `~` in what is sent (egress.go)
+	// IN ADDITION to the OS user's home, which Run always replaces: empty adds nothing, it does
+	// not turn the scrub off. A relative Home is resolved against the working directory.
 	Home string
 }
 
@@ -230,7 +231,7 @@ func Run(ctx context.Context, c Client, arts []model.ArtifactReport, opts Option
 	// snapshots each artifact's static findings before advisory ones are appended (triage must
 	// judge the deterministic findings, not the judge's own output), and it makes the budget
 	// cut deterministic — a counter raced by workers would drop a different set each run.
-	tasks := buildTasks(arts, opts.Samples, newEgress(opts.Home))
+	tasks := buildTasks(arts, opts.Samples, newEgress(userHome(), opts.Home))
 	var notes []model.Finding
 	stats := Stats{}
 	if over := len(tasks) - opts.MaxCalls; opts.MaxCalls > 0 && over > 0 {
@@ -341,6 +342,16 @@ func Run(ctx context.Context, c Client, arts []model.ArtifactReport, opts Option
 		})
 	}
 	return notes, stats
+}
+
+// userHome is the OS user's home directory, or "" when the environment does not say — in which
+// case only Options.Home is replaced.
+func userHome() string {
+	h, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return h
 }
 
 // crossFileChainRule is the static cross-file screen (detect). It is the documented trigger
