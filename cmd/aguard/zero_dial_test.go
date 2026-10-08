@@ -9,13 +9,21 @@ package main
 //
 // The instrument: every request the judge sends goes through judge.Transport (a test seam; nil
 // in production, which means http.DefaultTransport), and any other net/http user in the process
-// goes through http.DefaultTransport. Both are replaced with counters that refuse the request.
+// that does not bring a transport of its own goes through http.DefaultTransport. Both are
+// replaced with counters that refuse the request.
 // A counter that sees nothing proves nothing by itself, so the paths that ARE allowed to connect
 // run first and must be seen; only then does a zero on everything else mean anything.
 //
-// What it cannot see: a raw net.Dial, or a child process that dials. Neither exists in the
-// product today (no os/exec import; net is used for ParseIP only), and a CI job under network
-// isolation is the layer that would see them. This test does not claim to be that layer.
+// What it cannot see — it counts requests through those two transports, not "every net/http
+// request in the process":
+//   - a client with an http.Transport of its own. TestZeroDial_NoClientOutsideTheJudge closes
+//     this for product code from the source side; inside the judge the positive control does.
+//   - a raw net.Dial, or a child process that dials. Neither exists in the product today (no
+//     os/exec import; net is used for ParseIP only), and a CI job under network isolation is the
+//     layer that would see them. This test does not claim to be that layer.
+//   - an asynchronous send that lands after its entry point returned.
+//   - code that lives only in a cobra RunE closure: each row calls the function its command
+//     calls (scanEnv, checkTarget, runHook, runVersion…), not the closure around it.
 
 import (
 	"bytes"
