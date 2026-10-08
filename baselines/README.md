@@ -64,7 +64,10 @@ go run ./baselines/cmd/baseline -tool aguard -aguard bin/aguard -corpus ../agent
   -aguard-extra-args "--llm --config /path/to/judge.yaml" -aguard-env ZHIPU_API_KEY -aguard-timeout 25m
 ```
 
-- `-aguard-extra-args` is appended to `scan` only (`check` and `version` reject `--llm`).
+- `-aguard-extra-args` is appended to `scan` only. `check` takes `--llm` too (P-004), but every
+  committed judge run measured the judge on `scan`'s path and left the samples routed to `check`
+  static; passing the flags there as well would change what a rerun measures, which is a
+  measurement decision of its own, not a rerun.
 - `-aguard-env` adds the named variables and nothing else; a bare `NAME` is copied from this
   process so the key never appears on a command line.
 - `-aguard-timeout` replaces the per-sample limit; a judged sample takes minutes, not seconds.

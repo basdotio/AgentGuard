@@ -58,9 +58,10 @@ type Adapter struct {
 	XDG string
 	// Work is where staged trees are built.
 	Work string
-	// ExtraArgs are appended to every invocation (LOCAL measurement only, e.g. `--llm --config …`
-	// to measure the judge); ExtraEnv is appended to the isolated environment (e.g. the judge's
-	// API key variable); Timeout overrides ScanTimeout when set (a judge run needs minutes).
+	// ExtraArgs are appended to every `scan` invocation, never to `check` (LOCAL measurement
+	// only, e.g. `--llm --config …` to measure the judge — see run); ExtraEnv is appended to the
+	// isolated environment (e.g. the judge's API key variable); Timeout overrides ScanTimeout
+	// when set (a judge run needs minutes).
 	ExtraArgs []string
 	ExtraEnv  []string
 	Timeout   time.Duration
@@ -297,7 +298,10 @@ func (a *Adapter) run(ctx context.Context, args ...string) (model.ScanResult, er
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	if len(args) > 0 && args[0] == "scan" { // the judge only exists on scan; check/version reject --llm
+	// scan only. `check` accepts --llm as well, but every committed judge run measured the judge
+	// on scan's path with the check-routed samples static; handing the flags to check too would
+	// make the next rerun measure something else under the same name.
+	if len(args) > 0 && args[0] == "scan" {
 		args = append(append([]string{}, args...), a.ExtraArgs...)
 	}
 	cmd := exec.CommandContext(ctx, a.Bin, args...)
