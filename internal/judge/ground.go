@@ -173,8 +173,18 @@ func (n normalizedUnit) text(i, j int) (string, bool) {
 	if whole := strings.TrimSpace(strings.Join(src, "\n")); len(whole) <= maxSnippetBytes {
 		return whole, true
 	}
-	return n.window(n.offs[i], n.offs[j-1]+1), true
+	from, to := n.offs[i], n.offs[j-1]+1
+	if to-from > windowBudget && j-i <= windowBudget {
+		// The quote fits once its whitespace runs are collapsed, but not as source bytes: a run
+		// INSIDE it is what overflows the window. Cutting the source here put the cut inside the
+		// run, and trimming left the quote's first word as the whole of the evidence.
+		return n.collapsedWindow(from, to), true
+	}
+	return n.window(from, to), true
 }
+
+// windowBudget is the room a window has for text: a snippet's bound less an ellipsis at each end.
+const windowBudget = maxSnippetBytes - 2*len(ellipsis)
 
 // window cuts a snippet out of the unit's text around the matched source bytes [from, to), for a
 // match whose whole lines do not fit in a snippet. Cutting the line from its START instead let an
@@ -187,21 +197,47 @@ func (n normalizedUnit) text(i, j int) (string, bool) {
 // maxSnippetBytes. The unit text was redacted before it was sent, so this cuts redacted text
 // (invariant #3: redact, then truncate).
 func (n normalizedUnit) window(from, to int) string {
-	text := n.unit.text
-	// The matched lines' extent without surrounding whitespace — what text() would have shown.
-	lo := strings.LastIndexByte(text[:from], '\n') + 1
-	hi := len(text)
+	lo, hi := matchedLines(n.unit.text, from, to)
+	return cutAround(n.unit.text, lo, from, to, hi)
+}
+
+// collapsedWindow is window for a match whose source bytes overflow the window only because of the
+// whitespace runs inside it. Measured in source bytes, the run alone could fill the window: the cut
+// fell inside it and trimming left "…Note:…" as the evidence of a directive that grounded. It
+// renders the matched lines with every run collapsed to one space — the normalisation grounding
+// compared them under (isMatchSpace), so this is the text the quote was found in, case aside — and
+// windows that around the quote. The collapsed match is exactly as long as the normalised quote, so
+// on text()'s path it always fits; should it not, the bound holds by showing its head and tail.
+func (n normalizedUnit) collapsedWindow(from, to int) string {
+	lo, hi := matchedLines(n.unit.text, from, to)
+	c, cf, ct := collapseRuns(n.unit.text[lo:hi], from-lo, to-lo)
+	if ct-cf > windowBudget {
+		return headTail(c, cf, ct)
+	}
+	return cutAround(c, 0, cf, ct, len(c))
+}
+
+// matchedLines is the extent of the line(s) holding source bytes [from, to), without surrounding
+// whitespace — what text() would have shown had it fit.
+func matchedLines(text string, from, to int) (lo, hi int) {
+	lo = strings.LastIndexByte(text[:from], '\n') + 1
+	hi = len(text)
 	if k := strings.IndexByte(text[to:], '\n'); k >= 0 {
 		hi = to + k
 	}
 	lo = from - len(strings.TrimLeftFunc(text[lo:from], unicode.IsSpace))
 	hi = to + len(strings.TrimRightFunc(text[to:hi], unicode.IsSpace))
+	return lo, hi
+}
 
-	budget := maxSnippetBytes - 2*len(ellipsis)
-	if to-from >= budget {
-		to = from + budget
+// cutAround cuts text[lo:hi] to a window around [from, to): the match (its beginning, if it is
+// longer than the window), then the room left as context to either side, on rune boundaries, with
+// an ellipsis at each end it cut.
+func cutAround(text string, lo, from, to, hi int) string {
+	if to-from >= windowBudget {
+		to = from + windowBudget
 	} else {
-		room := budget - (to - from)
+		room := windowBudget - (to - from)
 		left := min(room/2, from-lo)
 		right := min(room-left, hi-to)
 		left = min(room-right, from-lo) // room the right side could not use goes to the left
@@ -218,6 +254,57 @@ func (n normalizedUnit) window(from, to int) string {
 		s = ellipsis + s
 	}
 	if to < hi {
+		s += ellipsis
+	}
+	return s
+}
+
+// collapseRuns returns s with every run of match whitespace (isMatchSpace) replaced by one space,
+// and where s's bytes [from, to) landed in the result. s[from] and s[to-1] are not whitespace: a
+// grounded match never begins or ends on it.
+func collapseRuns(s string, from, to int) (out string, cf, ct int) {
+	var b strings.Builder
+	b.Grow(len(s))
+	pending := false
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if isMatchSpace(c) {
+			pending = pending || b.Len() > 0
+			continue
+		}
+		if pending {
+			b.WriteByte(' ')
+			pending = false
+		}
+		if i == from {
+			cf = b.Len()
+		}
+		b.WriteByte(c)
+		if i == to-1 {
+			ct = b.Len()
+		}
+	}
+	return b.String(), cf, ct
+}
+
+// headTail shows c[cf:ct], a match too long for a window, as its head and its tail joined by an
+// ellipsis, cut on rune boundaries, with an ellipsis at each end of c it does not reach; at most
+// maxSnippetBytes.
+func headTail(c string, cf, ct int) string {
+	half := (maxSnippetBytes - 3*len(ellipsis)) / 2
+	h := cf + half
+	for h > cf && !utf8.RuneStart(c[h]) {
+		h--
+	}
+	t := ct - half
+	for t < ct && !utf8.RuneStart(c[t]) {
+		t++
+	}
+	s := strings.TrimRightFunc(c[cf:h], unicode.IsSpace) + ellipsis + strings.TrimLeftFunc(c[t:ct], unicode.IsSpace)
+	if cf > 0 {
+		s = ellipsis + s
+	}
+	if ct < len(c) {
 		s += ellipsis
 	}
 	return s
@@ -255,7 +342,7 @@ func normalizeWithLines(s string) (string, []int, []int) {
 	line, pendingSpace := 0, false
 	for i := 0; i < len(s); i++ {
 		c := s[i]
-		if c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '\v' || c == '\f' {
+		if isMatchSpace(c) {
 			if c == '\n' {
 				line++
 			}
@@ -278,4 +365,11 @@ func normalizeWithLines(s string) (string, []int, []int) {
 		offs = append(offs, i)
 	}
 	return b.String(), lines, offs
+}
+
+// isMatchSpace is the whitespace grounding collapses. One predicate, read by normalizeWithLines to
+// match a quote and by collapseRuns to render one, so a snippet shown collapsed is collapsed exactly
+// the way the quote was found.
+func isMatchSpace(c byte) bool {
+	return c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '\v' || c == '\f'
 }
