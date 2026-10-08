@@ -86,9 +86,21 @@ func parseTriage(content string) []model.AdvisoryLabel {
 
 // clampLabel normalizes to the two allowed values; unknown → likely-real (safe side, so an
 // LLM slip can never silently mark a genuine finding benign).
+//
+// A label is benign only when its FIRST word is exactly likely-benign and likely-real appears
+// nowhere in it — "LIKELY-BENIGN (doc)" is a model appending a note, while "likely-real, not
+// benign", "not likely-benign" and an answer naming both are not a benign verdict. Matching the
+// substring "benign" read all three as benign: the unsafe side, the opposite of the promise above.
 func clampLabel(s string) string {
-	if strings.Contains(strings.ToLower(s), "benign") {
-		return model.LabelBenign
+	inWord := func(r rune) bool { return r == '-' || (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') }
+	words := strings.FieldsFunc(strings.ToLower(s), func(r rune) bool { return !inWord(r) })
+	if len(words) == 0 || words[0] != model.LabelBenign {
+		return model.LabelReal
 	}
-	return model.LabelReal
+	for _, w := range words[1:] {
+		if w == model.LabelReal {
+			return model.LabelReal
+		}
+	}
+	return model.LabelBenign
 }
