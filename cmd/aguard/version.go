@@ -4,12 +4,15 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/basdotio/AgentGuard/internal/collect"
+	"github.com/basdotio/AgentGuard/internal/detect"
+	"github.com/basdotio/AgentGuard/internal/reputation"
 	"github.com/basdotio/AgentGuard/internal/safeio"
 )
 
@@ -56,6 +59,21 @@ var plainMarketplaceName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$
 func binaryVersionLine(version, commit, date string, reputationEntries int, rulesVersion string) string {
 	return fmt.Sprintf("aguard %s (commit %s, built %s) · reputation entries=%d · rules=%s",
 		version, commit, date, reputationEntries, rulesVersion)
+}
+
+// runVersion is the whole body of `aguard version`, a function so the zero-dial test runs what
+// the command runs rather than one helper of it: the build line, then — when the plugin is
+// installed, under its current name or the old one — one line comparing it with this binary.
+// version, commit and date are printed as they stand: the -ldflags stamps, or what
+// applyBuildInfo filled in from the build info at init when the stamps were absent.
+//
+// Offline by construction: compares against the plugin already on disk, never a release feed.
+// The plugin auto-updates through Claude Code; the binary does not.
+func runVersion(w io.Writer, root string) {
+	fmt.Fprintln(w, binaryVersionLine(version, commit, date, reputation.Load().Len(), detect.RulesVersion()))
+	if line := pluginVersionLine(root, version); line != "" {
+		fmt.Fprintln(w, line)
+	}
 }
 
 // pluginVersionLine returns one line about the installed plugin relative to this binary's
