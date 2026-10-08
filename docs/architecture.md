@@ -187,8 +187,10 @@ rebuild; the compensating check is `SUP-004`, which fires when an artifact *poin
 into* an excluded directory.
 
 **The rule table has a version.** [`rules_version.go`](../internal/detect/rules_version.go) hashes
-what decides a finding — each rule's ID, dimension, severity, flags and pattern source, in engine
-order, but not its title or explanation — plus an integer `rulesEpoch`. Scan reports carry it as
+what decides an engine rule's finding — each `builtinRules()` entry's ID, dimension, severity,
+flags and pattern source, in engine order, but not its title or explanation — plus an integer
+`rulesEpoch`. The structural, permission and note checks are built inline, so the epoch is all
+that covers them. Scan reports carry it as
 `rules_version`, `aguard version` prints it, and the `rules.md` header shows it, so a pattern change
 cannot ship without `make docs`. It covers **deterministic detection only** — what `overall` is
 computed from. **When you change deterministic detection code outside `builtinRules()`** —

@@ -214,15 +214,21 @@ func main() {
 	// The wording says only what the hash guarantees; internal/detect's rulesEpoch says what it cannot.
 	// The judge is outside it (spec §5.1): the version is for recomputing overall, which no LLM
 	// entry on this page can move, so the header has to say which side of the line they are on.
+	// Only the engine rules are hashed; everything else this page lists is built inline in code
+	// and rides on the epoch alone, so the header names which is which instead of "what decides
+	// a finding", which would promise the hash sees EXFIL-001's logic. The count is detect's own.
 	p("**Rules version `%s`** — reports from this build carry it as `rules_version` (`--json`),\n",
 		detect.RulesVersion())
-	p("and `aguard version` prints it. It covers deterministic detection only. It hashes what\n")
-	p("decides a finding — each rule's ID, dimension, severity, flags and pattern, not the titles\n")
-	p("and explanations below — plus an epoch the maintainers bump when deterministic detection\n")
-	p("code outside this table changes. The LLM entries (every `LLM-` ID, notes included) are\n")
-	p("outside `rules_version` entirely: the judge moves only `overall_effective`, and a report's\n")
-	p("`judge` summary says how it ran. Two reports that disagree here were produced by different\n")
-	p("rules; two that agree were produced by the same rule table.\n\n")
+	p("and `aguard version` prints it. It covers deterministic detection only. It hashes the %d\n",
+		len(rules))
+	p("engine rules' ID, dimension, severity, flags and pattern — not the titles and explanations\n")
+	p("below — plus an epoch the maintainers bump when deterministic detection code outside that\n")
+	p("table changes. The structural, permission, scan-note and gate entries on this page are\n")
+	p("covered only by that epoch, and nothing checks that it was bumped. The LLM entries (every\n")
+	p("`LLM-` ID, notes included) are outside `rules_version` entirely: the judge moves only\n")
+	p("`overall_effective`, and a report's `judge` summary says how it ran. Two reports that\n")
+	p("disagree here were produced by different rules; two that agree were produced by the same\n")
+	p("engine rule table.\n\n")
 
 	byDim := map[int][]entry{}
 	for _, r := range rules {
