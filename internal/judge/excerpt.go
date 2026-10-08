@@ -31,7 +31,7 @@ const (
 
 // declaredPurpose prepares the declared side of a request: scrub and redact, THEN cap — the
 // redact-before-truncate order every excerpt keeps — cutting on a rune boundary so a description
-// in any script never ends in half a character.
+// in any language never ends in half a character.
 func declaredPurpose(s string, eg egress) string {
 	s = eg.redact(s)
 	if len(s) <= maxDeclaredBytes {
@@ -232,8 +232,9 @@ func mcpExcerpt(path, name string, eg egress) (string, []sourceUnit) {
 // Deliberately wider than detect.Redact's key list, which has no `pass` (DB_PASS) and no `pwd`
 // (MYSQL_PWD): that list runs over prose and code, where `bypass=` and `compass:` are words, and
 // widening it would change every static snippet. Here the key is STRUCTURE — an env var name, a
-// header name — not prose, so the wider net has nothing to misfire on but another key, and a miss
-// costs the model one value. `pw` is matched only as a whole segment (DB_PW), never inside a word.
+// header name — not prose, so the wider net has nothing to misfire on but another key, and an
+// over-match costs the model one value. `pw` is matched only as a whole segment (DB_PW), never
+// inside a word.
 var (
 	credentialKeyRE     = regexp.MustCompile(`(?i)pass|pwd|secret|token|key|auth|cred|private|cookie`)
 	credentialSegmentRE = regexp.MustCompile(`(?i)(^|[_\-])pw($|[_\-])`)
