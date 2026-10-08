@@ -368,33 +368,50 @@ func TestPlan_MCPExcerptIsKeyedAndByteStable(t *testing.T) {
 // TestPlan_DeclaredIsCappedOnARuneBoundary: a SKILL.md description was sent whole — up to the
 // 1 MiB the frontmatter reader takes — once per pass. The cap must not split a UTF-8 sequence,
 // and the unit grounding checks a quote against must be the capped bytes that were sent.
+//
+// Both descriptions put byte 1,000 INSIDE a character, so the walk back to a rune start is what
+// keeps the result valid: 3-byte runes (999 is a start, 1,000 is not), and a 2-byte run shifted
+// by one ASCII byte. A run of 2-byte runes from offset 0 — what this test first used — has a rune
+// start at every even offset, so the cap landed on a boundary by itself and the test stayed green
+// with the walk-back deleted.
 func TestPlan_DeclaredIsCappedOnARuneBoundary(t *testing.T) {
-	skill := filepath.Join(t.TempDir(), "s")
-	writeFile(t, filepath.Join(skill, "SKILL.md"), "---\nname: s\ndescription: "+strings.Repeat("é", 3000)+"\n---\nDo the thing.\n")
-	writeFile(t, filepath.Join(skill, "run.sh"), "echo running the project test suite now\n")
-	art := model.ArtifactReport{Kind: model.KindSkill, Name: "s", Path: skill}
+	for _, desc := range []string{strings.Repeat("中", 2000), "a" + strings.Repeat("é", 3000)} {
+		if utf8.RuneStart(desc[maxDeclaredBytes]) {
+			t.Fatalf("precondition: byte %d of the description must fall inside a character", maxDeclaredBytes)
+		}
+		skill := filepath.Join(t.TempDir(), "s")
+		writeFile(t, filepath.Join(skill, "SKILL.md"), "---\nname: s\ndescription: "+desc+"\n---\nDo the thing.\n")
+		writeFile(t, filepath.Join(skill, "run.sh"), "echo running the project test suite now\n")
+		art := model.ArtifactReport{Kind: model.KindSkill, Name: "s", Path: skill}
 
-	intent := false
-	for _, task := range planFor(0, art, egress{}) {
-		if task.kind != taskJudge || task.req.Declared == "" {
-			continue
-		}
-		d := task.req.Declared
-		if len(d) > 1000 || !utf8.ValidString(d) {
-			t.Errorf("mode %d: declared purpose is %d bytes (valid UTF-8: %v), want ≤ 1000 and valid", task.req.Mode, len(d), utf8.ValidString(d))
-		}
-		if task.req.Mode == ModeIntent {
-			intent = true
-			if task.units[0].file != "SKILL.md" || task.units[0].text != d {
-				t.Errorf("the intent pass grounds against %d bytes of %q, but sent %d", len(task.units[0].text), task.units[0].file, len(d))
+		intent := false
+		for _, task := range planFor(0, art, egress{}) {
+			if task.kind != taskJudge || task.req.Declared == "" {
+				continue
+			}
+			d := task.req.Declared
+			if len(d) > maxDeclaredBytes || !utf8.ValidString(d) {
+				t.Errorf("mode %d: declared purpose is %d bytes (valid UTF-8: %v), want ≤ %d and valid", task.req.Mode, len(d), utf8.ValidString(d), maxDeclaredBytes)
+			}
+			if len(d) < maxDeclaredBytes-utf8.UTFMax {
+				t.Errorf("mode %d: declared purpose is %d bytes — the cut should give back at most one character", task.req.Mode, len(d))
+			}
+			if task.req.Mode == ModeIntent {
+				intent = true
+				if task.units[0].file != "SKILL.md" || task.units[0].text != d {
+					t.Errorf("the intent pass grounds against %d bytes of %q, but sent %d", len(task.units[0].text), task.units[0].file, len(d))
+				}
 			}
 		}
-	}
-	if !intent {
-		t.Fatal("no intent pass planned for the skill")
+		if !intent {
+			t.Fatal("no intent pass planned for the skill")
+		}
 	}
 
 	// Reverse: a description under the cap is sent exactly as written.
+	skill := filepath.Join(t.TempDir(), "s")
+	writeFile(t, filepath.Join(skill, "run.sh"), "echo running the project test suite now\n")
+	art := model.ArtifactReport{Kind: model.KindSkill, Name: "s", Path: skill}
 	writeFile(t, filepath.Join(skill, "SKILL.md"), "---\nname: s\ndescription: runs the test suite\n---\nDo the thing.\n")
 	modes, _ := modesFor(art)
 	if got := modes[ModeIntent].Declared; got != "runs the test suite" {
