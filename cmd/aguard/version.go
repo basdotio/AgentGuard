@@ -48,6 +48,16 @@ const (
 // the skills to the model — so a backtick, newline or shell metacharacter is never echoed.
 var plainMarketplaceName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`)
 
+// binaryVersionLine is the first line `aguard version` prints. New fields go at the END: the release
+// workflow reads `awk '{print $2}'` as the version and refuses a release that does not match its
+// tag, and the baselines adapter records the whole line as tool_version. version, commit and date
+// are the -ldflags stamps, or what applyBuildInfo filled in when there were none; neither source
+// puts a space in them, so $2 is the version either way. (versionLine, below, is the plugin's line.)
+func binaryVersionLine(version, commit, date string, reputationEntries int, rulesVersion string) string {
+	return fmt.Sprintf("aguard %s (commit %s, built %s) · reputation entries=%d · rules=%s",
+		version, commit, date, reputationEntries, rulesVersion)
+}
+
 // pluginVersionLine returns one line about the installed plugin relative to this binary's
 // version, or "" when there is no plugin to compare with. An install under legacyBundleName is
 // told to switch whatever the versions say: it can never again report "newer than this binary",

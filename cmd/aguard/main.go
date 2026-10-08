@@ -468,15 +468,16 @@ func analyze(root string, res collect.Result, o scanOpts) (model.ScanResult, err
 	}
 	notes := append(res.Notes, covNotes...)
 	out := model.ScanResult{
-		Root:        root,
-		ScannedAt:   time.Now().Unix(),
-		ToolVersion: version,
-		Env:         res.Env,
-		Artifacts:   arts,
-		Hygiene:     hyg,
-		Notes:       notes,
-		Judge:       judgeSummary,
-		Locations:   scanLocations(root),
+		Root:         root,
+		ScannedAt:    time.Now().Unix(),
+		ToolVersion:  version,
+		RulesVersion: detect.RulesVersion(),
+		Env:          res.Env,
+		Artifacts:    arts,
+		Hygiene:      hyg,
+		Notes:        notes,
+		Judge:        judgeSummary,
+		Locations:    scanLocations(root),
 	}
 	if env := collect.DetectEnvironment(root); env.Kind == collect.EnvSandbox {
 		out.Sandbox = &model.SandboxInfo{Signals: env.Signals}
@@ -808,8 +809,7 @@ func main() {
 		Use:   "version",
 		Short: "version info",
 		Run: func(_ *cobra.Command, _ []string) {
-			fmt.Printf("aguard %s (commit %s, built %s) · reputation entries=%d\n",
-				version, commit, date, reputation.Load().Len())
+			fmt.Println(binaryVersionLine(version, commit, date, reputation.Load().Len(), detect.RulesVersion()))
 			// Offline by construction: compares against the plugin already on disk, never a
 			// release feed. The plugin auto-updates through Claude Code; the binary does not.
 			if line := pluginVersionLine(root, version); line != "" {
