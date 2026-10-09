@@ -207,15 +207,25 @@ func TestPromptVersion_MovesWithWhatShapesTheAnswer(t *testing.T) {
 	rerender := func(i int, s callShape) func([][]byte) [][]byte {
 		return func(bs [][]byte) [][]byte { bs[i] = shapeBodies([]callShape{s})[0]; return bs }
 	}
-	replace := func(i int, old, repl string) func([][]byte) [][]byte {
+	// The edits below locate what they change by the request envelope only, never by prompt text, so
+	// rewording a prompt needs no change here: the version simply moves.
+	toggle := func(i int, marker string) func([][]byte) [][]byte {
 		return func(bs [][]byte) [][]byte {
-			if !bytes.Contains(bs[i], []byte(old)) {
-				t.Fatalf("shape %s has no %q to change", shapes[i].name, old)
+			at := bytes.Index(bs[i], []byte(marker))
+			if at < 0 {
+				t.Fatalf("shape %s has no %s", shapes[i].name, marker)
 			}
-			bs[i] = bytes.Replace(bs[i], []byte(old), []byte(repl), 1)
+			for k := at + len(marker); k < len(bs[i]); k++ {
+				if c := bs[i][k]; c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' {
+					bs[i][k] ^= 0x20 // flip its case: one byte of the message changes
+					return bs
+				}
+			}
+			t.Fatalf("shape %s has no letter after %s", shapes[i].name, marker)
 			return bs
 		}
 	}
+	const system, user = `"role":"system","content":"`, `"role":"user","content":"`
 	warmer := shapes[intent]
 	warmer.req.Temperature = 0.7
 	shorter := shapes[triage]
@@ -226,12 +236,12 @@ func TestPromptVersion_MovesWithWhatShapesTheAnswer(t *testing.T) {
 		name   string
 		mutate func([][]byte) [][]byte
 	}{
-		{"one word of a system prompt", replace(injection, "legitimately", "plainly")},
-		{"one byte of the user layout", replace(intent, "[ACTUAL BEHAVIOR]", "[ACTUAL BEHAVIOUR]")},
-		{"the response format", replace(triage, "likely-real|likely-benign", "real|benign")},
+		{"one byte of a pass's system message", toggle(injection, system)},
+		{"one byte of the user layout", toggle(intent, user)},
+		{"one byte of the triage system message", toggle(triage, system)},
 		{"a temperature", rerender(intent, warmer)},
 		{"the triage cap", rerender(triage, shorter)},
-		{"a request field", replace(intent, `"temperature":`, `"max_tokens":512,"temperature":`)},
+		{"a request field", func(bs [][]byte) [][]byte { bs[intent] = append([]byte(`{"x":1,`), bs[intent][1:]...); return bs }},
 		{"a shape dropped", func(bs [][]byte) [][]byte { return bs[1:] }},
 		{"two shapes swapped", func(bs [][]byte) [][]byte { bs[0], bs[1] = bs[1], bs[0]; return bs }},
 	} {
