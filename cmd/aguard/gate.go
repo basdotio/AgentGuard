@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/basdotio/AgentGuard/internal/collect"
 	"github.com/basdotio/AgentGuard/internal/config"
 	"github.com/basdotio/AgentGuard/internal/gate"
 	"github.com/basdotio/AgentGuard/internal/model"
@@ -34,6 +35,11 @@ func gateOptions(root, cfgPath string, store *gate.Store, now func() int64) (gat
 	if err != nil {
 		return gate.Options{}, err
 	}
+	// Home is the parent of the ANCHORED root. filepath.Dir of the root as typed was "." for
+	// `--root .claude`, which collect.PluginInstalls cannot relate to an absolute install path, so
+	// every installed plugin's skill loaded unaudited behind a GATE-000; for `--root ~/.claude/` it
+	// was the root itself, and every desktop-installed plugin went the same way.
+	root = collect.AnchorRoot(root)
 	return gate.Options{
 		Root:        root,
 		Home:        filepath.Dir(root),
