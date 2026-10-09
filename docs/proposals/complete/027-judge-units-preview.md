@@ -80,32 +80,36 @@ preview [path]` next to `setup`/`test`/`status`, or `check --llm --dry-run`.
 
 ## Done criteria
 
-- [ ] `TestPlan_PayloadsAreWhatTheClientSends` (`internal/judge/preview_test.go`, new): for artifacts covering every
+- [x] `TestPlan_PayloadsAreWhatTheClientSends` (`internal/judge/preview_test.go`, new): for artifacts covering every
   pass (skill with a script and static findings → intent, injection, triage; a base64 blob → deobfuscation; `EXFIL-002`
   → collusion; `CLAUDE.md` with a padded line; a hook → injection + capability; an MCP server with an oversized value →
   MCP config, shortened), the multiset of `Plan` payloads equals the multiset of fenced contents an `httptest` server
   receives from `Run` with `NewHTTP`, fence lines removed; temperatures and the model match per call; `shortened` is
   what `Run`'s `LLM-000` names. Red at compile today (`Plan` undefined)
-- [ ] `TestPlan_BudgetAndSamplesMatchRun`: with `samples: 3` and `max_calls` cutting inside a question, the calls
+- [x] `TestPlan_BudgetAndSamplesMatchRun`: with `samples: 3` and `max_calls` cutting inside a question, the calls
   `Plan` marks as not sent equal `Stats.Skipped` of `Run` on the same artifacts, and every payload `Run` sent is in the
   plan exactly `calls − not_sent` times
-- [ ] `TestLLMPreview_MatchesWhatScanAndCheckSend` (`cmd/aguard/preview_test.go`, new, drives the built binary): a
+- [x] `TestPlan_TriageCapIsShown`: 45 static findings → the triage payload carries 40 lines, `shortened` says 5 were
+  not sent, and the endpoint receives that payload; `TestPlan_SourcesNameTheLinesSent`: the intent call names
+  `run.sh:1,3-5` (line 2 is a comment and is not sent); `TestRequestModel`: the preview's default model is the
+  client's
+- [x] `TestLLMPreview_MatchesWhatScanAndCheckSend` (`cmd/aguard/preview_test.go`, new, drives the built binary): a
   fixture set — skill, hook, MCP config, `CLAUDE.md`, a padded line and an oversized MCP value, one Downloads item —
   run through `scan --llm --root R --inbox D --json` and `check T --llm --json` against an `httptest` capture judge; the
   payloads `llm preview --root R --inbox D --json` and `llm preview T --json` print are byte-identical, as multisets, to
   the captured fenced contents, and so are the call counts, models and temperatures
-- [ ] `TestLLMPreview_Deterministic`: the same `llm preview --json` run twice → byte-identical stdout
-- [ ] `TestLLMPreview_TerminalViewIsSanitized`: a payload holding ESC and U+202E prints U+FFFD in the terminal view and
+- [x] `TestLLMPreview_Deterministic`: the same `llm preview --json` run twice → byte-identical stdout
+- [x] `TestLLMPreview_TerminalViewIsSanitized`: a payload holding ESC and U+202E prints U+FFFD in the terminal view and
   the raw bytes (JSON-escaped) under `--json`; every payload line in the terminal view carries the prefix
-- [ ] Zero-dial: `llm preview <target>` and `llm preview` (environment + Downloads) are rows of the zero table in
+- [x] Zero-dial: `llm preview <target>` and `llm preview` (environment + Downloads) are rows of the zero table in
   `TestZeroDial_OnlyTheJudgeConnects`, with the judge **enabled** in the config; both counters stay 0 and each row
   asserts it planned at least one call (a preview that planned nothing would pass for the wrong reason)
-- [ ] **Reverse assertion**: the judge still sends — the positive control of `TestZeroDial_OnlyTheJudgeConnects`
+- [x] **Reverse assertion**: the judge still sends — the positive control of `TestZeroDial_OnlyTheJudgeConnects`
   (`scan --llm`, its Downloads items, `check --llm`, `llm test`) stays green with the judge counter ≥ 1, and the
   existing judge tests (`TestHTTPClient_RoundTripAndRedaction`, `TestRun_*`, `TestE2E_*`, `TestCheckCmd_LLMRunsTheJudge`)
   pass unchanged; the scratch capture of the measured fixture reproduces `before-scan.norm` / `before-zip.norm`
   byte for byte on the branch binary (what is sent did not change)
-- [ ] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no toolchain switch; no new dependency
+- [x] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no toolchain switch; no new dependency
 
 ## Out of scope
 
@@ -165,3 +169,17 @@ preview [path]` next to `setup`/`test`/`status`, or `check --llm --dry-run`.
    **Decided (2026-10-09)**: as recommended
 6. **Mention `llm preview` in the plugin's `/aguard-llm` flow?** **Recommendation**: not here; the plugin's wording has
    its own self-scan constraints. Recorded as a follow-up. **Decided (2026-10-09)**: as recommended
+
+## Done
+
+```
+Merged: PR to be opened (2026-10-10; find the sha with git log --grep P-027 after the merge)
+Released: pending release
+Evidence: TestPlan_PayloadsAreWhatTheClientSends, TestPlan_BudgetAndSamplesMatchRun, TestPlan_TriageCapIsShown, TestPlan_SourcesNameTheLinesSent, TestRequestModel (internal/judge/preview_test.go); red at compile at W1 (undefined: PlannedCall, Plan, RequestModel) → green at W2; a Plan that shows the bare Behavior instead of judgePayload → red (12 previewed, 12 sent, 3 "planned but not sent"); a Plan that drops the triage cap note → red
+Evidence: TestLLMPreview_MatchesWhatScanAndCheckSend, TestLLMPreview_Deterministic, TestLLMPreview_TerminalViewIsSanitized (cmd/aguard/preview_test.go, built binary); red at W3 (undefined: previewOpts, runLLMPreview, previewGutter; with stubs for them the binary has no llm preview: "unknown flag: --inbox") → green at W4; planning with an empty home instead of the scan's → red (scan --llm: the hook's injection and capability calls differ on both sides)
+Evidence: zero table of TestZeroDial_OnlyTheJudgeConnects (cmd/aguard/zero_dial_test.go): rows "llm preview <target>" and "llm preview (environment, Downloads items)" green with the judge enabled in the config, each having planned calls; the same rows with llm: true added to the preview's opts → red, 4 and 16 judge requests to 127.0.0.1:9
+Evidence (reverse assertion): the positive control of TestZeroDial_OnlyTheJudgeConnects (scan --llm, its Downloads items, check --llm, llm test) and every existing test pass with no existing test line changed (git diff --stat origin/main...HEAD -- '*_test.go': two new preview_test.go files, zero_dial_test.go +27/-0); what is sent did not change: the request bodies of the measured scratch fixture (scan --llm, 7 calls; check --llm on the .zip twice, 6 calls), nonce masked and sorted, are byte-identical on 155865b and on the branch binary (sha256 f54379e4… and f8d585a6… on both)
+Evidence (real environment, ~/.claude, --inbox off): llm preview exit 0, 297 calls over 181 artifacts (173 with calls), all seven passes; 97 s wall against 94 s for the static scan of the same root; two runs minutes apart had identical requests and differed only in the content hash of two memory files rewritten between them
+Evidence (not done): git diff --stat origin/main...HEAD -- internal/judge/excerpt.go internal/judge/egress.go internal/judge/ground.go internal/judge/decode.go internal/collect internal/detect internal/gate internal/report plugin go.mod go.sum → empty; no pkg/ directory
+Verify: make verify → "verify: all gates passed"; go.mod line 2 go 1.23.5; go version go1.23.5 darwin/arm64, no toolchain switch
+```
