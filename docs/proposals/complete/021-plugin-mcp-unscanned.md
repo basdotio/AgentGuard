@@ -67,29 +67,29 @@ collect 不动(`MCPServer` 本来就在 `mcpServersFrom` 里对每个 server 填
 
 ## 完成的判据
 
-- [ ] `TestScan_PluginMCPServerGetsTheRulesAUserServerGets`(`cmd/aguard/plugin_mcp_test.go`,新):同一份 `mcpServers`
+- [x] `TestScan_PluginMCPServerGetsTheRulesAUserServerGets`(`cmd/aguard/plugin_mcp_test.go`,新):同一份 `mcpServers`
   (evil / leak / preload / fs)放在 `~/.claude.json`、CLI 装的插件、桌面版装的插件、Cowork synced 插件四处 → 后三处每个 server 的
   分数和计分规则 ID 与第一处逐个相等。main 上红:后三处全是 100 分零发现
-- [ ] `TestScan_PluginMCPPreloadIsNotAClean100`(同文件,新):只带 preload 一个 server 的插件 → 总分 69,`failGate(…, "high")` 返回
+- [x] `TestScan_PluginMCPPreloadIsNotAClean100`(同文件,新):只带 preload 一个 server 的插件 → 总分 69,`failGate(…, "high")` 返回
   `failExit`。main 上红:100 分,`nil`
-- [ ] `TestDetect_PluginMCPServerIsFoundByItsKey`(`internal/detect/detect_test.go`,新):带插件后缀名 + `MCPServer` 的 artifact 与裸名
-  artifact(同一份内容)的发现逐条相等(规则、严重度、行号、snippet);key 是 `""`、名字是 ` (plugin p@mkt)` 的 server 同样被扫到。
-  main 上红:零发现
-- [ ] `TestPlan_PluginMCPServerGetsTheConfigPass`(`internal/judge/plan_test.go`,新):插件 server 规划出 `ModeMCPConfig`,Behavior
+- [x] `TestDetect_PluginMCPServerIsFoundByItsKey`(`internal/detect/detect_test.go`,新):带插件后缀名 + `MCPServer` 的 artifact 与裸名
+  artifact(同一份内容)的发现逐条相等(规则、严重度、行号、snippet);key 是 `""`、名字是 ` (plugin p@mkt)` 的 server 同样被扫到,
+  配置里另放一个以 ` (plugin p@mkt)` 为 key 的良性诱饵也顶替不了它(未决 6)。main 上红:零发现
+- [x] `TestPlan_PluginMCPServerGetsTheConfigPass`(`internal/judge/plan_test.go`,新):插件 server 规划出 `ModeMCPConfig`,Behavior
   与裸名 artifact 的逐字节相同。main 上红:没有规划
-- [ ] 反向断言 `TestScan_BenignPluginMCPServersStayClean`(cmd,新):真实形状的良性 server(`${CLAUDE_PLUGIN_ROOT}` 下的二进制、
+- [x] 反向断言 `TestScan_BenignPluginMCPServersStayClean`(cmd,新):真实形状的良性 server(`${CLAUDE_PLUGIN_ROOT}` 下的二进制、
   带 `Authorization: Bearer ${TOKEN}` 头的 http url、`npx -y @playwright/mcp@latest`、`docker run … ghcr.io/…` + `${GITHUB_TOKEN}` env)
   装在插件里和写在 `~/.claude.json` 里都是 100 分零计分发现,环境分 100
-- [ ] 反向断言:用户级 server 的结果不变 —— 第一条测试里第一处的四个值钉的是 main 上实测的值;main 与本分支两个二进制扫同一个
+- [x] 反向断言:用户级 server 的结果不变 —— 第一条测试里第一处的四个值钉的是 main 上实测的值;main 与本分支两个二进制扫同一个
   用户级 fixture,去掉 `scanned_at` / `tool_version` 后 JSON 逐字节相同
-- [ ] 反向断言:内容哈希不变 —— `TestContentHashGolden`、`TestHashGolden`、`TestContentHash_SameConfigTwoMachines` 不改一字仍绿;
+- [x] 反向断言:内容哈希不变 —— `TestContentHashGolden`、`TestHashGolden`、`TestContentHash_SameConfigTwoMachines` 不改一字仍绿;
   第一条测试里插件 server 的 `hash` 非空且等于同一 server 在 `~/.claude.json` 里的 `hash`(main 上已经如此,修后不许变);唯一变化是
   key 为 `""` 的插件 server 从 `""` 变成有值(未决 3)
-- [ ] 反向断言不改一字仍绿:`TestPlan_PerKindDispatch`(不带 `MCPServer` 的 artifact 退回按 `Name` 找)、
+- [x] 反向断言不改一字仍绿:`TestPlan_PerKindDispatch`(不带 `MCPServer` 的 artifact 退回按 `Name` 找)、
   `TestScan_ProjectMCPIsActuallyScanned`、`TestDetect_MCPEnvInjectsCode`、`TestDetect_MCPConfigURLIsNotEgress`
-- [ ] 真机:`scan --root ~/.claude --json` 前后对比,26 个插件自带 server 从零 unit 变成全部有 unit(临时探针,不提交),发现、分数、
+- [x] 真机:`scan --root ~/.claude --json` 前后对比,26 个插件自带 server 从零 unit 变成全部有 unit(临时探针,不提交),发现、分数、
   哈希、note 的变化个数如实记;记数字不记名字
-- [ ] `make verify` 绿;`go version` 无工具链切换,`go.mod` 第二行 `go 1.23.5`
+- [x] `make verify` 绿;`go version` 无工具链切换,`go.mod` 第二行 `go 1.23.5`
 
 ## 不做什么
 
@@ -115,8 +115,8 @@ collect 不动(`MCPServer` 本来就在 `mcpServersFrom` 里对每个 server 填
 | W | 一句话 | 提交信息(不写 sha,rebase 会改) |
 |---|---|---|
 | 1 | detect、judge、cmd 四条红测试 + 一条良性反向(main 上绿) | `detect, judge, cmd: tests — a plugin's MCP server is looked up by its suffixed name, finds nothing and scores a clean 100 (P-021)` |
-| 2 | `detect.MCPServerKey`;规则引擎和内容哈希按它找;collect 注释改成事实 | `detect: an MCP server's entry is found by its key, so the servers a plugin ships get the rules a hand-configured one gets (P-021)` |
-| 3 | 判官 `mcpExcerpt` 按 key 取摘录 | `judge: the MCP config pass reads a plugin server's entry by its key instead of skipping it (P-021)` |
+| 2 | `detect.MCPServerKey`;规则引擎和内容哈希按它找 | `detect: an MCP server's entry is found by its key, so the servers a plugin ships get the rules a hand-configured one gets (P-021)` |
+| 3 | 判官 `mcpExcerpt` 按 key 取摘录;collect 那段注释改成事实(三处都改完才成立,所以和最后一处同一个提交) | `judge, collect: the MCP config pass reads a plugin server's entry by its key instead of skipping it, and the collector's comment stops calling the lookup a gap (P-021)` |
 | 4 | spec §4 实现现状、`detect.md`(净零行)、ROADMAP 那一条 | `docs: spec, detect.md and ROADMAP say a plugin's MCP servers are looked up by key and run through the MCP rules (P-021)` |
 | 5 | 本文件、索引 | `proposals: P-021 (P-021)` |
 
@@ -144,3 +144,47 @@ collect 不动(`MCPServer` 本来就在 `mcpServersFrom` 里对每个 server 填
 5. **开 `--llm` 时多出来的调用。** 每个插件 server 多一次 `LLM-009`(本机 26 个)。
    **建议**:接受。那一趟本来就是给每个 MCP server 的,插件 server 拿不到是漏;`LLM-009` 仍是 advisoryOnly,不升级、不动分数。
    **已决(2026-10-09)**:按建议。
+6. **(阶段 2 追加)`MCPServer` 为空时,先认 `""` 还是先认 `Name`?** W2 第一版照未决 3 写成"先 `""`",W1 里"不经 collect 构造、
+   `Name` 就是 key"那一格随即变红 —— 它的配置里恰好也有 `""` 这个 key,于是读到了 `""` 的条目。反过来"先 `Name`"能让那一格绿,
+   但给插件作者留了一条路:collect 给 `""` server 起的名字是 ` (plugin p@mkt)`,作者再加一个**以这个名字为 key** 的良性 server,
+   先认 `Name` 就会去扫诱饵。
+   **建议**:保持"先 `""`"。代价只落在"不经 collect 构造、配置里又有 `""` key"的 artifact 上,collect 记下每个 key,从不构造它;
+   W1 那一格改用不带 `""` key 的配置,另加诱饵那一格。两种错误顺序各做一次变异,都被诱饵那一格抓到(见「完成」)。
+   **已决(2026-10-09)**:按建议(W1 提交在推送后、开 PR 前就地改过,分支上只有改后的版本)。
+7. **(阶段 2 追加)良性的插件 `.mcp.json` 在插件树上出 `EXFIL-001`。** 量良性 fixture 时看到的,main 上就有:插件树把 `.mcp.json`
+   当作真实脚本文件读,`url` 字面量算网络腿、`Authorization: Bearer ${TOKEN}` 算凭据腿,树 95 分。P-013 给 MCP artifact 的合成 unit
+   定过"URL 字面量不算外连",树这条路没有跟。
+   **建议**:不在这里修(那是插件树的读法,不是 server 条目怎么找);作为后续单独记录。本条只保证 server artifact 本身干净
+   (`TestScan_BenignPluginMCPServersStayClean`)。
+   **已决(2026-10-09)**:按建议。
+
+## 完成
+
+手跑(「问题」一节的同一批 fixture,`main` `fd28344` 与本分支各构建一个二进制,每步一个进程,2026-10-09):
+
+```
+                                    修前(main fd28344)                    修后(本分支)
+evil   插件 / 桌面版 / synced       100 无 · 100 无 · 100 无               75 EXEC-001(三处)
+leak   插件 / 桌面版 / synced       100 无(三处)                          50 EXFIL-001 FS-001(三处)
+preload 插件 / 桌面版 / synced      100 无(三处)                          75 EXEC-010(三处)
+fs     插件 / 桌面版 / synced       100 无(三处)                          100 无(三处)
+四个 server 一起时的环境分          69(插件树的 high 封顶)                 65
+只有 preload 的插件 root            100,"looks safe",--fail-on high 退 0  69,--fail-on high 退 1
+key 为 "" 的插件 server             100 无,hash ""                        75 EXEC-001,hash 等于同一条目在 ~/.claude.json 里的值
+用户级那一列(四组 fixture)         —                                     JSON 去掉 scanned_at / tool_version 后与修前逐字节相同
+插件 server 的 hash(另三组)        —                                     与修前逐个相同
+```
+
+```
+合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-021 找)
+发布:待发
+证据:TestScan_PluginMCPServerGetsTheRulesAUserServerGets(cmd/aguard/plugin_mcp_test.go);W1 在 fd28344 上红:CLI / 桌面版 / synced 三处的 evil、leak、preload 全是 {score:100 rules:},而 ~/.claude.json 里是 75 EXEC-001 / 50 EXFIL-001,FS-001 / 75 EXEC-010 → W2 绿;用户级那一列钉的就是修前的值,修前修后都绿;三处插件 server 的 hash 修前修后都非空且等于用户级
+证据:TestScan_PluginMCPPreloadIsNotAClean100(同文件);W1 红 "overall = 100, want 69" 与 "--fail-on high passed …"(插件那一格;用户级那一格修前就绿)→ W2 绿
+证据:TestDetect_PluginMCPServerIsFoundByItsKey(internal/detect/detect_test.go);W1 红 5 格 got: null(插件、chain、env preload、synced、"" key 旁放诱饵)→ W2 绿;"不经 collect 构造、Name 就是 key"那一格修前修后都绿
+证据:TestPlan_PluginMCPServerGetsTheConfigPass(internal/judge/plan_test.go);W1 红 "weather (plugin p@mkt)" 与 " (plugin p@mkt)" 两格 "no config pass planned" → W3 绿
+证据:变异检查(临时改、跑、还原,未提交):MCPServerKey 去掉 "" 那一步(空就退回 Name)→ detect 诱饵那一格和 judge "" 那一格红;改成先认 Name 再认 "" → detect 诱饵那一格红
+证据:反向断言 TestScan_BenignPluginMCPServersStayClean(cmd/aguard/plugin_mcp_test.go):${CLAUDE_PLUGIN_ROOT} 二进制、带 Bearer 头的 http url、npx、docker + ${GITHUB_TOKEN} 四个 server 在四处都是 100 无;不改一字仍绿 —— internal/detect 的九条 TestContentHash*(含 TestContentHashGolden、TestContentHash_SameConfigTwoMachines)、TestHashGolden、TestPlan_PerKindDispatch、TestScan_ProjectMCPIsActuallyScanned、TestDetect_MCPEnvInjectsCode、TestDetect_MCPConfigURLIsNotEgress
+证据:真机 ~/.claude(main 与本分支两个二进制背靠背各扫一次 --json):MCP artifact 27 个,其中插件自带 26 个;临时探针(未提交)数 unit:按名字找 0/26 有 unit → 按 key 找 26/26;26 个修后仍是 100 无;去掉 scanned_at / tool_version 后两份 JSON 相等(发现、分数、哈希、note 0 个变化,overall 69 → 69,artifact 180 → 180,notes 10 → 10);--quiet 两次都无输出、退 0
+证据:不做什么 —— git diff --stat origin/main -- internal/collect/hash.go internal/collect/hash_test.go internal/collect/plugins.go internal/collect/desktop.go internal/detect/rules_data.go internal/score internal/gate internal/reputation internal/report docs/rules.md go.mod go.sum 为空;internal/collect 的 diff 去掉注释行后为空;contenthash.go 只有内联 key 选择换成 MCPServerKey 一处
+证据:make verify: all gates passed;go version go1.23.5(无工具链切换);go.mod 第二行 go 1.23.5
+```
