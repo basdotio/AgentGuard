@@ -33,20 +33,20 @@ Downloads 的逐项汇总跟着加。人类可读报告不加任何一行。`jud
 
 ## 完成的判据
 
-- [ ] `TestRun_StatsCountTriageApart`(`internal/judge/consensus_test.go`,新):`samples: 3`、一个带静态发现的 skill →
+- [x] `TestRun_StatsCountTriageApart`(`internal/judge/consensus_test.go`,新):`samples: 3`、一个带静态发现的 skill →
   `Stats.TriageCalls == 1`,`Stats.Calls == 3 × 题数 + 1`。今天没有这个字段,编译即红
-- [ ] `TestE2E_JudgeSummaryCarriesCost`(`cmd/aguard/e2e_test.go`,新):假端点在每个响应里带 `usage`,`scanEnv(…, llm: true, quiet: true)` →
+- [x] `TestE2E_JudgeSummaryCarriesCost`(`cmd/aguard/e2e_test.go`,新):假端点在每个响应里带 `usage`,`scanEnv(…, llm: true, quiet: true)` →
   `Judge.PromptTokens` 与 `CompletionTokens` 等于端点报的总和,`TriageCalls` 等于有静态发现的 artifact 数,`Retries == 0`。
   **`quiet: true` 是故意的**:今天 quiet 时连 stderr 那行也没有,这条判据钉住"quiet 不影响记账"
-- [ ] `TestScanInbox_JudgeCostAddsUp`(`cmd/aguard/main_test.go`,新):两个 Downloads 候选、`--llm` → `InboxReport.Judge` 的四个新字段等于逐项之和
-- [ ] 反向断言 `TestE2E_UnreportedUsageIsNotAZero`(`cmd/aguard/e2e_test.go`,新):端点**不报** `usage` 时(现有 `judgeServer`),
+- [x] `TestScanInbox_JudgeCostAddsUp`(`cmd/aguard/main_test.go`,新):两个 Downloads 候选、`--llm` → `InboxReport.Judge` 的四个新字段等于逐项之和
+- [x] 反向断言 `TestE2E_UnreportedUsageIsNotAZero`(`cmd/aguard/e2e_test.go`,新):端点**不报** `usage` 时(现有 `judgeServer`),
   JSON 里没有 `prompt_tokens` / `completion_tokens` 两个键——"没报"不写成 0(见未决 1);`retries` / `triage_calls` 两个键在
-- [ ] 反向断言:不带 `--llm` 时 `Judge == nil`(`TestScanEnv_JudgeRequestedButNotEnabled`,`cmd/aguard/main_test.go:925`)不改一字仍绿;
+- [x] 反向断言:不带 `--llm` 时 `Judge == nil`(`TestScanEnv_JudgeRequestedButNotEnabled`,`cmd/aguard/main_test.go:925`)不改一字仍绿;
   `TestText_JudgeLineStates`(`internal/report/text_test.go:515`)、`TestHTML_JudgeSectionPlaceholder`(`internal/report/html_test.go:124`)
   不改一字仍绿——人类可读报告一个字节不变
-- [ ] 反向断言:`TestConsensus_TriageIsNotSampled`、`TestConsensus_CostsWhatItSays`、`TestRun_RetriesOnlyRetryableErrors`、
+- [x] 反向断言:`TestConsensus_TriageIsNotSampled`、`TestConsensus_CostsWhatItSays`、`TestRun_RetriesOnlyRetryableErrors`、
   `TestHTTPClient_CountsTokens` 不改一字仍绿
-- [ ] `make verify` 绿
+- [x] `make verify` 绿
 
 ## 不做什么
 
@@ -88,3 +88,17 @@ Downloads 的逐项汇总跟着加。人类可读报告不加任何一行。`jud
 3. **字段名用 `prompt_tokens` / `completion_tokens`(OpenAI 的叫法),还是 `tokens_in` / `tokens_out`(stderr 那行的叫法)?**
    **建议**:`prompt_tokens` / `completion_tokens`。和端点返回的键同名,读 raw/ 的人不用换算;stderr 是给人看的,两边各用各的习惯。
    **已决(2026-10-08)**:按建议。
+
+## 完成
+
+```
+合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-001 找)
+发布:待发
+证据:TestRun_StatsCountTriageApart(internal/judge/consensus_test.go);W1 编译红(consensus_test.go:290: s1.TriageCalls undefined (type Stats has no field or method TriageCalls)),W2 后绿;实测 samples=1 时 3 次调用 = 2 题 + 1 triage,samples=3 时 7 = 3 × 2 + 1,triage_calls 两次都是 1
+证据:TestE2E_JudgeSummaryCarriesCost(cmd/aguard/e2e_test.go);W1 编译红(e2e_test.go:315: j.PromptTokens undefined);字段已加、runJudge 不填时(临时探针,已还原)运行红:tokens = 0 in / 0 out over 4 call(s); want 400 / 28,triage_calls = 0, want 1;W3 后绿,quiet: true 下 tokens = 100 × calls / 7 × calls,triage_calls = 有静态发现的 artifact 数,retries = 0
+证据:TestScanInbox_JudgeCostAddsUp(cmd/aguard/main_test.go);W3 后仍红(tokens = 0 in / 0 out over 6 call(s); want 600 / 42,triage_calls = 0, want 2)→ W4 后绿
+证据:反向断言 TestE2E_UnreportedUsageIsNotAZero(cmd/aguard/e2e_test.go):端点不报 usage → JSON 无 prompt_tokens / completion_tokens,有 retries / triage_calls
+证据:反向断言不改一字仍绿 —— TestScanEnv_JudgeRequestedButNotEnabled(main_test.go,不带 --llm 时 Judge == nil)、TestText_JudgeLineStates、TestHTML_JudgeSectionPlaceholder、TestConsensus_TriageIsNotSampled、TestConsensus_CostsWhatItSays、TestRun_RetriesOnlyRetryableErrors、TestHTTPClient_CountsTokens
+证据:不做什么 —— git diff --stat origin/main -- internal/report baselines internal/judge/judge.go internal/judge/openai.go internal/judge/run_test.go go.mod go.sum plugin 为空;stderr 那行的格式串不在 diff 里
+证据:make verify: all gates passed;go version go1.23.5(无工具链切换),go.mod 第二行 go 1.23.5,无新依赖
+```
