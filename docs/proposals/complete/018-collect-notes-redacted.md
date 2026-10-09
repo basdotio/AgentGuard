@@ -172,7 +172,7 @@ fixture 都在 `t.TempDir()` 现搭;token 用 `ghp_` 加 36 位的明显假值(`
 ## 完成
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-018 找)
+合入:PR #41(2026-10-09;sha 用 git log --grep P-018 找)
 发布:待发
 证据:W1 在本仓 main(fd28344)上红,原因与判据一致 —— TestImportNotes_SecretInReferenceIsRedacted 六条 snippet 都是原样 token(如 @~/vault/ghp_<36 位>/.env is a credential path);TestConfigNamesInNotesAreRedacted 两条(install path escapes HOME: ghp_<36 位>@market、hooks.ghp_<36 位>);TestUnreadableNote_SecretInEntryNameIsRedacted 的 Why 与 snippet(unreadable: ghp_<36 位>);TestDeadRegistrationNote_SecretInCommandIsRedacted(missing hook command: /opt/ghp_<36 位>/aguard hook);TestScan_NoteSecretsNeverReachARendering 七个子测试全红 → W5 后全绿
 证据:TestScan_NoteSecretsNeverReachARendering 逐步(token 次数,json/text/verbose/markdown/sarif/html/check --md):W1 11/2/11/11/4/3/2 → W2(只搬家)不变 → W3(collect)3/0/3/3/1/1/2 → W4(unreadableNote)1/0/1/1/0/0/0 → W5(GATE-001)全 0;八类发现与 note 的条数每一步都不变
