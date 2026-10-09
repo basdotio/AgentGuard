@@ -141,6 +141,7 @@
         <div class="checked">{{.Checked}}</div>
         {{if .WorstLine}}<div class="checked"><b>{{.WorstLine}}</b></div>{{end}}
         {{if .JudgeLine}}<div class="checked">{{.JudgeLine}}</div>{{end}}
+        {{if .JudgeIdentity}}<div class="checked">{{.JudgeIdentity}}</div>{{end}}
         {{if .Trust}}<div class="trustline">Some findings were suppressed because a reviewed allowlist entry matched — see <a href="#trusted">Trusted</a>.</div>{{end}}
         <div class="scope">Static scan, read-only, no network. The score is relative risk from static rules, not a safety certificate; it cannot see what code does at runtime.</div>
       </div>

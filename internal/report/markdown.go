@@ -87,6 +87,9 @@ func Markdown(w io.Writer, r0 model.ScanResult) error {
 	if jl := judgeSummaryLine(r); jl != "" {
 		p("%s  \n", text(jl))
 	}
+	if il := judgeIdentityLine(r.Judge); il != "" {
+		p("%s  \n", text(il))
+	}
 	if len(trust) > 0 {
 		names := make([]string, 0, len(trust))
 		for _, n := range trust {
