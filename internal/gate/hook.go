@@ -293,7 +293,7 @@ func handlePre(ev Event, o Options) (Output, bool) {
 		reason += fmt.Sprintf(
 			"\nThis session runs in permission mode %q, which answers prompts automatically. "+
 				"An \"ask\" would have been accepted without you ever seeing it, so this was REFUSED instead.\n"+
-				"To load it anyway, decide outside the session: aguard approve %q\n", ev.PermissionMode, v.Path)
+				"To load it anyway, decide outside the session: aguard approve %s\n", ev.PermissionMode, CommandArg(v.FullPath))
 	}
 	// Park the verdict against this tool call ONLY when a yes is actually reachable, so that
 	// PostToolUse can record an approval for the bytes that were shown — and only for those

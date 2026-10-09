@@ -64,12 +64,16 @@ const (
 // Hash is the approval key. It is the artifact's canonical hash, so it is stable across
 // machines and checkouts and changes on any content edit — see collect/hash.go.
 type Verdict struct {
-	Name  string
-	Kind  string
-	Path  string
-	Hash  string
-	Score int
-	Level string
+	Name string
+	Kind string
+	// Path is the DISPLAY form, clipped to maxPathLen: it is what a person reads, and what an
+	// approval records. FullPath is the path as scanned, and the only one a command may carry —
+	// a clipped path pasted into `aguard check` names a directory that does not exist.
+	Path     string
+	FullPath string
+	Hash     string
+	Score    int
+	Level    string
 	// Blocking is true when a DETERMINISTIC finding reaches the threshold. LLM findings
 	// cannot set it: the judge never runs here, and a prompt that means something different
 	// depending on whether an endpoint was reachable is not a gate.
@@ -118,12 +122,13 @@ func Summarize(res model.ScanResult, threshold model.Severity) (Verdict, bool) {
 	})
 
 	v := Verdict{
-		Name:  clip(a.Name, maxNameLen),
-		Kind:  string(a.Kind),
-		Path:  clip(a.Path, maxPathLen),
-		Hash:  a.Hash,
-		Score: a.Score,
-		Level: score.Level(a.Score),
+		Name:     clip(a.Name, maxNameLen),
+		Kind:     string(a.Kind),
+		Path:     clip(a.Path, maxPathLen),
+		FullPath: a.Path,
+		Hash:     a.Hash,
+		Score:    a.Score,
+		Level:    score.Level(a.Score),
 	}
 	if a.Hash == "" {
 		v.Unhashed = unhashedReason(a)
@@ -195,8 +200,8 @@ func (v Verdict) UnrememberedLine() string {
 			ids = append(ids, fmt.Sprintf("%s (%s)", f.RuleID, f.Severity))
 		}
 	}
-	return fmt.Sprintf("AgentGuard: %s %q %d/100 (%s) · below the threshold, but %s found · not recorded as trusted: it is re-audited on every load until the content is clean, or you accept it with: aguard approve %q",
-		v.Kind, v.Name, v.Score, v.Level, strings.Join(ids, ", "), v.Path)
+	return fmt.Sprintf("AgentGuard: %s %q %d/100 (%s) · below the threshold, but %s found · not recorded as trusted: it is re-audited on every load until the content is clean, or you accept it with: aguard approve %s",
+		v.Kind, v.Name, v.Score, v.Level, strings.Join(ids, ", "), CommandArg(v.FullPath))
 }
 
 // UnhashedLine is the notice for a target that clears the gate but has no content hash. An
@@ -231,7 +236,8 @@ func (v Verdict) Reason() string {
 		fmt.Fprintf(&b, "  … and %d more finding(s) not listed here.\n", v.Omitted)
 	}
 	b.WriteString("\nStatic rules only: no model was consulted, nothing was executed, nothing left the machine.\n")
-	fmt.Fprintf(&b, "Full report: aguard check %q · trust these exact bytes: aguard approve %q\n", v.Path, v.Path)
+	cmd := CommandArg(v.FullPath)
+	fmt.Fprintf(&b, "Full report: aguard check %s · trust these exact bytes: aguard approve %s\n", cmd, cmd)
 	return b.String()
 }
 
