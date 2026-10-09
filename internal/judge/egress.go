@@ -171,9 +171,19 @@ func (e egress) scrubCut(s string, clipped bool) string {
 	return e.repairHalves(s, clipped)
 }
 
-// redact is the one call the excerpt builders make on raw artifact text: Redact, then scrub.
-// The order is the point — see the type comment.
-func (e egress) redact(s string) string { return e.scrub(detect.Redact(s)) }
+// redact is the one call the excerpt builders make on raw artifact text: Redact, fold padding
+// (foldPadding), Redact again if anything was folded, then scrub. The order is the point — see the
+// type comment for the scrub. The fold comes after the first Redact because the entropy rule weighs a
+// whole run: a token it redacts alone, joined by the fold to a low-entropy tail, would pass. The
+// second Redact sees what the fold joined (a key id split by zero-width characters), and the scrub
+// runs last so a home split the same way is stripped once whole.
+func (e egress) redact(s string) string {
+	r := detect.Redact(s)
+	if f := foldPadding(r); f != r {
+		r = detect.Redact(f)
+	}
+	return e.scrub(r)
+}
 
 // file redacts and scrubs a path in a FILE position (a static finding's Evidence.File, which detect
 // stores unredacted) and, there only, rewrites detect.relPath's two-segment fallback: a file
