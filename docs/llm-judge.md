@@ -403,6 +403,22 @@ rather than a 0 that would read as a measurement. Without `--llm` none of this a
 found nothing and a judge that never ran used to look identical, which is the one distinction a
 reader of a clean report needs.
 
+Every `judge` block also says **which judge** it was. `prompt_version` is computed over the exact
+request body of every call the client can make — each pass's system prompt, the layout around the
+excerpt, the response format, the temperatures and the request fields — with the scanned content,
+the model and the per-call nonce stood in. `excerpt_version` is a number the maintainers bump
+whenever what an artifact sends, or how a quote is grounded, changes; a golden test fails when the
+excerpt code changes and the number does not. With a configured judge the block also has `model`,
+the model every request named (`llama3.1` when the config names none), and `samples`, how many times
+each question was asked (1 when the config says 0). `aguard version` prints the two versions after
+`rules=` as `judge-prompt=` and `judge-excerpt=`, and when the judge ran the human reports add one
+line, `LLM judge: model … · samples … · prompt_version … · excerpt_version …`. Two reports whose
+versions differ came from different judge code. Two whose versions and model agree asked the same
+questions of excerpts built the same way — not necessarily with the same answers: the model is
+sampled, and a vendor can change what serves a model name. Consensus, severity clamping and the
+advisory-only rule are in neither version; `tool_version` is still the only stamp for those. The
+key, the headers and `authority` are never recorded.
+
 ## The second number
 
 A judge run reports two scores:

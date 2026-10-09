@@ -251,6 +251,7 @@ MCP 配置按 `detect.ConfigLines` 渲染成 `key=value` 行(与静态读同一�
 - 判定输出走**结构化 schema**(强制 JSON):`{verdict: safe|suspicious|malicious, dimension, confidence, evidence_lines[], rationale}`。
 - 判定器**无工具、无网络访问被审目标、不执行任何内容**——纯文本推理。
 - **送给模型的摘录先压缩、再截两头**(2026-09-08):连续空行折成一行、注释行整行去掉(用和 A1 同一个分类器;注释是脚本里作者对读者说话的地方,正是攻击者会对判官说话的地方,解释器从不读注释,判官也不该读),字节上限内保留文件头 2/3 + 尾 1/3 并放一行 `N line(s) omitted` 标记。摘录不再与文件连续,所以每个 `sourceUnit` 带 `lineMap` 把摘录行映射回原文行号,证据落地仍引真实 `file:line`。触发它的是十万个空行把 payload 推到 2000 字节前缀之外、以及三段写给判官看的注释。intent 提示词多了一类**「披露了也要报」**:改包源、写 git hook / shell 启动文件 / 定时任务,描述老实写着「配置企业 npm 镜像」也不放行。`LLM-005` 带最多三条没落地的引文(截 120 字符、再过一次 Redact),用来分「模型在转述」和「摘录切掉了它引的行」;整段引文落不了地时按行拆开逐行找,每行仍要一字不差。**`N line(s) omitted` 标记是我们插进摘录的行,不在任何文件里:落在它上面的引用按落不了地处理**(P-006)。**行内垫料在任何封顶之前折掉**(P-020):一行里连续超过 128 字节的空白(`unicode.IsSpace`,换行除外)或不可见字符(`detect.Invisible`)换成落地读它的样子——一个空格,只有不可见字符时为空;从不跨 `\n`,所以 `lineMap` 不变,折后规范化文本与原文相同,落地、行号、P-006 的窗口都不受影响。位置在摘录构造器的唯一收口 `egress.redact`:Redact → 折叠 → (折过才)再 Redact → 换家目录。触发它的是一行垫几千字节空白的指令被换成省略标记或纯空白前缀、三个各在每文件上限内的垫料脚本花光合计上限;每 128 字节插一个可见字符的垫料仍算内容。
+- **判官自己的两个版本号**(P-031,2026-10-10):`judge.PromptVersion()` 是**算出来的** —— 客户端每一种请求形状(6 趟 × 两侧都有/声明为空/行为为空/都为空 × 温度 0 与 `samplingTemperature`,外加比上限多一条的 triage)的完整 JSON 请求体,被扫内容、模型名和 nonce 换成固定占位,逐个长度前缀后取 sha256 前 12 位;`TestPromptVersion_HashesWhatTheClientSends` 用真客户端经 httptest 逐字节核对每个请求体就是被哈希的那个,所以提示词、版式、回复格式、温度、请求字段一变,要么版本号变,要么测试红。`judge.ExcerptVersion`(`ground.go`)是**手动加一**的整数,管哪些 artifact 走哪几趟、每趟带什么文本(压缩、截两头与行号映射、声明用途/hook/MCP/connector 的渲染、解码上限、垫料折叠、家目录替换与脱敏顺序)和引文怎么落地;golden 测试把一个固定夹具的摘录与落地结果的摘要和这个整数**一起**钉死,只改一边就红,夹具没走到的改动仍靠人记得加。两者连同 `model`、`samples` 进 `judge` 摘要(§8),`aguard version` 在 `rules=` 后面印 `judge-prompt=`/`judge-excerpt=`。**不能说**「版本和模型相同 ⇒ 答案相同」(模型是采样的,厂商可以不改名就换模型),也**不能说**两个版本覆盖整个判官:共识、严重度钳制、只提示表都不在里面,只有 `tool_version` 标它们。判官仍不在 `rules_version` 里(§5.1)。
 
 ### 5.2.1 LLM 定位:对抗式分析层(铁律)
 
@@ -385,7 +386,7 @@ type ScanResult struct {
     OverallEffective int  // 含合格 LLM 发现;恒 ≤ Overall;不开 --llm 时二者相等
     ToolVersion string
     RulesVersion string // 规则表版本(§5.1),json:"rules_version",总是出现:tool_version 标的是提交,不是规则;只覆盖确定性检测(Overall 的来源),判官不在内,由 `judge` 摘要的 prompt_version/excerpt_version 标识(P-031);两份报告的它不同 = 规则变了,相同 = 规则表相同(不等于检测逻辑相同,见 §5.1 的 epoch 纪律)
-    Judge     *JudgeSummary `json:",omitempty"` // --llm 时必填:跑没跑、判了几个、几次调用(其中 triage 几次、重试几次)、端点自报的 token(没报则缺省)、补了几条、没跑的原因(§16.8 用在判官自己身上:「跑了没发现」和「没跑」以前在报告上一模一样)
+    Judge     *JudgeSummary `json:",omitempty"` // --llm 时必填:跑没跑、判了几个、几次调用(其中 triage 几次、重试几次)、端点自报的 token(没报则缺省)、补了几条、没跑的原因(§16.8 用在判官自己身上:「跑了没发现」和「没跑」以前在报告上一模一样)、是哪个判官(`prompt_version`/`excerpt_version` 每个块都有,`model`/`samples` 配好判官才有,都取实际生效的值;密钥、请求头、`authority` 不记;P-031,§5.2)
     Inbox     *InboxReport  `json:",omitempty"` // 下载目录那条流水线的结果(§4.1),永不进 Overall
     Locations []Location    `json:",omitempty"` // 扫了哪里,各标 read/absent/off(§4.3);check 不填
     Sandbox   *SandboxInfo  `json:",omitempty"` // 在云端沙箱里跑时的判断依据(§4.2);nil = 本机
