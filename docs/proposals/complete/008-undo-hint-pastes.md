@@ -85,3 +85,18 @@ P-007 合入后它才第一次会被人看到,所以至今没人照抄过它。
 3. **最短前缀要不要设下限(比如 4 位)?**
    **建议**:不设,只拒绝空前缀。非空前缀不唯一时既有逻辑已经报错。
    **已决(2026-10-08)**:按建议(旧仓已决,移植沿用)。
+
+## 完成
+
+```
+合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-008 找)
+发布:待发
+证据:TestUndoHintPastesAsIs(cmd/aguard/gate_undo_test.go);W1 红:the undo command as printed failed: no approval matches "a1e9cd5dbc1a…" → W2 后绿,照抄的命令删掉了批准,展示用的 content a1e9cd5dbc1a… 不变
+证据:TestForgetAcceptsTheShortHashAsPrinted(同文件);W1 红(… 与 ... 两种都 no approval matches)→ W2 后仍红(W2 只改提示)→ W3 后绿
+证据:反向断言 TestForgetRefusesAnEmptyPrefix(同文件);W1 红:forget "" succeeded 并 withdrew the approval(既有的隐患)→ W3 后 ""、…、... 全部拒绝,批准仍在
+证据:反向断言 TestForgetStillRequiresAUniqueMatch(同文件,随 W3 加入):共享 12 位前缀的两条 → matches 2 approvals;不匹配 → no approval matches;两条都在
+证据:反向断言不改一字仍绿 —— go test -race ./internal/gate/ ok(TestGateAsksThenRemembers、TestApprovalOnlyCoversWhatWasShown 等;gate_test.go、hook_test.go 无改动)
+证据:二进制对临时 root 手跑 —— main(dec64ca):forget <12位>… 与 <12位>... 都 no approval matches 退出 2,forget "" 退出 0 并删掉唯一那条批准;本分支:forget "" 与 forget … 报 no hash given 退出 2、批准仍在,<12位>... 与 <12位>… 都 forgot 退出 0,forget all 对两条批准 forgot 2 approval(s)
+证据:不做什么 —— git diff --stat origin/main -- internal/gate/approvals.go internal/gate/gate_test.go internal/gate/hook_test.go go.mod go.sum 为空
+证据:make verify: all gates passed;go version go1.23.5(无工具链切换),go.mod 第二行 go 1.23.5
+```
