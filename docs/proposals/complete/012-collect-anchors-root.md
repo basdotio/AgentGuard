@@ -215,6 +215,9 @@ fixture 都在 `t.TempDir()` 现搭,临时目录先 `EvalSymlinks`(macOS 的 `/v
    就绿:本仓实测要改 `spellingView` 开头**两行**里的 `filepath.Clean(root)`(算前缀的那行和判 `"."` 的那行)为 `filepath.Clean(out.Root)`,
    只改第一行时 `dot`、`dot slash` 两行仍红;这两行在 P-010 自己的分支上行为不变(那里 `out.Root` 就是敲进来的 root)。
    **建议**:后合的那个 PR 在 rebase 时带上这两行:P-010 先合,本条 rebase 时改;本条先合,P-010 rebase 时改。PR 描述里写明。
+   **合入时(2026-10-09)**:P-010 先合,本条带上这两行。rebase 后 P-010 的测试在相对写法的六行全红,改完转绿。
+   另有一处与 P-005 的交叠:`scanEnv` 里 P-005 从绝对 root 算判官的 home,本条改为用 collect 锚定后的 `res.Root` 调 `analyze`;
+   合并后两样都在 —— 用 `res.Root` 调 `analyze`,判官的 home 也从 `res.Root` 算(仍过一次 `filepath.Abs`)。
    本仓的组合实测见「完成」。
    **已决(2026-10-09)**:按建议(旧仓已决,移植沿用)。
 9. **工作目录经符号链接、`--root` 用相对写法时,root 内一部分文件的证据路径变短,算不算越界?**
