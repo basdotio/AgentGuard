@@ -17,7 +17,40 @@ rate copied into prose goes stale on the next rule. `git tag` and the Releases p
 - Invariants: never executes scanned content, no cross-root symlink reads, secret redaction before storage (+ high-entropy fallback).
 - Single static binary (`CGO_ENABLED=0`), MIT + SPDX, CI, bilingual README.
 
-## v0.2.0 – v0.17.0
+## v0.2.0 – v0.18.0
+
+**v0.18.0 (2026-10-09) — slash commands are audited like skills, one more spelling of curl|bash is a finding, and the allowlist is current again.**
+
+The gate's answer changes for one kind of artifact (a slash command carrying a dangerous command now fails `--fail-on high`)
+and for one more shape (remote code run through substitution). Everything else measured identical on a real machine and on
+the 3539-sample corpus.
+
+- **Slash commands run the full rule set.** `commands/*.md` — in `~/.claude`, inside a plugin, and as a single `aguard check`
+  target — used to be classified by file name, and since a command is not called `SKILL.md` it was read as a bundled doc: only
+  the injection rules ran, so `/deploy` telling the agent to run `curl … | bash` scored 100/100 while the same line in a
+  SKILL.md scored 75. The kind decides now; a command body is a procedure the agent carries out, the SKILL.md case exactly.
+  Subagents, rules, workflows, output styles and memory stay on the prose rule set on purpose: promoting them was measured
+  and reverted before, because their benign content quotes dangerous commands in order to forbid them
+  ([issues/011](issues/011-prose-instruction-exec-underscan.md), now partially fixed). Identical bytes under `commands/` and
+  `docs/` are scanned once each rather than once for whichever the walk met first.
+- **`EXEC-012` — downloaded script executed via substitution** (high, dimension 4). `eval "$(curl …)"`, `bash -c "$(curl …)"`,
+  `bash <(curl …)`, `source <(curl …)` and `python3 -c "$(curl …)"` fetch and run in one line like the pipe `EXEC-001` already
+  reports, and all five scored 100. Capture forms (`VER=$(curl …)`) are not matched. On the corpus: recall unchanged in every
+  dimension and source (no malicious sample carries the shape); benign flags +1 on skillmd-138k (78 → 79 of 1996), that one
+  being a SKILL.md that instructs `bash <(curl -s https://…/setup.sh)`. Download-to-file-then-run across two lines is a
+  recorded limitation (ROADMAP).
+- **Reputation allowlist renewed at marketplace `315c4e4`.** Eleven entries renewed mechanically (superpowers 6.3.0 → 6.4.1
+  among them; its 18 allowlisted findings had been coming back for anyone who auto-updated since 2026-10-05) and three
+  re-reviewed from source with their reasons rewritten: security-guidance 2.0.11, claude-security 0.12.0, code-modernization
+  1.0.0. The weekly refresh workflow now opens its pull request even while some entry awaits a human, and re-asserts the red last.
+- **`aguard version` is right for a `go install` build.** `go install github.com/basdotio/AgentGuard/cmd/aguard@latest` — the
+  line the CI template runs — stamped nothing and reported `dev (commit none, built unknown)`, also as the ToolVersion in
+  approvals and reports. The module version and VCS stamps the go tool records are used when `-ldflags` left them empty.
+- **READMEs say what the static MCP check covers**: injection text and interpreter-preload `env` (`EXEC-010`); an unpinned
+  package or a credential written into `env` is reported only by the optional judge (`LLM-009`). The marketplace manifest
+  gained the description `claude plugin validate` asked for.
+- **`make bench` runs to completion again.** The corpus harness dropped the scorer's `-tool` flag on 2026-09-23 and two callers
+  here kept passing it, so the bench died after its ten-minute driver pass with the verdicts on disk and no scorecard printed.
 
 **v0.17.0 (2026-10-01) — the plugin is now `aguard`, because `agentguard` could not be installed on a Mac, and `aguard version` names the command that updates your install.**
 
