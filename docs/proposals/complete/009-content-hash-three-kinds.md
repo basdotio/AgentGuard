@@ -95,42 +95,42 @@ Downloads 那一路(经 `checkTarget`)全在它后面。`aguard hash` 在 `Colle
 
 ## 完成的判据
 
-- [ ] `TestContentHashGolden`(`internal/detect/contenthash_test.go`,新):五个固定 fixture(跟进一个脚本的 command hook、
+- [x] `TestContentHashGolden`(`internal/detect/contenthash_test.go`,新):五个固定 fixture(跟进一个脚本的 command hook、
   http hook、MCP server、permissions、settings env)→ 规范输入**字节**等于字面串、哈希等于字面常量。哈希可以
   **手算**:`printf 'aguard:hook:v1\0%s' '<字面串>' | shasum -a 256`。W1 编译红(没有 `ContentHashes`)
-- [ ] `TestContentHash_SameConfigTwoMachines`(同文件,新):同一 hook 配置 + 同样内容的脚本放在两个不同 home 下;
+- [x] `TestContentHash_SameConfigTwoMachines`(同文件,新):同一 hook 配置 + 同样内容的脚本放在两个不同 home 下;
   同一插件 hook 在两个不同 `OwnerRoot` 下;同一 MCP 条目在两个不同路径的文件里、改了 server 名 → 哈希两两相等且非空;
   root 带尾部斜杠、写成 `.` → 同一个哈希
-- [ ] `TestContentHash_HookFollowsItsScript`(新):改 settings hook 跟进的脚本 / 插件 hook 在自己树里跟进的脚本 → 哈希变
-- [ ] `TestContentHash_ScriptThatCannotBeReadIsMarked`(新):脚本 `chmod 000` → 哈希非空,且不同于可读时、不同于脚本不存在时;
+- [x] `TestContentHash_HookFollowsItsScript`(新):改 settings hook 跟进的脚本 / 插件 hook 在自己树里跟进的脚本 → 哈希变
+- [x] `TestContentHash_ScriptThatCannotBeReadIsMarked`(新):脚本 `chmod 000` → 哈希非空,且不同于可读时、不同于脚本不存在时;
   不存在 / 路径带变量 → `unresolved`;解析到 HOME 外 → `outside-home`;三个标记两两不同(root 运行时跳过 `chmod` 那半)
-- [ ] `TestContentHash_SecretsAreNotDigestInputs`(新):MCP env `DB_PASSWORD`、`Authorization` 头、hook 命令里的 `-u admin:…`、
+- [x] `TestContentHash_SecretsAreNotDigestInputs`(新):MCP env `DB_PASSWORD`、`Authorization` 头、hook 命令里的 `-u admin:…`、
   URL 里的密码 —— 两个不同 secret 得到**同一个**哈希,等于把它写成 `<REDACTED>` 时的哈希,规范输入里不含 secret 原文
   (**有意为之**:只改 secret 不重键)。同一测试里的反向:URL 密码位置换成 `$(…)` → 哈希变;一个没有 key 宣告的
   base64 载荷换掉 → 哈希变;改一个非 secret 参数 → 哈希变
-- [ ] `TestContentHash_ReplacementNeverTakesStructure`(新,未决 11):对照组 —— 精确授权里的密码、授权里的 token、
+- [x] `TestContentHash_ReplacementNeverTakesStructure`(新,未决 11):对照组 —— 精确授权里的密码、授权里的 token、
   MCP url 里的密码,两个不同 secret 仍同哈希、不进输入;反向 —— `Bash(curl -u admin:hunter2)` → `…admin:*)`、
   `Bash(deploy --token abc123)` → `…--token *)`、MCP / http hook 的 url 里"密码"换成 `443#` / `443?` 把 host 换掉、hook 命令密码位
   换成 glob、同一命令换 hook type、同一条目加一个字段 —— 七对全部重键,且对着不带结构守卫、只哈希四个字段的实现全红
-- [ ] `TestContentHash_KindsAreDomainSeparated`(新):同一份规范字节在四个域下 → 四个互不相同的值,且都不等于这份字节的裸 sha256
-- [ ] `TestReputation_RecognisesAHook`(`cmd/aguard/contenthash_test.go`,新):扫一个带 hook 的 fixture,用它的 hook 哈希造一条
+- [x] `TestContentHash_KindsAreDomainSeparated`(新):同一份规范字节在四个域下 → 四个互不相同的值,且都不等于这份字节的裸 sha256
+- [x] `TestReputation_RecognisesAHook`(`cmd/aguard/contenthash_test.go`,新):扫一个带 hook 的 fixture,用它的 hook 哈希造一条
   `malicious` 信誉条目 → 那条 hook 得到 `REP-BAD`。W1 红(哈希是空串,`reputation.New` 直接丢掉这条)
-- [ ] `TestGate_ApprovedHookLeavesSessionStart`(`cmd/aguard/gate_e2e_test.go`,新):root 里一条跟进 `curl | bash` 脚本的 hook;
+- [x] `TestGate_ApprovedHookLeavesSessionStart`(`cmd/aguard/gate_e2e_test.go`,新):root 里一条跟进 `curl | bash` 脚本的 hook;
   `approvePath(root)` 之后 approvals 里**有一条** hook 记录,`SessionStart` 不再列它;再改它跟进的脚本 → `SessionStart` 又列出来。
   W1 红:打印 `approved` 而 approvals 为空,`SessionStart` 照列
-- [ ] `TestHashCommand_PrintsConfigHashes`(`cmd/aguard/contenthash_test.go`,走真二进制,新):`aguard hash <root>` 每一行
+- [x] `TestHashCommand_PrintsConfigHashes`(`cmd/aguard/contenthash_test.go`,走真二进制,新):`aguard hash <root>` 每一行
   hook / mcp / permission 都是 64 位十六进制,且等于 `scan --json` 里同一 artifact 的 `hash`。W1 红(空)
-- [ ] 反向断言 `TestScan_OnlyConfigHashesChange`(`cmd/aguard/contenthash_test.go`,新,随 W5 落地):同一 fixture(hook、两处 MCP、
+- [x] 反向断言 `TestScan_OnlyConfigHashesChange`(`cmd/aguard/contenthash_test.go`,新,随 W5 落地):同一 fixture(hook、两处 MCP、
   permissions、env、skill、CLAUDE.md)关掉/打开这一步各扫一次,把三类的 `hash` 置空后 JSON **逐字节相同**;
   其余 kind 的 `hash` 一个不变
-- [ ] 反向断言 `TestContentHash_ParseErrorArtifactsStayUnhashed`(新):坏掉的 `settings.json` / `.claude.json` → `PARSE-000`
+- [x] 反向断言 `TestContentHash_ParseErrorArtifactsStayUnhashed`(新):坏掉的 `settings.json` / `.claude.json` → `PARSE-000`
   artifact 的 Hash 仍是 `""`;`TestEmptyHashIsNeverApproved` 不改一字仍绿
-- [ ] 反向断言不改一字仍绿:`TestHashGolden`(两个常量)、`TestAdversarial_ConcurrencyDoesNotChangeOutput`、
+- [x] 反向断言不改一字仍绿:`TestHashGolden`(两个常量)、`TestAdversarial_ConcurrencyDoesNotChangeOutput`、
   `TestRun_ConcurrentDeterministic`、`TestImports_CredentialFileRefused`(W-006)、`internal/detect/redact_test.go` 全部。
   (`TestCollectHooks_PerCommand` 是整体比较 `model.Hook` 的,`Hook` 多了 `Entry` 之后改成比较前先清掉它,并新加一句断言
   `Entry` 等于原文 —— 原来的四个字段断言一个没少)
-- [ ] 真机:`scan --root ~/.claude --quiet --json` 前后对比,**只有** hook / mcp / permission 的 `hash` 不同;记数字不记名字
-- [ ] `make verify` 绿;`go version` 无工具链切换
+- [x] 真机:`scan --root ~/.claude --quiet --json` 前后对比,**只有** hook / mcp / permission 的 `hash` 不同;记数字不记名字
+- [x] `make verify` 绿;`go version` 无工具链切换
 
 ## 不做什么
 
@@ -254,3 +254,35 @@ Downloads 那一路(经 `checkTarget`)全在它后面。`aguard hash` 在 `Colle
     重键三类 **并且** 改报告 snippet),写进「不能说什么」,另开。竞态照实写进 review 包。七对反向用例
     (`TestContentHash_ReplacementNeverTakesStructure`)对着评审前的实现应全红、修后全绿;hook 的两个 golden 按新定义重新手算。
     **已决(2026-10-09)**:按建议。**人确认(2026-10-09)**:接受这两处对决定 1 的收窄(只用凭据那一半;替换不许拿走结构)。
+
+## 完成
+
+手跑(「问题」一节的同一个 fixture,`main` `dec64ca` 与本分支各构建一次,每步一个进程):
+
+```
+                         修前(main dec64ca)                        修后(本分支)
+aguard hash <root>       "  hook:PreToolUse[Bash]#1"(空哈希)       64 位十六进制;root 带尾斜杠 → 同一个值;root 里放上
+                                                                    plugins/installed_plugins.json 后在 root 里 hash . → 同一个值(*)
+aguard approve <root>    approved … hash (空);approvals {}         approved … hash 4f097648…;approvals 1 条(kind=hook,accepted-risk)
+SessionStart             列出 hook PreToolUse[Bash]#1 75/100        "no unapproved artifact carries a finding at or above high"
+改 hook 跟进的脚本       —                                           SessionStart 又列出它
+```
+
+(*) 没有 `installed_plugins.json` 又不叫 `.claude` 的目录,`aguard hash .` 把它当成一个 `directory` artifact 算树哈希,根本不走
+root 的采集 —— 这是 `collect.looksLikeRoot` 本来的行为,与本条无关;装过插件的 `~/.claude` 都有这个文件。
+
+```
+合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-009 找)
+发布:待发
+证据:TestContentHashGolden(internal/detect/contenthash_test.go);W1 编译红(undefined: ContentHashes / contentHashInput / configDoc / scriptUnresolved…,unknown field MCPServer)→ W4 绿;W7 之后五个常量与两个脚本摘要在本仓库按 printf … | shasum -a 256 重新手算,七个值全部一致
+证据:TestReputation_RecognisesAHook(cmd/aguard/contenthash_test.go);W1 红 "the hook has no hash, so no reputation entry can ever match it" → W5 绿:按 hook 哈希造的 malicious 条目命中,hook 上出 REP-BAD
+证据:TestGate_ApprovedHookLeavesSessionStart(cmd/aguard/gate_e2e_test.go);W1 红 "approve printed success; the store holds 0 approval(s), want the hook's one" → W5 绿:approvals 1 条(kind=hook),SessionStart 不再列它;改它跟进的脚本 → 又列出来
+证据:TestHashCommand_PrintsConfigHashes(cmd/aguard/contenthash_test.go,走真二进制);W1 红:mcp:db、hook:PreToolUse[Bash]#1、permission:permissions、permission:settings env、mcp:fs 五行打印空哈希 → W5 绿:五行都是 64 位十六进制,与 scan 逐个相等
+证据:TestContentHash_ReplacementNeverTakesStructure(internal/detect/contenthash_test.go);把 contenthash.go 临时换回 W4 的版本(评审前的实现)跑:七对 7/7 红,另有 SameConfigTwoMachines 的相对 root 1 条红 → 还原后全绿;对照组(同一位置两个不同 secret)仍同哈希
+证据:变异检查(临时改、跑、还原,未提交):去掉结构守卫 → SecretsAreNotDigestInputs、ReplacementNeverTakesStructure 红;哈希视图改用完整 Redact → SecretsAreNotDigestInputs 红(base64 那对);hook 不带脚本 → Golden、SameConfigTwoMachines、HookFollowsItsScript、ScriptThatCannotBeReadIsMarked 4 条红;unreadable 并进 unresolved → ScriptThatCannotBeReadIsMarked 红;去掉 root 规范化 → SameConfigTwoMachines 红;这一步顺手加一条 finding → TestScan_OnlyConfigHashesChange 红
+证据:反向断言 TestScan_OnlyConfigHashesChange(cmd/aguard/contenthash_test.go):同一 fixture 关掉 / 打开这一步各扫一次,三类 hash 置空后 JSON 逐字节相同,其余 kind 的 hash 不变
+证据:反向断言不改一字仍绿 —— TestHashGolden、TestEmptyHashIsNeverApproved、TestAdversarial_ConcurrencyDoesNotChangeOutput、TestRun_ConcurrentDeterministic、TestImports_CredentialFileRefused、internal/detect/redact_test.go 全部(所在五个测试文件与 redact_test.go 的 git diff --stat origin/main 为空);TestContentHash_ParseErrorArtifactsStayUnhashed:两个 PARSE-000 artifact 仍是 ""
+证据:真机 ~/.claude(main 与本分支两个二进制背靠背各扫一次 --quiet --json):hook 29 / mcp 27 / permission 2 共 58 个 artifact 的 hash "" → 64 位十六进制(不同值 29 / 17 / 2,MCP 里同一份配置出现在多处,名字不进哈希);其余 117 个 artifact 的 hash 0 个变化;去掉 scanned_at / tool_version、把三类 hash 置空后两份 JSON 相等;overall 69 → 69,notes 10 → 10,artifact 175 → 175
+证据:不做什么 —— git diff --stat origin/main -- go.mod go.sum internal/collect/hash.go internal/collect/hash_test.go internal/collect/skip.go internal/collect/connectors.go internal/gate cmd/aguard/gate.go internal/report internal/judge internal/reputation internal/score internal/permcheck docs/install-gate.md docs/install-gate.zh-CN.md docs/rules.md 为空
+证据:make verify: all gates passed;go version go1.23.5(无工具链切换);go.mod 第二行 go 1.23.5
+```
