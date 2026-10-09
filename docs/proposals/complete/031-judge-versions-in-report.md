@@ -1,9 +1,9 @@
 <!-- SPDX-License-Identifier: MIT -->
 # 031 — A `--llm` report cannot say which judge produced its LLM findings: only `tool_version` names it, and it moves when the judge did not and stays put when the judge changed
 
-- **Source**: maintainer decision (2026-10-10) to overturn the second of P-002's two judge decisions — "today a report
-  identifies the judge's code only through `tool_version`" — while keeping the first (the judge stays outside
-  `rules_version`)
+- **Source**: maintainer decision (2026-10-10) to overturn the second of P-002's two judge decisions, (b) "today a report
+  identifies the judge's code only through `tool_version`", while keeping the first, (a) the judge stays outside
+  `rules_version`
 - **Depends on**: P-002 (`rules_version`, merged); coordinates with P-027 (PR #47, not merged), which refactors the same
   `internal/judge` files
 - **Branch**: `p/031-judge-versions-in-report`
@@ -96,7 +96,7 @@ The judge splits into what can be computed and what cannot, and the two get diff
   both empty} × {0, `samplingTemperature`}, plus triage at its cap — each rendered as the exact JSON body the client
   would send, with three stand-ins: the scanned content (`<declared>`, `<behavior>`, `<rule>`, `<evidence>`), the model
   (`<model>`, recorded separately) and the nonce (`<nonce>`, random per call). First 12 hex digits, `sync.OnceValue`,
-  pure `promptVersion(shapes)` for tests — the `detect.RulesVersion()` pattern.
+  pure `promptVersion(bodies)` for tests — the `detect.RulesVersion()` pattern.
   Built by the same `systemPrompt` / `userPrompt` the client calls; the triage messages are built inline in `Triage`
   today (P-027 extracts them), so `prompt_version.go` restates them — and a capture test is what makes that safe: it drives
   the **real** `HTTPClient` for every shape through `httptest`, masks the nonce, and requires each body to equal the one
@@ -126,7 +126,7 @@ Where they appear:
   when `--llm` was requested, and they name this binary's judge, so "key absent" means only "older report". `model` and
   `samples` are set when the judge was configured to run (`runJudge`, and the Downloads summary when the config is
   ready); the "requested but not enabled" block has no configuration to name. Nothing else from the `llm` config goes in:
-  no key, no headers, no `authority`. One constructor in `cmd/aguard` builds the block for all three call sites.
+  no key, no headers, no `authority`. One pair of constructors in `cmd/aguard` builds the block at all three call sites.
 - **Human renderers**: one line after the judge summary line, only when the judge ran —
   `LLM judge: model <m> · samples <n> · prompt_version <v> · excerpt_version <n>` — in the terminal (through `Sanitize`),
   markdown (through `text`, like the judge line next to it; the model comes from the operator's config, not the scanned
@@ -145,55 +145,59 @@ refactor is byte-identical in what is sent, so the capture test holds across it;
 restated triage messages can call #47's `triagePayload` / `fenced`, `ModelFor` can become its `RequestModel`, and
 `llm preview` can print the two versions — follow-ups, named below, not done here.
 
-Sentence (b) of P-002 is replaced, in the same six passages, the `docs/rules.md` header and the two tests that pinned it,
+P-002's sentence (b) is replaced, in the same six passages, the `docs/rules.md` header and the two tests that pinned it,
 by what is now true: a `--llm` report names the judge in its `judge` block (`prompt_version`, `excerpt_version`, `model`,
 `samples`), and the judge stays outside `rules_version`. `rulesEpoch` and everything `rules_version` hashes are
 byte-identical; only the comment sentence changes, and the value stays `43f245966105`.
 
 ## Done criteria
 
-- [ ] `TestPromptVersion_HashesWhatTheClientSends` (`internal/judge/prompt_version_test.go`, new): for every call shape
+- [x] `TestPromptVersion_HashesWhatTheClientSends` (`internal/judge/prompt_version_test.go`, new): for every call shape
   (6 passes × 4 content variants × 2 temperatures, and triage with one item more than its cap), the real `HTTPClient`'s
   request body, captured through `httptest` with the nonce masked, equals the body `PromptVersion` hashed for that shape,
   byte for byte. Red on origin/main at compile time (no `PromptVersion`, no call-shape table)
-- [ ] `TestPromptVersion_EveryInputIsDecided` (same file, new): by reflection, every field of `Request` and of
-  `chatRequest` is declared as stand-in, enumerated or not sent, and every `Mode` constant declared in `judge.go` (read
-  with `go/ast`) has shapes. **Mutation**: add a field to `Request`, or a seventh `Mode` constant, without declaring it → red
-- [ ] `TestPromptVersion_MovesWithWhatShapesTheAnswer` (same file, new): on a copy of the shape table, changing one word
-  of one system prompt, one byte of a user layout, one temperature, the triage cap, dropping a shape or swapping two each
-  moves `promptVersion`; `TestPromptVersion_IsStable`: 12 lowercase hex digits, two calls equal, equal to
-  `promptVersion(callShapes())`. **Manual mutation, recorded**: one word of `injectionTask` changed in the source moves
-  the value `aguard version` prints, and every test stays green (the version follows the prompt; nothing to update)
-- [ ] `TestExcerptVersion_IsPinnedWithItsGolden` (`internal/judge/excerpt_version_test.go`, new): the fixture's digest and
+- [x] `TestPromptVersion_EveryInputIsDecided` (same file, new): by reflection, every field of `Request`, `TriageItem`,
+  `chatRequest` and `chatMessage` is declared as stand-in, enumerated, rendered or never sent, and every `Mode` constant
+  declared in `judge.go` (read with `go/ast`) has shapes for both temperatures and all four content variants.
+  **Mutation**: add a field to `Request`, or a seventh `Mode` constant, without declaring it → red
+- [x] `TestPromptVersion_MovesWithWhatShapesTheAnswer` (same file, new): on a copy of the rendered bodies, one byte of
+  a pass's system message, one byte of the user layout, one byte of the triage system message, one temperature, the
+  triage cap, an added request field, dropping a shape or swapping two each moves `promptVersion`, and no two collide —
+  the edits are located by the envelope's role markers, never by prompt words; `TestPromptVersion_IsStable`: 12
+  lowercase hex digits, two calls equal, equal to `promptVersion(shapeBodies(callShapes()))`. **Manual mutation,
+  recorded**: one word of `injectionTask` changed in the source moves the value `aguard version` prints, and every test
+  stays green (the version follows the prompt; nothing to update)
+- [x] `TestExcerptVersion_IsPinnedWithItsGolden` (`internal/judge/excerpt_version_test.go`, new): the fixture's digest and
   `ExcerptVersion` equal the pinned pair. Red on origin/main at compile time (no `ExcerptVersion`). **Mutation**: change
-  `maxFileBytes` or the omitted-lines marker → red with the message telling the editor to bump `ExcerptVersion`; reverted
-- [ ] `TestE2E_ReportNamesItsJudge` (`cmd/aguard/judge_summary_test.go`, new): `scan --llm` and `check --llm` against an
+  `maxFileBytes`, the omitted-lines marker, the minimum quote length or the home scrub → red with the message telling
+  the editor to bump `ExcerptVersion`; bump the version alone → red; all reverted
+- [x] `TestE2E_ReportNamesItsJudge` (`cmd/aguard/judge_summary_test.go`, new): `scan --llm` and `check --llm` against an
   `httptest` judge → the `judge` block has `prompt_version == judge.PromptVersion()`, `excerpt_version ==
   judge.ExcerptVersion`, `model` = the configured one (`llama3.1` when the config leaves it empty), `samples` = the
   configured one (1 when the config says 0); the API key, set through the environment to a sentinel, appears nowhere in
   the JSON; "requested but not enabled" has the two versions and no `model` / `samples`. Red on origin/main at compile time
-- [ ] **Reverse assertion**: without `--llm` there is no `judge` block at all, and with `--llm` the deterministic numbers
-  (`overall`, findings, `rules_version`) are unchanged by this proposal — `TestE2E_*` and `TestCheckCmd_*` pass with no
-  line of theirs changed
-- [ ] `TestRunVersion_JudgeVersionsComeAfterRules` (`cmd/aguard/judge_summary_test.go`, new): the first line of
+- [x] **Reverse assertion**: without `--llm` there is no `judge` block at all, and with `--llm` the deterministic numbers
+  (`overall`, findings, `rules_version`) are unchanged by this proposal — the existing `TestE2E_*` and `TestCheckCmd_*`
+  pass with no line of theirs changed
+- [x] `TestRunVersion_JudgeVersionsComeAfterRules` (`cmd/aguard/judge_summary_test.go`, new): the first line of
   `runVersion` is `binaryVersionLine(...)` exactly, followed by ` · judge-prompt=<PromptVersion()> · judge-excerpt=<n>`,
   and `strings.Fields(line)[1]` is the version. **Reverse**: `TestBinaryVersionLine_RulesComeAfterTheExistingFields`,
   `TestPluginVersionLine`, `TestPluginVersionLine_LegacyName`, `TestApplyBuildInfo` unchanged and green
-- [ ] `TestJudgeIdentityLine_*` (`internal/report/judge_identity_test.go`, new): the terminal, markdown and HTML reports
+- [x] `TestJudgeIdentityLine_*` (`internal/report/judge_identity_test.go`, new): the terminal, markdown and HTML reports
   print the one identity line when the judge ran, and nothing when it did not run or `--llm` was not passed; a model name
   carrying U+202E, a backtick run or `[x](u)` stays inert in each. **Reverse**: `TestCleanSettingsReportIsUnchanged`
   (the golden) unchanged
-- [ ] `TestRulesVersionDocs_NameTheJudgeInItsOwnBlock` (`internal/detect/rules_version_docs_test.go`, replaces
+- [x] `TestRulesVersionDocs_NameTheJudgeInItsOwnBlock` (`internal/detect/rules_version_docs_test.go`, replaces
   `TestRulesVersionDocs_IdentifyTheJudgeOnlyByToolVersion`) and `TestRulesDocHeaderPutsTheJudgeOutsideRulesVersion`
   (`hack/gen-rules/main_test.go`, rewritten): the six passages and the `docs/rules.md` header name `prompt_version` and
   `excerpt_version` and no longer say "only through `tool_version`" or its Chinese equivalent; the header still puts every
   `LLM-` ID outside `rules_version`. Red on origin/main for the six passages and the header
-- [ ] **Reverse assertion**: `rules_version` is `43f245966105` before and after; `TestRulesVersion_*`,
+- [x] **Reverse assertion**: `rules_version` is `43f245966105` before and after; `TestRulesVersion_*`,
   `TestRulesDocHeaderSaysWhatTheHashCovers`, `TestHashGolden` and `TestZeroDial_*` pass with no line of theirs changed, and
   `TestRulesEpoch_ScopeIsDeterministicOnly` with only its doc comment changed (it restated sentence (b))
-- [ ] **What is sent does not change**: the capture of "Measured", rerun with this branch's binary, gives the same nonce-
+- [x] **What is sent does not change**: the capture of "Measured", rerun with this branch's binary, gives the same nonce-
   masked request bodies for all four runs (`diff` empty)
-- [ ] `make verify` green; `go version` does not switch toolchains; `go.mod` line 2 is `go 1.23.5`; no new dependency
+- [x] `make verify` green; `go version` does not switch toolchains; `go.mod` line 2 is `go 1.23.5`; no new dependency
 
 ## Out of scope
 
@@ -231,7 +235,7 @@ byte-identical; only the comment sentence changes, and the value stays `43f24596
   `model` and `endpoint` are their own fields
 - **Do not say a report without the keys had no judge, or a different one**: it predates this proposal
 - **Do not say the four committed judge runs used the same judge build**: their versions cannot be computed afterwards;
-  what is measured is that no commit between their builds touched the prompt or excerpt files
+  what is measured is that between their builds only `run.go`'s escalation rule and vote tally changed in `internal/judge/`
 - **Do not say `rules_version` now covers the judge**: it does not; nothing about it changed
 
 ## Work items
@@ -240,6 +244,7 @@ byte-identical; only the comment sentence changes, and the value stays `43f24596
 |---|---|---|
 | 1 | New tests and the rewritten docs tests, run red | `judge, cmd, report, detect, gen-rules: tests — a --llm report and aguard version cannot say which judge produced the LLM findings (P-031)` |
 | 2 | `judge.PromptVersion` over the call-shape table, `ModelFor`, `SamplesFor` | `judge: PromptVersion hashes every request body the client sends, with the content, model and nonce stood in (P-031)` |
+| 2b | The prompt-version mutation test stops naming prompt words (found by the manual mutation below) | `judge: test — the prompt-version mutations find what they change by the request envelope, so rewording a prompt needs no test edit (P-031)` |
 | 3 | `judge.ExcerptVersion` in `ground.go`, pinned with the golden digest | `judge: ExcerptVersion names how an artifact becomes the excerpt and how a quote is grounded, pinned to a golden (P-031)` |
 | 4 | `JudgeSummary` gains the four fields; one constructor in `cmd/aguard` for the three call sites; the version line | `model, cmd: the judge block names prompt_version, excerpt_version, model and samples, and aguard version prints the two versions (P-031)` |
 | 5 | The identity line in the terminal, markdown and HTML reports | `report: one line under the judge summary names the model, samples and the two judge versions when the judge ran (P-031)` |
@@ -279,3 +284,28 @@ byte-identical; only the comment sentence changes, and the value stays `43f24596
    (P-002 open question 4), and it decides, like the excerpt, what text a given artifact puts in front of the model.
    `PromptVersion` stays the computed half: what is wrapped around any excerpt.
    **Decided (2026-10-10)**: as recommended.
+
+**Follow-ups, named and not done**: after PR #47 merges — `aguard llm preview` prints the two versions; the triage
+messages restated in `prompt_version.go` call #47's `triagePayload` / `fenced`; `judge.ModelFor` becomes #47's
+`RequestModel`. In `baselines/` — the ledger records `prompt_version`, `excerpt_version`, `model` and `samples` per
+row, and the bench fold reads `judge.samples` from the JSON instead of `run.yaml`. Neither version covers consensus,
+severity clamping or the advisory-only table; whether those deserve a version of their own is a separate question.
+
+## Done
+
+```
+Merged: PR to be opened (2026-10-10; find the sha with git log --grep P-031 after the merge)
+Released: pending release
+Evidence: W1 red on origin/main 0cc9391 for the reasons the criteria give: internal/judge does not compile (undefined callShape, callShapes, shapeBodies, modelStandIn, nonceStandIn, ExcerptVersion); cmd/aguard does not compile (undefined judge.ModelFor / judge.PromptVersion / judge.ExcerptVersion, JudgeSummary has no PromptVersion / ExcerptVersion / Model); internal/report does not compile (unknown fields PromptVersion, ExcerptVersion, Model, Samples in JudgeSummary); TestRulesVersionDocs_NameTheJudgeInItsOwnBlock red 18 (each of the six passages lacks prompt_version and excerpt_version and still says "only through tool_version" or its Chinese equivalent); TestRulesDocHeaderPutsTheJudgeOutsideRulesVersion red 3 (header lacks `prompt_version`, `excerpt_version`, still says "only through `tool_version`")
+Evidence: TestPromptVersion_HashesWhatTheClientSends (internal/judge/prompt_version_test.go) green after W2: 49 shapes (6 passes x 4 content variants x 2 temperatures + triage with 41 items), each body the real HTTPClient sent through httptest equals, nonce masked, the body hashed. Mutations, all reverted: the triage join "triageTask+\" \"+barrierRule" given a second space -> red "triage: the client sent ... but PromptVersion hashed"; chatRequest gains max_tokens set in chat() -> red in this test and in TestPromptVersion_EveryInputIsDecided ("chatRequest.MaxTokens is not decided"); Request gains a field -> red "Request.Hint is not decided"; a seventh Mode constant -> red "judge.go declares 7 Mode constants ..., the call shapes cover 6"
+Evidence: TestPromptVersion_MovesWithWhatShapesTheAnswer and TestPromptVersion_IsStable green after W2/W2b: 8 edits each move the version, pairwise distinct; the value is e863a9dc881c. Manual mutation: "legitimately" -> "plainly" in injectionTask moves `aguard version`'s judge-prompt= from e863a9dc881c to 96be0f481ade; with W2's test that edit failed the test's own word lookup, which is why W2b locates edits by the envelope; after W2b the judge, cmd and report packages are green with the word changed; reverted
+Evidence: TestExcerptVersion_IsPinnedWithItsGolden (internal/judge/excerpt_version_test.go) green after W3, pinned {1, 47f51be199b21e6a}; the fixture plans 11 calls (intent, injection, deobfuscation, collusion and triage for the skill; injection for CLAUDE.md, the command and the connector; injection and capability for the hook; MCP config) and grounds 13 quotes against each. Mutations, all reverted: maxFileBytes 2000 -> 1500, the omitted-lines marker reworded, minGroundedChars 16 -> 12, the home scrub removed from egress.redact -> each red "bump ExcerptVersion to 2 in ground.go and pin {version: 2, digest: ...}"; ExcerptVersion 2 alone -> red "pin {version: 2, digest: 47f51be199b21e6a} here, together". Not visible to the fixture: maxFileBytes 2000 -> 1999 (green), as Must not claim says; minGroundedChars 16 -> 12 was invisible too until W3 added a 14-byte quote that lands only under the minimum
+Evidence: TestE2E_ReportNamesItsJudge, TestE2E_JudgeBlockWithoutAConfiguredJudge, TestScanInbox_JudgeSummaryNamesItsJudge, TestRunVersion_JudgeVersionsComeAfterRules (cmd/aguard/judge_summary_test.go) green after W4: scan and check carry prompt_version / excerpt_version / model / samples (fake / 1 as configured; llama3.1 / 1 with no model and samples: 0); the API key, set through AGUARD_LLM_KEY and seen as the bearer token by the endpoint, is in no report; not enabled -> the two versions and no model / samples; no --llm -> no judge block; the Downloads summary names the same judge; the version line is binaryVersionLine(...) + " · judge-prompt=<v> · judge-excerpt=1" exactly, $2 the version
+Evidence: TestJudgeIdentityLine_* (internal/report/judge_identity_test.go) green after W5: the terminal, markdown and HTML reports print the identity line once when the judge ran, nothing when it did not run or without --llm; a model name with U+202E, a backtick run, [x](u) and <b> stays inert in all three
+Evidence: TestRulesVersionDocs_NameTheJudgeInItsOwnBlock and TestRulesDocHeaderPutsTheJudgeOutsideRulesVersion green after W6 (make docs: 2 lines of the docs/rules.md header changed)
+Evidence: what is sent did not change — the capture of "Measured" (scan --llm and check --llm of the scratch fixture against a capture server on 127.0.0.1, samples 1 and 3) with the origin/main build and with this branch's build: 11 / 27 / 4 / 10 request bodies, identical after masking the nonce (cmp, all four); the judge blocks differ only by the four new keys; overall, overall_effective and rules_version identical
+Evidence: reverse assertions green with no line of theirs changed — TestBinaryVersionLine_RulesComeAfterTheExistingFields, TestPluginVersionLine, TestPluginVersionLine_LegacyName, TestApplyBuildInfo, TestRulesVersion_*, TestRulesDocHeaderSaysWhatTheHashCovers, TestHashGolden, TestZeroDial_* (the version row runs the new line), TestE2E_*, TestCheckCmd_*, TestCleanSettingsReportIsUnchanged; TestRulesEpoch_ScopeIsDeterministicOnly with only its doc comment changed. rules_version 43f245966105 before and after
+Evidence: real-machine scan (scan --root ~/.claude --quiet --json), origin/main build -> this branch: overall 69 -> 69, overall_effective 69 -> 69, artifacts 181 -> 181, 806 scoring findings on both sides with identical counts per (rule_id, severity), notes 10 -> 10, no top-level key added or removed
+Evidence: out of scope — git diff --stat origin/main -- internal/collect internal/gate internal/reputation internal/permcheck internal/clean baselines plugin go.mod go.sum README.md README.zh-CN.md internal/judge/{prompt,judge,run,triage,openai}.go internal/report/sarif.go cmd/aguard/buildinfo.go .github is empty; in internal/detect only comment lines of rules_version.go, the rewritten docs test and one test doc comment
+Evidence: make verify: all gates passed (at 2b205a1 and again after the rebase); go version go1.23.5 (no toolchain switch); go.mod line 2 is go 1.23.5; no new dependency
+```
