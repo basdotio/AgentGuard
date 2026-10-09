@@ -180,8 +180,15 @@ func hygieneLabel(kind string) string {
 // non-specialist can scan twenty file names; nobody scans them inside a paragraph), and the
 // rationale folded underneath. Notes whose Why does not open with "Not read: a, b, c." keep the
 // whole text as rationale.
+//
+// File is the one file a single-instance note is about, under the same rule the terminal's
+// --verbose block and the markdown report already apply (exactly one evidence entry). Without it a
+// parse failure rendered here as "Parse failed, artifact not fully covered" and named no file —
+// the file IS the finding for that note. A coalesced note lists its instances elsewhere and leaves
+// File empty, as the other two renderers do.
 type htmlNote struct {
 	model.Finding
+	File  string
 	Items []string
 	Rest  string
 }
@@ -190,6 +197,9 @@ func toHTMLNotes(ns []model.Finding) []htmlNote {
 	out := make([]htmlNote, 0, len(ns))
 	for _, n := range ns {
 		h := htmlNote{Finding: n, Rest: n.Why}
+		if len(n.Evidence) == 1 {
+			h.File = n.Evidence[0].File
+		}
 		if rest, ok := strings.CutPrefix(n.Why, "Not read: "); ok {
 			list, tail, _ := strings.Cut(rest, ". ")
 			for _, it := range strings.Split(list, ", ") {
@@ -261,7 +271,7 @@ func buildHTMLData(r model.ScanResult) htmlData {
 	if r.ScannedAt > 0 {
 		scannedAt = time.Unix(r.ScannedAt, 0).UTC().Format("2006-01-02 15:04 UTC")
 	}
-	trust, coverage := splitNotes(notes0(r.Notes))
+	trust, coverage := splitNotes(notesOf(r))
 	var sbBanner, sbWhy string
 	if r.Sandbox != nil {
 		sbBanner = "This scan ran in a temporary cloud environment (Claude Cloud / Cowork), not on your own computer. The score below is about this throwaway sandbox — your real skills, plugins, hooks and connectors live on your machine and were NOT scanned from here. To check your computer, open the Code tab (</>) in the desktop app and run the scan there."
@@ -296,14 +306,6 @@ func gaugeColor(score int) template.CSS {
 	default:
 		return "#ff5f6d"
 	}
-}
-
-// notes0 returns scan-level notes (dim 0 already), ensuring non-nil for the template.
-func notes0(ns []model.Finding) []model.Finding {
-	if ns == nil {
-		return []model.Finding{}
-	}
-	return ns
 }
 
 // owaspCovered / owaspSilent split the catalogue into what this scanner has rules for and what it is

@@ -115,7 +115,8 @@ func writeText(w io.Writer, r model.ScanResult, verbose bool) {
 			det = append(det, g)
 		}
 	}
-	trust, _ := splitNotes(r.Notes)
+	notes := notesOf(r) // the scan's notes and each artifact's own — see notesOf
+	trust, _ := splitNotes(notes)
 
 	// SUMMARY — the part a non-specialist reads. Every sentence is derived from what follows.
 	fmt.Fprintf(w, "\nSummary\n  %s\n", verdictSentence(score.Level(r.Overall), actionable(det), len(det)))
@@ -164,7 +165,7 @@ func writeText(w io.Writer, r model.ScanResult, verbose bool) {
 		}
 	}
 
-	writeNotes(w, r.Notes, verbose)
+	writeNotes(w, notes, verbose)
 	writeScanDetails(w, r)
 }
 

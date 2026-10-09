@@ -258,7 +258,7 @@
     <h2>Not checked <span class="badge">{{len .Coverage}} coverage note(s) — what the scan did not read, and why</span></h2>
     <details>
       <summary>Show the {{len .Coverage}} note(s)</summary>
-      {{range .Coverage}}<div class="note">· {{.Title}} <span class="rid">{{.RuleID}}</span>
+      {{range .Coverage}}<div class="note">· {{.Title}}{{if .File}} — {{.File}}{{end}} <span class="rid">{{.RuleID}}</span>
         {{if .Items}}<div class="chips">{{range .Items}}<span class="chip">{{.}}</span>{{end}}</div>{{end}}
         {{if .Rest}}<details class="inner"><summary>Why it was skipped</summary><div class="why">{{.Rest}}</div></details>{{end}}
       </div>{{end}}
