@@ -106,20 +106,25 @@ const explainTask = "You are a security reviewer. Inside the data block are stri
 
 // systemPrompt builds the full system message for a flagged-verdict mode, including the barrier.
 func systemPrompt(mode Mode, nonce string) string {
-	task := intentTask
+	return modeTask(mode) + " " + barrierRule(nonce)
+}
+
+// modeTask is the part of a mode's system message that does not depend on the call: what the
+// model is asked. The barrier rule after it names the call's nonce, so it is not part of this.
+func modeTask(mode Mode) string {
 	switch mode {
 	case ModeInjection:
-		task = injectionTask
+		return injectionTask
 	case ModeExplain:
-		task = explainTask
+		return explainTask
 	case ModeCapability:
-		task = capabilityTask
+		return capabilityTask
 	case ModeMCPConfig:
-		task = mcpConfigTask
+		return mcpConfigTask
 	case ModeCollusion:
-		task = collusionTask
+		return collusionTask
 	}
-	return task + " " + barrierRule(nonce)
+	return intentTask
 }
 
 // sectionLabels name the two halves of a two-sided comparison per mode.
@@ -137,23 +142,32 @@ func sectionLabels(mode Mode) (declared, behavior string) {
 // inside the nonce fence — including a hook's event/matcher, which is config the artifact
 // controls; nothing artifact-controlled may sit outside it.
 func userPrompt(r Request, nonce string) string {
+	return fenced(judgePayload(r), nonce)
+}
+
+// fenced puts a payload between two lines naming the call's nonce.
+func fenced(payload, nonce string) string {
 	fence := "===AGUARD:" + nonce + "==="
-	var inner string
+	return fmt.Sprintf("%s\n%s\n%s", fence, payload, fence)
+}
+
+// judgePayload is the text a judge call carries inside its fence. It is the ONE renderer of it:
+// the client sends it and Plan shows it (P-027), so the preview cannot show a payload the client
+// would not send.
+func judgePayload(r Request) string {
 	if !r.twoSided() {
-		inner = r.Behavior
-		if inner == "" {
-			inner = "(no content)"
+		if r.Behavior == "" {
+			return "(no content)"
 		}
-	} else {
-		declared, behavior := r.Declared, r.Behavior
-		if declared == "" {
-			declared = "(not declared)"
-		}
-		if behavior == "" {
-			behavior = "(no readable behavior found)"
-		}
-		dLabel, bLabel := sectionLabels(r.Mode)
-		inner = dLabel + "\n" + declared + "\n\n" + bLabel + "\n" + behavior
+		return r.Behavior
 	}
-	return fmt.Sprintf("%s\n%s\n%s", fence, inner, fence)
+	declared, behavior := r.Declared, r.Behavior
+	if declared == "" {
+		declared = "(not declared)"
+	}
+	if behavior == "" {
+		behavior = "(no readable behavior found)"
+	}
+	dLabel, bLabel := sectionLabels(r.Mode)
+	return dLabel + "\n" + declared + "\n\n" + bLabel + "\n" + behavior
 }
