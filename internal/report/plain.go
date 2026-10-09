@@ -176,10 +176,7 @@ func unreadLoaded(r model.ScanResult) bool {
 		return true
 	}
 	for _, n := range r.Notes {
-		switch {
-		case n.RuleID == "IO-000", n.RuleID == "PARSE-000":
-			return true
-		case n.RuleID == "COV-000" && !deliberateSkip[n.Title]:
+		if fileNotRead(n) || (n.RuleID == "COV-000" && !deliberateSkip(n.Title)) {
 			return true
 		}
 	}
@@ -193,24 +190,36 @@ func unreadLoaded(r model.ScanResult) bool {
 	return false
 }
 
-// deliberateSkip names the scan-level COV-000 notes that disclose a skip of something that is not
-// loaded, or that was read after all — the only scan-level coverage notes that leave "looks safe"
-// alone. All four share one rule id, one place and one source with the gaps, so the title is the one
-// thing in the data that tells them apart; it is compared through the producers' own exported
-// constants, the way detect's coalescer matches them, so a reworded title moves both sides at once
-// and the report holds no title text of its own.
-var deliberateSkip = map[string]bool{
-	// The user's own sessions/, file-history/ at the top of the root: no collector owns them and
-	// nothing loads them; present on nearly every real machine (decided by the maintainer, 2026-10-09).
-	collect.UnownedNoteTitle: true,
-	// Nothing was collected, so nothing loaded went unread; the Checked line says so.
-	collect.EmptyRootNoteTitle: true,
-	// node_modules/, vendor/, .git/, coverage/ inside an artifact: skipped by name on purpose, and
-	// common on real machines. An artifact that points the agent INTO one raises SUP-004, which hedges.
-	detect.GeneratedDirNoteTitle: true,
-	// A hook's script found inside its plugin's tree: read in full with the plugin; only the per-hook
-	// attribution is missing.
-	detect.HookOwnedNoteTitle: true,
+// fileNotRead is a scan-level note saying a file a collector found could not be read (IO-000) or
+// parsed (PARSE-000). One predicate for the two places that ask: the headline (unreadLoaded) and
+// the Checked line, which names the file (scanGaps).
+func fileNotRead(n model.Finding) bool { return n.RuleID == "IO-000" || n.RuleID == "PARSE-000" }
+
+// deliberateSkip reports whether a scan-level COV-000 title is one of the four notes that disclose a
+// skip of something that is not loaded, or that was read after all — the only scan-level coverage
+// notes that leave "looks safe" alone. All four share one rule id, one place and one source with the
+// gaps, so the title is the one thing in the data that tells them apart; it is compared through the
+// producers' own exported constants, the way detect's coalescer matches them, so a reworded title
+// moves both sides at once and the report holds no title text of its own.
+func deliberateSkip(title string) bool {
+	switch title {
+	case collect.UnownedNoteTitle:
+		// The user's own sessions/, file-history/ at the top of the root: no collector owns them and
+		// nothing loads them; present on nearly every real machine (decided by the maintainer, 2026-10-09).
+		return true
+	case collect.EmptyRootNoteTitle:
+		// Nothing was collected, so nothing loaded went unread; the Checked line says so.
+		return true
+	case detect.GeneratedDirNoteTitle:
+		// node_modules/, vendor/, .git/, coverage/ inside an artifact: skipped by name on purpose, and
+		// common on real machines. An artifact that points the agent INTO one raises SUP-004, which hedges.
+		return true
+	case detect.HookOwnedNoteTitle:
+		// A hook's script found inside its plugin's tree: read in full with the plugin; only the per-hook
+		// attribution is missing.
+		return true
+	}
+	return false
 }
 
 // countClause is the counting half of the verdict, with its leading space.
@@ -395,7 +404,7 @@ func itemGaps(r model.ScanResult) []gap {
 func scanGaps(r model.ScanResult) []gap {
 	var out []gap
 	for _, n := range r.Notes {
-		if n.RuleID != "IO-000" && n.RuleID != "PARSE-000" {
+		if !fileNotRead(n) {
 			continue
 		}
 		where := n.Title
