@@ -157,7 +157,7 @@ fixture 都在 `t.TempDir()` 现搭,与现有测试同一写法。
 ## 完成
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-024 找)
+合入:PR #36(2026-10-09;sha 用 git log --grep P-024 找)
 发布:待发
 证据:实测(本机 Claude Code 2.1.107,隔离 CLAUDE_CONFIG_DIR,claude -p 在回环抓包服务器回 400 后退出):规则 InstructionsLoaded 两级各 7 种前导形状 + 用户级 17 种 paths 值;skill 清单 7 种前导形状、命令与子 agent 各 4 种。结果即「问题」一节两张表
 证据:W1 在 fd28344 上红,原因与判据一致:TestPathScoped_MatchesClaudeCode 23 行里红 13 行,恰好是表里"不一致"的 3 种前导形状 + 10 种 paths 值,均为 "PathScoped = true, want false";TestPathScoped_BraceExpansionIsBounded 的 "every expansion empty" 红(不展开,答 true);TestReadSkill_FrontmatterMustStartAtTheFirstByte 三种前导各红(读出 probe/probe description,Body 只有 "\n# Body\n",BodyLine 4/5/5);TestSplitFrontmatter 的 leading blank + bom 红;TestCollectRules_PathScopedOnlyWhenClaudeCodeHonoursIt 红 3 条(blank、bom、nothing 都带 (path-scoped));TestContextBloat_OnlyForADescriptionClaudeCodeLists 红(targets = [listed ignored])→ W2 后前导字节相关全绿,W3 后全绿
