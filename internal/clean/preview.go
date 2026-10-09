@@ -49,9 +49,10 @@ const (
 // preview writes a short description of what sits at path: size, content hash prefix, and either the
 // first few lines (a file) or the entry names (a directory).
 //
-// Content is REDACTED before printing. It comes from a quarantined tree, which is exactly the content
-// this tool exists to be suspicious of, and a restore preview that leaked a credential into a terminal
-// or CI log would be a self-inflicted version of the leak the scanner reports.
+// Content is REDACTED whole before it is cut and printed (redactClip). It comes from a quarantined
+// tree, which is exactly the content this tool exists to be suspicious of, and a restore preview that
+// leaked a credential into a terminal or CI log would be a self-inflicted version of the leak the
+// scanner reports.
 func preview(w io.Writer, path string) {
 	fi, err := os.Lstat(path)
 	if err != nil {
@@ -63,7 +64,7 @@ func preview(w io.Writer, path string) {
 		// A symlink in the trash is refused before this point; describing it rather than following it
 		// keeps the preview from becoming a way to read through one.
 		target, _ := os.Readlink(path)
-		fmt.Fprintf(w, "      symlink → %s\n", detect.Redact(clip(target)))
+		fmt.Fprintf(w, "      symlink → %s\n", redactClip(target))
 	case fi.IsDir():
 		previewDir(w, path)
 		previewRisk(w, path)
@@ -119,7 +120,7 @@ func previewRisk(w io.Writer, path string) {
 	}
 	fmt.Fprintf(w, "      ⚠ scan of the quarantined copy: %s\n", strings.Join(parts, ", "))
 	for _, t := range worst {
-		fmt.Fprintf(w, "      ⚠   %s\n", detect.Redact(clip(t)))
+		fmt.Fprintf(w, "      ⚠   %s\n", redactClip(t))
 	}
 }
 
@@ -140,7 +141,7 @@ func previewFile(w io.Writer, path string, size int64) {
 		if line == "" {
 			continue
 		}
-		fmt.Fprintf(w, "      │ %s\n", detect.Redact(clip(line)))
+		fmt.Fprintf(w, "      │ %s\n", redactClip(line))
 		shown++
 	}
 	if shown == 0 {
@@ -171,9 +172,16 @@ func previewDir(w io.Writer, dir string) {
 			fmt.Fprintf(w, "      │ … and %d more\n", len(names)-previewEntries)
 			break
 		}
-		fmt.Fprintf(w, "      │ %s\n", detect.Redact(clip(n)))
+		fmt.Fprintf(w, "      │ %s\n", redactClip(n))
 	}
 }
+
+// redactClip is every preview line that quotes text: REDACT the whole value, THEN cut it to the width —
+// the order of invariant #3 and the same shape as detect.redactClip (which cuts at 200, not 100).
+// The other order was here first: a token that starts before byte 100 and ends after it was cut to a
+// head shorter than its pattern and than the entropy pass's floor, and the head of the key reached the
+// terminal. Redacted whole, what gets cut is already <REDACTED>.
+func redactClip(s string) string { return clip(detect.Redact(s)) }
 
 func clip(s string) string {
 	if len(s) <= previewWidth {
