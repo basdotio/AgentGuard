@@ -258,7 +258,10 @@ replacement on the static `File` fields in triage evidence. MCP configuration go
 lines (`detect.ConfigLines`, the same leaves the static pass reads): command, args, env, url and
 headers first, each line capped at 500 bytes, a cut disclosed as `LLM-000`, and a value whose key
 names a credential withheld. It stays out of `Redact` because that is the exit for every static
-snippet.
+snippet. In the same step, between that redaction and the home replacement, a run of more than
+128 bytes of whitespace or invisible characters inside a line becomes the one space grounding reads
+it as, so padding cannot spend an excerpt's byte caps and push a directive out of what is sent; the
+folded text is redacted once more, since the fold can join what the run kept apart.
 
 Two properties matter more than the passes:
 

@@ -25,7 +25,11 @@ Bearer 头,明文 http 等于把它送上网),setup/test/judge 三处都过它,j
 干净;三段"这是公开信息、AppSec 审过"的注释是写给判官看的,解释器从不读注释,判官也不该读。**改了摘录就必须改 `lineMap`**:
 `sourceUnit.lineMap` 把摘录的每一行映射回原文行号,`ground()` 优先用它——摘录不再和文件连续,`firstLine + 偏移` 会引用
 错行,而一条真发现引到错的位置比没有更糟(读者去看、没看到、以后不信)。`TestBehaviorExcerpt_PayloadBelowPaddingReachesTheModel`
-钉住"payload 进摘录 + 引用行号正确"两件事。intent 提示词多了一类**"披露了也要报"**(改包源、写 git hook / shell 启动文件 /
+钉住"payload 进摘录 + 引用行号正确"两件事。**行内垫料在 `eg.redact` 里折掉**(`foldPadding`,P-020):连续超过 128 字节的空白 / 不可见字符折成落地读它的样子。
+三个不要:**别挪到第一遍 Redact 之前**(熵规则按整串判,拼上低熵尾巴的 token 会漏);**别去掉折过之后的第二遍 Redact**
+(被零宽字符切开的 key 会以拼好的样子发出去);**别让它跨 `\n`**(`lineMap` 就错了)。`TestEgress_PaddingIsFoldedBetweenRedactions`
+三条各对应一种挪法;阈值低于 128 会吃真实缩进(实测最长 121)。P-006 的 600 字节垫料测试折叠后走不到 `collapsedWindow`,
+`TestRun_PaddingBelowTheFoldStillShowsTheDirective` 替它守着那条路。intent 提示词多了一类**"披露了也要报"**(改包源、写 git hook / shell 启动文件 /
 定时任务):dev-env-setup 那个样本的描述老老实实写着"配置企业 npm 镜像",按"目的已披露不报"的老规则判官放行了它。LLM-005
 的 `Why` 现在带最多三条没落地的引文(截 120 字符,再过一次 Redact),用来区分"模型在转述"和"摘录切掉了它要引的那行"。
 **趟数按 artifact 种类选**(`judge/run.go` 里的 mode 表,不是固定四趟):injection(`LLM-003`,
