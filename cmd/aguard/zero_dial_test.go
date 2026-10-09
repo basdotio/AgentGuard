@@ -245,6 +245,10 @@ func zeroDialControl(fx zeroDialFixture) []controlCase {
 			_, err := scanInbox(fx.downloads, true, scanOpts{cfgPath: fx.on, llm: true, quiet: true})
 			return err
 		}}},
+		{"check --llm", dialCase{"check --llm", func() error {
+			_, err := checkTarget(fx.skill, scanOpts{cfgPath: fx.on, llm: true, quiet: true})
+			return err
+		}}},
 		{"llm test", dialCase{"llm test", func() error {
 			// Refused by the counter, so it must report the endpoint as not answering.
 			if err := runLLMTest(io.Discard, fx.on); err == nil || !strings.Contains(err.Error(), "did not answer") {
@@ -262,7 +266,8 @@ const lateRequestSettle = 50 * time.Millisecond
 
 // TestZeroDial_OnlyTheJudgeConnects pins invariant #1: with the judge ENABLED in the config, the
 // only entry points that send anything are `scan --llm` (the environment and the Downloads items
-// it covers) and `llm test`. Everything else sends nothing, however the config reads.
+// it covers), `check --llm` (one target) and `llm test`. Everything else sends nothing, however
+// the config reads.
 func TestZeroDial_OnlyTheJudgeConnects(t *testing.T) {
 	judgeRT, defaultRT := installDialCounters(t)
 	fx := newZeroDialFixture(t)
@@ -364,6 +369,10 @@ func TestZeroDial_OnlyTheJudgeConnects(t *testing.T) {
 		}},
 		{"check", func() error {
 			_, err := checkTarget(fx.skill, scanOpts{cfgPath: fx.on}) // the opts `check` passes
+			return err
+		}},
+		{"check --llm with llm.enabled: false", func() error {
+			_, err := checkTarget(fx.skill, scanOpts{cfgPath: fx.off, llm: true, quiet: true})
 			return err
 		}},
 		{"hook PreToolUse", hook(preEvent, func(o gate.Output) error {
