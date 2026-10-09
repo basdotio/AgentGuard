@@ -51,11 +51,13 @@ func ReadMarkdown(path string) SkillMeta {
 	return m
 }
 
-// PathScoped reports whether a markdown artifact's frontmatter carries a `paths:` key.
+// PathScoped reports whether Claude Code would load a rule only for matching files: its frontmatter
+// starts at the first byte and its `paths:` keep at least one glob the loader uses (honoursPaths).
 //
 // It answers a LOADING question, not a content one: a rule with `paths:` enters context only when
 // Claude touches a matching file, while one without it loads every session. Both are scanned; the
-// distinction is what a reader needs to judge how much a given rule costs them.
+// distinction is what a reader needs to judge how much a given rule costs them. The key alone is not
+// the answer — `paths: []` loads every session too (P-024) — and a false yes here understates it.
 //
 // Deliberately parsed into a permissive map rather than added to SkillMeta. `paths:` is written as
 // a list, but nothing stops a file carrying a scalar, and a typed field would make yaml reject the
@@ -74,8 +76,7 @@ func PathScoped(path string) bool {
 	if yaml.Unmarshal([]byte(front), &doc) != nil {
 		return false
 	}
-	v, ok := doc["paths"]
-	return ok && v != nil
+	return honoursPaths(doc["paths"])
 }
 
 const bom = "\uFEFF"
