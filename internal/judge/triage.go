@@ -39,27 +39,37 @@ func (c *HTTPClient) Triage(ctx context.Context, artifact string, items []Triage
 	if len(items) == 0 {
 		return nil, nil
 	}
-	if len(items) > maxTriageItems {
-		items = items[:maxTriageItems]
-	}
+	items, _ = triageSent(items)
 	nonce, err := newNonce()
 	if err != nil {
 		return nil, err
 	}
-	var b strings.Builder
-	for _, it := range items {
-		fmt.Fprintf(&b, "[%s] %s\n", it.RuleID, it.Evidence)
-	}
-	fence := "===AGUARD:" + nonce + "==="
-	user := fmt.Sprintf("%s\n%s\n%s", fence, b.String(), fence)
-
 	// Temperature 0: triage produces display labels, never a finding, so there is nothing
 	// to take a vote on and no reason to pay for variance.
-	content, err := c.chat(ctx, triageTask+" "+barrierRule(nonce), user, 0)
+	content, err := c.chat(ctx, triageTask+" "+barrierRule(nonce), fenced(triagePayload(items), nonce), 0)
 	if err != nil {
 		return nil, err
 	}
 	return parseTriage(content, items), nil
+}
+
+// triageSent is the part of an artifact's items a triage call carries — the first maxTriageItems —
+// and how many it leaves out.
+func triageSent(items []TriageItem) ([]TriageItem, int) {
+	if len(items) > maxTriageItems {
+		return items[:maxTriageItems], len(items) - maxTriageItems
+	}
+	return items, 0
+}
+
+// triagePayload is the text a triage call carries inside its fence, one `[RULE] evidence` line per
+// item. Like judgePayload it is the one renderer the client sends and Plan shows (P-027).
+func triagePayload(items []TriageItem) string {
+	var b strings.Builder
+	for _, it := range items {
+		fmt.Fprintf(&b, "[%s] %s\n", it.RuleID, it.Evidence)
+	}
+	return b.String()
 }
 
 // parseTriage extracts the labels object from a reply, tolerating prose/fences around it.

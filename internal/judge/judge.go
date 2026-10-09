@@ -157,6 +157,31 @@ func capBytes(s string, max int) string {
 	return s[:cut] + ellipsis
 }
 
+// modeRow is what a mode's verdict is: the pass a reader knows it by, the rule ID it carries, the
+// dimension it lands in and its title. finding() and Plan read the same row, so the preview names a
+// call by the rule its verdict would carry.
+type modeRow struct {
+	pass, rule string
+	dim        int
+	title      string
+}
+
+func modeInfo(m Mode) modeRow {
+	switch m {
+	case ModeInjection:
+		return modeRow{"injection", "LLM-003", dimInjection, "Hidden prompt injection (LLM judge — advisory, not confirmed)"}
+	case ModeExplain:
+		return modeRow{"deobfuscation", "LLM-004", dimObfusc, "Decoded obfuscated payload (LLM judge — advisory, not confirmed)"}
+	case ModeCollusion:
+		return modeRow{"collusion", "LLM-006", dimCollusion, "Cross-file capability chain (LLM judge — advisory, not confirmed)"}
+	case ModeCapability:
+		return modeRow{"capability", "LLM-008", dimCapability, "Hook capability exceeds its interception point (LLM judge — advisory, not confirmed)"}
+	case ModeMCPConfig:
+		return modeRow{"mcp-config", "LLM-009", dimSupplyChain, "MCP server configuration risk (LLM judge — advisory, not confirmed)"}
+	}
+	return modeRow{"intent", "LLM-001", dimIntent, "Intent mismatch (LLM judge — advisory, not confirmed)"}
+}
+
 // finding converts a flagged verdict into an advisory finding. Returns nil when nothing was
 // flagged. RuleID/dimension/title depend on the mode. The finding has no location yet: only
 // grounding supplies one (groundedFinding), together with the snippet — so nothing the model
@@ -166,19 +191,8 @@ func finding(r Request, v Verdict) *model.Finding {
 	if !v.Flagged {
 		return nil
 	}
-	ruleID, dim, title := "LLM-001", dimIntent, "Intent mismatch (LLM judge — advisory, not confirmed)"
-	switch r.Mode {
-	case ModeInjection:
-		ruleID, dim, title = "LLM-003", dimInjection, "Hidden prompt injection (LLM judge — advisory, not confirmed)"
-	case ModeExplain:
-		ruleID, dim, title = "LLM-004", dimObfusc, "Decoded obfuscated payload (LLM judge — advisory, not confirmed)"
-	case ModeCollusion:
-		ruleID, dim, title = "LLM-006", dimCollusion, "Cross-file capability chain (LLM judge — advisory, not confirmed)"
-	case ModeCapability:
-		ruleID, dim, title = "LLM-008", dimCapability, "Hook capability exceeds its interception point (LLM judge — advisory, not confirmed)"
-	case ModeMCPConfig:
-		ruleID, dim, title = "LLM-009", dimSupplyChain, "MCP server configuration risk (LLM judge — advisory, not confirmed)"
-	}
+	info := modeInfo(r.Mode)
+	ruleID, dim, title := info.rule, info.dim, info.title
 	// Redact, then cap (invariant #3). The cap applies to the model's sentence only: consensus
 	// appends the vote afterwards (tally), and the vote must always be readable.
 	why := capBytes(detect.Redact(v.Summary), maxWhyBytes)

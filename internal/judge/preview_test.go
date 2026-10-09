@@ -259,3 +259,26 @@ func TestRequestModel(t *testing.T) {
 		t.Errorf("default model: preview says %q, the client sends %q", got, want)
 	}
 }
+
+// TestPlan_TriageCapIsShown: triage sends the first 40 static findings of an artifact; Plan shows
+// those 40, says how many it left out, and the endpoint receives what Plan shows.
+func TestPlan_TriageCapIsShown(t *testing.T) {
+	a := model.ArtifactReport{Kind: model.KindPermission, Name: "permissions", Path: filepath.Join(t.TempDir(), "settings.json")}
+	for i := 0; i < maxTriageItems+5; i++ {
+		a.Findings = append(a.Findings, model.Finding{RuleID: fmt.Sprintf("PERM-%03d", i), Dimension: 2, Severity: model.SevLow,
+			Source: model.SrcStatic, Evidence: []model.Evidence{{File: "settings.json", Line: i + 1, Snippet: "Bash(*)"}}})
+	}
+	plan := Plan([]model.ArtifactReport{a}, Options{})
+	if len(plan) != 1 || plan[0].Pass != "triage" {
+		t.Fatalf("want one triage call, got %+v", plan)
+	}
+	if got := strings.Count(plan[0].Payload, "\n"); got != maxTriageItems {
+		t.Errorf("triage payload carries %d line(s), want %d", got, maxTriageItems)
+	}
+	if want := "5 static finding(s) past the first 40 not sent"; plan[0].Shortened != want {
+		t.Errorf("shortened: got %q, want %q", plan[0].Shortened, want)
+	}
+	srv, sent := captureServer(t)
+	Run(context.Background(), NewHTTP(srv.URL, "", "", srv.Client()), []model.ArtifactReport{a}, Options{})
+	diffKeys(t, plannedKeys(plan, RequestModel("")), capturedKeys(sent()))
+}

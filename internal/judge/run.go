@@ -235,19 +235,8 @@ func Run(ctx context.Context, c Client, arts []model.ArtifactReport, opts Option
 	// snapshots each artifact's static findings before advisory ones are appended (triage must
 	// judge the deterministic findings, not the judge's own output), and it makes the budget
 	// cut deterministic — a counter raced by workers would drop a different set each run.
-	tasks := buildTasks(arts, opts.Samples, newEgress(userHome(), opts.Home))
-	var notes []model.Finding
-	stats := Stats{}
-	if over := len(tasks) - opts.MaxCalls; opts.MaxCalls > 0 && over > 0 {
-		notes = append(notes, coverageNote(fmt.Sprintf(
-			"call budget (llm.max_calls=%d) reached: %d planned call(s) covering %s were NOT made",
-			opts.MaxCalls, over, artifactSpan(tasks[opts.MaxCalls:]))))
-		stats.Skipped = over
-		tasks = tasks[:opts.MaxCalls]
-	}
-	if n, ok := shortenedNote(tasks); ok {
-		notes = append(notes, n)
-	}
+	tasks, refused, notes := schedule(arts, opts)
+	stats := Stats{Skipped: len(refused)}
 	if len(tasks) == 0 {
 		return notes, stats
 	}
@@ -349,6 +338,23 @@ func Run(ctx context.Context, c Client, arts []model.ArtifactReport, opts Option
 		})
 	}
 	return notes, stats
+}
+
+// schedule is a run's plan: the calls it will make, in order, and the calls the budget
+// (llm.max_calls) refuses, with the notes that say what will not be seen. Run makes the first;
+// Plan shows both — one function, so the preview cannot plan a run of its own (P-027).
+func schedule(arts []model.ArtifactReport, opts Options) (send, refused []task, notes []model.Finding) {
+	send = buildTasks(arts, opts.Samples, newEgress(userHome(), opts.Home))
+	if over := len(send) - opts.MaxCalls; opts.MaxCalls > 0 && over > 0 {
+		notes = append(notes, coverageNote(fmt.Sprintf(
+			"call budget (llm.max_calls=%d) reached: %d planned call(s) covering %s were NOT made",
+			opts.MaxCalls, over, artifactSpan(send[opts.MaxCalls:]))))
+		send, refused = send[:opts.MaxCalls], send[opts.MaxCalls:]
+	}
+	if n, ok := shortenedNote(send); ok {
+		notes = append(notes, n)
+	}
+	return send, refused, notes
 }
 
 // userHome is the OS user's home directory, or "" when the environment does not say — in which

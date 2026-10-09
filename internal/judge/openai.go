@@ -68,13 +68,10 @@ func NewHTTP(baseURL, apiKey, model string, httpClient *http.Client) *HTTPClient
 	if httpClient == nil {
 		httpClient = &http.Client{Transport: Transport, CheckRedirect: sameOriginOnly}
 	}
-	if model == "" {
-		model = "llama3.1"
-	}
 	return &HTTPClient{
 		baseURL: strings.TrimRight(baseURL, "/"),
 		apiKey:  apiKey,
-		model:   model,
+		model:   RequestModel(model),
 		http:    httpClient,
 	}
 }
