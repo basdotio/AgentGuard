@@ -72,6 +72,11 @@ docs:
 #   make bench BENCH_THRESHOLD=medium           # the second group; publish both, never one
 #   make bench CORPUS=/elsewhere/agent-artifact-corpus
 #
+# `corpus score` takes the verdicts file alone: the harness dropped its -tool flag on 2026-09-23
+# (corpus commit 5c2ac85), and until this line followed, the third step died with
+# "cannot read verdicts: open -tool" AFTER the ten-minute driver run had finished — the verdicts
+# were on disk, the scorecard never printed, and make reported the whole bench as failed.
+#
 # Read the scorecard with docs/corpus-benchmark.zh-CN.md §2 open: per source, with n,
 # reputation off, and the uncovered count stated — a pooled percentage from this output is the
 # 11.0%-that-was-12.9% mistake again.
@@ -85,7 +90,7 @@ bench: build
 	go run ./baselines/cmd/baseline -tool aguard -aguard $(BIN) -corpus $(CORPUS) \
 	  -threshold $(BENCH_THRESHOLD) -samples $(BENCH_OUT)/samples.jsonl \
 	  -out $(BENCH_OUT) -raw $(BENCH_OUT)/raw -score-tool aguard
-	cd $(CORPUS)/harness && go run ./cmd/corpus score -tool aguard $(abspath $(BENCH_OUT))/verdicts.jsonl
+	cd $(CORPUS)/harness && go run ./cmd/corpus score $(abspath $(BENCH_OUT))/verdicts.jsonl
 
 # Renew allowlist entries whose marketplace pin moved WITHOUT changing the finding set the
 # human review covered (see hack/reputation-refresh). Exits 1 and prints the diff when a set
