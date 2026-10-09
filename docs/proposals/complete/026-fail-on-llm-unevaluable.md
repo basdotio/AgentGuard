@@ -142,7 +142,7 @@ exit codes.
 ## Done
 
 ```
-Merged: PR to be opened (2026-10-10; find the sha with git log --grep P-026 after the merge)
+Merged: PR #46 (2026-10-10; find the sha with git log --grep P-026)
 Released: pending release
 Evidence: TestFailGate_LLMGateNotEvaluable and TestFailOnLLM_ExitCodesWhenTheJudgeIsBlind (cmd/aguard/fail_on_llm_test.go): red on the base
   (re-run on origin/main 0cc9391 after the rebase) on exactly the 16 not-evaluable rows — 4 unit rows return nil, 12 binary rows
