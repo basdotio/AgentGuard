@@ -92,12 +92,16 @@ func scanEnv(root string, o scanOpts) (model.ScanResult, error) {
 		return model.ScanResult{}, err
 	}
 	o.autoBaseline = true
-	// From the ABSOLUTE root: filepath.Dir(".claude") is ".", which the judge used to read as "no
-	// home" and so replaced nothing; and for --root . the parent of "." is "." again, the root itself.
-	if abs, err := filepath.Abs(root); err == nil {
+	// Analysed under the root collect anchored, not the one typed: collect's paths are absolute, and
+	// detect relates evidence to the root it is given — a relative one cannot be related to them.
+	res := collect.CollectAll(root)
+	// The judge's home comes from that same ABSOLUTE root: filepath.Dir(".claude") is ".", which the
+	// judge used to read as "no home" and so replaced nothing; and for --root . the parent of "." is
+	// "." again, the root itself.
+	if abs, err := filepath.Abs(res.Root); err == nil {
 		o.home = filepath.Dir(abs)
 	}
-	return analyze(root, collect.CollectAll(root), o)
+	return analyze(res.Root, res, o)
 }
 
 // checkTarget audits a single skill/dir/file (the `check` gate) — NOT a root.
@@ -125,6 +129,9 @@ func checkTarget(path string, o scanOpts) (model.ScanResult, error) {
 	res, err := collect.CollectTarget(path)
 	if err != nil {
 		return model.ScanResult{}, err
+	}
+	if res.Root != "" {
+		path = res.Root // a target laid out as a root went through CollectAll, which anchored it
 	}
 	return analyze(path, res, o)
 }
