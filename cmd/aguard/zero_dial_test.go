@@ -411,6 +411,9 @@ func TestZeroDial_OnlyTheJudgeConnects(t *testing.T) {
 			})
 		}},
 		{"llm status", func() error { return runLLMStatus(io.Discard, fx.on) }},
+		{"llm preview <target>", previewRow(previewOpts{cfgPath: fx.on, target: fx.skill, json: true}, false)},
+		{"llm preview (environment, Downloads items)", previewRow(previewOpts{cfgPath: fx.on, root: fx.root,
+			inbox: fx.downloads, inboxExplicit: true, json: true}, true)},
 		{"hash", func() error { _, err := collect.CollectTarget(fx.skill); return err }},
 	}
 	silent = append(silent, zeroDialVersionRows(fx)...)
@@ -435,6 +438,30 @@ func TestZeroDial_OnlyTheJudgeConnects(t *testing.T) {
 	// the test ends, and a request after that reaches the real transport unseen.
 	time.Sleep(lateRequestSettle)
 	nothingPending("the counters are put back")
+}
+
+// previewRow runs `llm preview` the way its command does, with the judge enabled in the config.
+// It must have planned something — the exfil skill alone gets three calls — and, for the
+// environment, the Downloads item too: a preview that planned nothing sends nothing for the
+// wrong reason.
+func previewRow(o previewOpts, wantDownloads bool) func() error {
+	return func() error {
+		var out bytes.Buffer
+		if err := runLLMPreview(&out, o); err != nil {
+			return err
+		}
+		var d struct {
+			Calls     int               `json:"calls"`
+			Downloads []json.RawMessage `json:"downloads"`
+		}
+		if err := json.Unmarshal(out.Bytes(), &d); err != nil {
+			return fmt.Errorf("preview output is not JSON (%v): %s", err, out.String())
+		}
+		if d.Calls == 0 || (wantDownloads && len(d.Downloads) == 0) {
+			return fmt.Errorf("the preview planned %d call(s) and %d Downloads item(s), so it showed nothing: %s", d.Calls, len(d.Downloads), out.String())
+		}
+		return nil
+	}
 }
 
 // zeroDialVersionRows runs the `version` command once per return of pluginVersionLine and of
