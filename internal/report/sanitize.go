@@ -59,6 +59,7 @@ func sanitizeResult(r model.ScanResult) model.ScanResult {
 	if r.Judge != nil {
 		j := *r.Judge
 		j.Reason = Sanitize(j.Reason)
+		j.Model = Sanitize(j.Model)
 		out.Judge = &j
 	}
 	return out

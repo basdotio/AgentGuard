@@ -124,6 +124,9 @@ func writeText(w io.Writer, r model.ScanResult, verbose bool) {
 	if jl := judgeSummaryLine(r); jl != "" {
 		fmt.Fprintf(w, "  %s\n", Sanitize(jl))
 	}
+	if il := judgeIdentityLine(r.Judge); il != "" {
+		fmt.Fprintf(w, "  %s\n", Sanitize(il))
+	}
 	if len(trust) > 0 {
 		fmt.Fprintf(w, "  Trusted by allowlist (findings suppressed, see below): %s\n", Sanitize(trustNames(trust)))
 	}

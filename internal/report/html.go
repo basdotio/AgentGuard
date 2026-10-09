@@ -68,6 +68,7 @@ type htmlData struct {
 	// feature the user did not turn on.
 	JudgeRequested bool
 	JudgeLine      string
+	JudgeIdentity  string // the model, samples and judge versions, "" unless the judge ran (P-031)
 	WorstLine      string // the lowest-scoring artifact beside the mean, "" when it would restate the headline
 	// Inbox is the Downloads section: nil pointer when no inbox was scanned.
 	Inbox *htmlInbox
@@ -288,7 +289,7 @@ func buildHTMLData(r model.ScanResult) htmlData {
 		Env: r.Env, Groups: toHTMLGroups(groups, "f"), JudgeGroups: toHTMLGroups(judge, "j"), Hygiene: hy,
 		Trust: toHTMLTrust(trust), Coverage: toHTMLNotes(coverage), Reclaim: reclaim,
 		Verdict: coverageVerdict(score.Level(r.Overall), actionable(groups), len(groups), r),
-		Checked: checkedSummary(r, plainGap), JudgeLine: judgeSummaryLine(r), JudgeRequested: r.Judge != nil, WorstLine: worstLine(r),
+		Checked: checkedSummary(r, plainGap), JudgeLine: judgeSummaryLine(r), JudgeIdentity: judgeIdentityLine(r.Judge), JudgeRequested: r.Judge != nil, WorstLine: worstLine(r),
 		Inbox: toHTMLInbox(r.Inbox), Locations: r.Locations,
 		Actions:       actions(groups, 3),
 		SandboxBanner: sbBanner, SandboxWhy: sbWhy,
