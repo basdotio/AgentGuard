@@ -214,6 +214,37 @@ func TestScan_RootSpellingIsTheAbsoluteReport(t *testing.T) {
 	}
 }
 
+// TestCheck_RelativeRootShapedTargetIsTheAbsoluteReport: `check` routes a directory named .claude to
+// CollectAll, which anchors it. checkTarget must analyse under that anchored root too — handed the
+// relative target instead, detect cannot relate collect's absolute paths to it, and every evidence
+// line falls back to a two-segment tail.
+func TestCheck_RelativeRootShapedTargetIsTheAbsoluteReport(t *testing.T) {
+	base, home, root := anchoredInstallShape(t)
+	want, err := checkTarget(root, scanOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !anchoredHas(want, "linked", "EXEC-001") || !anchoredHas(want, "pwn", "EXEC-001") {
+		t.Fatal("absolute check: the symlink-installed skill or the user-level MCP server was not audited")
+	}
+	for _, sp := range []struct{ name, dir, target string }{
+		{"relative", home, ".claude"},
+		{"relative, dot-prefixed", home, "./.claude"},
+		{"relative from a sibling", filepath.Join(base, "sibling"), filepath.Join("..", "home", ".claude")},
+	} {
+		t.Run(sp.name, func(t *testing.T) {
+			anchoredChdir(t, sp.dir)
+			got, err := checkTarget(sp.target, scanOpts{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if g, w := anchoredJSON(t, got, true), anchoredJSON(t, want, true); g != w {
+				t.Errorf("check %q: report differs from the absolute target at %s", sp.target, anchoredFirstDiff(g, w))
+			}
+		})
+	}
+}
+
 // TestScan_CITemplateShapeBlocksUnderEverySpelling: hack/github-action.yml ships
 // `aguard scan --root . --fail-on high`, with the repository itself as the root. A curl-into-shell
 // server in the repository's own .mcp.json must fail that gate whether the root is typed `.` or
