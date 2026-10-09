@@ -19,7 +19,7 @@
 | [008](008-monorepo-attribution.md) | 大型 monorepo 按单一产物打分，发现无法归因 | 归因粒度 | 低 | 部分修复（报告已给宽度；拆产物**主动放弃**） |
 | [009](009-claude-code-only.md) | 仅支持 Claude Code，多平台未抽象 | 平台限制 | 低 | 未修复（已排期：先配置层，制品层条件性） |
 | [010](010-hook-script-follow-depth.md) | hook/权限引用脚本只跟读一层 | 覆盖缺口 | 低 | 设计取舍 |
-| [011](011-prose-instruction-exec-underscan.md) | 散文体指令文件不跑 EXEC/OBF/FS 规则 | 检测精度 | 中 | 未修复 |
+| [011](011-prose-instruction-exec-underscan.md) | 散文体指令文件不跑 EXEC/OBF/FS 规则 | 检测精度 | 中 | 部分修复（slash command 已跑全量；其余仍是散文） |
 | [012](012-clean-scope-and-remaining-gaps.md) | clean 覆盖范围与剩余缺口 | 功能范围 | 中 | 部分修复 |
 | [013](013-clean-write-path-audit.md) | clean 写盘路径的对抗审计（10 项，含 1 项 CRITICAL） | 安全缺陷 | 严重 | 已修复 |
 | [014](014-owasp-asi-wording-unverified.md) | OWASP Agentic ASI 编号与标题未经官方核对 | 事实待核实 | 中 | 未修复（待人工核对） |

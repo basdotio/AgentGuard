@@ -241,10 +241,23 @@ func (e *Engine) unitsFor(root string, a model.ArtifactReport) ([]unit, []model.
 		// target (`check <dir>`, unrecognized layout) gets the same whole-tree read: with no
 		// layout to attribute files to, reading everything is the only honest option.
 		return readTextTree(a.Path, a.Path)
-	case model.KindInstruction, model.KindSubagent, model.KindCommand,
-		model.KindRule, model.KindWorkflow, model.KindOutputStyle, model.KindMemory:
-		u, n := readOneFile(a.Path)
-		return u, n
+	case model.KindCommand:
+		// The KIND decides the role here, not the file name. A slash command is a .md, so
+		// roleForPath read it as a bundled doc and ran only the injection rules: `/deploy`
+		// saying "run `curl … | bash`" scored 100 while the same line in a SKILL.md scored 75.
+		// A command body is a procedure the agent carries out on demand — the SKILL.md case
+		// exactly — so it gets the SKILL.md rule set. The collector already knew the kind;
+		// dropping it at the reader was the bug.
+		return readOneFile(a.Path, roleInstruction)
+	case model.KindInstruction, model.KindSubagent, model.KindRule, model.KindWorkflow,
+		model.KindOutputStyle, model.KindMemory:
+		// Still by name, i.e. prose unless called SKILL.md/CLAUDE.md. Promoting these too was
+		// tried and reverted (TestScan_BenignProseIsNotFlagged, issues/011): their benign
+		// content is dominated by prohibitions and notes that QUOTE dangerous commands — a
+		// rule saying never to pipe curl into a shell, a reviewer subagent listing what to
+		// flag, memory recording that an installer used to — and a regex cannot tell "do
+		// this" from "never do this". Commands are the one kind whose body is the former.
+		return readOneFile(a.Path, roleForPath(a.Path))
 	case model.KindHook:
 		return hookUnits(root, a)
 	case model.KindMCP:
@@ -712,6 +725,25 @@ func roleForPath(p string) fileRole {
 	return roleScript
 }
 
+// treeRole is roleForPath with one correction for trees: a .md directly under commands/ is a
+// slash command Claude Code loads from a plugin, i.e. a procedure the agent carries out, so it
+// runs the full rule set the way SKILL.md does. Without it a plugin's own commands ran only the
+// injection rules while the same text in its SKILL.md ran all of them — the per-file half of
+// what issues/006 recorded as the coarse plugin audit. Only the first path segment counts:
+// `docs/commands/x.md` is a doc about commands. agents/ is deliberately NOT here, for the
+// reason unitsFor gives for KindSubagent (issues/011).
+func treeRole(dir, p string) fileRole {
+	role := roleForPath(p)
+	if role != roleDoc {
+		return role
+	}
+	if first, _, ok := strings.Cut(treeRel(dir, p), "/"); ok && first == "commands" &&
+		strings.EqualFold(filepath.Ext(p), ".md") {
+		return roleInstruction
+	}
+	return role
+}
+
 // readTextTree reads every in-boundary text file under dir, DEDUPING identical file
 // contents (F3 — collapses multi-adapter mirror copies like .agents/.cursor/…) and
 // skipping node_modules/.git. NOTHING is skipped in silence: oversized files, files whose
@@ -720,7 +752,13 @@ func readTextTree(boundary, dir string) ([]unit, []model.Finding) {
 	var units []unit
 	var notes []model.Finding
 	var skippedDirs, nonRegular, pyc, unreadable []string
-	seen := map[[32]byte]bool{}
+	// Keyed by content AND role: the same bytes as a doc and as a command are two different
+	// questions, and whichever the walk met first used to answer both.
+	type seenKey struct {
+		sum  [32]byte
+		role fileRole
+	}
+	seen := map[seenKey]bool{}
 	_ = filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			// An entry that Stats fine but cannot be listed or opened — a 0111 directory, a
@@ -797,12 +835,13 @@ func readTextTree(boundary, dir string) ([]unit, []model.Finding) {
 			unreadable = append(unreadable, treeRel(dir, p))
 			return nil
 		}
-		sum := sha256.Sum256(b)
-		if seen[sum] {
+		role := treeRole(dir, p)
+		key := seenKey{sha256.Sum256(b), role}
+		if seen[key] {
 			return nil // identical content already scanned (mirror copy)
 		}
-		seen[sum] = true
-		units = append(units, unit{file: p, text: stripBOM(string(b)), role: roleForPath(p)})
+		seen[key] = true
+		units = append(units, unit{file: p, text: stripBOM(string(b)), role: role})
 		return nil
 	})
 	if len(nonRegular) > 0 {
@@ -1090,7 +1129,7 @@ func skippedDirNote(dir string, dirs []string) model.Finding {
 	}
 }
 
-func readOneFile(path string) ([]unit, []model.Finding) {
+func readOneFile(path string, role fileRole) ([]unit, []model.Finding) {
 	b, note := readCapped(path, path)
 	if note != nil {
 		return nil, []model.Finding{*note}
@@ -1100,7 +1139,7 @@ func readOneFile(path string) ([]unit, []model.Finding) {
 		// a single-file artifact that yields no units and no note renders as clean.
 		return nil, []model.Finding{unreadableNote(filepath.Dir(path), []string{filepath.Base(path)})}
 	}
-	return []unit{{file: path, text: stripBOM(string(b)), role: roleForPath(path)}}, nil
+	return []unit{{file: path, text: stripBOM(string(b)), role: role}}, nil
 }
 
 // stripBOM removes a UTF-8 byte-order mark at OFFSET ZERO only. There it is an encoding

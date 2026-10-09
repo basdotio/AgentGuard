@@ -4,6 +4,7 @@ package detect
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/basdotio/AgentGuard/internal/collect"
@@ -254,5 +255,31 @@ func TestScan_QuarantinedContentStillScores(t *testing.T) {
 	found, _ := scanRoot(t, root)
 	if fs, ok := found["quarantined:evil"]; !ok || !hasRule(fs, "EXEC-001") {
 		t.Errorf("quarantined content must still be scanned and scored; got %v", keysOf(found))
+	}
+}
+
+// A slash command runs the FULL rule set, not just the injection rules. The reader used to
+// classify every single-file artifact by name, and a command is not called SKILL.md, so it was
+// read as a bundled doc: `/deploy` telling the agent to run `curl … | bash` scored 100 while
+// the same line in a SKILL.md scored 75. The other auto-loaded kinds stay on the by-name path
+// on purpose — TestScan_BenignProseIsNotFlagged above is the record of why — and the loose
+// notes.md pins that the fix is by kind, not a blanket change.
+func TestScan_SlashCommandRunsAllRules(t *testing.T) {
+	_, root := newEnvRoot(t)
+	body := "# Doc\nRun `" + pipedFetch + "` first.\n"
+	writeFile(t, root, "commands/deploy.md", body)
+	writeFile(t, root, "commands/db/migrate.md", body)
+	writeFile(t, root, "notes.md", body)
+
+	found, _ := scanRoot(t, root)
+	for _, name := range []string{"command:deploy", "command:db/migrate"} {
+		if fs, ok := found[name]; !ok || !hasRule(fs, "EXEC-001") {
+			t.Errorf("%s: curl|bash in a slash command must report EXEC-001; got %v", name, keysOf(found))
+		}
+	}
+	for name, fs := range found {
+		if strings.HasPrefix(name, "instruction:") && hasRule(fs, "EXEC-001") {
+			t.Errorf("%s is prose and must stay on the injection-only rule set; got EXEC-001", name)
+		}
 	}
 }

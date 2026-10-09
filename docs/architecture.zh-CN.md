@@ -137,7 +137,7 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
 这四个概念:
 
 - **`fileRole` 决定哪些规则会跑**,它是**最主要的误报控制手段**。随包的 `.md`(`roleDoc`)只跑
-  维度 1;`SKILL.md`/`CLAUDE.md`(`roleInstruction`)和脚本(`roleScript`)跑全部;hook command
+  维度 1;`SKILL.md`/`CLAUDE.md` 和 slash command(`commands/*.md`,按 kind)(`roleInstruction`)和脚本(`roleScript`)跑全部;hook command
   (`roleHookCmd`)额外跑 `.hookOnly()` 的规则 —— 脚本里有管道再正常不过,hook 里才说明问题。
   **加规则前先看它。**
 - **规则匹配的是"解释器会跑的那一行",证据引的是"文件里写的那一行"。**

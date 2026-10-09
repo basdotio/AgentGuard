@@ -112,6 +112,18 @@ func looksLikeRoot(dir string) bool {
 	return false
 }
 
+// singleFileKind names a lone file target by where it sits. A .md directly under a commands/
+// directory is a slash command — the kind a scan of the parent root gives it — so
+// `aguard check ~/.claude/commands/deploy.md` runs the rules the scan runs, instead of reading
+// the file as prose because its name is not SKILL.md. Anything else is an instruction file,
+// classified by name downstream.
+func singleFileKind(path string) model.ArtifactKind {
+	if strings.EqualFold(filepath.Ext(path), ".md") && filepath.Base(filepath.Dir(path)) == "commands" {
+		return model.KindCommand
+	}
+	return model.KindInstruction
+}
+
 // CollectTarget builds the artifact set for `aguard check <path>` — which is a SINGLE
 // skill/dir/file, NOT a .claude root. Layout is detected (spec §3 gate contract; fixes
 // the review B1 bug where a bare skill dir hit CollectAll, found no skills/, and scored
@@ -139,8 +151,9 @@ func CollectTarget(path string) (Result, error) {
 		return Result{Artifacts: []model.ArtifactReport{a}, Env: env, Notes: []model.Finding{}}, nil
 	}
 	if !fi.IsDir() {
-		// Single file: scan it as an instruction unit (detect reads one file, role by ext).
-		return single(model.KindInstruction, FileHash(path), model.EnvSummary{})
+		// Single file: one unit; detect picks the rule set from the kind, or by name for an
+		// instruction file.
+		return single(singleFileKind(path), FileHash(path), model.EnvSummary{})
 	}
 	if _, serr := os.Stat(filepath.Join(path, "SKILL.md")); serr == nil {
 		return single(model.KindSkill, TreeHash(path, path), model.EnvSummary{Skills: 1})

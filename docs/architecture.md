@@ -157,7 +157,7 @@ generated from `builtinRules()` — add a rule, run `make docs`, or CI fails. Re
 [`internal/detect/`](../internal/detect/) with these four ideas first:
 
 - **`fileRole` decides which rules run at all**, and it is the primary false-positive control.
-  A bundled `.md` (`roleDoc`) runs dimension-1 rules only; `SKILL.md`/`CLAUDE.md`
+  A bundled `.md` (`roleDoc`) runs dimension-1 rules only; `SKILL.md`/`CLAUDE.md` and slash commands (`commands/*.md`, by kind)
   (`roleInstruction`) and scripts (`roleScript`) run everything; a hook command
   (`roleHookCmd`) additionally runs `.hookOnly()` rules — shell chaining is unremarkable in a
   script and telling in a hook. **Check this before adding a rule.**
