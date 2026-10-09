@@ -249,7 +249,7 @@ after it.
 
 ```
 Merged: PR #39 (2026-10-09; find the sha with git log --grep P-017)
-Released: pending release
+Released: v0.19.0
 Evidence: TestCheckedLineCountsWhatWasScanned (cmd/aguard/checked_line_test.go); W1 red on the renderers of this repository's main: 6 subtests × terminal default / --verbose / markdown / HTML, all 24 places say "Nothing was found to check" (check install.sh, check hello.sh, check commands/deploy.md, check a plain directory, a root with only CLAUDE.md, a settings.json with only an env block) → green after W2: Checked 1 file. / 1 file. / 1 command. / 1 directory. / 1 file. / 1 settings block.
 Evidence: TestUnreadableSettingsIsNamedNotFullyChecked (same file); W1 red: all four renderers lack "Not fully checked:", "settings.json", "IO-000" and say "Nothing was found to check" (16 places) → green after W2: "Not fully checked: …/.claude/settings.json [IO-000]." (a code span in markdown)
 Evidence: TestLoadedContentLeftUnreadHedgesTheHeadline (same file); W1 red: 5 Low-band fixtures × 4 renderers, 20 places say "looks safe" (curl|bash in a chmod 0111 subdirectory, curl|bash at the end of a 1.1 MB script, SUP-004 pointing into node_modules, a hook running a script that does not exist, a rules/ symlink pointing outside the root) → still red after W2 (only the Checked line changed) → green after W4

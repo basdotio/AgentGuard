@@ -221,7 +221,7 @@ directory is a sibling of it).
 
 ```
 Merged: PR #27 (2026-10-09; find the sha with git log --grep P-010)
-Released: pending release
+Released: v0.19.0
 Evidence: TestScan_RootSpellingDoesNotChangeTheResult (cmd/aguard/rootspelling_test.go); W1 red: "one hook, one script" has overall 100 under the six spellings <abs>/, <abs>/., .claude/, ., ./, home/.claude, absolute spelling 69 → after W2 all eight spellings are 69 and the report view equals the absolute spelling character for character; in "all second stages" at W1 the view differed in all eight rows (the .claude and ../home/.claude rows differ only in that the path link.sh resolves to in the HOOK-002 snippet is relative) → all identical after W2
 Evidence: TestRun_RootSpellingKeepsTheBoundary (internal/detect/rootspelling_test.go); W1 red in six rows (<abs>/, <abs>/., .claude/, ., ./, home/.claude: pre.sh, deploy.sh not read, link.sh only gets "no such file", no HOOK-002) → green after W2; all thirteen rows green after W4, W5
 Evidence: reverse assertion, same test — in all thirteen rows evil.sh, link.sh, granted.sh are not read (no EXFIL-001, no evidence referencing them), one HOOK-002 per hook, the hook note says "2 × it resolves outside HOME", the grant note says "1 × it resolves outside HOME"

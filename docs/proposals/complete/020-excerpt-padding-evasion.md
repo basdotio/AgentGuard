@@ -217,7 +217,7 @@ Touches `internal/judge` (`excerpt.go`, `egress.go`), the judge doc pair, and sp
 
 ```
 Merged: PR #38 (2026-10-09; find the sha with git log --grep P-020)
-Released: pending release
+Released: v0.19.0
 Evidence: TestRun_PaddedDirectiveReachesTheJudge (internal/judge/padding_test.go); W1 red 30/30 on 930e914, all `none of 2 request(s) carried the directive` → green after W2; in all 30 cases the LLM-003 cites the line where the directive actually is (SKILL.md:9 / 9 / 5 / 11 / 10), no LLM-005
 Evidence: TestPlan_PaddingCostsWhatOneSpaceCosts (same file); W1 red 50/50 (9 surfaces × 6 paddings; the decoded blob runs only the two ASCII ones, since Unicode whitespace makes the blob read as binary): the two hook passes' Behavior each a 6,000-byte pure prefix; in the MCP case shortened = "1 value(s) cut to 500 bytes", empty for the reference; in the three-padding-scripts case intent is 5,995 bytes with an omission marker → green after W2
 Evidence: TestEgress_PaddingIsFoldedBetweenRedactions (same file); at W1 ③ red (the home directory cut by zero-width characters was not replaced with ~), ①② green → all three green after W2; mutations (all reverted): fold moved before the first Redact → ① red; second Redact removed → ② red; scrub moved before the fold → ③ red (with only one Redact pass, ② and ③ go red together)

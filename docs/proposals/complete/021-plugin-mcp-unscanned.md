@@ -230,7 +230,7 @@ plugin server hashes (other three sets)     —                                 
 
 ```
 Merged: PR #37 (2026-10-09; find the sha with git log --grep P-021)
-Released: pending release
+Released: v0.19.0
 Evidence: TestScan_PluginMCPServerGetsTheRulesAUserServerGets (cmd/aguard/plugin_mcp_test.go); W1 red on fd28344: evil, leak and preload in all three of CLI / desktop / synced are {score:100 rules:}, while in ~/.claude.json they are 75 EXEC-001 / 50 EXFIL-001,FS-001 / 75 EXEC-010 → W2 green; the user-level column pins the pre-fix values and is green before and after; the hashes of the plugin servers in all three places are non-empty before and after and equal the user-level ones
 Evidence: TestScan_PluginMCPPreloadIsNotAClean100 (same file); W1 red "overall = 100, want 69" and "--fail-on high passed …" (the plugin case; the user-level case was already green before the fix) → W2 green
 Evidence: TestDetect_PluginMCPServerIsFoundByItsKey (internal/detect/detect_test.go); W1 red in 5 cases, got: null (plugin, chain, env preload, synced, "" key with a decoy beside it) → W2 green; the case "constructed outside collect, Name is the key" green before and after

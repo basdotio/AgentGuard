@@ -185,7 +185,7 @@ together, so that "there is only one client, built in `NewHTTP`, and its transpo
 
 ```
 Merged: PR #34 (2026-10-09; find the sha with git log --grep P-023)
-Released: pending release
+Released: v0.19.0
 Evidence: TestNewHTTP_RefusesCrossOriginRedirects (internal/judge/redirect_test.go); at W1, on origin/main, 30/30 subtests red, two lines each: "the redirect target received 1 request(s) (first: POST, API key true, excerpt true)…" (307/308 for the same-host downgrade to http, the subdomain, another local port; 301–303 are GET, key true) / for a host change "API key false, excerpt true" (307/308), plus "the call succeeded: a verdict was taken from <target>"; 30/30 green after W2
 Evidence: TestE2E_JudgeRedirectIsRefusedAndReported (cmd/aguard/judge_redirect_test.go); red at W1: "the redirect target received 4 request(s)" + "no LLM-000 note … notes = []"; green after W2 — target 0 requests, LLM-000's Why = "LLM judge failed on 4 call(s); those checks did not run (first error: call judge endpoint: the endpoint answered 307 with a redirect to "http://127.0.0.1:<port>", outside the configured origin http://127.0.0.1:<port>: not followed, and nothing was sent there (if that address is the real endpoint, set llm.base_url to it))", JudgeSummary Calls 4 / Failed 4 / Retries 0 (max_retries 2), Overall the same as the scan without --llm, static findings identical one for one, no LLM findings
 Evidence: TestLLMTest_RedirectIsRefused (same as above); red at W1: "llm test passed against an endpoint that redirects to http://127.0.0.1:<port>: output "OK · test-model answered in 1ms …""; green after W2, error "<endpoint> did not answer for model test-model: call judge endpoint: the endpoint answered 307 with a redirect to …", target 0 requests

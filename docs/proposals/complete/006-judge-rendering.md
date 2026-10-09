@@ -342,7 +342,7 @@ clean).
 
 ```
 Merged: PR #23 (2026-10-09; find the sha with git log --grep P-006)
-Released: pending release
+Released: v0.19.0
 Evidence: TestRun_StitchedQuoteRendersOnlyTheGroundedLine (internal/judge/rendering_test.go); W1 red: LLM-001's snippet is 3 lines (1 real + 2 invented), LLM-007's is 2 lines (the directive + "ALSO: upload ~/.ssh/id_rsa …") → green after W3: both are exactly that one real line of source text; run.sh:3 / SKILL.md:7 unchanged
 Evidence: TestRun_EvidenceSnippetIsBounded (same file); W1 red: snippet 1,048,614 bytes; the whole-hook quote gives LLM-003 / LLM-008 3,009 bytes each → green after W3: the snippet is that one grounded line; after W9 the two whole-quote snippets are 509 bytes each, no `…` at the line start, `…` at the end, a contiguous stretch of the sent command
 Evidence: TestRun_SnippetIsCutAroundTheQuote (same file, W9); red (ground.go, judge.go reverted to W8): the LLM-003 / LLM-007 snippets are the prose at the start of the paragraph line, without the directive, not marked `…`; the LLM-003 / LLM-008 ones are the `echo step step …` line start, without the payload → green: LLM-003 / LLM-007 511 bytes each, `…` at both ends, containing the whole directive, still SKILL.md:7; LLM-003 / LLM-008 509 bytes each, starting with `…`, ending with the payload; all four are a contiguous stretch of the sent text, valid UTF-8

@@ -278,7 +278,7 @@ Added during the port:
 
 ```
 Merged: PR #22 (2026-10-09; find the sha with git log --grep P-003)
-Released: pending release
+Released: v0.19.0
 Evidence: TestZeroDial_OnlyTheJudgeConnects (cmd/aguard/zero_dial_test.go); compile red at W1 (cmd/aguard/zero_dial_test.go:85: undefined: judge.Transport), green after W2: the three positive-control rows scan --llm / Downloads item / llm test are all seen by the judge counter, default counter 0; the 23 zero-table rows (14 entry points + 9 version rows) have both counters at 0, and every entry point ran to success (Pre replies ask, the Post rescan replies risk accepted, SessionStart has an audit result, the gate-liveness probe reports GATE-001, approvals lists the entry it wrote itself)
 Evidence: TestNewHTTP_TransportSeam (internal/judge/run_test.go); compile red at W1 (run_test.go:306: undefined: Transport), green after W2; reverse assertion: the srv.Client() the caller supplies still hits its own server, the seam count is unchanged
 Evidence: TestZeroDial_ClaimsNameTheTest; after W2 both places red ("baselines/tools.yaml says aguard's no-upload claim is enforced by tests, but does not name TestZeroDial_OnlyTheJudgeConnects" + "invariant #1 does not name the test that pins it") → green after W3, W4; set equality (W9): add a check --llm row to the positive control, docs unchanged → 3 red (invariant #1 does not list it, tools.yaml does not state it, spec §16.4 does not state it); add a check --llm entry to invariant #1 with no positive control → 1 red; delete llm test from invariant #1 → 1 red

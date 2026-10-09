@@ -345,7 +345,7 @@ for re-reviews 1–4; on port, one commit per item, in the same order.
 
 ```
 Merged: PR #24 (2026-10-09; find the sha with git log --grep P-005)
-Released: pending release
+Released: v0.19.0
 Evidence: TestE2E_JudgeBodiesCarryNoHomeOrKeylessSecret (cmd/aguard/e2e_test.go); W1 red on origin/main (dec64ca): 11 of 13 request bodies carry alicemarker, 1 carries hunter2, 0 carry DB_PASS=<REDACTED>, 0 carry the four ~/ paths such as ~/notes → after W3 only the two MCP checks are still red (request 4 carries hunter2, no DB_PASS=<REDACTED>) → green after W5: 0 carry the home / its EvalSymlinks form / its encoded form / alicemarker / hunter2 / any kind:name label, all four ~/ paths present
 Evidence: TestScanInbox_JudgeBodiesCarryNoHome (cmd/aguard/e2e_test.go); W1 red (request 0 carries bobmarker, no ~/notes) → green after W3
 Evidence: TestPlan_MCPExcerptIsKeyedAndByteStable (internal/judge/plan_test.go); W1 red (bytes already differ on the 2nd planning, values without keys, hunter2 as is) → still red after W2 → green after W5; reverse: env.LOG_LEVEL=debug present as is

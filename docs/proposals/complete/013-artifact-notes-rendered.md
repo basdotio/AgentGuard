@@ -269,7 +269,7 @@ are committed in their original order, one commit per W.
 
 ```
 Merged: PR #28 (2026-10-09; find the sha with git log --grep P-013)
-Released: pending release
+Released: v0.19.0
 Evidence: TestBrokenSettingsIsNotReportedSafe (cmd/aguard/artifact_notes_test.go); W1 red on this repository's main renderers: on both the scanEnv and checkTarget paths, all four of terminal default / --verbose / markdown / HTML "does not name the parse failure [PARSE-000]", and all say "looks safe" and "Nothing was found to check" (24 places) → after W2 PARSE-000 reaches the four renderers → after W3 all four green: the Summary is "Low risk in what was read, but coverage is incomplete. No findings." + "Not fully checked: …/.claude/settings.json [PARSE-000]."
 Evidence: TestCheckBrokenSettingsCLI (same file); W1 red on stdout (no PARSE-000, has looks safe) → green after W3; exit code 0 before and after the fix
 Evidence: TestArtifactNoteReachesEveryHumanRenderer (internal/report/artifact_notes_test.go); W1 red: all four renderers "does not show the artifact's own note" → after W2 only the terminal default red (file name not in the default view, no U+FFFD) → green after W3; U+202E and ESC occur 0 times in all four outputs, U+FFFD is present

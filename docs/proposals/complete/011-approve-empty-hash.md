@@ -188,7 +188,7 @@ a store change. This touches `cmd/aguard/gate.go` and `internal/gate`, and perha
 
 ```
 Merged: PR #20 (2026-10-09; find the sha with git log --grep P-011)
-Released: pending release
+Released: v0.19.0
 Evidence: TestApproveRefusesWhatHasNoContentHash (cmd/aguard/gate_approve_test.go); W1 red on this repo's main, both rows "approve reported success for a target with no content hash" followed by approved hook "settings.json" (100/100, clean) / approved instruction "notes.md" (100/100, clean) and an empty hash line → green after W2; after W6 the error carries the --json hint, still green
 Evidence: TestApproveRefusalLeavesTheStoreAlone (same file); W1 red "approve reported success …" + "a refused approve rewrote the approvals store" → green after W2: os.SameFile true, bytes unchanged, the existing 1 approval still there
 Evidence: reverse assertion TestApproveStillRecordsWhatHasAHash (same file); already green at W1 (the clean skill / accepted-risk rows), still green afterwards without a single character changed
