@@ -133,7 +133,7 @@ P-001 之后,`--json` 的判官摘要里有 aguard 自己数的 `triage_calls`�
 ## 完成
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-022 找)
+合入:PR #35(2026-10-09;sha 用 git log --grep P-022 找)
 发布:待发
 证据:TestJudgeUsage_ReportedCountsWinOverTheDerivation、TestJudgeUsage_UnreportedTokensStayAbsent、TestScan_LedgerRowCarriesTheJudgeUsage(baselines/adapter/aguard/usage_test.go)、TestSumJudgeUsage_*(baselines/run/judgeusage_test.go)、TestWriteAllCarriesTheJudgeUsage(baselines/cmd/baseline/judgeusage_test.go);W1 编译红(usage_test.go:30:48: undefined: ledger.JudgeUsage;usage_test.go:36:9: undefined: judgeUsage;judgeusage_test.go:22:19: undefined: run.SumJudgeUsage;judgeusage_test.go:22:3: unknown field JudgeUsage in struct literal of type run.Run),W3 / W4 后绿
 证据:TestRawKeepsTheToolsOwnBytes(baselines/adapter/aguard/raw_test.go);W1 时把 usage_test.go 暂移走单跑,运行红:raw/ carries "triage_calls", which the tool never printed —— raw 文件里是 "judge":{…,"triage_calls":0,"retries":0},另有 raw/ dropped a field the tool printed;W2 后绿
