@@ -34,4 +34,4 @@
 
 | P | 标题 | 来源 | PR / 发布 |
 |---|---|---|---|
-| [001](draft/001-judge-usage-in-json.md) | 判官的 token、triage 调用、重试数从不进报告,成本只能从 stderr 抄 | 判官用量只打到 stderr,`--quiet` 时(Downloads 每一项)哪里都没有;移植自旧仓 P-042 | 分支上 |
+| [001](design/001-judge-usage-in-json.md) | 判官的 token、triage 调用、重试数从不进报告,成本只能从 stderr 抄 | 判官用量只打到 stderr,`--quiet` 时(Downloads 每一项)哪里都没有;移植自旧仓 P-042 | 分支上 |
