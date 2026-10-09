@@ -74,8 +74,9 @@ go run ./baselines/cmd/baseline -tool aguard -aguard bin/aguard -corpus ../agent
 
 Three consequences to know before quoting anything from such a run. **The verdicts do not
 change**: the fold reads deterministic findings only, so `verdicts.jsonl` and the scorecard from a
-`--llm` run are the static numbers. The judge's output exists only in `-raw`, and folding it —
-which findings escalated, at what severity — is yours to do and to describe. **`run.yaml` says
+`--llm` run are the static numbers. What the judge found exists only in `-raw`, and folding it —
+which findings escalated, at what severity — is yours to do and to describe; what it cost is
+folded by the driver (below). **`run.yaml` says
 the content left the machine**: `uploads_samples` flips to true with a basis written for that
 run, and `tool_extra_args` records the flags. **A judge run goes under `results/` in its own
 directory, never as the baseline**: `results/aguard/<date>-llm-<model>/`, with `verdicts.jsonl`
@@ -101,6 +102,25 @@ name with the key (`-aguard-env OPENAI_API_KEY,HTTPS_PROXY,HTTP_PROXY,NO_PROXY`)
 read the macOS system proxy. Without that, a run whose endpoint needs a proxy answers nothing and
 still exits 0, every call an `LLM-000`. Check a few `raw/` files for `"failed": 0` before waiting
 on the rest.
+
+**What a judge run cost is folded by the driver, not by hand.** Each judged sample's ledger row
+carries `judge_usage` — `calls`, `failed`, `skipped`, `triage_calls`, `retries`, `prompt_tokens`,
+`completion_tokens` — read from the binary's own `--json` judge summary, and `run.yaml` sums them
+under `judge_usage:` with the basis they rest on. `basis: reported` means the binary counted its
+triage calls and retries itself. `basis: derived` means its output carried no such count (a
+binary that predates them) and `triage_calls` was inferred as one per artifact with a
+deterministic finding — the inference the four committed judge runs used, and exact only when
+`skipped` is 0: a `max_calls` budget or the run deadline cuts the tail of the plan, which is where
+each artifact's triage call sits. A total is written only when every judged sample supplied its
+part; retries or tokens some sample did not report have no total, and `tokens_unreported_samples`
+counts the samples that made calls without reporting tokens. Questions asked are
+`(calls − triage_calls) / samples`, with `samples` from the judge config (the summary does not
+carry it), exact only when `skipped` is 0; a `judge.jsonl` folded from a new run takes
+`triage_calls` from the ledger rather than inferring it. `raw/` holds the bytes the binary
+printed, whitespace removed, not the rig's re-encoding of them: the re-encoding wrote
+`"triage_calls":0` for a binary that never counted it, which is the one thing the basis is read
+from.
+
 Three things about skill-scanner, measured 2026-09-24 (P-022):
 
 - **Exit 1 means two things.** The gate firing AND every runtime failure — missing directory,
@@ -168,6 +188,7 @@ corpus/                           the wire format, and nothing tool-specific
 results/<tool>/<YYYY-MM-DD>/
   verdicts.jsonl                  what `corpus score` reads
   ledger.jsonl                    one row per test point, with the reason when there is no verdict
+                                  and, on a judge run, what the judge cost on that sample
   scorecard.txt                   `corpus score` output, verbatim, never paraphrased
   run.yaml                        version, threshold, corpus commit, and the attribution
   raw/                            NOT committed
