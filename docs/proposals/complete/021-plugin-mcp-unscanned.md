@@ -176,7 +176,7 @@ key 为 "" 的插件 server             100 无,hash ""                        7
 ```
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-021 找)
+合入:PR #37(2026-10-09;sha 用 git log --grep P-021 找)
 发布:待发
 证据:TestScan_PluginMCPServerGetsTheRulesAUserServerGets(cmd/aguard/plugin_mcp_test.go);W1 在 fd28344 上红:CLI / 桌面版 / synced 三处的 evil、leak、preload 全是 {score:100 rules:},而 ~/.claude.json 里是 75 EXEC-001 / 50 EXFIL-001,FS-001 / 75 EXEC-010 → W2 绿;用户级那一列钉的就是修前的值,修前修后都绿;三处插件 server 的 hash 修前修后都非空且等于用户级
 证据:TestScan_PluginMCPPreloadIsNotAClean100(同文件);W1 红 "overall = 100, want 69" 与 "--fail-on high passed …"(插件那一格;用户级那一格修前就绿)→ W2 绿
