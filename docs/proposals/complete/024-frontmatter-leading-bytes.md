@@ -73,27 +73,27 @@ frontmatter,所以共用的解析器一起改,这几类 artifact 的 frontmatter
 
 fixture 都在 `t.TempDir()` 现搭,与现有测试同一写法。
 
-- [ ] `TestPathScoped_MatchesClaudeCode`(`internal/parse/frontmatter_test.go`,新):上面两张表里每一种规则形状一行
+- [x] `TestPathScoped_MatchesClaudeCode`(`internal/parse/frontmatter_test.go`,新):上面两张表里每一种规则形状一行
   (前导字节 7 行 + `paths` 值 16 行),期望值就是实测结果。在 fd28344 上红,红的**恰好是**表里标"不一致"的 13 行
-- [ ] 反向断言(同一测试):`---` 在第 1 字节的 LF、CRLF 两行,以及列表、标量串、逗号串、嵌套列表、真实花括号五种值,
+- [x] 反向断言(同一测试):`---` 在第 1 字节的 LF、CRLF 两行,以及列表、标量串、逗号串、嵌套列表、真实花括号五种值,
   修前修后都是 `true`;HTML 注释、`# 标题`、空值三行修前修后都是 `false`
-- [ ] `TestCollectRules_PathScopedOnlyWhenClaudeCodeHonoursIt`(`internal/collect/loaded_test.go`,新):经 `CollectAll`,
+- [x] `TestCollectRules_PathScopedOnlyWhenClaudeCodeHonoursIt`(`internal/collect/loaded_test.go`,新):经 `CollectAll`,
   空行开头、BOM 开头、`paths: []` 的规则名字不带 `(path-scoped)`;第 1 行开始的那份仍带(反向)。原有
   `TestCollectRules_RecursiveAndPathScoped` 不改、照绿
-- [ ] `TestReadSkill_FrontmatterMustStartAtTheFirstByte`(`internal/parse/frontmatter_test.go`,新):BOM、空行、一行空格
+- [x] `TestReadSkill_FrontmatterMustStartAtTheFirstByte`(`internal/parse/frontmatter_test.go`,新):BOM、空行、一行空格
   开头的 `SKILL.md` 读出 `Name == ""`、`Description == ""`,`Body` 含 frontmatter 那几行(Claude Code 调用 skill 时
   正文里就有它们),`BodyLine` 指向 `---` 那一行;反向:LF、CRLF 在第 1 字节的照旧读出 name 和 description
   (原有 `TestReadSkill` 不改、照绿)
-- [ ] `TestSplitFrontmatter` 的 `leading blank + bom` 一行改为期望"没有 frontmatter":旧期望钉住的正是这个出入
-- [ ] `TestContextBloat_OnlyForADescriptionClaudeCodeLists`(`internal/hygiene/hygiene_test.go`,新):BOM 开头、描述超长
+- [x] `TestSplitFrontmatter` 的 `leading blank + bom` 一行改为期望"没有 frontmatter":旧期望钉住的正是这个出入
+- [x] `TestContextBloat_OnlyForADescriptionClaudeCodeLists`(`internal/hygiene/hygiene_test.go`,新):BOM 开头、描述超长
   的 skill 不出 `context_bloat`;同样内容 `---` 在第 1 字节的照出(反向)
-- [ ] `TestPathScoped_BraceExpansionIsBounded`(新,带 deadline):40 组 `{,}` 在 2 秒内返回 `false`(每个展开都是空串),
+- [x] `TestPathScoped_BraceExpansionIsBounded`(新,带 deadline):40 组 `{,}` 在 2 秒内返回 `false`(每个展开都是空串),
   40 组 `{x,y}` 返回 `true`;回归的表现是挂死而不是断言失败,所以测试自己计时
-- [ ] 哈希不变:`TestHashGolden` 绿,`git diff --stat origin/main -- internal/collect/hash.go` 为空
-- [ ] 实测目录复扫:本分支构建的 `aguard scan --json --inbox off` 在上面三个实测目录上的 `(path-scoped)` 标签与实测表逐条一致
+- [x] 哈希不变:`TestHashGolden` 绿,`git diff --stat origin/main -- internal/collect/hash.go` 为空
+- [x] 实测目录复扫:本分支构建的 `aguard scan --json --inbox off` 在上面三个实测目录上的 `(path-scoped)` 标签与实测表逐条一致
   (不加引号那一行除外,未决 6);两个 BOM skill 不再出 `context_bloat` 和 `duplicate_fn`,两个第 1 字节的照出
-- [ ] 真机:`make build && ./bin/aguard scan --root ~/.claude --quiet --json` 修前修后对比,差异逐条解释
-- [ ] `make verify` 绿;`go version` 不切换工具链,`go.mod` 第二行仍是 `go 1.23.5`,不加依赖
+- [x] 真机:`make build && ./bin/aguard scan --root ~/.claude --quiet --json` 修前修后对比,差异逐条解释
+- [x] `make verify` 绿;`go version` 不切换工具链,`go.mod` 第二行仍是 `go 1.23.5`,不加依赖
 
 ## 不做什么
 
@@ -153,3 +153,19 @@ fixture 都在 `t.TempDir()` 现搭,与现有测试同一写法。
 6. **YAML 修复、闭合分隔符这两处出入呢?**
    **建议**:不在本条,记为后续。前者方向相反(aguard 读少了),后者没量过;两者都和"前导字节"无关。
    **已决(2026-10-09)**:按建议。
+
+## 完成
+
+```
+合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-024 找)
+发布:待发
+证据:实测(本机 Claude Code 2.1.107,隔离 CLAUDE_CONFIG_DIR,claude -p 在回环抓包服务器回 400 后退出):规则 InstructionsLoaded 两级各 7 种前导形状 + 用户级 17 种 paths 值;skill 清单 7 种前导形状、命令与子 agent 各 4 种。结果即「问题」一节两张表
+证据:W1 在 fd28344 上红,原因与判据一致:TestPathScoped_MatchesClaudeCode 23 行里红 13 行,恰好是表里"不一致"的 3 种前导形状 + 10 种 paths 值,均为 "PathScoped = true, want false";TestPathScoped_BraceExpansionIsBounded 的 "every expansion empty" 红(不展开,答 true);TestReadSkill_FrontmatterMustStartAtTheFirstByte 三种前导各红(读出 probe/probe description,Body 只有 "\n# Body\n",BodyLine 4/5/5);TestSplitFrontmatter 的 leading blank + bom 红;TestCollectRules_PathScopedOnlyWhenClaudeCodeHonoursIt 红 3 条(blank、bom、nothing 都带 (path-scoped));TestContextBloat_OnlyForADescriptionClaudeCodeLists 红(targets = [listed ignored])→ W2 后前导字节相关全绿,W3 后全绿
+证据:反向断言:TestPathScoped_MatchesClaudeCode 的 LF/CRLF 第 1 字节、列表、标量串、逗号串、嵌套列表、真实花括号 7 行修前修后都是 true,HTML 注释、标题、空值 3 行修前修后都是 false;TestCollectRules_PathScopedOnlyWhenClaudeCodeHonoursIt 里 line1 修前修后都带 (path-scoped);TestReadSkill_FrontmatterMustStartAtTheFirstByte 的 first byte LF/CRLF 与原有 TestReadSkill、TestContextBloat、TestCollectRules_RecursiveAndPathScoped 不改照绿
+证据:变异确认测试会咬(跑完还原,未提交):去掉展开上限 → BraceExpansionIsBounded 2 秒超时 "brace expansion is unbounded";不做花括号展开 → "braces that expand to **" 与 "every expansion empty" 红;不去结尾 /** → "**/**"、"/**" 红;不按逗号切 → "** twice in one string" 红
+证据:实测目录复扫(aguard scan --json --inbox off,31 份规则):fd28344 构建标签与实测一致 14/31 → 本分支 30/31,剩下那份是不加引号的 **/no-such-g/*.ts(YAML 修复,方向相反,未决 6);两个 BOM 开头的超长描述 skill:fd28344 出 context_bloat ×2 + duplicate_fn ×1 → 本分支 0,两个第 1 字节的照出 context_bloat ×2 + duplicate_fn ×1
+证据:真机 make build && ./bin/aguard scan --root ~/.claude --quiet:前后都无输出、退出码 0;同一命令加 --json 前后对比,除 scanned_at / tool_version 外逐键相同:overall 69 · overall_effective 69 · artifacts 180 · rules 24 · path-scoped 15 · 计分发现 high 162 / medium 451 / low 193 · notes 10 · hygiene context_bloat 6 / duplicate_fn 11 · inbox 4。没有差异的原因:~/.claude 下没有一份 .md 的 --- 前有 BOM 或空白(逐文件查了头部,0 份),15 份 path-scoped 规则的 paths 都留得下有效 glob
+证据:哈希不变:TestHashGolden PASS;不做什么 —— git diff --stat origin/main -- internal/collect/hash.go internal/detect internal/score go.mod go.sum cmd/aguard/claude_rules_test.go 为空
+证据:make verify: all gates passed;go version go1.23.5(无工具链切换),go.mod 第二行 go 1.23.5,无新依赖
+```
+
