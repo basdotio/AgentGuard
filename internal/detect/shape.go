@@ -191,9 +191,13 @@ func registryRedirects(rel, text string, commentLines map[int]bool) []model.Find
 		if known && (host == "" || officialRegistries[host] || isLoopbackHost(host)) {
 			continue
 		}
-		where := host
+		// The destination is quoted out of the same line the snippet redacts, so it goes through
+		// Redact too (invariant #3): a target whose host cannot be read is quoted as written, and
+		// as written it can carry `user:token@`. Redact only, no clip — the target was never
+		// length-bounded here, and a clip would change the explanation for long benign targets.
+		where := Redact(host)
 		if !known {
-			where = fmt.Sprintf("%s (a value this file does not define — the destination cannot be read here, which is not the same as safe)", written)
+			where = fmt.Sprintf("%s (a value this file does not define — the destination cannot be read here, which is not the same as safe)", Redact(written))
 		}
 		out = append(out, model.Finding{
 			RuleID: "SUP-006", Dimension: 5, Severity: model.SevHigh, Source: model.SrcStatic,
