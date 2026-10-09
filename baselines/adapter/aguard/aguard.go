@@ -138,19 +138,19 @@ func (a *Adapter) Scan(ctx context.Context, s corpus.Sample, tree string) ledger
 		return row
 	}
 
-	res, err := a.run(ctx, "scan", "--root", st.Root, "--json", "--no-reputation", "--inbox", "off")
+	res, out, err := a.runJSON(ctx, "scan", "--root", st.Root, "--json", "--no-reputation", "--inbox", "off")
 	if err != nil {
 		row.Outcome = ledger.Errored
 		row.Detail = err.Error()
 		return row
 	}
-	a.keepRaw(s.Sample, res)
+	a.keepRaw(s.Sample, out)
 	return fill(row, res, a.Threshold)
 }
 
 // checkBare is invocation 2: aguard pointed straight at the sample tree.
 func (a *Adapter) checkBare(ctx context.Context, row ledger.Row, tree, placementReason string) ledger.Row {
-	res, err := a.run(ctx, "check", tree, "--json")
+	res, out, err := a.runJSON(ctx, "check", tree, "--json")
 	if err != nil {
 		row.Outcome = ledger.Errored
 		row.Detail = "no load path for `scan` (" + placementReason + "); `check` then failed: " + err.Error()
@@ -164,7 +164,7 @@ func (a *Adapter) checkBare(ctx context.Context, row ledger.Row, tree, placement
 		row.Detail = placementReason + "; `check` on the bare tree read nothing"
 		return row
 	}
-	a.keepRaw(row.Sample, res)
+	a.keepRaw(row.Sample, out)
 	row = fill(row, res, a.Threshold)
 	// Disclosed, not hidden. This verdict came from `check` on the bare tree rather than from
 	// the `scan --root` placement this sample's surface implies, and the difference is not
@@ -291,6 +291,16 @@ func FlaggingRules(res model.ScanResult, threshold model.Severity) []string {
 // XDG_CONFIG_HOME point into the work directory so nothing from the operator's real ~/.claude,
 // ~/.claude.json or aguard config can leak into a sample.
 func (a *Adapter) run(ctx context.Context, args ...string) (model.ScanResult, error) {
+	res, _, err := a.runJSON(ctx, args...)
+	return res, err
+}
+
+// runJSON is run that also returns the bytes the binary printed. Those bytes, not a re-encoding
+// of the decoded result, are what raw/ keeps and what the judge-usage fold reads: model.ScanResult
+// is the RIG's build of the schema, so encoding it again adds every field the rig knows — as
+// zeros — and drops every field it does not. Measuring a binary of another version then writes
+// "triage_calls":0 into the one file a run is re-folded from, for a binary that never counted it.
+func (a *Adapter) runJSON(ctx context.Context, args ...string) (model.ScanResult, []byte, error) {
 	timeout := ScanTimeout
 	if a.Timeout > 0 {
 		timeout = a.Timeout
@@ -315,7 +325,7 @@ func (a *Adapter) run(ctx context.Context, args ...string) (model.ScanResult, er
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	if err := cmd.Run(); err != nil {
 		if ctx.Err() != nil {
-			return model.ScanResult{}, fmt.Errorf("aguard did not finish within %s", timeout)
+			return model.ScanResult{}, nil, fmt.Errorf("aguard did not finish within %s", timeout)
 		}
 		// Exit 1 is the documented contract for "a finding reached --fail-on" — `check`
 		// defaults to `high`, so the gate firing is the expected outcome on a malicious
@@ -324,14 +334,14 @@ func (a *Adapter) run(ctx context.Context, args ...string) (model.ScanResult, er
 		// and anything else is unknown; both stay errors.
 		var ee *exec.ExitError
 		if !errors.As(err, &ee) || ee.ExitCode() != 1 {
-			return model.ScanResult{}, fmt.Errorf("aguard: %v: %s", err, strings.TrimSpace(stderr.String()))
+			return model.ScanResult{}, nil, fmt.Errorf("aguard: %v: %s", err, strings.TrimSpace(stderr.String()))
 		}
 	}
 	var res model.ScanResult
 	if err := json.Unmarshal(stdout.Bytes(), &res); err != nil {
-		return model.ScanResult{}, fmt.Errorf("aguard output is not a scan result: %w", err)
+		return model.ScanResult{}, nil, fmt.Errorf("aguard output is not a scan result: %w", err)
 	}
-	return res, nil
+	return res, stdout.Bytes(), nil
 }
 
 // ScanRoot is the old runner's entry point, kept so hack/corpus-runner stays a thin driver over
@@ -340,16 +350,25 @@ func (a *Adapter) ScanRoot(ctx context.Context, st StagedRoot) (model.ScanResult
 	return a.run(ctx, "scan", "--root", st.Root, "--json", "--no-reputation", "--inbox", "off")
 }
 
-func (a *Adapter) keepRaw(id string, res model.ScanResult) {
+// keepRaw stores what the binary printed for one sample (see runJSON for why it is the printed
+// bytes and not a re-encoding).
+func (a *Adapter) keepRaw(id string, out []byte) {
 	if a.RawDir == "" {
 		return
 	}
-	if b, err := json.Marshal(res); err == nil {
-		// Every path aguard reports sits under the staging root, which sits in the operator's
-		// per-user temp directory; <work> keeps the staged location and drops the machine.
-		b = scrub.New(map[string]string{"<work>": a.Work}).Bytes(b)
-		_ = os.WriteFile(filepath.Join(a.RawDir, filepath.Base(id)+".json"), b, 0o644)
+	// One line per file, as raw/ has always been: --json is indented, and Compact drops only the
+	// whitespace — keys, their order and their escaping stay the binary's. These bytes already
+	// decoded as a scan result, so Compact cannot fail on them; if it ever did, the bytes as
+	// printed are still the honest thing to keep.
+	var b bytes.Buffer
+	if err := json.Compact(&b, out); err != nil {
+		b.Reset()
+		b.Write(out)
 	}
+	// Every path aguard reports sits under the staging root, which sits in the operator's
+	// per-user temp directory; <work> keeps the staged location and drops the machine.
+	raw := scrub.New(map[string]string{"<work>": a.Work}).Bytes(b.Bytes())
+	_ = os.WriteFile(filepath.Join(a.RawDir, filepath.Base(id)+".json"), raw, 0o644)
 }
 
 var _ adapter.Adapter = (*Adapter)(nil)
