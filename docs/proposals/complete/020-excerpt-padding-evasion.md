@@ -1,174 +1,230 @@
 <!-- SPDX-License-Identifier: MIT -->
-# 020 — 一行指令垫满空白,判官摘录里就只剩一行省略标记:判官恰好看不见它存在要读的那句话
+# 020 — Pad one directive line with whitespace and the judge's excerpt holds only an omission marker: the judge cannot see exactly the sentence it exists to read
 
-- **来源**:P-005、P-006 合入后记下的后续(2026-10-09)。P-006 修了"垫空白的引文在**证据**里只显示 `…Note:…`",
-  前提是引文已经落地 —— 可摘录在发出去**之前**就把整行扔掉了,模型根本没有引的机会
-- **依赖**:无(P-005、P-006 已在 `main`)
-- **分支**:`p/020-excerpt-padding-evasion`
+- **Source**: a follow-up recorded after P-005 and P-006 were merged (2026-10-09). P-006 fixed "a whitespace-padded quote
+  shows only `…Note:…` in the **evidence**", which presumes the quote was already grounded — but the excerpt drops the
+  whole line **before** it is sent, so the model never has the chance to quote it
+- **Depends on**: none (P-005 and P-006 are already in `main`)
+- **Branch**: `p/020-excerpt-padding-evasion`
 
-<!-- 没有「状态」行:文件所在目录就是状态(draft/ design/ complete/ rejected/),见 README.md。 -->
+<!-- No "Status" line: the directory the file sits in is its state (draft/ design/ complete/ rejected/), see README.md. -->
 
-## 问题
+## Problem
 
-判官的摘录是按字节封顶的:SKILL.md 正文、CLAUDE.md 这类单文件、connector 工具清单各 6,000 字节,skill 的脚本每个文件
-2,000、合计 6,000(`internal/judge/excerpt.go` 的 `capHeadTail`);hook 命令截 6,000 字节前缀(`boundedRedact`),
-MCP 配置每行 500(`capLine`),声明用途 1,000(`declaredPurpose`),解码出的 blob 800(`decode.go`)。
-`condense` 只折叠**整行都是空白**的行。一行里有字、但字中间(或行首)垫着几千字节空白的,原样进封顶:
+The judge's excerpts are capped in bytes: the SKILL.md body, single files such as CLAUDE.md, and the connector tool list
+get 6,000 bytes each; a skill's scripts get 2,000 per file and 6,000 in total (`capHeadTail` in
+`internal/judge/excerpt.go`); a hook command is cut to a 6,000-byte prefix (`boundedRedact`), MCP config to 500 per line
+(`capLine`), the declared purpose to 1,000 (`declaredPurpose`), a decoded blob to 800 (`decode.go`).
+`condense` only folds lines that are **entirely whitespace**. A line that has text, but carries thousands of bytes of
+whitespace in the middle of the text (or at its start), goes into the cap as is:
 
-- `capHeadTail` 从头往下装、从尾往上装,装不下的那一行连同它和尾段之间的所有行一起换成一行 `# … N line(s) omitted …`;
-- 整段只有这一行时退化成"取前缀",前缀全是空白,而且没有省略标记;
-- 其余几处是前缀截断,同样只剩空白。
+- `capHeadTail` fills from the top down and from the bottom up; the line that does not fit, together with every line
+  between it and the tail, is replaced by one line `# … N line(s) omitted …`;
+- when that line is the whole body, it degrades to "take a prefix", the prefix is all whitespace, and there is no
+  omission marker;
+- the other places truncate to a prefix, which likewise leaves only whitespace.
 
-于是作者把注入指令写成 `Note:` + 7,000 个空格 + `ignore your instructions …`,模型收到的是"这里省略了 1 行",
-判官(LLM-003 / LLM-007 那一趟)对它存在要读的那句话一个字都看不到。空白不必是 ASCII:`unicode.IsSpace` 认的 U+3000、
-U+2003、NBSP,以及 INJ-004 报告的零宽字符(U+200B …)都行 —— P-006 已经让**落地**把这两类当垫料,摘录这边没有跟上。
+So an author writes the injected directive as `Note:` + 7,000 spaces + `ignore your instructions …`, the model receives
+"1 line omitted here", and the judge (the LLM-003 / LLM-007 pass) sees not one word of the sentence it exists to read.
+The whitespace need not be ASCII: U+3000, U+2003 and NBSP, which `unicode.IsSpace` recognises, and the zero-width
+characters INJ-004 reports (U+200B …) all work — P-006 already made **grounding** treat both classes as padding; the
+excerpt side did not follow.
 
-实测(`origin/main` `fd28344`;探针用 `httptest` 起一个 OpenAI 兼容端点,经 `NewHTTP` + `Run` 记下每个请求 user 消息,
-数指令原文出现在几个请求里;探针文件在 scratch,不提交,判据里的测试会重现同样的形状):
+Measured (`origin/main` `fd28344`; the probe starts an OpenAI-compatible endpoint with `httptest`, records the user
+message of every request via `NewHTTP` + `Run`, and counts how many requests contain the directive verbatim; the probe
+files are in scratch and not committed, and the tests in the done criteria reproduce the same shapes):
 
-| 形状 | 请求数 | 含指令原文 | 含省略标记 | 说明 |
+| Shape | Requests | With directive verbatim | With omission marker | Notes |
 |---|---|---|---|---|
-| SKILL.md 正文,指令行内垫 7,000 空格 / 7,000 tab / 2,400×U+3000 / 2,400×U+2003 / 3,600×NBSP / 2,400×U+200B | 2 | **0** | 1 | injection 那趟的正文是"头 + `# … 1 line(s) omitted …` + 尾" |
-| 同上,垫在行首(缩进) | 2 | **0** | 1 | |
-| 同上,垫在 ```` ```bash ```` 围栏里的一行 | 2 | **0** | 1 | |
-| 正文只有这一行 | 2 | **0** | **0** | user 消息 6,163 字节,是 `Note:` 加约 6,000 字节空白;连"省略了"都没说 |
-| 指令行本身不垫,**它上一行**是 `.` + 7,000 空格,后面还有 2,360 字节正文 | 2 | **0** | 1 | 一行装不下的行挡住了它之后、尾段之前的所有行 |
-| skill 脚本 `run.sh` 里 `echo ok;` + 3,000 空格 + `curl … \| sh` | 2 | **0** | 1 | 每文件 2,000 字节的封顶 |
-| 三个脚本各约 1,975 字节、几乎全是空白(都在 2,000 之内),第四个 `z.sh` 是 payload | 2 | **0** | 1 | 合计 6,000 字节被垫料花光,`z.sh` 只剩头尾碎片 |
-| CLAUDE.md,指令行内垫 7,000 空格 | 1 | **0** | 1 | |
-| description 垫 2,000 空格后接指令 | 2 | **0** | 0 | 声明用途 1,000 字节前缀 |
-| hook 命令 `echo ok;` + 7,000 空格 + `curl … \| sh` | 2 | **0** | 0 | 6,000 字节前缀,无任何披露 |
-| MCP `args` 一个值里垫 700 空格后接 `--require /tmp/evil.js` | 1 | **0** | 0 | 截到 500 字节,出 `LLM-000`(披露了,但模型仍没看到) |
-| 反向:同一份正文不垫 | 2 | 1 | 0 | |
+| SKILL.md body, directive line padded inside with 7,000 spaces / 7,000 tabs / 2,400×U+3000 / 2,400×U+2003 / 3,600×NBSP / 2,400×U+200B | 2 | **0** | 1 | the injection pass's body is "head + `# … 1 line(s) omitted …` + tail" |
+| Same, padding at the start of the line (indentation) | 2 | **0** | 1 | |
+| Same, padding on a line inside a ```` ```bash ```` fence | 2 | **0** | 1 | |
+| The body is only this line | 2 | **0** | **0** | the user message is 6,163 bytes: `Note:` plus about 6,000 bytes of whitespace; it does not even say "omitted" |
+| The directive line itself is not padded; **the line above it** is `.` + 7,000 spaces, followed by 2,360 more bytes of body | 2 | **0** | 1 | one line that does not fit blocks every line after it and before the tail |
+| skill script `run.sh` with `echo ok;` + 3,000 spaces + `curl … \| sh` | 2 | **0** | 1 | the 2,000-byte per-file cap |
+| Three scripts of about 1,975 bytes each, almost all whitespace (each within 2,000), a fourth, `z.sh`, is the payload | 2 | **0** | 1 | the 6,000-byte total is spent on padding; only head and tail fragments of `z.sh` remain |
+| CLAUDE.md, directive line padded inside with 7,000 spaces | 1 | **0** | 1 | |
+| description padded with 2,000 spaces, then the directive | 2 | **0** | 0 | the declared purpose is a 1,000-byte prefix |
+| hook command `echo ok;` + 7,000 spaces + `curl … \| sh` | 2 | **0** | 0 | 6,000-byte prefix, no disclosure at all |
+| One MCP `args` value padded with 700 spaces, then `--require /tmp/evil.js` | 1 | **0** | 0 | cut to 500 bytes, emits `LLM-000` (disclosed, but the model still did not see it) |
+| Reverse: the same body without padding | 2 | 1 | 0 | |
 
-后果:这是本工具**深度检查自己的规避** —— 静态规则逐行读不到的"换了说法的注入",正是判官存在的理由;
-一段不可见的空白就让判官对这一行失明,而报告里"判官跑了、没发现"和"判官根本没看到"无从区分。
+Consequence: this is an evasion of the tool's **deep check itself** — "an injection in other words" that line-by-line
+static rules cannot read is the very reason the judge exists; one stretch of invisible whitespace blinds the judge to
+that line, and the report gives no way to tell "the judge ran and found nothing" from "the judge never saw it".
 
-真实文件里这么长的空白串几乎不存在(本机 `~/.claude/plugins`、`~/.claude/skills` 与语料库 benign / hard-negative /
-malicious 共 2,246,717 个非空行,按上面那组字符量每行最长的一串):行首缩进最长 121 字节;超过 128 字节的串只有 28 行,
-27 行是 markdown 表格的列对齐,另一行是语料 benign 里一个 skill 行尾 636 字节的空格 + 零宽字符。
+Whitespace runs this long almost never occur in real files (2,246,717 non-empty lines across this machine's
+`~/.claude/plugins` and `~/.claude/skills` and the corpus's benign / hard-negative / malicious sets, measuring each
+line's longest run over the character set above): the longest leading indentation is 121 bytes; only 28 lines have a run
+over 128 bytes, 27 of them markdown table column alignment, and the other a 636-byte run of spaces + zero-width
+characters at the end of a line in a skill in the corpus's benign set.
 
-## 初步方向
+## Initial direction
 
-在摘录层把**垫料**按落地读它的方式折掉,再封顶:一串长度超过某个远高于真实缩进的阈值的空白 / 不可见字符,换成落地本来就把它
-读成的那个样子(一个空格;只有不可见字符时什么都不留)。只在行内做、绝不跨 `\n`,所以行数和 `lineMap` 不变;先脱敏再折叠再封顶,
-不变量 #3 的顺序不动;只会让发出去的字节变少。放在摘录构造器对原始内容调用的那一个收口里,让每种 kind 一起生效。
-动到 `internal/judge`(`excerpt.go`、`egress.go`)和判官文档对子、spec §5.2。
+In the excerpt layer, fold **padding** the way grounding reads it, then cap: a run of whitespace / invisible characters
+longer than a threshold far above real indentation is replaced by what grounding already reads it as (one space; nothing
+when it is only invisible characters). Only within a line, never across `\n`, so the line count and `lineMap` do not
+change; redact first, then fold, then cap, so invariant #3's order is unchanged; it can only make the bytes sent fewer.
+It goes into the single choke point the excerpt builders call on raw content, so it takes effect for every kind at once.
+Touches `internal/judge` (`excerpt.go`, `egress.go`), the judge doc pair, and spec §5.2.
 
-## 完成的判据
+## Done criteria
 
-- [x] `TestRun_PaddedDirectiveReachesTheJudge`(`internal/judge/padding_test.go`,新):经 `NewHTTP` + `httptest` 端点跑 `Run`,
-  端点记下每个请求的 user 消息,**只在它收到的文本里有指令原文时**才回一条以指令为证据的 flagged 判决(模型只能引它看到的东西)。
-  6 种垫料(7,000 空格、7,000 tab、2,400×U+3000、2,400×U+2003、3,600×NBSP、2,400×U+200B)× 5 种位置(指令行内、做它的缩进、
-  正文唯一的一行、```` ```bash ```` 围栏里、垫在它上一行且后面还有约 2,400 字节正文),共 30 例,每例断言:至少一个请求带着指令原文;
-  有一条 `LLM-003` 引到 `SKILL.md` 里指令**真实所在的那一行**;没有 `LLM-005`。今天红:30 例都没有请求带指令原文
-- [x] `TestPlan_PaddingCostsWhatOneSpaceCosts`(同文件,新):同一份 fixture 垫料写成几千字节,与垫料写成"落地读它的样子"(一个空格;
-  只有不可见字符时什么都不写)相比,`planFor` 给出的**请求逐字节相同**(`Mode`、`Declared`、`Behavior`),**source unit 也相同**
-  (`file`、`text`、`firstLine`、`lineMap`、`collapsed`),`shortened` 也相同。覆盖的面:SKILL.md 正文(injection)、skill 脚本(intent)、
-  三个都在每文件上限之内的垫料脚本加一个 payload 脚本(合计上限)、description(声明用途)、CLAUDE.md、connector 工具说明、
-  hook 命令、MCP `args` 里的一个值、解码后是垫料命令的 base64 blob。今天红:每个面上垫过的那份都和参照不同
-  (省略标记 / 纯空白前缀 / payload 脚本只剩碎片 / `1 value(s) cut`)
-- [x] 不变量 #3 的守卫 `TestEgress_PaddingIsFoldedBetweenRedactions`(`internal/judge/padding_test.go`,新):
-  ① 一个单独就会被熵规则抹掉的 24 字符 token,后面接一串不可见字符和 60 个 `a` —— 发出去的文本里没有这个 token
-  (折叠挪到 `Redact` 之前就红:拼起来的长串熵掉到 3.6 以下,不再抹);② `AKIA` + 一串不可见字符 + 16 个字符 —— 发出去的文本里
-  没有拼好的 `AKIA…` 原文(去掉折叠后的第二次 `Redact` 就红);③ 家目录被一串不可见字符从中间切开 —— 折叠后换成 `~`
-  (scrub 挪到折叠之前就红)。①② 今天就绿(今天不折叠,token 照样被第一遍抹掉,`AKIA…` 照样是切开的),守的是实现;③ 今天红。
-  三条都写明各自对应的变异,并在实现之后实际跑一次变异、记下红
-- [x] `TestFoldPadding`(表驱动)+ `FuzzFoldPadding`(`internal/judge/fold_test.go`,新;种子语料随 `go test` 跑):
-  128 字节的串原样、129 字节折叠;只有不可见字符的串折成空;混合的折成一个空格;`\n` 两侧各 100 字节的空白不折(不跨行);
-  无效 UTF-8 字节原样。性质:输出不长于输入;`\n` 个数不变;`normalizeWithLines` 给出的规范化文本和逐字节行号与输入**完全相同**
-  (落地读它和读原文没有区别);幂等;输出里没有超过 128 字节的垫料串
-- [x] 反向断言 `TestPlan_RealTextIsSentAsWritten`(`internal/judge/padding_test.go`,新,今天就绿,修完不改一字仍绿):
-  ① 正文里一行 7,000 字节、只有单个空格的普通长行,摘录与"按今天的流水线手算"(`condense` + `capHeadTail`,不折叠)逐字节相同,
-  仍是头 + `# … 1 line(s) omitted …` + 尾;引这条省略标记的判决仍落不了地(`LLM-005`、没有判官发现);
-  ② 一份 Python 脚本(8 层缩进、一处正好 128 字节的对齐空白)摘录逐字节等于手算;
-  ③ 垫料每 128 字节被一个可见字符隔开(`.`)的那行**不折**,照旧被省略标记换掉 —— 这是可见内容,不是垫料(见不能说什么)
-- [x] 反向断言 `TestRun_PaddingBelowTheFoldStillShowsTheDirective`(同文件,新,今天就绿):P-006 的 W12/W13 窗口路径在折叠之后
-  仍有端到端的测试 —— 指令中间是 5 段各 120 字节的空白(低于阈值,原样发出),每段之间一个 `-`,引文落地在 `SKILL.md:7`,
-  snippet 含整句指令、≤ 515 字节。原因:P-006 的 `TestRun_WhitespacePaddedQuoteShowsTheDirective` /
-  `TestRun_UnicodePaddedQuoteShowsTheDirective` 用的是 600 字节的单段垫料,折叠之后它们照样绿,但走的不再是 `collapsedWindow`
-- [x] 反向断言:既有测试一字不改仍绿 —— `excerpt_test.go`、`plan_test.go`、`rendering_test.go`(含 `TestGround_OmissionMarkerIsNotEvidence`、
-  `TestRun_OmissionMarkerIsNotEvidence`、P-006 的两条垫料测试)、`ground_test.go`、`egress_test.go`、`cmd/aguard` 的 e2e;
-  `git diff --numstat origin/main -- '*_test.go'` 删除列全为 0
-- [x] `make verify` 绿;`go version` 不切换工具链;`internal/collect`、`internal/detect` 不动(所以不跑真机扫描对比,改为证明 diff 为空)
+- [x] `TestRun_PaddedDirectiveReachesTheJudge` (`internal/judge/padding_test.go`, new): runs `Run` through `NewHTTP` + an
+  `httptest` endpoint; the endpoint records the user message of every request and replies with a flagged verdict citing
+  the directive as evidence **only when the text it received contains the directive verbatim** (the model can only quote
+  what it sees). 6 paddings (7,000 spaces, 7,000 tabs, 2,400×U+3000, 2,400×U+2003, 3,600×NBSP, 2,400×U+200B) × 5
+  positions (inside the directive line, as its indentation, as the only line of the body, inside a ```` ```bash ````
+  fence, on the line above it with about 2,400 more bytes of body after), 30 cases in total; each case asserts: at least
+  one request carries the directive verbatim; an `LLM-003` cites **the line where the directive actually is** in
+  `SKILL.md`; no `LLM-005`. Red today: in all 30 cases no request carries the directive verbatim
+- [x] `TestPlan_PaddingCostsWhatOneSpaceCosts` (same file, new): the same fixture with the padding written as thousands
+  of bytes, compared with the padding written as "what grounding reads it as" (one space; nothing when it is only
+  invisible characters): the **requests** `planFor` produces are **byte-identical** (`Mode`, `Declared`, `Behavior`),
+  the **source units are identical too** (`file`, `text`, `firstLine`, `lineMap`, `collapsed`), and so is `shortened`.
+  Surfaces covered: SKILL.md body (injection), skill script (intent), three padding scripts each within the per-file cap
+  plus one payload script (total cap), description (declared purpose), CLAUDE.md, connector tool description, hook
+  command, one value in MCP `args`, a base64 blob that decodes to a padded command. Red today: on every surface the padded
+  version differs from the reference (omission marker / prefix of pure whitespace / payload script reduced to fragments /
+  `1 value(s) cut`)
+- [x] Guard for invariant #3, `TestEgress_PaddingIsFoldedBetweenRedactions` (`internal/judge/padding_test.go`, new):
+  ① a 24-character token that the entropy rule would erase on its own, followed by a run of invisible characters and 60
+  `a`s — the token is not in the text sent (red if the fold moves before `Redact`: the entropy of the joined long run
+  drops below 3.6 and it is no longer erased); ② `AKIA` + a run of invisible characters + 16 characters — the joined
+  `AKIA…` is not in the text sent verbatim (red if the second `Redact` after the fold is removed); ③ a home directory cut
+  in the middle by a run of invisible characters — replaced with `~` after the fold (red if scrub moves before the fold).
+  ①② are green today (there is no fold today, so the token is still erased by the first pass and `AKIA…` is still cut
+  apart) and guard the implementation; ③ is red today. All three state their corresponding mutation, and after
+  implementation the mutation is actually run once and the red recorded
+- [x] `TestFoldPadding` (table-driven) + `FuzzFoldPadding` (`internal/judge/fold_test.go`, new; the seed corpus runs with
+  `go test`): a 128-byte run stays as is, a 129-byte run is folded; a run of only invisible characters folds to nothing;
+  a mixed run folds to one space; 100 bytes of whitespace on each side of a `\n` are not folded (no folding across
+  lines); invalid UTF-8 bytes stay as is. Properties: the output is no longer than the input; the number of `\n` is
+  unchanged; the normalised text and per-byte line numbers from `normalizeWithLines` are **exactly the same** as for the
+  input (grounding reads it no differently from the original); idempotent; no padding run over 128 bytes in the output
+- [x] Reverse assertion `TestPlan_RealTextIsSentAsWritten` (`internal/judge/padding_test.go`, new, green today, still
+  green after the fix without a single character changed):
+  ① an ordinary 7,000-byte line in the body with only single spaces: the excerpt is byte-identical to "computed by hand
+  with today's pipeline" (`condense` + `capHeadTail`, no fold), still head + `# … 1 line(s) omitted …` + tail; a verdict
+  quoting that omission marker still fails grounding (`LLM-005`, no judge finding);
+  ② a Python script (8 levels of indentation, one alignment run of exactly 128 bytes): the excerpt is byte-identical to
+  the hand computation;
+  ③ a line whose padding is broken every 128 bytes by a visible character (`.`) is **not folded** and is still replaced
+  by the omission marker — that is visible content, not padding (see "Must not claim")
+- [x] Reverse assertion `TestRun_PaddingBelowTheFoldStillShowsTheDirective` (same file, new, green today): P-006's
+  W12/W13 window path still has an end-to-end test after the fold — the directive has 5 runs of 120 bytes of whitespace
+  each in the middle (below the threshold, sent as is), with one `-` between runs; the quote is grounded at `SKILL.md:7`,
+  and the snippet contains the whole directive and is ≤ 515 bytes. Why: P-006's
+  `TestRun_WhitespacePaddedQuoteShowsTheDirective` / `TestRun_UnicodePaddedQuoteShowsTheDirective` use a single 600-byte
+  run of padding; after the fold they stay green, but no longer go through `collapsedWindow`
+- [x] Reverse assertion: existing tests stay green without a single character changed — `excerpt_test.go`,
+  `plan_test.go`, `rendering_test.go` (including `TestGround_OmissionMarkerIsNotEvidence`,
+  `TestRun_OmissionMarkerIsNotEvidence` and P-006's two padding tests), `ground_test.go`, `egress_test.go`, the e2e tests
+  in `cmd/aguard`; the deletion column of `git diff --numstat origin/main -- '*_test.go'` is all 0
+- [x] `make verify` green; `go version` does not switch toolchains; `internal/collect` and `internal/detect` untouched (so
+  no before/after scan on a real machine; instead the diff is shown to be empty)
 
-## 不做什么
+## Out of scope
 
-- **不动任何封顶**:`maxExcerptBytes`、`maxFileBytes`、`maxDeclaredBytes`、`maxConfigLineBytes`、`maxDecodedBytes`、`maxSnippetBytes`
-  的值和 `capHeadTail` / `capLine` / `boundedRedact` / `declaredPurpose` 的截法一行不改;折叠只会让进封顶的字节变少
-- **不动 `detect`**:`detect.Redact`、静态规则、静态 snippet 一样都不碰,所以 text / JSON / SARIF / HTML / markdown 的静态输出不变;
-  不加"横向垫料"的静态规则(那会改分数,见下面的后续)
-- **不碰落地和渲染**:`ground.go`、`judge.go` 不动 —— 折叠之后规范化文本与原文相同,落地标准、行号计算、`LLM-005` 口径、
-  P-006 的窗口都不需要改
-- **不动 triage 和 collusion 摘要里的静态 snippet**:它们在 `detect` 那一步已经按 200 字节截过,事后折叠拿不回被截掉的内容
-  (`eg.snippet` 不经过折叠)
-- **不改 `capHeadTail` 的"一行装不下就挡住后面所有行"**:对**可见**内容的长行(压缩过的 JS、一段 7,000 字节的散文)照旧
-- 不改提示词、不改 `Client` 接口、不碰 `openai.go`;`go.mod` / `go.sum` 不动,不加依赖;canonical 哈希、闸门、评分不动
+- **No cap changes**: the values of `maxExcerptBytes`, `maxFileBytes`, `maxDeclaredBytes`, `maxConfigLineBytes`,
+  `maxDecodedBytes`, `maxSnippetBytes` and the way `capHeadTail` / `capLine` / `boundedRedact` / `declaredPurpose` cut
+  stay unchanged to the line; the fold can only make the bytes entering the cap fewer
+- **`detect` untouched**: none of `detect.Redact`, the static rules or the static snippets are touched, so the static
+  output of text / JSON / SARIF / HTML / markdown is unchanged; no static rule for "horizontal padding" is added (it would
+  change the score; see the follow-up below)
+- **Grounding and rendering untouched**: `ground.go` and `judge.go` unchanged — after the fold the normalised text equals
+  the original, so the grounding standard, the line-number computation, the definition of `LLM-005` and P-006's window
+  need no change
+- **The static snippets in the triage and collusion summaries are untouched**: they were already cut at 200 bytes in the
+  `detect` step, and folding afterwards cannot recover what was cut (`eg.snippet` does not go through the fold)
+- **`capHeadTail`'s "one line that does not fit blocks every line after it" is unchanged**: it still applies to long
+  lines of **visible** content (minified JS, a 7,000-byte paragraph of prose)
+- No prompt change, no `Client` interface change, `openai.go` untouched; `go.mod` / `go.sum` untouched, no dependency
+  added; the canonical hash, the gate and scoring untouched
 
-## 不能说什么
+## Must not claim
 
-- **不说"垫料再也挡不住判官"**:折掉的只是**连续**超过 128 字节的垫料。每 128 字节插一个可见字符(`.`)就不算垫料,
-  约 47 个可见字符就能把 6,000 字节的摘录填满 —— 那是内容,摘录分不出它和别的内容;一行里塞满这种东西照旧会被省略标记换掉,
-  多个文件里各塞一些照旧能把合计上限花光。修的是"**零可见字符**就能让判官失明"这一档
-- **不说"摘录发的就是文件原文"**:超过 128 字节的空白串在摘录里是一个空格,只有不可见字符的串是空。落地本来就这样读,所以引文和行号
-  不受影响;但模型看不见"这里曾垫过几千字节",报告里也不说(没有 note)
-- 不说"垫料"包括所有看起来是空白的字符:只认两张表 —— `unicode.IsSpace` 认的空白(换行除外)和 `detect.Invisible` 那组不可见字符,
-  与 P-006 落地用的完全相同。U+2800 盲文空白、U+3164 韩文填充符这类不在表里的,照旧占预算
-- 不说 Redact 现在认得被零宽字符切开的 secret:只有超过 128 字节的那种串被折掉之后,拼起来的文本才会再过一次 `Redact`;
-  切开它的串更短时照旧原样发出(和今天一样,是切开的样子)
-- 不说折叠不改变任何真实文件的摘录:2,246,717 个真实非空行里有 28 行会变(27 行 markdown 表格的列对齐、1 行行尾空格 + 零宽字符),
-  变化是对齐空白缩成一个空格
+- **Do not say "padding can no longer block the judge"**: only padding **contiguous** over 128 bytes is folded. Insert a
+  visible character (`.`) every 128 bytes and it no longer counts as padding; about 47 visible characters fill a
+  6,000-byte excerpt — that is content, and the excerpt cannot tell it from other content; a line stuffed with it is still
+  replaced by the omission marker, and stuffing some into each of several files can still spend the total cap. What is
+  fixed is the tier where **zero visible characters** blind the judge
+- **Do not say "the excerpt sends the file as written"**: a whitespace run over 128 bytes is one space in the excerpt,
+  and a run of only invisible characters is empty. Grounding already reads it that way, so quotes and line numbers are
+  unaffected; but the model cannot see "thousands of bytes of padding were here", and the report does not say so either
+  (no note)
+- Do not say "padding" covers every character that looks blank: only two tables count — the whitespace
+  `unicode.IsSpace` recognises (newline excluded) and the invisible characters in `detect.Invisible`, exactly the same as
+  P-006's grounding uses. Characters not in the tables, such as the U+2800 braille blank and the U+3164 Hangul filler,
+  still consume budget
+- Do not say Redact now recognises secrets cut apart by zero-width characters: only after a run over 128 bytes is folded
+  does the joined text go through `Redact` again; when the run cutting it is shorter, it is still sent as is (as today,
+  in its cut-apart form)
+- Do not say the fold changes no real file's excerpt: 28 of 2,246,717 real non-empty lines change (27 lines of markdown
+  table column alignment, 1 line of trailing spaces + zero-width characters), and the change is alignment whitespace
+  shrinking to one space
 
-## 工作项
+## Work items
 
-| W | 一句话 | 提交信息(不写 sha,rebase 会改) |
+| W | In one sentence | Commit message (no sha; rebase changes it) |
 |---|---|---|
-| 1 | 端到端与 `planFor` 两组新测试 + 三条守卫 + 两组反向断言,跑红(守卫①②与反向断言今天就绿) | `judge: tests — a directive padded with whitespace never reaches the judge, which is sent the omission marker or a prefix of blanks instead (P-020)` |
-| 2 | `foldPadding`:行内连续超过 128 字节的垫料折成落地读它的样子;`eg.redact` 改成 Redact → 折叠 → (折过才)再 Redact → scrub;`TestFoldPadding` + `FuzzFoldPadding`;守卫三条各跑一次变异 | `judge: padding inside a line is folded to the space grounding reads it as before any cap, so it can no longer push a directive out of the excerpt (P-020)` |
-| 3 | `llm-judge` 对子、`architecture` 对子、spec §5.2、`.claude/rules/judge.md` 各一句 | `docs: the judge pair, the architecture pair, spec §5.2 and judge.md say padding is folded before the excerpt caps (P-020)` |
-| 4 | 本文件「完成」、索引 | `proposals: P-020 (P-020)` |
+| 1 | Two new test groups, end-to-end and `planFor`, + three guards + two groups of reverse assertions, run red (guards ①② and the reverse assertions are green today) | `judge: tests — a directive padded with whitespace never reaches the judge, which is sent the omission marker or a prefix of blanks instead (P-020)` |
+| 2 | `foldPadding`: padding contiguous over 128 bytes within a line folds to what grounding reads it as; `eg.redact` becomes Redact → fold → Redact again (only if something was folded) → scrub; `TestFoldPadding` + `FuzzFoldPadding`; one mutation run for each of the three guards | `judge: padding inside a line is folded to the space grounding reads it as before any cap, so it can no longer push a directive out of the excerpt (P-020)` |
+| 3 | One sentence each in the `llm-judge` pair, the `architecture` pair, spec §5.2, `.claude/rules/judge.md` | `docs: the judge pair, the architecture pair, spec §5.2 and judge.md say padding is folded before the excerpt caps (P-020)` |
+| 4 | This file's "Done", the index | `proposals: P-020 (P-020)` |
 
-## 未决问题
+## Open questions
 
-1. **阈值取多少?**
-   **建议**:128 字节。真实行首缩进最长 121 字节(2,246,717 个非空行),超过 128 的串只有 28 行;再低就开始吃真实缩进
-   (超过 64 的行首串语料里有 3 行),再高只是让"每隔 N 字节插一个可见字符"便宜一倍,不改变能防住的那一档(零可见字符)。
-   **已决(2026-10-09)**:按建议
-2. **折成什么?**
-   **建议**:落地读它的样子 —— 串里有空白就是一个空格,只有不可见字符就是空(`foldForMatch` 的同一套)。这样摘录规范化之后与原文
-   逐字节相同,落地、行号、P-006 的窗口都不用动。插一个可见的占位符(`⟨7000 spaces⟩`)能告诉模型"这里垫过",但它是不在任何文件里的文本,
-   要像省略标记一样教落地拒收,代价不成比例。
-   **已决(2026-10-09)**:按建议
-3. **放在哪一层?**
-   **建议**:`eg.redact` —— 摘录构造器对原始内容调用的唯一收口(SKILL.md 正文与描述、脚本、单文件、connector、hook、MCP 行、解码 blob
-   全经过它),新加的构造器自动带上。不放进 `condense`:hook / MCP / 描述 / blob 不经过它;也不放进 `detect.Redact`:那会改静态输出。
-   **已决(2026-10-09)**:按建议
-4. **只在超封顶时折,还是一律折?**
-   **建议**:一律折。只在超封顶时折挡不住"三个脚本各 1,975 字节、都在每文件上限之内,合计 6,000 字节被垫料花光"(探针实测 payload 不进请求);
-   真实文件里会变的只有 28 行。
-   **已决(2026-10-09)**:按建议
-5. **要不要披露"这里折过"(`LLM-000` 或文本里的标记)?**
-   **建议**:不。折掉的不是内容 —— 落地本来就把它读成一个空格;`condense` 折空行、删注释行也从不披露;为 28 行真实表格出 note
-   会教人跳过 note。"横向垫料本身就是信号"这件事该是静态规则(与 `OBF-007` 对称),那会改分数,记为后续,本条不做。
-   **已决(2026-10-09)**:按建议
-6. **折叠后要不要再 `Redact` 一次?**
-   **建议**:要,但只在确实折过时。折叠可能把被不可见字符切开的 token 拼回去;第二遍只会抹得更多(第一遍的 `<REDACTED>` 不会被还原),
-   正常文本不付代价。顺序 Redact → 折叠 → Redact → scrub:折叠不能在第一遍之前(熵规则按整串判,拼上低熵的尾巴会让原本会被抹掉的 token 漏出去),
-   scrub 仍在最后一遍 Redact 之后(P-005 的放置规则)。
-   **已决(2026-10-09)**:按建议
+1. **What threshold?**
+   **Recommendation**: 128 bytes. The longest real leading indentation is 121 bytes (2,246,717 non-empty lines), and only
+   28 lines have a run over 128; any lower and it starts eating real indentation (the corpus has 3 lines with a leading
+   run over 64); any higher only makes "insert a visible character every N bytes" twice as cheap, without changing the
+   tier it defends (zero visible characters).
+   **Decided (2026-10-09)**: as recommended
+2. **Fold to what?**
+   **Recommendation**: what grounding reads it as — one space if the run contains whitespace, nothing if it is only
+   invisible characters (the same rules as `foldForMatch`). The excerpt, once normalised, is then byte-identical to the
+   original, and grounding, line numbers and P-006's window need no change. A visible placeholder (`⟨7000 spaces⟩`) could
+   tell the model "padding was here", but it is text that is in no file, and grounding would have to be taught to reject
+   it like the omission marker; the cost is out of proportion.
+   **Decided (2026-10-09)**: as recommended
+3. **At which layer?**
+   **Recommendation**: `eg.redact` — the single choke point the excerpt builders call on raw content (the SKILL.md body
+   and description, scripts, single files, connectors, hooks, MCP lines and decoded blobs all go through it), so new
+   builders get it automatically. Not in `condense`: hooks / MCP / descriptions / blobs do not go through it; and not in
+   `detect.Redact`: that would change the static output.
+   **Decided (2026-10-09)**: as recommended
+4. **Fold only when over the cap, or always?**
+   **Recommendation**: always. Folding only over the cap does not stop "three scripts of 1,975 bytes each, all within the
+   per-file cap, with the 6,000-byte total spent on padding" (the probe measured that the payload does not reach the
+   request); only 28 lines of real files change.
+   **Decided (2026-10-09)**: as recommended
+5. **Should "folded here" be disclosed (`LLM-000` or a marker in the text)?**
+   **Recommendation**: no. What is folded is not content — grounding already reads it as one space; `condense` never
+   discloses folding blank lines or dropping comment lines either; a note for 28 lines of real tables would teach people
+   to skip notes. "Horizontal padding is itself a signal" belongs in a static rule (symmetric with `OBF-007`), which would
+   change the score; it is recorded as a follow-up and not done here.
+   **Decided (2026-10-09)**: as recommended
+6. **Should `Redact` run again after the fold?**
+   **Recommendation**: yes, but only when something was actually folded. The fold can join back a token that invisible
+   characters cut apart; the second pass can only erase more (the first pass's `<REDACTED>` is not restored), and normal
+   text pays nothing. Order Redact → fold → Redact → scrub: the fold cannot precede the first pass (the entropy rule
+   judges the whole run, and appending a low-entropy tail would let a token that would have been erased leak), and scrub
+   stays after the last Redact (P-005's placement rule).
+   **Decided (2026-10-09)**: as recommended
 
-## 完成
+## Done
 
 ```
-合入:PR #38(2026-10-09;sha 用 git log --grep P-020 找)
-发布:待发
-证据:TestRun_PaddedDirectiveReachesTheJudge(internal/judge/padding_test.go);W1 在 930e914 上红 30/30,全是 `none of 2 request(s) carried the directive` → W2 后绿,30 例的 LLM-003 都引到指令真实所在行(SKILL.md:9 / 9 / 5 / 11 / 10),没有 LLM-005
-证据:TestPlan_PaddingCostsWhatOneSpaceCosts(同文件);W1 红 50/50(9 个面 × 6 种垫料,解码 blob 只跑 ASCII 两种,Unicode 空白会让 blob 读成二进制):hook 两趟 Behavior 各 6,000 字节纯前缀;MCP 那例 shortened = "1 value(s) cut to 500 bytes",参照为空;三个垫料脚本那例 intent 5,995 字节、带省略标记 → W2 后绿
-证据:TestEgress_PaddingIsFoldedBetweenRedactions(同文件);W1 时 ③ 红(被零宽字符切开的家目录没换成 ~)、①② 绿 → W2 后三条绿;变异(均已还原):折叠挪到第一遍 Redact 之前 → ① 红;去掉第二遍 Redact → ② 红;scrub 挪到折叠之前 → ③ 红(同时只留一遍 Redact 时 ②③ 一起红)
-证据:TestFoldPadding、FuzzFoldPadding(internal/judge/fold_test.go);`go test -run '^$' -fuzz FuzzFoldPadding -fuzztime 20s` 935,369 次执行无失败(输出不变长、行数不变、幂等、无超过 128 字节的垫料串、normalizeWithLines 的文本与逐字节行号与原文相同)
-证据:反向断言 TestPlan_RealTextIsSentAsWritten、TestRun_PaddingBelowTheFoldStillShowsTheDirective 在 W1(实现未改)上就绿,W2 后不改一字仍绿;ground.go 里 collapsedWindow 换成 window(变异,已还原)后全包只有 TestRun_PaddingBelowTheFoldStillShowsTheDirective 红 —— P-006 的两条 600 字节垫料测试折叠后确实不再经过那条路,由它接着守
-证据:反向断言既有测试一字不改仍绿(make verify 的全量测试里,含 TestGround_OmissionMarkerIsNotEvidence、TestRun_OmissionMarkerIsNotEvidence、TestRun_WhitespacePaddedQuoteShowsTheDirective、TestRun_UnicodePaddedQuoteShowsTheDirective、excerpt_test.go、plan_test.go、egress_test.go、cmd/aguard 的 e2e);git diff --numstat origin/main -- '*_test.go' 只有两个新文件,删除列全为 0
-证据:不做什么 —— git diff --stat origin/main -- internal/detect internal/collect internal/score internal/report internal/gate internal/judge/ground.go internal/judge/judge.go internal/judge/openai.go internal/judge/prompt.go internal/judge/decode.go internal/judge/run.go internal/judge/triage.go go.mod go.sum 为空;excerpt.go 删除行为 0(封顶常量与 capHeadTail / capLine / boundedRedact / declaredPurpose 未动,只新增 foldPadding);collect / detect 没改,所以没有跑真机扫描对比
-证据:scratch 探针(不提交)在 W2 之后重跑:问题一节表里 22 种形状加反向例,23 例全部"含指令原文 ≥ 1、含省略标记 0";正文垫在行内的 5 种空白例 user 消息 292 字节,与不垫的反向例逐字节同长
-证据:make verify → verify: all gates passed;go version go1.23.5 未切换工具链,go.mod 第二行 go 1.23.5
+Merged: PR #38 (2026-10-09; find the sha with git log --grep P-020)
+Released: pending release
+Evidence: TestRun_PaddedDirectiveReachesTheJudge (internal/judge/padding_test.go); W1 red 30/30 on 930e914, all `none of 2 request(s) carried the directive` → green after W2; in all 30 cases the LLM-003 cites the line where the directive actually is (SKILL.md:9 / 9 / 5 / 11 / 10), no LLM-005
+Evidence: TestPlan_PaddingCostsWhatOneSpaceCosts (same file); W1 red 50/50 (9 surfaces × 6 paddings; the decoded blob runs only the two ASCII ones, since Unicode whitespace makes the blob read as binary): the two hook passes' Behavior each a 6,000-byte pure prefix; in the MCP case shortened = "1 value(s) cut to 500 bytes", empty for the reference; in the three-padding-scripts case intent is 5,995 bytes with an omission marker → green after W2
+Evidence: TestEgress_PaddingIsFoldedBetweenRedactions (same file); at W1 ③ red (the home directory cut by zero-width characters was not replaced with ~), ①② green → all three green after W2; mutations (all reverted): fold moved before the first Redact → ① red; second Redact removed → ② red; scrub moved before the fold → ③ red (with only one Redact pass, ② and ③ go red together)
+Evidence: TestFoldPadding, FuzzFoldPadding (internal/judge/fold_test.go); `go test -run '^$' -fuzz FuzzFoldPadding -fuzztime 20s` 935,369 executions with no failure (output never longer, line count unchanged, idempotent, no padding run over 128 bytes, normalizeWithLines text and per-byte line numbers identical to the original)
+Evidence: reverse assertions TestPlan_RealTextIsSentAsWritten, TestRun_PaddingBelowTheFoldStillShowsTheDirective green already at W1 (implementation unchanged), still green after W2 without a character changed; with collapsedWindow in ground.go replaced by window (mutation, reverted), the only red in the whole package is TestRun_PaddingBelowTheFoldStillShowsTheDirective — P-006's two 600-byte padding tests indeed no longer go through that path after the fold, and this test takes over guarding it
+Evidence: reverse assertion, existing tests green without a character changed (in make verify's full test run, including TestGround_OmissionMarkerIsNotEvidence, TestRun_OmissionMarkerIsNotEvidence, TestRun_WhitespacePaddedQuoteShowsTheDirective, TestRun_UnicodePaddedQuoteShowsTheDirective, excerpt_test.go, plan_test.go, egress_test.go, the e2e tests in cmd/aguard); git diff --numstat origin/main -- '*_test.go' shows only two new files, deletion column all 0
+Evidence: Out of scope — git diff --stat origin/main -- internal/detect internal/collect internal/score internal/report internal/gate internal/judge/ground.go internal/judge/judge.go internal/judge/openai.go internal/judge/prompt.go internal/judge/decode.go internal/judge/run.go internal/judge/triage.go go.mod go.sum is empty; excerpt.go has 0 deleted lines (the cap constants and capHeadTail / capLine / boundedRedact / declaredPurpose untouched, only foldPadding added); collect / detect unchanged, so no before/after scan on a real machine was run
+Evidence: the scratch probe (not committed) re-run after W2: the 22 shapes in the table in the "Problem" section plus the reverse case, all 23 cases "with directive verbatim ≥ 1, with omission marker 0"; in the 5 whitespace cases padded inside a line of the body the user message is 292 bytes, the same length to the byte as the unpadded reverse case
+Evidence: make verify → verify: all gates passed; go version go1.23.5, no toolchain switch, go.mod second line go 1.23.5
 ```

@@ -1,178 +1,233 @@
 <!-- SPDX-License-Identifier: MIT -->
-# 007 — 在闸门弹窗里批准过的 skill,下次加载还会再问:批准从来没被记下来
+# 007 — A skill approved at the gate's prompt is asked about again on the next load: the approval was never recorded
 
-- **来源**:每个 hook 事件是一个新进程,`LoadStore` 不读回 pending,弹窗里的批准在 `PostToolUse` 时已经丢了;
-  既有测试在同一进程里共用内存 store,一直是绿的。移植自旧仓 agent-guard 的 P-049(私有仓)
-- **依赖**:无
-- **分支**:`p/007-gate-pending-survives`
+- **Source**: every hook event is a new process and `LoadStore` does not read pending back, so the approval given at
+  the prompt is already lost by `PostToolUse`; the existing tests share an in-memory store within one process and have
+  always been green. Ported from P-049 in the former private repository agent-guard
+- **Depends on**: none
+- **Branch**: `p/007-gate-pending-survives`
 
-<!-- 没有「状态」行:文件所在目录就是状态(draft/ design/ complete/ rejected/),见 README.md。 -->
+<!-- No "Status" line: the directory the file is in is the status (draft/ design/ complete/ rejected/), see README.md. -->
 
-## 问题
+## Problem
 
-闸门对一个带 high 发现的 skill 返回 `ask`,运维在弹窗里点了同意,skill 加载。用户文档
-(`docs/install-gate.md` 的事件表)说这时 `PostToolUse` 会"记下来",以后同样的字节不再问。**实际上从来没有记下来过**:
-下一次加载同一份字节,弹窗照样出现,`aguard approvals` 是空的。
+The gate returns `ask` for a skill with a high finding, the operator clicks allow in the prompt, and the skill loads.
+The user docs (the event table in `docs/install-gate.md`) say that `PostToolUse` then "records it", and the same bytes
+are not asked about again. **In fact it has never been recorded**: the next load of the same bytes shows the prompt
+again, and `aguard approvals` is empty.
 
-原因在进程边界上。Claude Code 的每个 hook 事件都是**一个新进程**:
+The cause is at the process boundary. Every Claude Code hook event is **a new process**:
 
-| 进程 | 做什么 | 实际结果 |
+| Process | What it does | Actual result |
 |---|---|---|
-| `PreToolUse` | 判成 `ask`,`Store.pend` 按 `tool_use_id` 把判决停进 `pending`(`internal/gate/approvals.go:139`),`Save` 写盘 | 文件里确实有这条 pending |
-| `PostToolUse` | `LoadStore` 读文件(`approvals.go:96`),`handlePost` 按 `tool_use_id` 找 pending(`internal/gate/hook.go:314`),重扫、哈希一致就提升为批准 | `LoadStore` 只把 `on.Approvals` 抄进新 Store(`approvals.go:115-124`),**`Pending` 从不读回**。pending 找不到,`handlePost` 直接返回空,什么都不记,**也什么都不说** |
+| `PreToolUse` | Decides `ask`; `Store.pend` parks the verdict in `pending` keyed by `tool_use_id` (`internal/gate/approvals.go:139`), `Save` writes it to disk | The file does contain this pending |
+| `PostToolUse` | `LoadStore` reads the file (`approvals.go:96`), `handlePost` looks up the pending by `tool_use_id` (`internal/gate/hook.go:314`), rescans, and promotes it to an approval if the hash matches | `LoadStore` only copies `on.Approvals` into the new Store (`approvals.go:115-124`); **`Pending` is never read back**. The pending is not found, `handlePost` returns empty right away, records nothing, **and says nothing** |
 
-还有一个连带后果:任何一次后续写盘(下一个 `PreToolUse`、`aguard approve`、`aguard approvals forget`)都用这份
-没有 pending 的 Store 覆盖文件,所以别的会话里**正开着的**弹窗,它的 pending 也被一并抹掉。
+There is a knock-on effect too: any later disk write (the next `PreToolUse`, `aguard approve`,
+`aguard approvals forget`) overwrites the file with this Store that has no pending, so the pending of a prompt
+**currently open** in another session is wiped along with it.
 
-用构建出的二进制对一个临时 root 手跑,每步一个 `aguard hook` 进程(2026-10-09,`main` 的 `dec64ca`):
+Running the built binary by hand against a temporary root, one `aguard hook` process per step (2026-10-09, `main` at
+`dec64ca`):
 
 ```
-1. PreToolUse  toolu_repro1  → decision: ask;store 里有 pending.toolu_repro1(hash a1e9cd5d…,51/100)
-2. PostToolUse toolu_repro1  → stdout 0 字节;store 不变,approvals 仍是 {}
+1. PreToolUse  toolu_repro1  → decision: ask; the store has pending.toolu_repro1 (hash a1e9cd5d…, 51/100)
+2. PostToolUse toolu_repro1  → stdout 0 bytes; store unchanged, approvals still {}
    aguard approvals          → no approvals recorded
-3. PreToolUse  toolu_repro2  → decision: ask(同一份字节,又问了一遍)
+3. PreToolUse  toolu_repro2  → decision: ask (the same bytes, asked again)
 ```
 
-为什么测试全绿:`internal/gate` 里覆盖这条路径的测试(`TestGateAsksThenRemembers`、`TestApprovalOnlyCoversWhatWasShown`)
-让 Pre 和 Post **共用同一个内存里的 Store**,于是 pending 从没经过磁盘;`cmd/aguard` 的端到端测试
-(`TestGateEndToEnd`)走真实的 `runHook`,但只发 `PreToolUse`,从没发过 `PostToolUse`。
+Why the tests are all green: the tests in `internal/gate` that cover this path (`TestGateAsksThenRemembers`,
+`TestApprovalOnlyCoversWhatWasShown`) have Pre and Post **share the same in-memory Store**, so the pending never went
+through the disk; the end-to-end test in `cmd/aguard` (`TestGateEndToEnd`) goes through the real `runHook`, but only
+sends `PreToolUse`, never `PostToolUse`.
 
-后果:
+Consequences:
 
-- **"弹窗里同意一次就够"这个承诺不成立**。每次加载一个带 high 发现、运维已经决定接受的 skill,都会再弹一次;
-  而运维会把这读成"闸门坏了",这正是 `.claude/rules/gate.md` 反复说的、让人卸掉闸门的那种成本。
-- **而且是静默的**:PostToolUse 什么都不输出,运维没有任何途径知道自己的回答被丢了。唯一能绕开的办法是
-  在终端里 `aguard approve <path>`,而文档没有告诉他要这么做。
-- 文件里的 pending 不会自己长大(下一次 `pend` 会整份覆盖),但每一条都只是写下去、从没被读过。
+- **The promise "allowing once at the prompt is enough" does not hold.** Every load of a skill with a high finding that
+  the operator has already decided to accept prompts again; and the operator reads this as "the gate is broken", which
+  is exactly the kind of cost that `.claude/rules/gate.md` keeps saying makes people uninstall the gate.
+- **And it is silent**: PostToolUse outputs nothing, and the operator has no way to learn that their answer was
+  dropped. The only way around it is `aguard approve <path>` in a terminal, and the docs do not tell them to do that.
+- The pending in the file does not grow on its own (the next `pend` overwrites the whole thing), but every entry is
+  only ever written, never read.
 
-## 初步方向
+## Initial direction
 
-`LoadStore` 把 `pending` 读回来,卫生规则与 approvals 同一套思路:key 为空、hash 为空的行丢掉;过期的
-(与 `pend` 里修剪用的**同一条**过期规则)丢掉;读不懂/未知版本的文件仍整份退化成空。只动 `internal/gate/approvals.go`
-和它的测试;`handlePost` 的"重读、重算哈希、一致才提升"不动 —— 那正是 pending 存在的理由。
-补一条跨两个进程的测试(两次 `runHook`),这是现有测试结构上造不出的场景。
+`LoadStore` reads `pending` back, with hygiene rules in the same spirit as for approvals: rows with an empty key or an
+empty hash are dropped; expired ones (by the **same** expiry rule that `pend` prunes with) are dropped; an unreadable /
+unknown-version file still degrades as a whole to empty. Only `internal/gate/approvals.go` and its tests change;
+`handlePost`'s "reread, recompute the hash, promote only on a match" is untouched — that is exactly why pending exists.
+Add a test across two processes (two `runHook` calls), a scenario the existing tests cannot construct by their
+structure.
 
-## 完成的判据
+## Done criteria
 
-- [x] `TestGateRemembersAnApprovalAcrossHookProcesses`(`cmd/aguard/gate_pending_test.go`,新):真实 `runHook` 跑两次 ——
-  `PreToolUse` 判 `ask`、文件里有这条 pending(前置条件,今天就成立)→ 同一个 `tool_use_id` 的 `PostToolUse` →
-  文件里的 approvals 含 `checkTarget` 对同一目录算出的哈希,判决 `accepted-risk`,Post 的输出说 "risk accepted";
-  第三次 `PreToolUse`(新 id)输出 0 字节。**今天红**:Post 之后 approvals 是空的
-- [x] `TestPendingSurvivesSaveAndLoad`(`internal/gate/pending_test.go`,新):`pend` → `Save` → `LoadStore` → `pendingFor` 找得到,
-  六个字段一个不差。今天红
-- [x] `TestPostPromotesAcrossProcesses`(`internal/gate/pending_test.go`,新):Pre 和 Post 各用一个**从磁盘新读**的 Store 调 `Handle`,
-  中间 `Save` → Post 之后已批准,pending 已消费。今天红
-- [x] `TestPendingHygieneOnLoad`(同上,新):一份文件里放好行与坏行 —— 空 id、空 hash、无日期、未来日期、过期(`pendingTTL + 60` 秒前)
-  的丢掉;`pendingTTL − 60` 秒前的、新鲜的留下;同一文件里 approvals 的卫生规则照旧(key 与 hash 不符的丢)。
-  **为什么是 ±60 秒而不是正好 `pendingTTL`**:跨进程测试跑在墙钟上(`LoadStore` 用进程自己的钟,见未决 1),
-  写文件和读文件之间跨一秒就会让"正好 TTL"变成 TTL + 1;精确边界由共用的 `expired()` 和 `TestPendingExpires`(TTL + 1 被修剪)保证
-- [x] 反向断言 (a)/(f) —— 字节变了不提升,而且 Post 是**重算**哈希去比,不是信文件里的哈希:
-  `TestChangedBytesAreNotPromotedAcrossHookProcesses`(`cmd/aguard`,新):Pre 之后改 skill 里一个文件 → Post → approvals 为空,
-  输出含 "changed between the prompt and the load"。**这句输出是判据的一半**:今天 Post 找不到 pending 就直接返回,"没提升"是白给的;
-  有这句话才证明 pending 被找到了、比较真的发生了。
-  `TestPendingHashIsComparedNotTrusted`(`internal/gate`,新):手写一份 pending 哈希与扫描结果不同的文件 → Post → 两个哈希都不在 approvals 里
-- [x] 反向断言 (b):`TestExpiredPendingIsNotPromoted`(`internal/gate`,新):扫描器给出与 pending **相同**的哈希,
-  pending 停在 `pendingTTL + 60` 秒前 → 跨进程 Post 后不批准;停在 `pendingTTL − 60` 秒前 → 批准(同一条测试里的对照,防止"不批准"是因为别的原因)
-- [x] 反向断言 (c):`TestPostForAnotherCallPromotesNothing`(`internal/gate`,新):Pre `c1` → 新读 → Post `c2` → 不批准;
-  再新读,`c1` 的 pending 还在(别人的回答不消费这条)
-- [x] 反向断言 (d):`TestMediumPassIsNotRememberedAcrossProcesses`(`internal/gate`,新):只有 medium 的放行,跨进程 Pre → Post 之后
-  approvals 仍为空;`TestPassWithMediumFindingIsNotRemembered` 及旁边三条不改一字仍绿
-- [x] 反向断言 (e):`TestCorruptStoreAsksRatherThanAllows`、`TestKeyMustMatchItsOwnHash`、`TestLoadStore_FIFOReadsAsCorruptNotHang`
-  不改一字仍绿;`TestPendingHygieneOnLoad` 另加一例:`pending` 一节类型不对 → 整份 `Corrupt`、approvals 为空
-- [x] 不改一字仍绿:`TestGateAsksThenRemembers`、`TestApprovalOnlyCoversWhatWasShown`、`TestPendingExpires`、`TestDenyParksNothing`、
-  `TestFailedToolCallRecordsNothing`、`TestAskEscalatesWhenNobodyWillSeeIt`、`TestGateEndToEnd`、`TestHookRunnerNeverFails`
-- [x] 手跑:`make build` 后两个 `aguard hook` 进程喂同一 `tool_use_id`,修前修后各记一次(本文「问题」一节是修前)
-- [x] `make verify` 绿;`go version` 不切换工具链
+- [x] `TestGateRemembersAnApprovalAcrossHookProcesses` (`cmd/aguard/gate_pending_test.go`, new): the real `runHook`
+  runs twice — `PreToolUse` decides `ask`, the file has this pending (precondition, holds today) → `PostToolUse` with
+  the same `tool_use_id` → the approvals in the file contain the hash `checkTarget` computes for the same directory,
+  verdict `accepted-risk`, Post's output says "risk accepted"; a third `PreToolUse` (new id) outputs 0 bytes. **Red
+  today**: approvals are empty after Post
+- [x] `TestPendingSurvivesSaveAndLoad` (`internal/gate/pending_test.go`, new): `pend` → `Save` → `LoadStore` →
+  `pendingFor` finds it, with all six fields intact. Red today
+- [x] `TestPostPromotesAcrossProcesses` (`internal/gate/pending_test.go`, new): Pre and Post each call `Handle` with a
+  Store **freshly read from disk**, with a `Save` in between → after Post it is approved and the pending is consumed.
+  Red today
+- [x] `TestPendingHygieneOnLoad` (same file, new): one file holds good and bad rows — empty id, empty hash, no date,
+  future date and expired (`pendingTTL + 60` seconds ago) are dropped; `pendingTTL − 60` seconds ago and fresh are kept;
+  the approvals hygiene rules in the same file stay as before (a key that does not match its hash is dropped).
+  **Why ±60 seconds and not exactly `pendingTTL`**: the cross-process tests run on the wall clock (`LoadStore` uses the
+  process's own clock, see open question 1), and one second passing between writing and reading the file would turn
+  "exactly TTL" into TTL + 1; the exact boundary is guaranteed by the shared `expired()` and by `TestPendingExpires`
+  (TTL + 1 is pruned)
+- [x] Reverse assertion (a)/(f) — changed bytes are not promoted, and Post **recomputes** the hash to compare rather
+  than trusting the hash in the file:
+  `TestChangedBytesAreNotPromotedAcrossHookProcesses` (`cmd/aguard`, new): after Pre, change one file in the skill →
+  Post → approvals empty, output contains "changed between the prompt and the load". **This output line is half the
+  criterion**: today Post returns right away when it cannot find the pending, so "not promoted" comes for free; only
+  this line proves the pending was found and the comparison really happened.
+  `TestPendingHashIsComparedNotTrusted` (`internal/gate`, new): hand-write a file whose pending hash differs from the
+  scan result → Post → neither hash is in approvals
+- [x] Reverse assertion (b): `TestExpiredPendingIsNotPromoted` (`internal/gate`, new): the scanner gives the **same**
+  hash as the pending, the pending parked `pendingTTL + 60` seconds ago → not approved after a cross-process Post;
+  parked `pendingTTL − 60` seconds ago → approved (a control in the same test, so that "not approved" is not for some
+  other reason)
+- [x] Reverse assertion (c): `TestPostForAnotherCallPromotesNothing` (`internal/gate`, new): Pre `c1` → fresh read →
+  Post `c2` → not approved; after another fresh read, `c1`'s pending is still there (someone else's answer does not
+  consume it)
+- [x] Reverse assertion (d): `TestMediumPassIsNotRememberedAcrossProcesses` (`internal/gate`, new): a pass with only
+  medium findings, after a cross-process Pre → Post approvals are still empty; `TestPassWithMediumFindingIsNotRemembered`
+  and the three next to it still green without a single character changed
+- [x] Reverse assertion (e): `TestCorruptStoreAsksRatherThanAllows`, `TestKeyMustMatchItsOwnHash`,
+  `TestLoadStore_FIFOReadsAsCorruptNotHang` still green without a single character changed; `TestPendingHygieneOnLoad`
+  adds one more case: the `pending` section has the wrong type → the whole file `Corrupt`, approvals empty
+- [x] Still green without a single character changed: `TestGateAsksThenRemembers`, `TestApprovalOnlyCoversWhatWasShown`,
+  `TestPendingExpires`, `TestDenyParksNothing`, `TestFailedToolCallRecordsNothing`, `TestAskEscalatesWhenNobodyWillSeeIt`,
+  `TestGateEndToEnd`, `TestHookRunnerNeverFails`
+- [x] Manual run: after `make build`, two `aguard hook` processes fed the same `tool_use_id`, recorded once before and
+  once after the fix (the "Problem" section of this file is the before)
+- [x] `make verify` green; `go version` does not switch toolchains
 
-## 不做什么
+## Out of scope
 
-- **批准什么不变**:`handlePost` 的"重新解析、重新扫描、哈希一致才提升"一行不动;提升的仍是本进程算出的 `v.Hash`(闸门不变量:
-  没有任何 API 接受外来的哈希字符串)。`Verdict.Remembered()`、阈值、`accepted-risk` / `clean` 的区分都不动
-- **弹窗文字不变**:`Verdict.Reason()`、`UnrememberedLine()`、Post 的 "risk accepted" / "changed between" 两句、`GATE-000` 的各句都不改 ——
-  Post 的那两句今天在生产上**从未出现过**(Post 永远找不到 pending),修完会第一次出现,但文字是原有的(其中一处毛病见未决 5)
-- **自动答应模式下 `ask → deny` 不变**;`deny` 仍不 `pend`
-- **fail-open 的 `GATE-000` 不变**;30 秒 `scanDeadline`、10 秒 `resolveDeadline` / `preScanDeadline` 不变
-- **批准的 key 仍是 canonical 哈希**;pending 的 key 仍是 `tool_use_id`
-- **坏文件仍整份读成空**,`Save` 仍拒绝覆盖它;版本号 `storeVersion` 不升(文件格式没变:`pending` 一直在里面,只是没人读)
-- **`LoadStore` 的导出签名不变**(五个调用点:`cmd/aguard/gate.go` 四处、`internal/gate/status.go` 一处)
-- **不加文件锁**:两个会话同时 load → pend → save,后写的覆盖先写的。这是 approvals 早就有的竞态,丢的方向是"多问一次";
-  锁要处理残留锁文件、网络文件系统和超时,而本包头号约束是不能卡住加载
-- 不加依赖;不动 `collect` / `detect`(所以不需要真机扫描)
+- **What gets approved does not change**: not one line of `handlePost`'s "re-resolve, rescan, promote only on a hash
+  match" changes; what gets promoted is still the `v.Hash` computed by this process (gate invariant: no API accepts a
+  hash string from outside). `Verdict.Remembered()`, the thresholds and the `accepted-risk` / `clean` distinction do not
+  change
+- **The prompt text does not change**: `Verdict.Reason()`, `UnrememberedLine()`, Post's two sentences "risk accepted" /
+  "changed between" and the `GATE-000` sentences are not changed — Post's two sentences have **never appeared** in
+  production today (Post never finds the pending); after the fix they appear for the first time, but the text is the
+  existing text (for one flaw in it, see open question 5)
+- **`ask → deny` in auto-accept modes does not change**; `deny` still does not `pend`
+- **The fail-open `GATE-000` does not change**; neither do the 30-second `scanDeadline` and the 10-second
+  `resolveDeadline` / `preScanDeadline`
+- **The approval key is still the canonical hash**; the pending key is still `tool_use_id`
+- **A corrupt file still reads as entirely empty**, and `Save` still refuses to overwrite it; the version number
+  `storeVersion` is not bumped (the file format did not change: `pending` was always in it, only nobody read it)
+- **The exported signature of `LoadStore` does not change** (five call sites: four in `cmd/aguard/gate.go`, one in
+  `internal/gate/status.go`)
+- **No file lock**: two sessions doing load → pend → save at the same time, the later write overwrites the earlier one.
+  This is a race approvals has always had, and what it loses is in the "ask once more" direction; a lock would have to
+  deal with stale lock files, network file systems and timeouts, and this package's top constraint is that it must
+  never hold up a load
+- No dependencies added; `collect` / `detect` not touched (so no scan on a real machine needed)
 
-## 不能说什么
+## Must not claim
 
-- **不说"以前点过的同意现在生效了"**:修之前一条都没写进 approvals,所以修完之后每个 skill 还会再问**一次**,那一次点的同意才被记住。
-  在终端里 `aguard approve` 过的不受影响(那条路一直是好的)
-- **不说"闸门记住你的每个选择"**:只有判成 `ask`、你点了同意、而且加载时字节没变的才记。拒绝、`deny`、自动模式升级成的 `deny`、
-  medium 放行、超过一小时才回答的,都不记,和以前一样
-- **不说"已在 Claude Code 会话里实测"**:手跑是两个 `aguard hook` 进程喂**构造**的事件 JSON;真实会话里 Skill 的 `PostToolUse`
-  负载长什么样(尤其 `tool_response` 是不是一个对象),本条没有观察到(见未决问题 4)
-- **不说"并发安全"**:见「不做什么」最后一条
-- **不说"照着 Post 那行提示就能撤销"**:那行里的 `aguard approvals forget a1e9cd5dbc1a…` 带着省略号,原样粘贴会报
-  `no approval matches`(见未决 5);能用的是去掉省略号的前缀,或 `aguard approvals` 列出来的那一列
+- **Do not say "approvals clicked earlier now take effect"**: before the fix not one was written into approvals, so
+  after the fix every skill will still be asked about **once** more, and the approval clicked that time is the one
+  remembered. Skills approved with `aguard approve` in a terminal are unaffected (that path has always worked)
+- **Do not say "the gate remembers every choice you make"**: only those decided `ask`, that you allowed, and whose
+  bytes had not changed at load are recorded. Rejections, `deny`, a `deny` escalated from an auto mode, medium passes
+  and answers given more than an hour later are not recorded, as before
+- **Do not say "tested in a real Claude Code session"**: the manual run was two `aguard hook` processes fed
+  **constructed** event JSON; what Skill's `PostToolUse` payload looks like in a real session (especially whether
+  `tool_response` is an object) was not observed in this proposal (see open question 4)
+- **Do not say "concurrency-safe"**: see the last item of "Out of scope"
+- **Do not say "you can undo by following the hint in Post's line"**: the `aguard approvals forget a1e9cd5dbc1a…` in
+  that line carries an ellipsis, and pasting it as is reports `no approval matches` (see open question 5); what works
+  is the prefix without the ellipsis, or the column listed by `aguard approvals`
 
-## 工作项
+## Work items
 
-| W | 一句话 | 提交信息(不写 sha,rebase 会改) |
+| W | One line | Commit message (no sha, rebase changes it) |
 |---|---|---|
-| 1 | 跨进程的测试 + 反向断言,跑红 | `gate, cmd: tests — an approval given at the prompt is lost between the PreToolUse and PostToolUse processes (P-007)` |
-| 2 | `LoadStore` 读回 pending:空 id / 空 hash / 无日期 / 未来日期 / 过期的丢掉,过期规则与 `pend` 共用一个函数 | `gate: the approvals store reads its pending verdicts back, so PostToolUse in a new process finds the prompt it answers (P-007)` |
-| 3 | spec §17、`.claude/rules/gate.md`、`docs/install-gate.md` 与 zh 对子 | `docs: spec §17, the gate rules and the install-gate pair say a parked verdict crosses the process boundary through the file (P-007)` |
-| 4 | 本文件、索引 | `proposals: P-007 (P-007)` |
+| 1 | Cross-process tests + reverse assertions, run red | `gate, cmd: tests — an approval given at the prompt is lost between the PreToolUse and PostToolUse processes (P-007)` |
+| 2 | `LoadStore` reads pending back: empty id / empty hash / no date / future date / expired are dropped, and the expiry rule shares one function with `pend` | `gate: the approvals store reads its pending verdicts back, so PostToolUse in a new process finds the prompt it answers (P-007)` |
+| 3 | Spec §17, `.claude/rules/gate.md`, `docs/install-gate.md` and its zh pair | `docs: spec §17, the gate rules and the install-gate pair say a parked verdict crosses the process boundary through the file (P-007)` |
+| 4 | This file, the index | `proposals: P-007 (P-007)` |
 
-## 未决问题
+## Open questions
 
-1. **`LoadStore` 判过期用哪个钟?**
-   **建议**:进程自己的 `time.Now()`。`LoadStore` 在 `runHook` 里先于 `Options` 运行,拿不到 `o.Now`;而生产上 `o.Now` 就是
-   `nowUnix` = `time.Now().Unix()`,是同一个钟。导出的 `LoadStore(path)` 签名不变,内部转给 `loadStore(path, now)`,包内测试注入时间。
-   **已决(2026-10-08)**:按建议。
-   实现注记:测试最后没有用到注入的钟 —— W1 的测试必须对着**今天的** API 编译(否则整包编译失败,红的理由就不对了),
-   所以全部跑在墙钟上(`wallNow`,边界留 60 秒余量)。没有调用方的 `loadStore(path, now)` 就没拆出来,
-   `LoadStore` 内部直接取 `time.Now().Unix()` 交给 `readPending`。钟还是同一个,结论不变。
-2. **`asked_at` ≤ 0(无日期)和比现在还晚(未来日期)的行怎么办?**
-   **建议**:都丢。两者都不是闸门自己的钟能写出来的(`pend` 在生产上永远拿 `nowUnix()`),而过期规则对它们永远判"没过期",
-   于是会永久留在文件里。丢错一条正当的(两次 hook 之间时钟往回拨)代价是多问一次 —— 和坏文件读成空同一个方向。
-   **已决(2026-10-08)**:按建议。
-3. **`pendingFor` 的注释说"如果没过期",代码其实不查。改代码还是改注释?**
-   **建议**:改注释,写明过期在哪两处判(`pend` 写入时、`LoadStore` 读入时)。每个 hook 事件是一个新进程,Store 活不到一条记录在它里面过期;
-   给 `pendingFor` 加 `now` 参数在生产上不多拦任何东西,却要改现有测试 `TestPendingExpires` 的调用。
-   **已决(2026-10-08)**:按建议。
-4. **真实 Claude Code 里 Skill 的 `PostToolUse` 负载能不能过 `Event.succeeded()`?** `succeeded()` 在 `tool_response` 缺失或不是 JSON 对象时
-   返回 false,那样修完 pending 也只是活下来、照样不提升。本仓库没有一份真实负载的样本(只有测试里构造的 `{"success":true}`)。
-   **建议**:本条不改 `succeeded()`(那是"什么算加载成功"的判断,改它属于另一个决定),在 PR 里列为 AI 不确定的点;
-   如果真机证实形状不对,另开 proposal。
-   **已决(2026-10-08)**:按建议。
-   查证(2026-10-08,Claude Code 官方 hooks 文档 `code.claude.com/docs/en/hooks.md`):`tool_use_id` 在 Pre 与 Post 里都有、同一次调用相同;
-   每个事件是一次独立的进程调用;在权限弹窗里被拒的调用不触发 `PostToolUse`。**Skill 工具的 `tool_response` 形状文档没写**,仍未证实。
-5. **Post 那行提示里的撤销命令原样粘贴用不了。** "risk accepted … · undo with: aguard approvals forget a1e9cd5dbc1a…"
-   里的哈希是 `shortHash` 的输出,带着 `…`;`resolveHashPrefix` 拿 `a1e9cd5dbc1a…` 当前缀,报 `no approval matches`(修后的二进制手跑实测,exit 2)。
-   这句话以前从没在生产上出现过(Post 永远找不到 pending),本条修好之后它会第一次出现在用户面前。
-   **建议**:本条不改(「不做什么」:弹窗与提示文字不变),由另一份小 proposal 处理(P-008)。本条在「不能说什么」里先披露。
-   **已决(2026-10-08)**:按建议(沿用人对本条未决问题"按建议"的预答;它不扩大本条范围,人可在 PR 上推翻)。
+1. **Which clock does `LoadStore` judge expiry by?**
+   **Recommendation**: the process's own `time.Now()`. `LoadStore` runs in `runHook` before `Options` exists and cannot
+   get `o.Now`; and in production `o.Now` is `nowUnix` = `time.Now().Unix()`, the same clock. The exported
+   `LoadStore(path)` signature does not change; internally it forwards to `loadStore(path, now)`, and in-package tests
+   inject the time.
+   **Decided (2026-10-08)**: as recommended.
+   Implementation note: in the end the tests did not use an injected clock — the W1 tests had to compile against
+   **today's** API (otherwise the whole package fails to compile and the reason for red would be the wrong one), so they
+   all run on the wall clock (`wallNow`, with a 60-second margin at the boundaries). With no caller, `loadStore(path, now)`
+   was not split out; `LoadStore` takes `time.Now().Unix()` directly and hands it to `readPending`. The clock is
+   still the same one, and the conclusion is unchanged.
+2. **What about rows whose `asked_at` is ≤ 0 (no date) or later than now (future date)?**
+   **Recommendation**: drop both. Neither can be written by the gate's own clock (`pend` always takes `nowUnix()` in
+   production), and the expiry rule would always judge them "not expired", so they would stay in the file forever.
+   Wrongly dropping a legitimate one (the clock set back between two hooks) costs one more prompt — the same direction
+   as a corrupt file reading as empty.
+   **Decided (2026-10-08)**: as recommended.
+3. **`pendingFor`'s comment says "if not expired", but the code does not check. Change the code or the comment?**
+   **Recommendation**: change the comment, stating the two places expiry is judged (when `pend` writes, when
+   `LoadStore` reads). Every hook event is a new process, and a Store does not live long enough for a record in it to
+   expire; adding a `now` parameter to `pendingFor` stops nothing more in production, but requires changing the call
+   in the existing test `TestPendingExpires`.
+   **Decided (2026-10-08)**: as recommended.
+4. **Can Skill's `PostToolUse` payload in real Claude Code pass `Event.succeeded()`?** `succeeded()` returns false when
+   `tool_response` is missing or is not a JSON object, in which case after the fix the pending merely survives and is
+   still not promoted. This repository has no sample of a real payload (only the `{"success":true}` constructed in
+   tests).
+   **Recommendation**: this proposal does not change `succeeded()` (that is the judgement of "what counts as a
+   successful load", and changing it is a different decision), and lists it in the PR as a point the AI is unsure of; if
+   a real machine shows the shape is wrong, open a separate proposal.
+   **Decided (2026-10-08)**: as recommended.
+   Verification (2026-10-08, the official Claude Code hooks docs `code.claude.com/docs/en/hooks.md`): `tool_use_id` is
+   present in both Pre and Post and identical for the same call; each event is a separate process invocation; a call
+   rejected in the permission prompt does not trigger `PostToolUse`. **The docs do not describe the shape of the Skill
+   tool's `tool_response`**; still unconfirmed.
+5. **The undo command in Post's hint line does not work when pasted as is.** In "risk accepted … · undo with: aguard
+   approvals forget a1e9cd5dbc1a…" the hash is the output of `shortHash`, with the `…`; `resolveHashPrefix` takes
+   `a1e9cd5dbc1a…` as the prefix and reports `no approval matches` (measured by hand with the fixed binary, exit 2).
+   This line never appeared in production before (Post never found the pending); once this proposal fixes that, it will
+   reach users for the first time.
+   **Recommendation**: not changed in this proposal ("Out of scope": prompt and hint text unchanged), handled by another
+   small proposal (P-008). This proposal discloses it in "Must not claim" in the meantime.
+   **Decided (2026-10-08)**: as recommended (carrying over the maintainer's advance answer "as recommended" to this
+   proposal's open questions; it does not widen this proposal's scope, and the maintainer can overturn it on the PR).
 
-## 完成
+## Done
 
-手跑对照(`make build`,`/tmp` 下的临时 root,每步一个 `aguard hook` 进程,事件同「问题」一节):
+Manual comparison (`make build`, a temporary root under `/tmp`, one `aguard hook` process per step, events as in the
+"Problem" section):
 
 ```
-                      修前(main dec64ca)                  修后(本分支)
-1. PreToolUse  r1     ask;pending.toolu_repro1 写入        ask;pending.toolu_repro1 写入
-2. PostToolUse r1     stdout 0 字节;approvals {}           "risk accepted for skill "pdf-export" (51/100) · content a1e9cd5dbc1a…"
-                      pending 原样留着                      approvals 1 条 accepted-risk(hash a1e9cd5d…);pending 清空
+                      before (main dec64ca)                 after (this branch)
+1. PreToolUse  r1     ask; pending.toolu_repro1 written     ask; pending.toolu_repro1 written
+2. PostToolUse r1     stdout 0 bytes; approvals {}          "risk accepted for skill "pdf-export" (51/100) · content a1e9cd5dbc1a…"
+                      pending left as is                    approvals: 1 accepted-risk entry (hash a1e9cd5d…); pending cleared
    aguard approvals   no approvals recorded                 1 approval(s) · a1e9cd5dbc1a401b accepted-risk 51/100
-3. PreToolUse  r2     ask(同一份字节又问一遍)               0 字节(已批准的内容静默加载)
+3. PreToolUse  r2     ask (same bytes asked again)          0 bytes (approved content loads silently)
 ```
 
 ```
-合入:PR #18(2026-10-09;sha 用 git log --grep P-007 找)
-发布:待发
-证据:TestGateRemembersAnApprovalAcrossHookProcesses(cmd/aguard/gate_pending_test.go);W1 红(两次 runHook 之后 approvals 为空,PostToolUse 输出 "")→ W2 后绿:approvals 1 条 accepted-risk、hash 等于 checkTarget 算出的、pending 已消费、第三次 PreToolUse 0 字节
-证据:TestPendingSurvivesSaveAndLoad、TestPostPromotesAcrossProcesses、TestPendingHygieneOnLoad(fresh / near-ttl 两行读回为 0)、TestPostForAnotherCallPromotesNothing、TestExpiredPendingIsNotPromoted/answered_within_the_hour(internal/gate/pending_test.go);W1 红(从文件读回的 pending 恒为 0 条)→ W2 后绿
-证据:反向断言 (a)/(f) TestChangedBytesAreNotPromotedAcrossHookProcesses(cmd/aguard)、TestChangedBytesAreNotPromotedAcrossProcesses、TestPendingHashIsComparedNotTrusted(internal/gate):W1 时"没批准"已成立但 "changed between the prompt and the load" 缺席(红,证明修前那半是白给的)→ W2 后两半都成立;变异:handlePost 的 v.Hash != pending.Hash 短路掉 → 这三条连同 TestApprovalOnlyCoversWhatWasShown 共 4 条变红
-证据:反向断言 (b) TestExpiredPendingIsNotPromoted/answered_after_the_hour 与 TestPendingHygieneOnLoad 的 expired 行;变异:pendingRowOK 不判过期 → 两条变红(3660 秒前的 prompt 被批准;expired 行被读回)。变异:去掉"未来日期""空哈希"两条卫生 → TestPendingHygieneOnLoad 分别在 from-2099 / no-hash 行变红
-证据:反向断言 (c) TestPostForAnotherCallPromotesNothing(W1 红:toolu_1 的 pending 在新进程里已不存在;W2 后别的 tool_use_id 不批准、不消费);(d) TestMediumPassIsNotRememberedAcrossProcesses(修前修后都绿:medium 放行不 pend),TestPassWithMediumFindingIsNotRemembered / TestCleanPassIsStillRemembered / TestLowOnlyPassIsRemembered / TestLLMFindingDoesNotDecideMemory 不改一字仍绿;(e) TestCorruptStoreAsksRatherThanAllows、TestKeyMustMatchItsOwnHash、TestLoadStore_FIFOReadsAsCorruptNotHang 不改一字仍绿,TestPendingHygieneOnLoad 末例"pending 一节类型不对 → 整份 Corrupt、approvals 0、pending 0"
-证据:不改一字仍绿 —— TestGateAsksThenRemembers、TestApprovalOnlyCoversWhatWasShown、TestPendingExpires、TestDenyParksNothing、TestFailedToolCallRecordsNothing、TestAskEscalatesWhenNobodyWillSeeIt、TestGateEndToEnd、TestHookRunnerNeverFails
-证据:手跑见上表:修前 Post 0 字节、approvals 0 条、第三次 Pre 仍 ask → 修后 Post 一行 "risk accepted"、approvals 1 条、第三次 Pre 0 字节;Post 那行的撤销命令原样粘贴 → no approval matches,exit 2(未决 5,留给 P-008)
-证据:不做什么 —— git diff --stat origin/main -- internal/gate/hook.go internal/gate/gate.go internal/gate/status.go cmd/aguard/gate.go internal/gate/gate_test.go internal/gate/approvals_test.go internal/gate/memory_test.go cmd/aguard/gate_e2e_test.go go.mod go.sum internal/collect internal/detect internal/report 为空;代码改动只在 internal/gate/approvals.go(+62 −2)
-证据:make verify: all gates passed;go version go1.23.5(无工具链切换);internal/gate 覆盖率 83.1%
+Merged: PR #18 (2026-10-09; find the sha with git log --grep P-007)
+Released: pending release
+Evidence: TestGateRemembersAnApprovalAcrossHookProcesses (cmd/aguard/gate_pending_test.go); red at W1 (after two runHook calls approvals empty, PostToolUse output "") → green after W2: approvals 1 accepted-risk entry, hash equal to the one checkTarget computes, pending consumed, third PreToolUse 0 bytes
+Evidence: TestPendingSurvivesSaveAndLoad, TestPostPromotesAcrossProcesses, TestPendingHygieneOnLoad (fresh / near-ttl rows read back as 0), TestPostForAnotherCallPromotesNothing, TestExpiredPendingIsNotPromoted/answered_within_the_hour (internal/gate/pending_test.go); red at W1 (pending read back from the file is always 0 entries) → green after W2
+Evidence: reverse assertion (a)/(f) TestChangedBytesAreNotPromotedAcrossHookProcesses (cmd/aguard), TestChangedBytesAreNotPromotedAcrossProcesses, TestPendingHashIsComparedNotTrusted (internal/gate): at W1 "not approved" already held but "changed between the prompt and the load" was absent (red, proving the before half came for free) → after W2 both halves hold; mutation: short-circuit v.Hash != pending.Hash in handlePost → these three plus TestApprovalOnlyCoversWhatWasShown, 4 in total, turn red
+Evidence: reverse assertion (b) TestExpiredPendingIsNotPromoted/answered_after_the_hour and the expired row of TestPendingHygieneOnLoad; mutation: pendingRowOK does not check expiry → both turn red (a prompt from 3660 seconds ago is approved; the expired row is read back). Mutation: remove the "future date" and "empty hash" hygiene rules → TestPendingHygieneOnLoad turns red on the from-2099 / no-hash rows respectively
+Evidence: reverse assertion (c) TestPostForAnotherCallPromotesNothing (red at W1: toolu_1's pending no longer exists in the new process; after W2 another tool_use_id is not approved and does not consume it); (d) TestMediumPassIsNotRememberedAcrossProcesses (green before and after the fix: a medium pass does not pend), TestPassWithMediumFindingIsNotRemembered / TestCleanPassIsStillRemembered / TestLowOnlyPassIsRemembered / TestLLMFindingDoesNotDecideMemory still green without a single character changed; (e) TestCorruptStoreAsksRatherThanAllows, TestKeyMustMatchItsOwnHash, TestLoadStore_FIFOReadsAsCorruptNotHang still green without a single character changed, the last case of TestPendingHygieneOnLoad "pending section has the wrong type → whole file Corrupt, approvals 0, pending 0"
+Evidence: still green without a single character changed — TestGateAsksThenRemembers, TestApprovalOnlyCoversWhatWasShown, TestPendingExpires, TestDenyParksNothing, TestFailedToolCallRecordsNothing, TestAskEscalatesWhenNobodyWillSeeIt, TestGateEndToEnd, TestHookRunnerNeverFails
+Evidence: manual run, see the table above: before the fix Post 0 bytes, approvals 0 entries, third Pre still ask → after the fix Post one line "risk accepted", approvals 1 entry, third Pre 0 bytes; pasting the undo command in Post's line as is → no approval matches, exit 2 (open question 5, left to P-008)
+Evidence: Out of scope — git diff --stat origin/main -- internal/gate/hook.go internal/gate/gate.go internal/gate/status.go cmd/aguard/gate.go internal/gate/gate_test.go internal/gate/approvals_test.go internal/gate/memory_test.go cmd/aguard/gate_e2e_test.go go.mod go.sum internal/collect internal/detect internal/report is empty; the code change is only in internal/gate/approvals.go (+62 −2)
+Evidence: make verify: all gates passed; go version go1.23.5 (no toolchain switch); internal/gate coverage 83.1%
 ```

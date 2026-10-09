@@ -1,229 +1,296 @@
 <!-- SPDX-License-Identifier: MIT -->
-# 003 — "绝不外连"没有一条测试钉住,baselines 的模板却说有
+# 003 — No test pins "never connects out", yet the baselines template says one does
 
-- **来源**:新发现(2026-10-09)—— 不变量 #1(默认零外连)是工具可信的根据,但没有任何测试钉住它;
-  baselines 的说明文字却声称由测试保证。移植自旧仓 agent-guard 的 P-044(私有仓)
-- **依赖**:无
-- **分支**:`p/003-zero-dial-test`
+- **Source**: new finding (2026-10-09) — invariant #1 (zero outbound connections by default) is the basis for trusting
+  the tool, but no test pins it; the baselines description text claims tests guarantee it. Ported from P-044 in the
+  former private repository agent-guard
+- **Depends on**: none
+- **Branch**: `p/003-zero-dial-test`
 
-<!-- 没有「状态」行:文件所在目录就是状态(draft/ design/ complete/ rejected/),见 README.md。 -->
+<!-- No "Status" line: the directory the file is in is the status (draft/ design/ complete/ rejected/), see README.md. -->
 
-## 问题
+## Problem
 
-不变量 #1(`.claude/rules/invariants.md:7`)写着"绝不执行被扫描内容,绝不外连(除显式开启的 LLM judge)"。
-README、`docs/architecture.md` 的简表、`cmd/aguard` 里几处注释都在复述它。**可是全仓没有一条测试断言过它**:
+Invariant #1 (`.claude/rules/invariants.md:7`) says "never execute scanned content, never connect out (except the
+explicitly enabled LLM judge)". The README, the summary table in `docs/architecture.md` and several comments in
+`cmd/aguard` all restate it. **But no test in the whole repository has ever asserted it**:
 
-| 地方 | 现在写着什么 | 实际有什么 |
+| Place | What it says now | What actually exists |
 |---|---|---|
-| `baselines/tools.yaml:33-37`(aguard 的 `uploads_samples_basis`) | "invariant #1, **enforced by tests in this repository**: aguard never connects out except for the explicitly opted-in LLM judge" | `grep -rn 'RoundTrip\|DefaultTransport' --include='*_test.go'` 只命中判官自己的单测名(`TestHTTPClient_RoundTripAndRedaction`)和 baselines 的一个 YAML 往返测试;判官的 `httptest` 单测测的是"判官发了什么",不是"别的命令没发" |
-| `baselines/cmd/baseline/main.go:397-413` `uploadsFor` | 不带 `--llm` 时把上面那句原样写进每一份 run.yaml | 已提交的 `baselines/results/aguard/2026-09-24/run.yaml:10`、`2026-09-29e/run.yaml:10` 都带着这句 |
-| `cmd/aguard/llm.go:112` `runLLMSetup` 的注释 | "It never prints the key and never sends anything" | 没有测试 |
-| `cmd/aguard/main.go:807` `version` 命令的注释 | "Offline by construction … never a release feed" | 没有测试 |
+| `baselines/tools.yaml:33-37` (aguard's `uploads_samples_basis`) | "invariant #1, **enforced by tests in this repository**: aguard never connects out except for the explicitly opted-in LLM judge" | `grep -rn 'RoundTrip\|DefaultTransport' --include='*_test.go'` only hits the name of the judge's own unit test (`TestHTTPClient_RoundTripAndRedaction`) and a YAML round-trip test in baselines; the judge's `httptest` unit tests test "what the judge sent", not "what the other commands did not send" |
+| `baselines/cmd/baseline/main.go:397-413` `uploadsFor` | Without `--llm`, writes the sentence above verbatim into every run.yaml | The committed `baselines/results/aguard/2026-09-24/run.yaml:10` and `2026-09-29e/run.yaml:10` both carry this sentence |
+| `cmd/aguard/llm.go:112`, the comment on `runLLMSetup` | "It never prints the key and never sends anything" | No test |
+| `cmd/aguard/main.go:807`, the comment on the `version` command | "Offline by construction … never a release feed" | No test |
 
-今天这句话**碰巧是真的**:产品里唯一的 `http.Client` 在 `internal/judge/openai.go:52-65` 的 `NewHTTP`
-(传 `nil` 就新建一个 `&http.Client{}`),两个调用点 `cmd/aguard/main.go:273`(`runJudge`)和 `cmd/aguard/llm.go:220`
-(`runLLMTest`)都传 `nil`;信誉库是 `go:embed`,`gate`、`collect` 没有网络代码,`hack/reputation-refresh` 是另一个二进制。
-但"碰巧是真的"和"被测试钉住"是两回事:
+Today the sentence **happens to be true**: the only `http.Client` in the product is in `NewHTTP` at
+`internal/judge/openai.go:52-65` (pass `nil` and it creates a new `&http.Client{}`), and both call sites,
+`cmd/aguard/main.go:273` (`runJudge`) and `cmd/aguard/llm.go:220` (`runLLMTest`), pass `nil`; the reputation allowlist
+is `go:embed`, `gate` and `collect` have no network code, and `hack/reputation-refresh` is a different binary.
+But "happens to be true" and "pinned by a test" are two different things:
 
-- **下一次加网络调用的人没有任何东西会变红。** 一个顺手的"setup 时验证一下 key"、"version 时查一下新版本"、
-  "check 也跑判官"(P-004 做的正是最后这一条),都会把一条新的出网路径加进来而全绿。
-- **对外引用的那份文件在替我们说一句没有证据的话。** run.yaml 是别人引用测量结果时读的文件(`uploadsFor` 的注释原话),
-  它说"enforced by tests",而那些测试不存在。本仓库的披露纪律是"绿灯不构成证据";这里连绿灯都没有。
-- **不变量本身也说不清边界。** "除显式开启的 LLM judge"没说是哪几个命令。`scan --llm` 会连,`llm test` 也会连
-  (一次 Ping),`check`、`hook`、`approve` 不会 —— 这份清单只在读代码的人脑子里。
+- **Nothing turns red for the next person who adds a network call.** A casual "verify the key during setup", "check
+  for a new version in `version`", "`check` runs the judge too" (P-004 does exactly the last one) would each add a new
+  outbound path and stay all green.
+- **The file others cite says something on our behalf without evidence.** run.yaml is the file others read when they
+  cite the measurements (the wording of the `uploadsFor` comment); it says "enforced by tests", and those tests do not
+  exist. This repository's disclosure discipline is "a green light is not evidence"; here there is not even a green
+  light.
+- **The invariant itself does not state its boundary.** "Except the explicitly enabled LLM judge" does not say which
+  commands. `scan --llm` connects, `llm test` connects too (one Ping), `check`, `hook`, `approve` do not — this list
+  exists only in the head of whoever has read the code.
 
-## 初步方向
+## Initial direction
 
-`internal/judge` 加一个包级测试接缝 `var Transport http.RoundTripper`(nil = `http.DefaultTransport`,和今天一样),
-`NewHTTP` 在调用方没给 client 时用它。`cmd/aguard` 加一条进程内测试:配置里**开着**判官,把接缝换成只计数、返回错误的
-RoundTripper,逐个跑命令入口,断言零次 round trip;同一个计数器在 `scan --llm` 上必须看到 ≥ 1 次,证明它不是瞎的。
+`internal/judge` adds a package-level test seam `var Transport http.RoundTripper` (nil = `http.DefaultTransport`, as
+today), and `NewHTTP` uses it when the caller gives no client. `cmd/aguard` adds an in-process test: with the judge
+**enabled** in the config, replace the seam with a RoundTripper that only counts and returns an error, run the command
+entry points one by one, and assert zero round trips; the same counter must see ≥ 1 on `scan --llm`, proving it is not
+blind.
 
-不变量 #1 改写成"今天只有这几条路径可以出网"的枚举清单,并写明钉住它的是哪条测试;baselines 那句改成点名这条测试。
-不改判官行为,不加网络路径,已提交的 `baselines/results/` 不动。
+Invariant #1 is rewritten as an enumerated list of "the only paths that may connect out today", and states which test
+pins it; the baselines sentence is changed to name this test. Judge behaviour does not change, no network path is
+added, and the committed `baselines/results/` are not touched.
 
-## 完成的判据
+## Done criteria
 
-- [x] `TestZeroDial_OnlyTheJudgeConnects`(`cmd/aguard/zero_dial_test.go`,新):配置**开着**判官
-  (`writeJudgeConfig` 指向 `http://127.0.0.1:9`,`max_retries: 0`),`judge.Transport` 和 `http.DefaultTransport`
-  各换成一个只计数、返回错误的 RoundTripper,下面每个入口跑完**两个计数器都是 0**,且入口本身没有出错
-  (出错就早退的入口零次是空话):
-  `scanEnv`(不带 llm;`clean` 用的也是它)和 `scan` 在评分后追加的 `gateLivenessNote`(fixture 用真的
-  `gate.PlanInstall` 注册了一个指向已删除二进制的闸门,必须返回 `GATE-001`)、`scanInbox`(不带 llm)、
-  `scanEnv` + `scanInbox` 带 llm 但 `llm.enabled: false`、`checkTarget`(和 `check` 命令同样的 opts)、
-  `runHook` 喂 `PreToolUse`(回复必须是 `ask`,证明真扫了)和 `SessionStart`(回复里没有 "could not audit")、
-  `PostToolUse` 的重扫(经 `gateOptions` + `gate.Handle` 共用一个内存 store,回复必须是 "risk accepted";
-  为什么不经 `runHook` 见未决 6)、`approvePath`、`listApprovals`(这一行自己先往 store 里写一条批准,输出必须列出它
-  —— 不靠前一行 `approve` 先跑,`-run` 单选这一行也成立)、`runLLMSetup`、`runLLMStatus`、
-  `runVersion`(见下一条)、`collect.CollectTarget`(`hash`)。今天 `judge.Transport` 不存在,编译即红
-- [x] **`version` 跑的是整段命令体,每个分支一行**:`version` 命令的函数体原样搬进 `runVersion(w, root)`,零表按
-  `pluginVersionLine` 和它委托的 `versionLine` 的**每个出口**各跑一行 —— 对装了 `aguard` 9.9.9 的 root,以发布版
-  `v1.0.0` / `v9.9.9` / `v10.0.0` 跑出 newer / matches / older 三种比较行,以 `dev` 跑出"dev build; not compared";
-  没装插件、`plugin.json` 不带版本两个 root 走两个返回空的出口;只装了旧名 `agentguard` 的 root 走改名提示,
-  新旧两个名字都装了的 root 走"旧插件还在"的后缀(这两个出口是 v0.17 改名时加的)。另有一行**不经 `-ldflags`**,
-  从构建信息盖版本(`applyBuildInfo`,`go install` 装出来的二进制走的那条路,v0.18 起):构建行必须印出构建信息里的
-  版本和 commit,插件行照样比较。每行都断言构建行在、插件那行是这个分支该印的那句(或没有)
-- [x] **反向断言(正对照,防止测试是瞎的)**:同一个测试里、零表**之前**,同一对计数器在三条允许路径上必须看到
-  判官计数器 ≥ 1、默认计数器 = 0:`scanEnv(llm: true)`、`scanInbox(llm: true)`、`runLLMTest`。
-  前者证明接缝真的接在判官的 client 上,后者证明判官的请求没有绕开接缝
-- [x] **每一行开始时两个计数器必须已经是空的**,零表跑完等 50 ms(`lateRequestSettle`)再收一次:
-  入口返回之后才落地的请求报成"在某一行返回之后落地",不被下一行开头的清零吞掉,也不会在计数器还原后无人看见。
-  只保证"报出来",**不保证记在发它的那一行**(见不能说什么)
-- [x] `TestNewHTTP_TransportSeam`(`internal/judge/run_test.go`,新):不设接缝时 `NewHTTP(…, nil)` 建出的 client
-  `Transport == nil`(即 `http.DefaultTransport`,和今天的 `&http.Client{}` 一样);设了接缝,请求走它;
-  **反向断言**:调用方自己给的 client(现有测试都给 `srv.Client()`)原样使用,接缝不覆盖它
-- [x] `TestZeroDial_ClaimsNameTheTest`(`cmd/aguard/zero_dial_test.go`,新):用 `runtime.FuncForPC` 取上面那条测试的
-  **真名**,断言 `baselines/tools.yaml` 里 aguard 的 `uploads_samples_basis` 和 `.claude/rules/invariants.md` 都含它。
-  改测试名而不改这两处 → 红;今天 tools.yaml 只写"enforced by tests in this repository" → 红。
-  外加**集合相等**:正对照(`zeroDialControl`)里每条路径必须是不变量 #1 清单里的一条 `` - `路径`: ``,清单里每条必须有
-  正对照看着它出网(两个方向);每条路径还必须出现在 `baselines/tools.yaml` 那句和 spec §16.4 的出网清单那一行里
-- [x] `TestZeroDial_NoClientOutsideTheJudge`(`cmd/aguard/zero_dial_source_test.go`,新):`go/parser` 读 `cmd/`、`internal/`
-  全部非测试 `.go`,`internal/judge` 之外不许出现 `net/http` 的 `Client`/`Transport` 类型(字面量、`new()`、变量声明、
-  对默认 transport 的类型断言 + `Clone` 都会经过这个名字),`judge.Transport` 不许在非测试文件里被赋值、取地址或带初值;
-  import 了 `cmd/`、`internal/` 以外的本模块包也红(遍历范围不够了)。`internal/judge` **不整包豁免**:包内不许出现
-  `http.Transport`;`http.Client` 只许是 `NewHTTP` 里那个 `http.Client{Transport: Transport}` 字面量的类型(键值全写名字、
-  `Transport` 的值就是接缝这个标识符),或 `*http.Client` 字段/参数/返回值的类型(声明,不造 client)。
-  **反向断言**:读到的文件数 > 0,必须在 `internal/judge` 找到 `var Transport` 的声明,且 `NewHTTP` 里那种字面量
-  **恰好一个** —— 否则这条检查什么都没守
-- [x] 反向断言:`TestHTTPClient_RoundTripAndRedaction`、`TestHTTPClient_CountsTokens`、`TestRun_RetriesOnlyRetryableErrors`、
-  `TestLLMCommands_SetupTestStatus`、`TestE2E_*`(七条;开判官的那几条经 `NewHTTP(…, nil)` 打 `httptest`)、
-  `TestAJudgeRunDisclosesTheUpload`、`TestPluginVersionLine`、`TestPluginVersionLine_LegacyName`、`TestApplyBuildInfo`
-  **不改一字**仍绿 —— 判官的行为、`uploadsFor` 的行为、`version` 的比较与盖版本都没变
-- [x] `make verify` 绿;`go.mod` 第二行仍是 `go 1.23.5`,`go version` 无工具链切换
+- [x] `TestZeroDial_OnlyTheJudgeConnects` (`cmd/aguard/zero_dial_test.go`, new): with the judge **enabled** in the config
+  (`writeJudgeConfig` pointing at `http://127.0.0.1:9`, `max_retries: 0`), `judge.Transport` and `http.DefaultTransport`
+  are each replaced with a RoundTripper that only counts and returns an error; after each entry point below has run
+  **both counters are 0**, and the entry point itself did not fail (zero from an entry point that exits early on an error
+  means nothing):
+  `scanEnv` (without llm; `clean` uses it too) and the `gateLivenessNote` that `scan` appends after scoring (the
+  fixture uses the real `gate.PlanInstall` to register a gate pointing at a deleted binary, and it must return
+  `GATE-001`), `scanInbox` (without llm), `scanEnv` + `scanInbox` with llm but `llm.enabled: false`, `checkTarget` (with
+  the same opts as the `check` command), `runHook` fed `PreToolUse` (the reply must be `ask`, proving it really scanned)
+  and `SessionStart` (no "could not audit" in the reply), the `PostToolUse` rescan (through `gateOptions` +
+  `gate.Handle` sharing one in-memory store, the reply must be "risk accepted"; for why it does not go through
+  `runHook` see open question 6), `approvePath`, `listApprovals` (this row first writes an approval into the store
+  itself and the output must list it — it does not rely on the `approve` row running first, and holds when `-run`
+  selects this row alone), `runLLMSetup`, `runLLMStatus`, `runVersion` (see the next item), `collect.CollectTarget`
+  (`hash`). Today `judge.Transport` does not exist, so it is red at compile time
+- [x] **`version` runs the whole command body, one row per branch**: the function body of the `version` command is
+  moved verbatim into `runVersion(w, root)`, and the zero table runs one row for **each exit** of `pluginVersionLine`
+  and of the `versionLine` it delegates to — for a root with `aguard` 9.9.9 installed, release builds `v1.0.0` /
+  `v9.9.9` / `v10.0.0` produce the newer / matches / older comparison lines, and `dev` produces "dev build; not
+  compared"; a root with no plugin installed and one whose `plugin.json` carries no version take the two exits that
+  return empty; a root with only the old name `agentguard` installed takes the rename hint, and a root with both the new
+  and the old name installed takes the "old plugin still present" suffix (these two exits were added with the v0.17
+  rename). One more row **does not go through `-ldflags`** and stamps the version from build info (`applyBuildInfo`,
+  the path a binary installed with `go install` takes, since v0.18): the build line must print the version and commit
+  from the build info, and the plugin line still compares. Every row asserts that the build line is present and that
+  the plugin line is the sentence this branch should print (or is absent)
+- [x] **Reverse assertion (positive control, so the test is not blind)**: in the same test, **before** the zero table,
+  the same pair of counters must see judge counter ≥ 1 and default counter = 0 on the three allowed paths:
+  `scanEnv(llm: true)`, `scanInbox(llm: true)`, `runLLMTest`. The former proves the seam is really attached to the
+  judge's client, the latter proves the judge's requests do not bypass the seam
+- [x] **Both counters must already be empty at the start of every row**, and after the zero table it waits 50 ms
+  (`lateRequestSettle`) and collects once more: a request that lands after its entry point returned is reported as
+  "landed after some row returned", rather than swallowed by the next row's reset at its start or left unseen after the
+  counters are restored. It only guarantees "it is reported", **not that it is attributed to the row that sent it**
+  (see Must not claim)
+- [x] `TestNewHTTP_TransportSeam` (`internal/judge/run_test.go`, new): with no seam set, the client built by
+  `NewHTTP(…, nil)` has `Transport == nil` (that is, `http.DefaultTransport`, the same as today's `&http.Client{}`);
+  with the seam set, requests go through it; **reverse assertion**: a client the caller supplies (the existing tests all
+  supply `srv.Client()`) is used as is, the seam does not override it
+- [x] `TestZeroDial_ClaimsNameTheTest` (`cmd/aguard/zero_dial_test.go`, new): uses `runtime.FuncForPC` to get the
+  **real name** of the test above, and asserts that aguard's `uploads_samples_basis` in `baselines/tools.yaml` and
+  `.claude/rules/invariants.md` both contain it. Renaming the test without changing these two places → red; today
+  tools.yaml only says "enforced by tests in this repository" → red.
+  Plus **set equality**: every path in the positive control (`zeroDialControl`) must be one `` - `path`: `` entry in
+  invariant #1's list, and every entry in the list must have the positive control see it connect out (both directions);
+  every path must also appear in that sentence in `baselines/tools.yaml` and in the outbound-list line of spec §16.4
+- [x] `TestZeroDial_NoClientOutsideTheJudge` (`cmd/aguard/zero_dial_source_test.go`, new): `go/parser` reads every
+  non-test `.go` under `cmd/` and `internal/`; outside `internal/judge` no `net/http` `Client`/`Transport` type may
+  appear (a literal, `new()`, a variable declaration, and a type assertion on the default transport + `Clone` all go
+  through this name), and `judge.Transport` may not be assigned, have its address taken or carry an initial value in a
+  non-test file; importing a package of this module outside `cmd/` and `internal/` is red too (the walk would no longer
+  cover enough). `internal/judge` is **not exempted as a whole package**: no `http.Transport` may appear inside the
+  package; `http.Client` may only be the type of the `http.Client{Transport: Transport}` literal in `NewHTTP` (all keys
+  named, the value of `Transport` is exactly the seam identifier), or the type of a `*http.Client` field / parameter /
+  return value (a declaration, which builds no client).
+  **Reverse assertion**: the number of files read is > 0, the declaration of `var Transport` must be found in
+  `internal/judge`, and there is **exactly one** literal of the `NewHTTP` kind — otherwise this check guards nothing
+- [x] Reverse assertion: `TestHTTPClient_RoundTripAndRedaction`, `TestHTTPClient_CountsTokens`,
+  `TestRun_RetriesOnlyRetryableErrors`, `TestLLMCommands_SetupTestStatus`, `TestE2E_*` (seven; the ones that enable the
+  judge hit `httptest` through `NewHTTP(…, nil)`), `TestAJudgeRunDisclosesTheUpload`, `TestPluginVersionLine`,
+  `TestPluginVersionLine_LegacyName`, `TestApplyBuildInfo` stay green **without a single character changed** — the
+  judge's behaviour, `uploadsFor`'s behaviour, and `version`'s comparison and version stamping have not changed
+- [x] `make verify` green; the second line of `go.mod` is still `go 1.23.5`, and `go version` shows no toolchain switch
 
-## 不做什么
+## Out of scope
 
-- **不加任何网络路径**:产品代码里 `net/http` 的使用只多一个包级变量的读取,出网的入口还是那两条。
-  另一处产品代码改动是 `version` 命令的函数体原样搬进 `runVersion(w, root)`(`main.go` 一个闭包变一行调用,
-  `version.go` 多一个函数),输出逐字节不变(证据见「完成」)
-- **不改判官行为**:请求内容、重试、超时、`CheckEndpoint`、`Usage()` 都不动;`NewHTTP` 的签名不动,
-  调用方传 `nil` 时得到的 client 在接缝为 nil 时与今天逐字段相同
-- **不改 `version` 的行为**:`pluginVersionLine` / `versionLine` / 几个提示函数、`applyBuildInfo` 一字不动
-- **不做重定向处理**(`CheckRedirect` / 跨主机重定向带走 Bearer 头):本条不碰 `http.Client` 的任何字段,除了 `Transport`
-- **不做 CI 网络隔离 job**:那是能看见裸 socket 和子进程的一层,本条只钉经过 `judge.Transport` /
-  `http.DefaultTransport` 的那一层,外加一条堵自带 transport 的源码检查
-- **不加静态导入白名单**(见未决 2)。`TestZeroDial_NoClientOutsideTheJudge` 不是它:它不管谁 import
-  `net/http`、`net`、`os/exec`,只管有没有人在接缝之外造 `Client`/`Transport`、有没有人在生产代码里动接缝 ——
-  这是计数器自己的盲区,补的是本条测试的视野,不是"不执行"那一半
-- **不加 `check --llm`**:P-004 并行在做;两边都合入后由后合的那一个改五处(见未决 3)
-- **不修闸门 pending 跨进程丢失**:P-007 并行在做(见未决 6)
-- **不改已提交的 `baselines/results/`**:2026-09-24、2026-09-29e 两份 run.yaml 里那句是当时写下的记录
-- **不改 `baselines/cmd/baseline` 的 Go 代码**:`uploadsFor` 原样转发 registry 的句子,改的是 `tools.yaml` 里那句本身
-- 不改 README / `docs/architecture*.md` 的不变量简表(见未决 5)
-- 不加依赖,不碰 `go.mod` / `go.sum`
+- **No network path is added**: the only extra use of `net/http` in product code is reading one package-level
+  variable; the entry points that connect out are still the same two.
+  The other product-code change is moving the `version` command's function body verbatim into `runVersion(w, root)`
+  (in `main.go` a closure becomes a one-line call, `version.go` gains one function); the output is byte-for-byte
+  unchanged (evidence in "Done")
+- **Judge behaviour does not change**: request content, retries, timeouts, `CheckEndpoint`, `Usage()` are untouched;
+  the signature of `NewHTTP` is untouched, and the client a caller gets by passing `nil` is field-for-field identical
+  to today's when the seam is nil
+- **`version`'s behaviour does not change**: `pluginVersionLine` / `versionLine` / the hint functions and
+  `applyBuildInfo` are not changed by a single character
+- **No redirect handling** (`CheckRedirect` / a cross-host redirect carrying the Bearer header away): this proposal
+  touches no field of `http.Client` except `Transport`
+- **No CI network-isolation job**: that is the layer that can see raw sockets and child processes; this proposal only
+  pins the layer that goes through `judge.Transport` / `http.DefaultTransport`, plus a source check that closes off
+  clients with their own transport
+- **No static import allowlist** (see open question 2). `TestZeroDial_NoClientOutsideTheJudge` is not one: it does not
+  care who imports `net/http`, `net`, `os/exec`, only whether anyone builds a `Client`/`Transport` outside the seam and
+  whether anyone touches the seam in production code — that is the counters' own blind spot; it widens the view of this
+  proposal's test, not the "never execute" half
+- **No `check --llm`**: P-004 is doing it in parallel; once both are merged, whichever merges later changes five places
+  (see open question 3)
+- **No fix for the gate's pending being lost across processes**: P-007 is doing it in parallel (see open question 6)
+- **The committed `baselines/results/` do not change**: the sentence in the two run.yaml files of 2026-09-24 and
+  2026-09-29e is a record written at the time
+- **The Go code of `baselines/cmd/baseline` does not change**: `uploadsFor` forwards the registry's sentence verbatim;
+  what changes is that sentence itself in `tools.yaml`
+- The invariant summary tables in the README / `docs/architecture*.md` do not change (see open question 5)
+- No dependencies added, `go.mod` / `go.sum` not touched
 
-## 不能说什么
+## Must not claim
 
-- **不说"已证明零出站"/"verified zero egress"**。**也不说"进程内经过 `net/http` 的请求都看得见"**:计数器只看得见
-  经过 `judge.Transport` 或 `http.DefaultTransport` 的请求。看不见的:自带 `http.Transport` 的 client(本模块的产品代码由
-  源码检查补上,`internal/judge` 也在内;`hack/`、`baselines/` 是别的二进制,不在它读的范围里)、**依赖在它自己代码里造的
-  这种 client**(源码检查只读本模块;今天二进制里别的模块都不 import `net/http`、`os/exec`,`pflag` import `net` 只为
-  IP 类型的 flag —— 读代码的结论,加第四个直接依赖前要先读它)、裸 `net.Dial`、`exec` 一个 `curl`(今天产品代码里两者都
-  没有 —— `os/exec` 零导入,`net` 只用来 `ParseIP` —— 但那是读代码的结论,不是这条测试的结论)、最后一行返回 50 ms 之后
-  才发出的异步请求、只写在 cobra `RunE` 闭包里的代码、**包级 `init()`**(测试装上计数器之前它就跑完了;`applyBuildInfo`
-  在 `version` 的构建信息那一行里另跑一次,`init()` 里别的东西不在视野里)
-- **不说"判官包里的 client 由正对照看着"**:正对照只看着它自己那三条路径用的 client。能说的只是:判官包内**只许
-  `NewHTTP` 那一个** client,它的 transport 是接缝。`NewHTTP` 里那个字面量的 `Transport` 值,源码检查只认标识符
-  `Transport`,不追它解析到哪:在 `NewHTTP` 里用 `var Transport = …` 或同名参数遮住包级接缝,源码检查看不出来
-  (`Transport := …` 会被当成给接缝赋值而红)。遮住之后的值要么写出 `http.Transport`(源码检查红),要么是
-  `http.DefaultTransport`(正对照红),要么来自依赖或一个自己拨号的 RoundTripper —— 即上面两条盲区
-- **不说 `-run` 单选的一行"证明了零"**:26 行(正对照 3 + 零表 23)每一行单独选中都能跑过,但单选时正对照不跑,那一行的零不证明计数器接在了
-  判官的 client 上。证据以整张表一起跑为准
-- **不说零表跑的是"命令"**:每一行调的是命令调用的那个函数(`scanEnv`、`checkTarget`、`runHook`、`runVersion`…),
-  不是 cobra 的 `RunE` 闭包;闭包里在那个函数之外加一行请求,这条测试看不见。`version` 是唯一一个把整段闭包体搬进
-  函数的,其余命令的闭包里还有渲染、`failGate` 之类本条没跑的代码
-- **不说 `version` 的每一行代码都跑过**:每个出口一行,但几个只拼字符串的提示函数(`updateHint`、`renameHint`、
-  `leftoverHint`、`switchCommand`)内部按安装渠道(桌面 / CLI)和 marketplace 再分的支,零表只走到其中 fixture 那一种
-  (CLI 安装、本项目的 marketplace)
-- **不说异步请求会记在发它的那一行**:晚到的请求报成"在 X 返回之后落地",落在后面某一行运行期间的记在那一行头上 ——
-  会红,但行名可能不对
-- **不说"所有命令都测了"**:`hook install/uninstall/status`、`approvals forget`、`clean --apply/--undo/--ask` 没进零表;
-  它们只动本地文件,但没有被这条测试跑过。不变量里的清单写的是**跑过的那些**
-- **不说新命令会自动被拦住**:已经在零表里的入口一旦出网就红;**新加的**命令要自己进表,测试不会替你发现它
-- 不说已提交的两份 run.yaml"当时就是对的":那句话写下时测试不存在;它现在才变成真话
+- **Do not say "zero egress proven" / "verified zero egress"**. **Do not say "every request in the process that goes
+  through `net/http` is visible" either**: the counters only see requests that go through `judge.Transport` or
+  `http.DefaultTransport`. Not visible: a client with its own `http.Transport` (the source check covers this for this
+  module's product code, `internal/judge` included; `hack/` and `baselines/` are other binaries, outside what it
+  reads), **a client of this kind that a dependency builds in its own code** (the source check reads only this module;
+  today no other module in the binary imports `net/http` or `os/exec`, and `pflag` imports `net` only for IP-typed
+  flags — a conclusion from reading the code; read a fourth direct dependency before adding it), a raw `net.Dial`,
+  `exec` of a `curl` (today product code has neither — zero imports of `os/exec`, `net` only used for `ParseIP` — but
+  that is a conclusion from reading the code, not from this test), an asynchronous request sent more than 50 ms after
+  the last row returns, code written only in a cobra `RunE` closure, **package-level `init()`** (it has finished before
+  the test installs the counters; `applyBuildInfo` runs once more in `version`'s build-info row, other things in
+  `init()` are out of view)
+- **Do not say "the client in the judge package is watched by the positive control"**: the positive control only
+  watches the client its own three paths use. What can be said is only: inside the judge package **only the one client
+  in `NewHTTP`** is allowed, and its transport is the seam. For the `Transport` value of that literal in `NewHTTP`, the
+  source check only recognises the identifier `Transport` and does not follow what it resolves to: shadowing the
+  package-level seam inside `NewHTTP` with `var Transport = …` or a parameter of the same name is invisible to the
+  source check (`Transport := …` is treated as an assignment to the seam and is red). The shadowing value either spells
+  out `http.Transport` (source check red), or is `http.DefaultTransport` (positive control red), or comes from a
+  dependency or a RoundTripper that dials itself — that is, the two blind spots above
+- **Do not say that a single row selected with `-run` "proves zero"**: each of the 26 rows (3 positive control + 23 zero
+  table) passes when selected alone, but when selected alone the positive control does not run, and that row's zero does
+  not prove the counters are attached to the judge's client. The evidence is the whole table run together
+- **Do not say the zero table runs "the commands"**: each row calls the function the command calls (`scanEnv`,
+  `checkTarget`, `runHook`, `runVersion`…), not cobra's `RunE` closure; a request added in the closure outside that
+  function is invisible to this test. `version` is the only one whose entire closure body was moved into a function;
+  the closures of the other commands still hold rendering, `failGate` and similar code this proposal does not run
+- **Do not say every line of `version` has run**: one row per exit, but inside the few hint functions that only build
+  strings (`updateHint`, `renameHint`, `leftoverHint`, `switchCommand`) there are further branches by install channel
+  (desktop / CLI) and marketplace, and the zero table only reaches the one the fixture uses (CLI install, this project's
+  marketplace)
+- **Do not say an asynchronous request is attributed to the row that sent it**: a late request is reported as "landed
+  after X returned"; one that lands while a later row runs is attributed to that row — it is red, but the row name may
+  be wrong
+- **Do not say "every command is tested"**: `hook install/uninstall/status`, `approvals forget`,
+  `clean --apply/--undo/--ask` are not in the zero table; they only touch local files, but this test has not run them.
+  The list in the invariant states **the ones that were run**
+- **Do not say new commands are caught automatically**: an entry point already in the zero table turns red as soon as
+  it connects out; a **newly added** command has to be added to the table by hand, the test will not discover it for you
+- Do not say the two committed run.yaml files "were right at the time": when that sentence was written the test did not
+  exist; only now does it become true
 
-## 工作项
+## Work items
 
-| W | 一句话 | 提交信息(不写 sha,rebase 会改) |
+| W | One line | Commit message (no sha, rebase changes it) |
 |---|---|---|
-| 1 | 三条新测试,跑红(编译红:`judge.Transport` 不存在;tools.yaml 不点名) | `judge, cmd: tests — nothing counts what the commands send, and the baselines claim names no test (P-003)` |
-| 2 | `judge.Transport` 接缝,`NewHTTP` 在 client 为 nil 时用它 | `judge: a nil client takes its transport from a test seam, so a test can count every request (P-003)` |
-| 3 | 不变量 #1 改写成枚举清单 + 点名测试;spec §16.4 与 §13 同步 | `rules, spec: invariant #1 lists the only two paths that may connect out and names the test that pins it (P-003)` |
-| 4 | `baselines/tools.yaml` 那句点名测试(顺手去掉句尾指向旧仓编号的 `(P-021)`) | `baselines: the registry's upload claim names the test that enforces it (P-003)` |
-| 5 | 零表补上 `scan` 在评分后追加的闸门存活探测,不变量清单同步 | `cmd, rules: the zero table also covers the gate-liveness probe scan appends after scoring (P-003)` |
-| 6 | `version` 的函数体抽成 `runVersion`,零表那一行跑整段命令体、对着装好的插件、以发布版跑 | `cmd: the version row runs the command's whole body against an installed plugin, so a request from either half of it is seen (P-003)` |
-| 7 | 不变量 #1、spec §16.4 改成"只看得见两个 transport"并逐条列盲区;源码检查堵产品代码里自带 transport 的 client | `rules, spec, cmd: invariant #1 says the counters see two transports and lists what they miss; a source check closes the own-transport gap for product code (P-003)` |
-| 8 | 每行开头断言计数器为空,表尾等 50 ms 再收一次 | `cmd, rules, spec: a request that lands after its row returned is reported, not discarded by the next row's reset or lost when the counters are put back (P-003)` |
-| 9 | 正对照与不变量 #1 的出网清单是同一个集合,tools.yaml 和 spec §16.4 也要写出每条路径 | `cmd, rules: the positive control and invariant #1's list of outbound paths are one set, so check --llm cannot join the control without joining the list (P-003)` |
-| 10 | 闸门存活探测那行要找到 fixture 里的死注册,`approvals` 那行要列出被批准的 skill | `cmd: the gate-liveness row must find the fixture's dead registration and the approvals row must list the approved skill, so neither zero is about nothing (P-003)` |
-| 11 | 源码检查不再整包豁免 `internal/judge`:包内只许 `NewHTTP` 那一个接缝 client;文件头、不变量 #1、spec §16.4/§13 同步,并把"依赖自己造的 client"列成盲区 | `cmd, rules, spec: inside internal/judge only NewHTTP's seam client may be built, so a second judge client with a transport of its own is red instead of dialling unseen (P-003)` |
-| 12 | `approvals` 那行自己写入要列出的批准,不靠 `approve` 那行先跑 | `cmd: the approvals row seeds the approval it lists, so it passes when -run selects it alone instead of depending on the approve row having run (P-003)` |
-| 13 | `version` 按 `pluginVersionLine` / `versionLine` 的每个出口各跑一行(含 v0.17 加的改名两出口),外加一行从构建信息盖版本;不变量 #1、spec 的盲区里加上 `init()` | `cmd, rules, spec: the version command runs once per return of pluginVersionLine and versionLine and once stamped from build info, so a request added to any branch is seen, not only the newer one (P-003)` |
-| 14 | 本文件「完成」、索引 | `proposals: P-003 (P-003)` |
+| 1 | Three new tests, run red (compile red: `judge.Transport` does not exist; tools.yaml names no test) | `judge, cmd: tests — nothing counts what the commands send, and the baselines claim names no test (P-003)` |
+| 2 | The `judge.Transport` seam; `NewHTTP` uses it when the client is nil | `judge: a nil client takes its transport from a test seam, so a test can count every request (P-003)` |
+| 3 | Invariant #1 rewritten as an enumerated list + names the test; spec §16.4 and §13 synced | `rules, spec: invariant #1 lists the only two paths that may connect out and names the test that pins it (P-003)` |
+| 4 | The `baselines/tools.yaml` sentence names the test (and, in passing, drops the trailing `(P-021)` that pointed at a former-repo number) | `baselines: the registry's upload claim names the test that enforces it (P-003)` |
+| 5 | The zero table also covers the gate-liveness probe `scan` appends after scoring; the invariant list synced | `cmd, rules: the zero table also covers the gate-liveness probe scan appends after scoring (P-003)` |
+| 6 | `version`'s function body extracted into `runVersion`; the zero-table row runs the whole command body, against an installed plugin, as a release build | `cmd: the version row runs the command's whole body against an installed plugin, so a request from either half of it is seen (P-003)` |
+| 7 | Invariant #1 and spec §16.4 changed to "only two transports are visible", listing the blind spots one by one; a source check closes off clients with their own transport in product code | `rules, spec, cmd: invariant #1 says the counters see two transports and lists what they miss; a source check closes the own-transport gap for product code (P-003)` |
+| 8 | Each row asserts at its start that the counters are empty; at the end of the table it waits 50 ms and collects once more | `cmd, rules, spec: a request that lands after its row returned is reported, not discarded by the next row's reset or lost when the counters are put back (P-003)` |
+| 9 | The positive control and invariant #1's outbound list are one set; tools.yaml and spec §16.4 must also spell out every path | `cmd, rules: the positive control and invariant #1's list of outbound paths are one set, so check --llm cannot join the control without joining the list (P-003)` |
+| 10 | The gate-liveness probe row must find the fixture's dead registration; the `approvals` row must list the approved skill | `cmd: the gate-liveness row must find the fixture's dead registration and the approvals row must list the approved skill, so neither zero is about nothing (P-003)` |
+| 11 | The source check no longer exempts `internal/judge` as a whole package: inside it only `NewHTTP`'s one seam client is allowed; file header, invariant #1, spec §16.4/§13 synced, and "a client a dependency builds itself" listed as a blind spot | `cmd, rules, spec: inside internal/judge only NewHTTP's seam client may be built, so a second judge client with a transport of its own is red instead of dialling unseen (P-003)` |
+| 12 | The `approvals` row writes the approval it lists itself, instead of relying on the `approve` row running first | `cmd: the approvals row seeds the approval it lists, so it passes when -run selects it alone instead of depending on the approve row having run (P-003)` |
+| 13 | `version` runs one row per exit of `pluginVersionLine` / `versionLine` (including the two rename exits added in v0.17), plus one row stamped from build info; `init()` added to the blind spots of invariant #1 and the spec | `cmd, rules, spec: the version command runs once per return of pluginVersionLine and versionLine and once stamped from build info, so a request added to any branch is seen, not only the newer one (P-003)` |
+| 14 | This file's "Done", the index | `proposals: P-003 (P-003)` |
 
-## 未决问题
+## Open questions
 
-1. **接缝只换 `judge.Transport`,还是也换 `http.DefaultTransport`?**
-   **建议**:两个都换,各配一个计数器。`judge.Transport` 是定下的接缝,正对照用它证明"判官的请求走接缝";
-   `http.DefaultTransport` 是兜底:判官之外任何一处新加的 `http.Get` / `http.DefaultClient` 都走它,在零表入口上会被数到。
-   只换后者其实也能测今天的判官(nil Transport 就是 DefaultTransport),但哪天判官的 client 换了自己的 Transport,
-   测试就会从"数得到"悄悄变成"数不到"——正对照会抓到,但接缝让它不必依赖这个巧合。
-   **已决(2026-10-08)**:按建议。
-2. **要不要顺手加一条静态导入白名单测试(`go/parser` 扫非测试 `.go`:`net/http` 只许 `internal/judge`,`net` 只许 `ParseIP` 一类,`os/exec` 零)?**
-   **建议**:不在本条做。它该和不变量 #1 的另一半("不执行",`os/exec`)一起设计,而 CI 网络隔离才是能看见裸 socket
-   和子进程的那一层;本条只钉经过两个 transport 的请求,并在「不能说什么」里写明这个边界。
-   **已决(2026-10-08)**:按建议。`TestZeroDial_NoClientOutsideTheJudge` 不是这里问的导入白名单,见「不做什么」。
-3. **枚举清单里写不写 P-004 的 `check --llm`?**
-   **建议**:不写。P-004 在并行分支上,本分支的代码里它不存在;清单写的是今天的事实。两边都合入后,后合的那个补一行、
-   把 `check --llm` 从零表挪到正对照(PR 里说明)。后合的那一个要改的五处,写死在这里以免只留在 PR 上 ——
-   ① 不变量 #1 的出网清单加一条 `` - `check --llm`: ``(连同"只有两条路径"的条数);② spec §16.4 出网清单那一行;
-   ③ `baselines/tools.yaml` 那句的 "(scan --llm, llm test)";④ 零表 `check` 那一行的注释("the opts `check` passes"——
-   P-004 之后 `check` 传的是 `llm: useLLM`,零表那行要么改名为"不带 `--llm` 的 check",要么改 opts);
-   ⑤ `zeroDialControl` 加一行 `check --llm` 正对照(`checkTarget` 带 `llm: true`)。①②③⑤ 由
-   `TestZeroDial_ClaimsNameTheTest` 的集合相等逼着一起改,④ 只能靠人看。
-   **已决(2026-10-08)**:按建议。
-4. **已提交的两份 run.yaml 里"enforced by tests in this repository"要不要改?**
-   **建议**:不改。results 是测量记录,写下即冻结;改 registry 那句,之后的运行自然带上点名的版本。
-   **已决(2026-10-08)**:按建议。
-5. **枚举清单要不要也写进 README / `docs/architecture*.md` 的不变量简表?**
-   **建议**:不。简表那句"除显式开启的 LLM judge"仍然对,而且它们自己写着"全文在 `.claude/rules/invariants.md`";
-   清单再复制进两对双语文档,就多出四份会各自漂移的拷贝 —— `TestZeroDial_ClaimsNameTheTest` 只看 `invariants.md`、
-   `tools.yaml` 和 spec §16.4 出网清单那一行。
-   **已决(2026-10-08)**:按建议。
-6. **(实现时发现,不在本条范围)闸门在弹窗里给的"同意"从来记不下来。** `gate.LoadStore`(`internal/gate/approvals.go:96-125`)
-   只把 `approvals` 读回来,**不读 `pending`**;而每个 hook 事件是一个新进程(`runHook` 每次都 `LoadStore`)。
-   于是 `PreToolUse` 判 `ask` 时写进磁盘的那条 pending,在 `PostToolUse` 的进程里永远是空的,`handlePost` 在
-   `pendingFor` 处直接返回,重扫和"risk accepted"那条路径在真实运行里走不到。
-   **建议**:不在本条修 —— 它改的是闸门的行为,和出网无关。P-007 是修它的那一份。本条的零表因此经 `gate.Handle`
-   驱动 `PostToolUse` 的重扫,那是它唯一可能出网的一半;P-007 合入之后可以改回 `runHook`。
-   **已决(2026-10-08)**:按建议。
+1. **Does the seam replace only `judge.Transport`, or `http.DefaultTransport` as well?**
+   **Recommendation**: replace both, each with its own counter. `judge.Transport` is the chosen seam, and the positive
+   control uses it to prove "the judge's requests go through the seam"; `http.DefaultTransport` is the backstop: any
+   newly added `http.Get` / `http.DefaultClient` anywhere outside the judge goes through it and is counted on the
+   zero-table entry points. Replacing only the latter would in fact also test today's judge (a nil Transport is
+   DefaultTransport), but if the judge's client one day gets a Transport of its own, the test would quietly go from
+   "can count" to "cannot count" — the positive control would catch it, but the seam means it does not have to rely on
+   this coincidence.
+   **Decided (2026-10-08)**: as recommended.
+2. **Should a static import allowlist test be added in passing (`go/parser` scanning non-test `.go`: `net/http` only in `internal/judge`, `net` only for `ParseIP` and the like, `os/exec` zero)?**
+   **Recommendation**: not in this proposal. It should be designed together with the other half of invariant #1
+   ("never execute", `os/exec`), and CI network isolation is the layer that can see raw sockets and child processes;
+   this proposal only pins requests that go through the two transports, and states this boundary in "Must not claim".
+   **Decided (2026-10-08)**: as recommended. `TestZeroDial_NoClientOutsideTheJudge` is not the import allowlist asked
+   about here, see "Out of scope".
+3. **Does the enumerated list include P-004's `check --llm`?**
+   **Recommendation**: no. P-004 is on a parallel branch and does not exist in this branch's code; the list states
+   today's facts. Once both are merged, whichever merges later adds a line and moves `check --llm` from the zero table
+   to the positive control (explained in the PR). The five places the later one must change are written down here so
+   they do not live only on the PR —
+   ① add a `` - `check --llm`: `` entry to invariant #1's outbound list (together with the count in "only two paths");
+   ② the outbound-list line of spec §16.4; ③ the "(scan --llm, llm test)" in the `baselines/tools.yaml` sentence;
+   ④ the comment on the `check` row of the zero table ("the opts `check` passes" — after P-004 `check` passes
+   `llm: useLLM`, so that zero-table row is either renamed to "`check` without `--llm`" or its opts change);
+   ⑤ add a `check --llm` positive-control row to `zeroDialControl` (`checkTarget` with `llm: true`). ①②③⑤ are forced
+   to change together by the set equality in `TestZeroDial_ClaimsNameTheTest`; ④ can only be caught by a human reader.
+   **Decided (2026-10-08)**: as recommended.
+4. **Should "enforced by tests in this repository" in the two committed run.yaml files be changed?**
+   **Recommendation**: no. Results are measurement records, frozen once written; change the registry sentence, and
+   later runs carry the version that names the test as a matter of course.
+   **Decided (2026-10-08)**: as recommended.
+5. **Should the enumerated list also go into the invariant summary tables in the README / `docs/architecture*.md`?**
+   **Recommendation**: no. The summary tables' "except the explicitly enabled LLM judge" is still true, and they
+   themselves say "full text in `.claude/rules/invariants.md`"; copying the list into two bilingual pairs of docs adds
+   four more copies that each drift on their own — `TestZeroDial_ClaimsNameTheTest` only looks at `invariants.md`,
+   `tools.yaml` and the outbound-list line of spec §16.4.
+   **Decided (2026-10-08)**: as recommended.
+6. **(Found during implementation, outside this proposal's scope) The consent given at the gate's prompt is never recorded.**
+   `gate.LoadStore` (`internal/gate/approvals.go:96-125`) only reads `approvals` back, **not `pending`**; and every
+   hook event is a new process (`runHook` calls `LoadStore` every time). So the pending that `PreToolUse` writes to
+   disk when it decides `ask` is always empty in the `PostToolUse` process, `handlePost` returns right at
+   `pendingFor`, and the rescan and "risk accepted" path is never reached in real runs.
+   **Recommendation**: do not fix it in this proposal — it changes the gate's behaviour and has nothing to do with
+   connecting out. P-007 is the one that fixes it. This proposal's zero table therefore drives the `PostToolUse` rescan
+   through `gate.Handle`, the only half of it that could connect out; once P-007 is merged it can go back to `runHook`.
+   **Decided (2026-10-08)**: as recommended.
 
-移植时追加的:
+Added during the port:
 
-7. **`version` 那几行怎么对上本仓库 v0.17 / v0.18 的 `version`?** 旧仓的 `pluginVersionLine` 是一个函数六个出口;
-   本仓库 v0.17 把插件从 `agentguard` 改名为 `aguard`,`pluginVersionLine` 多了"只装了旧名"和"新旧都装了"两个出口,
-   比较挪进 `versionLine`;v0.18 起没被 `-ldflags` 盖章的二进制从构建信息取版本(`applyBuildInfo`,在 `init()` 里跑)。
-   **建议**:零表按两个函数的**每个出口**各一行(八行),插件用本仓库的名字和 marketplace(`aguard@AgentGuard`,旧名
-   `agentguard@AgentGuard`),每个 root 用现成的 `writePluginInstalls` 搭;再加一行从构建信息盖版本,让 `applyBuildInfo`
-   在计数器下跑一次;`init()` 本身记进盲区。`runVersion` 只是搬家,不碰盖版本的逻辑 —— 它读的还是那三个包级变量。
-   **已决(2026-10-09)**:按建议。
+7. **How do the `version` rows map onto this repository's v0.17 / v0.18 `version`?** In the former repo
+   `pluginVersionLine` was one function with six exits; this repository's v0.17 renamed the plugin from `agentguard` to
+   `aguard`, `pluginVersionLine` gained two exits, "only the old name installed" and "both new and old installed", and
+   the comparison moved into `versionLine`; since v0.18 a binary not stamped by `-ldflags` takes its version from build
+   info (`applyBuildInfo`, run in `init()`).
+   **Recommendation**: the zero table runs one row per **exit** of the two functions (eight rows); the plugin uses this
+   repository's name and marketplace (`aguard@AgentGuard`, old name `agentguard@AgentGuard`), each root built with the
+   existing `writePluginInstalls`; plus one row stamped from build info, so `applyBuildInfo` runs once under the
+   counters; `init()` itself is recorded as a blind spot. `runVersion` is only a move and does not touch the stamping
+   logic — it still reads the same three package-level variables.
+   **Decided (2026-10-09)**: as recommended.
 
-## 完成
+## Done
 
 ```
-合入:PR #22(2026-10-09;sha 用 git log --grep P-003 找)
-发布:待发
-证据:TestZeroDial_OnlyTheJudgeConnects(cmd/aguard/zero_dial_test.go);W1 时编译红(cmd/aguard/zero_dial_test.go:85: undefined: judge.Transport),W2 后绿:正对照三行 scan --llm / Downloads 项 / llm test 都被判官计数器看见、默认计数器 0;零表 23 行(14 个入口 + version 9 行)两个计数器都是 0,且每个入口成功跑完(Pre 回 ask、Post 重扫回 risk accepted、SessionStart 有审计结果、闸门存活探测报 GATE-001、approvals 列出自己写入的那条)
-证据:TestNewHTTP_TransportSeam(internal/judge/run_test.go);W1 时编译红(run_test.go:306: undefined: Transport),W2 后绿;反向断言:调用方给的 srv.Client() 照样打到自己的 server,接缝计数不变
-证据:TestZeroDial_ClaimsNameTheTest;W2 后两处都红("baselines/tools.yaml says aguard's no-upload claim is enforced by tests, but does not name TestZeroDial_OnlyTheJudgeConnects" + "invariant #1 does not name the test that pins it")→ W3、W4 后绿;集合相等(W9):正对照加一行 check --llm、文档不动 → 红 3 条(不变量 #1 没列、tools.yaml 没写、spec §16.4 没写);不变量 #1 加一条 check --llm、无正对照 → 红 1 条;不变量 #1 删掉 llm test → 红 1 条
-证据:变异(未提交,跑完即还原,工作区 git status 为空)—— checkTarget 里强开 o.llm → Downloads 项(不带 --llm)/ check / hook Pre / Post 重扫 / approve 五行红(判官计数器 3 / 4 / 3 / 6 / 4);NewHTTP 改回 &http.Client{} → 正对照三行红(判官计数器 0,默认计数器 13 / 3 / 1)且源码检查红 2 条(那个字面量不是接缝形状;接缝字面量 0 个),TestNewHTTP_TransportSeam 同时红
-证据:(W6)version 一行跑整段命令体;W5 时在 version 的 cobra 闭包里加 http.Get(127.0.0.1:9) → 全绿(只调 pluginVersionLine,看不见);W6 后同一个请求放进 runVersion → 红:"version sent 1 request(s) through http.DefaultTransport to [127.0.0.1:9]";放在 runVersion 外、闭包里 → 照绿(记进不能说什么)
-证据:(W6)输出逐字节不变 —— W5 与 W6 各用同一组 -ldflags(-X main.version=v1.0.0 -X main.commit=abc1234 -X main.date=2026-10-09)和不带 -ldflags(-buildvcs=false,走构建信息、落回 dev)各构建一次,version --root 四个 root 上 cmp 全部相同:装了 aguard 9.9.9 的临时 root(237 B / 2 行,含 "plugin aguard 9.9.9 is newer than this binary (1.0.0)")、只装了旧名 agentguard 0.16.0 的临时 root(312 B / 2 行,改名提示)、本机 ~/.claude(312 B / 2 行)、不存在的 root(74 B / 1 行);不盖章的构建 226 / 303 / 303 / 65 B,同样逐字节相同
-证据:(W7、W11)TestZeroDial_NoClientOutsideTheJudge(cmd/aguard/zero_dial_source_test.go);runLLMStatus 里 (&http.Client{Transport: &http.Transport{}}).Get(127.0.0.1:9) → TestZeroDial_OnlyTheJudgeConnects 照绿(盲区实测),源码检查红 2 条(llm.go:233 的 http.Client、http.Transport);internal/judge 里另造一个自带 transport 的 client、从 checkTarget 调用:W10(判官包整包豁免)三条 TestZeroDial_* 全绿 → W11 后源码检查红 2 条(zz_isolated.go:8 的 http.Client、http.Transport);NewHTTP 里 var Transport = http.DefaultTransport 遮住接缝 → 源码检查绿、正对照三行红(判官计数器 0,默认计数器 13 / 3 / 1),记进不能说什么
-证据:(W8)runLLMStatus 起一个 goroutine,20 ms 后 http.Get:W7 时单次运行 3/3 绿(漏掉),-count=5 时记在下一轮的 "scan --llm" 头上(记错行);W8 后 -count=5 次次红:"a request landed after "hash" returned, before the counters are put back"
-证据:(W10、W12)闸门存活探测那行:fixture 不注册闸门 → 红("want the fixture's dead registration reported as GATE-001, got []");gateLivenessNote 直接返回 nil → 红;approvals 那行:listApprovals 有记录时什么都不印 → 红;W11 时 -run 单选 approvals 一行红("approvals did not list the skill approved in the row above, so it read nothing: \"\"")→ W12 后绿
-证据:(W13)version 九行;pluginVersionLine / versionLine 的八个出口前各插一个 http.Get(127.0.0.1:9),外加 applyBuildInfo 里一个,一次一处:W12(一行 version)只有 newer 那处红,matches / older / dev / 没装插件 / 无版本 / 只装旧名 / 新旧都装 / applyBuildInfo 八处全绿;W13 后九处全红,每处都让自己那一行红(newer 那处同时让"新旧都装"和"构建信息"两行红 —— 它们本来就走 newer 比较),其余八处只红自己那一行
-证据:26 行逐行单独 -run:26/26 绿,每次恰好跑 1 行;go test -race -count=5 -run TestZeroDial 绿
-证据:反向断言不改一字 —— git diff origin/main -- cmd/aguard/e2e_test.go cmd/aguard/main_test.go cmd/aguard/buildinfo_test.go internal/judge/judge_test.go baselines/cmd/baseline/passthrough_test.go 为空;internal/judge/run_test.go 只有新增行(+47 −0);TestHTTPClient_RoundTripAndRedaction、TestHTTPClient_CountsTokens、TestRun_RetriesOnlyRetryableErrors、TestLLMCommands_SetupTestStatus、TestE2E_* 七条、TestPluginVersionLine、TestPluginVersionLine_LegacyName、TestApplyBuildInfo、TestAJudgeRunDisclosesTheUpload 照绿
-证据:不做什么 —— git diff --stat origin/main -- baselines/results baselines/cmd internal/gate internal/collect internal/detect cmd/aguard/buildinfo.go README.md README.zh-CN.md docs/architecture.md docs/architecture.zh-CN.md go.mod go.sum 为空;产品代码的改动是 internal/judge/openai.go(+11 −1:一个包级变量和它的注释,NewHTTP 里一个字段)、cmd/aguard/main.go(+1 −9)与 version.go(+18 −0):version 命令体原样搬进 runVersion
-证据:make verify: all gates passed;go version go1.23.5(无工具链切换),go.mod 第二行 go 1.23.5;collect / detect 未改,不需要真机扫描
+Merged: PR #22 (2026-10-09; find the sha with git log --grep P-003)
+Released: pending release
+Evidence: TestZeroDial_OnlyTheJudgeConnects (cmd/aguard/zero_dial_test.go); compile red at W1 (cmd/aguard/zero_dial_test.go:85: undefined: judge.Transport), green after W2: the three positive-control rows scan --llm / Downloads item / llm test are all seen by the judge counter, default counter 0; the 23 zero-table rows (14 entry points + 9 version rows) have both counters at 0, and every entry point ran to success (Pre replies ask, the Post rescan replies risk accepted, SessionStart has an audit result, the gate-liveness probe reports GATE-001, approvals lists the entry it wrote itself)
+Evidence: TestNewHTTP_TransportSeam (internal/judge/run_test.go); compile red at W1 (run_test.go:306: undefined: Transport), green after W2; reverse assertion: the srv.Client() the caller supplies still hits its own server, the seam count is unchanged
+Evidence: TestZeroDial_ClaimsNameTheTest; after W2 both places red ("baselines/tools.yaml says aguard's no-upload claim is enforced by tests, but does not name TestZeroDial_OnlyTheJudgeConnects" + "invariant #1 does not name the test that pins it") → green after W3, W4; set equality (W9): add a check --llm row to the positive control, docs unchanged → 3 red (invariant #1 does not list it, tools.yaml does not state it, spec §16.4 does not state it); add a check --llm entry to invariant #1 with no positive control → 1 red; delete llm test from invariant #1 → 1 red
+Evidence: mutation (not committed, reverted right after the run, working tree git status empty) — force o.llm on in checkTarget → five rows red: Downloads item (without --llm) / check / hook Pre / Post rescan / approve (judge counter 3 / 4 / 3 / 6 / 4); revert NewHTTP to &http.Client{} → the three positive-control rows red (judge counter 0, default counter 13 / 3 / 1) and the source check red with 2 (that literal is not the seam shape; 0 seam literals), TestNewHTTP_TransportSeam red as well
+Evidence: (W6) the version row runs the whole command body; at W5, adding http.Get(127.0.0.1:9) in version's cobra closure → all green (it only called pluginVersionLine, could not see it); after W6 the same request placed in runVersion → red: "version sent 1 request(s) through http.DefaultTransport to [127.0.0.1:9]"; placed outside runVersion, in the closure → still green (recorded in Must not claim)
+Evidence: (W6) output byte-for-byte unchanged — W5 and W6 each built once with the same set of -ldflags (-X main.version=v1.0.0 -X main.commit=abc1234 -X main.date=2026-10-09) and once without -ldflags (-buildvcs=false, takes the build info, falls back to dev); version --root on four roots, cmp identical for all: a temporary root with aguard 9.9.9 installed (237 B / 2 lines, containing "plugin aguard 9.9.9 is newer than this binary (1.0.0)"), a temporary root with only the old name agentguard 0.16.0 installed (312 B / 2 lines, rename hint), this machine's ~/.claude (312 B / 2 lines), a nonexistent root (74 B / 1 line); the unstamped builds 226 / 303 / 303 / 65 B, likewise byte-for-byte identical
+Evidence: (W7, W11) TestZeroDial_NoClientOutsideTheJudge (cmd/aguard/zero_dial_source_test.go); (&http.Client{Transport: &http.Transport{}}).Get(127.0.0.1:9) in runLLMStatus → TestZeroDial_OnlyTheJudgeConnects still green (blind spot measured), source check red with 2 (the http.Client and http.Transport at llm.go:233); another client with its own transport built inside internal/judge and called from checkTarget: at W10 (judge package exempted as a whole) all three TestZeroDial_* green → after W11 the source check red with 2 (the http.Client and http.Transport at zz_isolated.go:8); var Transport = http.DefaultTransport in NewHTTP shadowing the seam → source check green, the three positive-control rows red (judge counter 0, default counter 13 / 3 / 1), recorded in Must not claim
+Evidence: (W8) runLLMStatus starts a goroutine that calls http.Get after 20 ms: at W7 a single run is 3/3 green (missed), with -count=5 it is attributed to the next round's "scan --llm" (wrong row); after W8 red on every run with -count=5: "a request landed after "hash" returned, before the counters are put back"
+Evidence: (W10, W12) the gate-liveness probe row: the fixture registers no gate → red ("want the fixture's dead registration reported as GATE-001, got []"); gateLivenessNote returns nil directly → red; the approvals row: listApprovals prints nothing when there are records → red; at W11 the approvals row selected alone with -run is red ("approvals did not list the skill approved in the row above, so it read nothing: \"\"") → green after W12
+Evidence: (W13) nine version rows; an http.Get(127.0.0.1:9) inserted before each of the eight exits of pluginVersionLine / versionLine, plus one in applyBuildInfo, one place at a time: at W12 (one version row) only the newer one is red, the other eight — matches / older / dev / no plugin installed / no version / only the old name installed / both installed / applyBuildInfo — all green; after W13 all nine red, each turning its own row red (the newer one also turns the "both installed" and "build info" rows red — they take the newer comparison anyway), the other eight turn only their own row red
+Evidence: each of the 26 rows run alone with -run: 26/26 green, exactly 1 row run each time; go test -race -count=5 -run TestZeroDial green
+Evidence: reverse assertions not changed by a single character — git diff origin/main -- cmd/aguard/e2e_test.go cmd/aguard/main_test.go cmd/aguard/buildinfo_test.go internal/judge/judge_test.go baselines/cmd/baseline/passthrough_test.go is empty; internal/judge/run_test.go has only added lines (+47 −0); TestHTTPClient_RoundTripAndRedaction, TestHTTPClient_CountsTokens, TestRun_RetriesOnlyRetryableErrors, TestLLMCommands_SetupTestStatus, the seven TestE2E_*, TestPluginVersionLine, TestPluginVersionLine_LegacyName, TestApplyBuildInfo, TestAJudgeRunDisclosesTheUpload still green
+Evidence: Out of scope — git diff --stat origin/main -- baselines/results baselines/cmd internal/gate internal/collect internal/detect cmd/aguard/buildinfo.go README.md README.zh-CN.md docs/architecture.md docs/architecture.zh-CN.md go.mod go.sum is empty; the product-code changes are internal/judge/openai.go (+11 −1: one package-level variable and its comment, one field in NewHTTP), cmd/aguard/main.go (+1 −9) and version.go (+18 −0): the version command body moved verbatim into runVersion
+Evidence: make verify: all gates passed; go version go1.23.5 (no toolchain switch), go.mod second line go 1.23.5; collect / detect not changed, no scan on a real machine needed
 ```

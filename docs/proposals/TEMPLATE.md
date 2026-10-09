@@ -1,59 +1,65 @@
 <!-- SPDX-License-Identifier: MIT -->
-# NNN — <一句话标题,用后果说>
+# NNN — <one-line title, stated as the consequence>
 
-- **来源**:issues/NNN · 或"新发现" · 或某次审计/对话的日期
-- **依赖**:无 · 或 P-NNN
-- **分支**:`p/NNN-slug`(阶段 2 建成后填)
+- **Source**: issues/NNN · or "new finding" · or the date of an audit/conversation
+- **Depends on**: none · or P-NNN
+- **Branch**: `p/NNN-slug` (fill in once stage 2 has created it)
 
-<!-- 没有「状态」行:文件所在目录就是状态(draft/ design/ complete/ rejected/),见 README.md。 -->
+<!-- No "Status" line: the directory the file sits in is its state (draft/ design/ complete/ rejected/), see README.md. -->
 
-<!-- ===== draft 段:在 draft/ 里只写到这里为止。人说值得设计,再 git mv 到 design/ 补下面的。 ===== -->
+<!-- ===== draft part: in draft/, write only up to here. Once the maintainer says it is worth designing, git mv it to design/ and fill in the rest below. ===== -->
 
-## 问题
+## Problem
 
-谁受影响、现在的行为是什么、错在哪。写现象和后果,不写修法。
+Who is affected, what the current behaviour is, and what is wrong with it. Describe the symptoms and the consequences,
+not the fix.
 
-## 初步方向
+## Initial direction
 
-一两句:大致怎么做、会动到哪里。给人判断"值不值得设计"用,不是设计。
+One or two sentences: roughly how to do it and what it will touch. This is for the maintainer to judge "is it worth
+designing"; it is not a design.
 
-<!-- ===== design 段:进 design/ 后补齐。未决问题一次问完,人答完即接受。 ===== -->
+<!-- ===== design part: fill in after moving to design/. Ask all open questions at once; once the maintainer has answered, it is accepted. ===== -->
 
-## 完成的判据
+## Done criteria
 
-至少两条,每条要具体到 AI 能自己验:哪条命令、哪个测试、哪个数字。代码类 proposal 其中一条
-必须是反向断言(修完之后原本该响的仍然响)。
+At least two, each specific enough for an AI to verify on its own: which command, which test, which number. For a code
+proposal, one of them must be a reverse assertion (after the fix, what should still fire still fires).
 
-- [ ] `TestXxx` 钉住:……
-- [ ] 反向断言:……仍然响
-- [ ] `make verify` 绿
+- [ ] `TestXxx` pins: …
+- [ ] Reverse assertion: … still fires
+- [ ] `make verify` green
 
-## 不做什么
+## Out of scope
 
-范围边界。不写,AI 一定越界。每条在 review 包里要能给出"确实没动"的证明。
+The scope boundary. Leave it out and the AI will certainly overstep. For each item, the review package must be able to
+show proof that it was indeed not touched.
 
-## 不能说什么
+## Must not claim
 
-本仓库的披露纪律:报告/文档里哪些词不能出现,哪些结论不能下。不适用时写"不适用"并说为什么。
+This repository's disclosure discipline: which words must not appear in reports/docs, and which conclusions must not be
+drawn. If it does not apply, write "not applicable" and say why.
 
-## 工作项
+## Work items
 
-一条一个提交:
+One commit per row:
 
-| W | 一句话 | 提交信息(不写 sha,rebase 会改) |
+| W | In one sentence | Commit message (no sha; a rebase changes it) |
 |---|---|---|
 | 1 | | |
 
-## 未决问题
+## Open questions
 
-design 时一次问完,每条给建议答案;阶段 2 里攒下的追加在后面。人答了写"**已决(日期)**:…",不删。
+Ask them all at once during design, each with a recommended answer; questions that come up during stage 2 are appended
+after them. When the maintainer answers, write "**Decided (date)**: …"; do not delete the question.
 
-## 完成
+## Done
 
-阶段 4 人说交付、`git mv` 到 `complete/` 时填(在 PR 里,不等合入):
+Fill in at stage 4, when the maintainer says ship it and the file is `git mv`ed to `complete/` (in the PR, not after
+the merge):
 
 ```
-合入:PR <编号或链接>(<日期>;sha 合入后用 git log --grep P-NNN 找)
-发布:vX.Y.Z(阶段 5 后填)
-证据:<测试名>(<文件>);<数字前 → 后 = 解释>;<反向断言所在行>
+Merged: PR <number or link> (<date>; find the sha with git log --grep P-NNN after the merge)
+Released: vX.Y.Z (fill in after stage 5)
+Evidence: <test name> (<file>); <number before → after = explanation>; <line holding the reverse assertion>
 ```

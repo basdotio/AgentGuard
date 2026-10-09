@@ -1,186 +1,251 @@
 <!-- SPDX-License-Identifier: MIT -->
-# 018 — 导入行、插件名、树内条目名里的 token 经几条笔记原样进报告:那几处证据片段没经过脱敏
+# 018 — A token in an import line, a plugin name or an in-tree entry name reaches the report verbatim through a few notes: those evidence snippets were never redacted
 
-- **来源**:P-014(`docs/proposals/complete/014-hook-outside-snippet-redacted.md`)的「不做什么」与未决 3 点名、留给后续的那几处:
-  collect 的笔记(`imports.go` 四条 note 的 `"@" + ref`、插件名、`err.Error()`、条目列表、`connectors.go`/`unowned.go`/`loaded.go` 的文件名)、
-  `detect.unreadableNote`、`internal/gate/status.go` 的 `missing hook command: <cmd>`
-- **依赖**:无
-- **分支**:`p/018-collect-notes-redacted`
+- **Source**: the places that P-014 (`docs/proposals/complete/014-hook-outside-snippet-redacted.md`) named in its Out of
+  scope and open question 3 and left for a follow-up: collect's notes (the `"@" + ref` of the four notes in
+  `imports.go`, plugin names, `err.Error()`, entry lists, the file names in `connectors.go`/`unowned.go`/`loaded.go`),
+  `detect.unreadableNote`, and `missing hook command: <cmd>` in `internal/gate/status.go`
+- **Depends on**: none
+- **Branch**: `p/018-collect-notes-redacted`
 
-<!-- 没有「状态」行:文件所在目录就是状态(draft/ design/ complete/ rejected/),见 README.md。 -->
+<!-- No "Status" line: the directory the file sits in is the status (draft/ design/ complete/ rejected/), see README.md. -->
 
-## 问题
+## Problem
 
-不变量 #3 说"`detect.Redact` 是产出 snippet 的唯一途径"。有几处笔记把从文件正文或配置值里抄出来的字符串直接拼进证据片段或 `Why`,
-一个字节都没过 `Redact`:
+Invariant #3 says "`detect.Redact` is the only way a snippet is produced". A few notes splice strings copied from a
+file's body or from a config value straight into the evidence snippet or `Why`, without a single byte going through
+`Redact`:
 
-- `internal/collect/imports.go`:`EXFIL-005` 和三条 `COV-000`(凭据路径拒读、越出扫描边界、超过导入深度)的 snippet 都是 `"@" + ref`,
-  `ref` 是指令文件里那行 `@…` 的原文
-- `internal/collect/plugins.go`:`SCOPE-001`(插件安装路径越出 HOME)的 snippet 是 `"install path escapes HOME: " + name`,`name` 是
-  `installed_plugins.json` 里的键
-- `internal/collect/hooks.go`:`PARSE-000`(hook 条目读不懂)的 snippet 是 `"hooks." + event`,`event` 是 settings.json 里 `hooks` 下的键
-- `internal/detect/detect.go` 的 `unreadableNote`:读不了的条目名原样进 `Why` 和 snippet;同一个文件里同形的 `nonRegularNote`、
-  `skippedDirNote` 都是 `redactClip(list)`
-- `internal/gate/status.go` 的 `DeadRegistrationNote`(`GATE-001`,`scan` 每次都会挂上):snippet 是 `"missing hook command: " + cmd`,
-  `cmd` 是 settings.json 里注册的命令原文
+- `internal/collect/imports.go`: the snippet of `EXFIL-005` and of three `COV-000` (credential path refused, outside the
+  scan boundary, beyond the import depth) is `"@" + ref`, where `ref` is the verbatim text of the `@…` line in the
+  instruction file
+- `internal/collect/plugins.go`: the snippet of `SCOPE-001` (plugin install path escapes HOME) is
+  `"install path escapes HOME: " + name`, where `name` is the key in `installed_plugins.json`
+- `internal/collect/hooks.go`: the snippet of `PARSE-000` (hook entry not understood) is `"hooks." + event`, where
+  `event` is the key under `hooks` in settings.json
+- `unreadableNote` in `internal/detect/detect.go`: the names of unreadable entries go verbatim into `Why` and the
+  snippet; its same-shaped siblings in the same file, `nonRegularNote` and `skippedDirNote`, both use `redactClip(list)`
+- `DeadRegistrationNote` in `internal/gate/status.go` (`GATE-001`, which `scan` attaches on every run): the snippet is
+  `"missing hook command: " + cmd`, where `cmd` is the verbatim command registered in settings.json
 
-复现(本仓 `main` fd28344 构建的二进制,fixture 在 `/tmp` 下,`HOME` 指向 fixture 里的 home,token 用 `ghp_` 加 36 位的明显假值;
-`CLAUDE.md` 写四行 `@` 导入,分别指向 `~/vault/<token>/.env`、`~/.ssh/<token>/config`、HOME 外的 `…/<token>/notes.md`、一条第五跳落在
-`d/<token>/d5.md` 的导入链;一个 skill 里放一个 `0111` 的目录 `<token>/`;`installed_plugins.json` 里一个 `<token>@market` 插件装在 HOME 外;
-settings.json 里一个键为 `<token>` 的坏 hook 条目,和一条指向不存在的 `…/<token>/aguard hook` 的闸门注册;`scan --json --inbox off`):
+Repro (a binary built from this repository's `main` fd28344, the fixture under `/tmp`, `HOME` pointing at the home
+inside the fixture, the token an obviously fake value of `ghp_` plus 36 characters; `CLAUDE.md` has four `@` import
+lines, pointing at `~/vault/<token>/.env`, `~/.ssh/<token>/config`, `…/<token>/notes.md` outside HOME, and an import
+chain whose fifth hop lands on `d/<token>/d5.md`; a skill contains a `0111` directory `<token>/`;
+`installed_plugins.json` has a `<token>@market` plugin installed outside HOME; settings.json has a broken hook entry
+keyed `<token>`, and a gate registration pointing at a nonexistent `…/<token>/aguard hook`; `scan --json --inbox off`):
 
-- JSON 里 token 出现 **11 次**,逐条:`EXFIL-005` ×2、凭据路径 `COV-000` ×2、越界 `COV-000`、深度 `COV-000` 的 snippet 各带一份;
-  `unreadableNote` 的 `Why` 和 snippet 各一份;`PARSE-000`、`SCOPE-001`、`GATE-001` 的 snippet 各一份
-- `scan --md -`、`scan --verbose` 也是 11 次;默认终端报告 2 次
-- `check <skill 目录> --md -`(写来贴 PR 评论的那条路)2 次 —— `unreadableNote` 的两份
-- 同一份 fixture 里,被引擎规则命中的行、`HOOK-002` 的引用,token 都是 `<REDACTED>`:泄漏只在这几条笔记上
+- The token appears **11 times** in the JSON, one by one: one copy each in the snippets of `EXFIL-005` ×2, the
+  credential-path `COV-000` ×2, the out-of-bounds `COV-000` and the depth `COV-000`; one each in the `Why` and the
+  snippet of `unreadableNote`; one each in the snippets of `PARSE-000`, `SCOPE-001` and `GATE-001`
+- `scan --md -` and `scan --verbose` also 11 times; the default terminal report 2 times
+- `check <skill-dir> --md -` (the path meant for pasting into PR comments) 2 times — the two copies from
+  `unreadableNote`
+- In the same fixture, the token is `<REDACTED>` in the lines hit by engine rules and in the `HOOK-002` quote: the leak
+  is only in these notes
 
-为什么一直没修:collect 不能 import detect(detect 依赖 collect),而 `Redact` 的实现在 detect 里,collect 想用也用不上;P-014 因此把
-collect 那半留给了本条(其未决 3)。
+Why it was never fixed: collect cannot import detect (detect depends on collect), and the implementation of `Redact`
+lives in detect, so collect could not use it even if it wanted to; P-014 therefore left the collect half to this
+proposal (its open question 3).
 
-后果:用户把 token 放进了路径(目录名、导入行、插件键),工具在规则命中的行里替他抹掉,在这几条笔记里替他原样印出来;报告越是被转贴
-(PR 评论、SARIF 上传),这几处越不该是例外。
+Consequence: when a user has put a token into a path (a directory name, an import line, a plugin key), the tool blanks
+it out for them in the lines a rule hits, and prints it verbatim for them in these notes; the more the report is
+reposted (PR comments, SARIF uploads), the less these places should be an exception.
 
-## 初步方向
+## Initial direction
 
-把 `Redact` 的实现原样挪进一个 collect 和 detect 都能 import 的叶子包,`detect.Redact` 只委托、行为一字不改(现有脱敏测试不改一字仍绿);
-上面五类笔记里**从文件正文或配置值抄来的那一段**先过它。逐处量:哪些位置的字符串同时也是该发现的 `Evidence.File`(那是 P-014 留下的
-全引擎问题,不在本条)、哪些是应用自己生成的标识符(`Redact` 会把真实值全部抹掉),这些不动并写明理由。
+Move the implementation of `Redact` unchanged into a leaf package that both collect and detect can import, with
+`detect.Redact` only delegating and its behaviour unchanged to the character (the existing redaction tests stay green
+without a single change); in the five kinds of notes above, **the part copied from a file's body or a config value**
+goes through it first. Measure each place: where the string is also that finding's `Evidence.File` (that is the
+engine-wide question P-014 left open, not in this proposal), and where it is an identifier the application generates
+itself (`Redact` would blank out every real value); leave those alone and write down why.
 
-## 逐处量过的划线
+## Where the line falls, measured place by place
 
-一条规则,三句话,按**字符串落在发现的哪个字段**划,而不是按它从哪来:
+One rule in three sentences, drawn by **which field of the finding the string lands in**, not by where it comes from:
 
-- (a) **进 `Evidence.Snippet` 的、不是工具自己写的文本**(从文件正文或配置值抄来的一段)一律过 `Redact` —— 不变量 #3 的原文;
-- (b) 同一段文本**也进了 `Why`** 的,`Why` 里印同一份脱敏后的字节 —— 不许一半脱一半不脱(P-014 的 `SUP-006` 先例);
-- (c) **只进 `Why` 的名字列表、以及就是该发现 `Evidence.File` 的路径**不在本条:那是 P-014 未决 2 留下的"`Evidence.File` 要不要脱敏"的全引擎问题,
-  在这里替其中几处分,就是在 `Redact` 之外长出第二套判断。
+- (a) **Text that goes into `Evidence.Snippet` and was not written by the tool itself** (a piece copied from a file's
+  body or a config value) always goes through `Redact` — the literal wording of invariant #3;
+- (b) when the same text **also goes into `Why`**, `Why` prints the same redacted bytes — no half-redacted, half-not
+  (P-014's `SUP-006` precedent);
+- (c) **name lists that go only into `Why`, and paths that are that finding's `Evidence.File`**, are not in this
+  proposal: that is the engine-wide question "should `Evidence.File` be redacted" left by P-014's open question 2, and
+  deciding a few of those places here would grow a second set of judgements outside `Redact`.
 
-真机量的是"`Redact` 会不会改动这处今天的真实值"(本机 `~/.claude` 与桌面版仓库,只计数,不印内容;合成值是常见安装形状):
+What was measured on a real machine is "does `Redact` change today's real value at this place" (this machine's
+`~/.claude` and the desktop app store, counted only, contents not printed; the synthetic values are common install
+shapes):
 
-| 位置 | 落在哪 | 真机量 | 结论 |
+| Place | Lands in | Measured on a real machine | Conclusion |
 |---|---|---|---|
-| `imports.go` 四条 note 的 `"@" + ref` | snippet | 本机 `~/work` 下 CLAUDE.md/AGENTS.md 里 18 个 `@` 引用,`Redact` 改 0 个;合成 8 个改 2 个(带数字的长路径) | 改(a) |
-| `plugins.go` `SCOPE-001` 的插件键 | snippet | `installed_plugins.json` 8 个键改 0 个 | 改(a) |
-| `hooks.go` `PARSE-000` 的 `hooks.<键>` | snippet | 本机唯一一条就是这条,`hooks.hooks`,不变;11 个标准事件名改 0 个 | 改(a)(同类排查找到的) |
-| `detect.unreadableNote` 的条目列表 | snippet + Why | 本机 skill 树内(跳过扫描排除目录)1948 个树内相对路径改 80 个(4.1%,`browse/test/pair-agent-e2e.test.ts` 这类带数字的长路径被熵检测吃成 `<REDACTED>.test.ts`) | 改(a)(b),与 `nonRegularNote`/`skippedDirNote` 同形 |
-| `gate/status.go` `GATE-001` 的命令 | snippet | 本机没有注册闸门;合成 11 种安装路径改 4 种(npm 全局、npx 缓存、带数字的 checkout、mise 的 go 版本目录) | 改(a);代价见未决 6 |
-| `gate` `Describe`(`aguard hook status` 的终端输出) | 不是发现 | 同上 4/11;同一屏的 `this binary:` 行原样印同一条路径 | 不改,未决 5 |
-| `collect.go` `unresolvedNote` 的条目列表 | 只在 Why(snippet 是固定串) | `skills/` 46 个条目改 0 个、插件键 0/8;桌面版仓库的条目是应用生成的 ID(`plugin_<id>` 3/3、账号 UUID 2/2 被改) | 不改(c) |
-| `connectors.go` 会话文件名 | 只在 Why | 13 个 `local_<uuid>.json` 全被改成 `<REDACTED>.json` | 不改(c) |
-| `unowned.go` 的条目名 | Why + 每个名字就是一条 `Evidence.File` | 顶层 30 个名字改 0 个 | 不改(c) |
-| `collect.go` `ioNote` 的 `err.Error()` | snippet,但其中的路径就是该发现的 `Evidence.File` | 所有调用点的错误都是 `os.PathError` 或 `safeio` 的 `"<path>: …"`,路径 = `Evidence.File` | 不改(c):脱了 snippet,File 里照样是原文 |
-| `loaded.go` 的 note | — | `Why`/snippet 里只有固定串、计数和 `TrashDir` 常量,路径只在 File | 无可改 |
+| `"@" + ref` in the four `imports.go` notes | snippet | 18 `@` references in CLAUDE.md/AGENTS.md under `~/work` on this machine, `Redact` changes 0; of 8 synthetic ones it changes 2 (long paths with digits) | change (a) |
+| the plugin key in `plugins.go` `SCOPE-001` | snippet | 8 keys in `installed_plugins.json`, 0 changed | change (a) |
+| `hooks.<key>` in `hooks.go` `PARSE-000` | snippet | the only such note on this machine is this one, `hooks.hooks`, unchanged; 11 standard event names, 0 changed | change (a) (found while checking for similar cases) |
+| the entry list in `detect.unreadableNote` | snippet + Why | inside the skill trees on this machine (skipping the scan's excluded directories), 80 of 1948 in-tree relative paths changed (4.1%; long paths with digits like `browse/test/pair-agent-e2e.test.ts` get eaten by the entropy check into `<REDACTED>.test.ts`) | change (a)(b), same shape as `nonRegularNote`/`skippedDirNote` |
+| the command in `gate/status.go` `GATE-001` | snippet | no gate registered on this machine; of 11 synthetic install paths, 4 changed (npm global, npx cache, a checkout with digits, mise's go version directory) | change (a); for the cost see open question 6 |
+| `gate` `Describe` (terminal output of `aguard hook status`) | not a finding | same as above, 4/11; the `this binary:` line on the same screen prints the same path verbatim | no change, open question 5 |
+| the entry list in `collect.go` `unresolvedNote` | only in Why (the snippet is a fixed string) | 46 entries in `skills/`, 0 changed, plugin keys 0/8; the desktop app store's entries are application-generated IDs (`plugin_<id>` 3/3 and account UUIDs 2/2 changed) | no change (c) |
+| session file names in `connectors.go` | only in Why | all 13 `local_<uuid>.json` changed to `<REDACTED>.json` | no change (c) |
+| entry names in `unowned.go` | Why + each name is an `Evidence.File` | 30 top-level names, 0 changed | no change (c) |
+| `err.Error()` in `collect.go` `ioNote` | snippet, but the path in it is that finding's `Evidence.File` | at every call site the error is an `os.PathError` or `safeio`'s `"<path>: …"`, path = `Evidence.File` | no change (c): redact the snippet and File still holds the original |
+| notes in `loaded.go` | — | `Why`/snippet hold only fixed strings, counts and the `TrashDir` constant; paths are only in File | nothing to change |
 
-## 完成的判据
+## Done criteria
 
-fixture 都在 `t.TempDir()` 现搭;token 用 `ghp_` 加 36 位的明显假值(`redact_test.go` 已有同样写法),`Redact` 的已知前缀表认得它。
+All fixtures are built on the spot in `t.TempDir()`; the token is an obviously fake value of `ghp_` plus 36 characters
+(`redact_test.go` already does the same), which `Redact`'s known-prefix table recognises.
 
-- [x] `TestImportNotes_SecretInReferenceIsRedacted`(`internal/collect/notes_redact_test.go`,新):`CLAUDE.md` 四行导入
-  (`@~/vault/<token>/.env`、`@~/.ssh/<token>/config`、`@../../outside/<token>/notes.md`、第五跳 `@<token>/d5.md`)走 `CollectAll`,
-  `EXFIL-005` ×2、凭据路径 / 越界 / 深度三种 `COV-000` 的 Title、Why、Evidence 里都没有 token,snippet 带 `<REDACTED>`、仍以 `@` 开头、
-  仍以原来的尾巴结尾(`/.env is a credential path`、`/notes.md escapes the scan boundary`、`/d5.md beyond depth 4`…)。今天红
-- [x] `TestConfigNamesInNotesAreRedacted`(同文件,新):`<token>@market` 插件装在 HOME 外 → `SCOPE-001`;settings.json `hooks` 下键为 `<token>`
-  的坏条目 → `PARSE-000`:snippet 里没有 token、带 `<REDACTED>`、固定前缀不变。今天红
-- [x] `TestUnreadableNote_SecretInEntryNameIsRedacted`(`internal/detect/note_redact_test.go`,新):skill 里 `0111` 的目录名为 token,走 `Engine.Run`,
-  那条 `COV-000` 的 Why 和 snippet 里都没有 token、都带 `<REDACTED>`,且两处是同一份列表。今天红
-- [x] `TestDeadRegistrationNote_SecretInCommandIsRedacted`(`internal/gate/status_redact_test.go`,新):注册命令 `/opt/<token>/aguard hook` 的
-  `GATE-001` snippet 等于 `missing hook command: /opt/<REDACTED>/aguard hook`。今天红
-- [x] `TestScan_NoteSecretsNeverReachARendering`(`cmd/aguard/note_redact_render_test.go`,新):上面全部放进一份 fixture 走 `scanEnv` 并像 `scan`
-  命令那样挂上 `gateLivenessNote`,JSON(与 CLI 同样的缩进编码)、终端(普通与 `--verbose`)、markdown、SARIF、HTML 六种渲染里都没有 token,
-  且 `EXFIL-005`、三种 import `COV-000`、`SCOPE-001`、`PARSE-000`、读不了条目的 `COV-000`、`GATE-001` 都还在;同一个 skill 走 `checkTarget` 的
-  markdown(贴 PR 评论那条路)也没有 token。今天红
-- [x] 反向断言:普通值**逐字不变** —— `TestImportNotes_OrdinaryReferenceUnchanged`、`TestConfigNamesInNotes_OrdinaryUnchanged`、
-  `TestUnreadableNote_OrdinaryNamesUnchanged`、`TestDeadRegistrationNote_OrdinaryCommandUnchanged` 用字面值钉住(`@~/.env is a credential path`、
-  `@../../outside/notes.md escapes the scan boundary`、`@h5.md beyond depth 4`、`install path escapes HOME: figma@claude-plugins-official`、
-  `hooks.PreToolUse`、`unreadable: lib/helper.sh, sub`、超过 10 个名字的 `… (N more)`、`missing hook command: /usr/local/bin/aguard hook`、
-  带空格加引号的 `"/Applications/Some Tool/aguard" hook`),并且每条都等于按今天的拼法算出的值;修前修后都绿
-- [x] 反向断言:`aguard hook status` 仍按原样印注册的命令 —— `TestStatusDescribe_ShowsTheRegisteredCommandVerbatim`(同 gate 文件)用一条
-  `Redact` 会改动的 npx 缓存形状路径,断言它逐字出现在 `Describe` 输出里;修前修后都绿(钉住未决 5)
-- [x] 搬家不改行为:`internal/detect/redact_test.go`、`contenthash_test.go`、`snippet_redact_test.go`、`internal/judge/*_test.go`、
-  `internal/permcheck/permcheck_test.go`、`cmd/aguard/redact_render_test.go` 一字不改仍绿(`git diff --stat origin/main` 对它们为空);
-  挪走的模式、两遍函数和熵判定逐字节等于 `origin/main` 的 `internal/detect/redact.go` 里那一段(去掉包名与包注释后 `diff` 为空)
-- [x] fixture 二进制前后(fd28344 vs 本分支,同一份 fixture,`--json --inbox off`):token 11 → 0,上面那几条发现与 note 条数不变,overall 不变
-- [x] 真机 `scan --root ~/.claude`:修前修后 JSON 去掉 `scanned_at`、`tool_version` 后逐字节相同(本机唯一一条落在改动处的 note 是 `hooks.hooks`,
-  `Redact` 不改它)
-- [x] `.claude/rules/*.md` 都不超过 200 行;`make verify` 绿;`go version` 不切换工具链,`go.mod` 第二行仍是 `go 1.23.5`,不加依赖
+- [x] `TestImportNotes_SecretInReferenceIsRedacted` (`internal/collect/notes_redact_test.go`, new): four import lines in
+  `CLAUDE.md` (`@~/vault/<token>/.env`, `@~/.ssh/<token>/config`, `@../../outside/<token>/notes.md`, fifth hop
+  `@<token>/d5.md`) go through `CollectAll`; the Title, Why and Evidence of `EXFIL-005` ×2 and of the three kinds of
+  `COV-000` (credential path / out of bounds / depth) contain no token, and the snippet carries `<REDACTED>`, still
+  starts with `@` and still ends with the original tail (`/.env is a credential path`,
+  `/notes.md escapes the scan boundary`, `/d5.md beyond depth 4`…). Red today
+- [x] `TestConfigNamesInNotesAreRedacted` (same file, new): a `<token>@market` plugin installed outside HOME →
+  `SCOPE-001`; a broken entry keyed `<token>` under `hooks` in settings.json → `PARSE-000`: the snippet contains no
+  token, carries `<REDACTED>`, and its fixed prefix is unchanged. Red today
+- [x] `TestUnreadableNote_SecretInEntryNameIsRedacted` (`internal/detect/note_redact_test.go`, new): a `0111` directory
+  in a skill named with the token, through `Engine.Run`; that `COV-000`'s Why and snippet both contain no token, both
+  carry `<REDACTED>`, and the two hold the same list. Red today
+- [x] `TestDeadRegistrationNote_SecretInCommandIsRedacted` (`internal/gate/status_redact_test.go`, new): for the
+  registered command `/opt/<token>/aguard hook`, the `GATE-001` snippet equals
+  `missing hook command: /opt/<REDACTED>/aguard hook`. Red today
+- [x] `TestScan_NoteSecretsNeverReachARendering` (`cmd/aguard/note_redact_render_test.go`, new): all of the above in one
+  fixture, through `scanEnv`, with `gateLivenessNote` attached the way the `scan` command does it; none of the six
+  renderings — JSON (encoded with the same indentation as the CLI), terminal (plain and `--verbose`), markdown, SARIF,
+  HTML — contains the token, and `EXFIL-005`, the three import `COV-000`, `SCOPE-001`, `PARSE-000`, the
+  unreadable-entries `COV-000` and `GATE-001` are all still there; the markdown of the same skill through `checkTarget`
+  (the path for pasting into PR comments) contains no token either. Red today
+- [x] Reverse assertion: ordinary values **unchanged to the character** — `TestImportNotes_OrdinaryReferenceUnchanged`,
+  `TestConfigNamesInNotes_OrdinaryUnchanged`, `TestUnreadableNote_OrdinaryNamesUnchanged`,
+  `TestDeadRegistrationNote_OrdinaryCommandUnchanged` pin them with literals (`@~/.env is a credential path`,
+  `@../../outside/notes.md escapes the scan boundary`, `@h5.md beyond depth 4`,
+  `install path escapes HOME: figma@claude-plugins-official`, `hooks.PreToolUse`, `unreadable: lib/helper.sh, sub`,
+  `… (N more)` for more than 10 names, `missing hook command: /usr/local/bin/aguard hook`, the quoted path with a space
+  `"/Applications/Some Tool/aguard" hook`), and each one equals the value computed by today's concatenation; green
+  before and after the fix
+- [x] Reverse assertion: `aguard hook status` still prints the registered command as written —
+  `TestStatusDescribe_ShowsTheRegisteredCommandVerbatim` (same gate file) uses an npx-cache-shaped path that `Redact`
+  would change and asserts it appears verbatim in the `Describe` output; green before and after the fix (pins open
+  question 5)
+- [x] The move does not change behaviour: `internal/detect/redact_test.go`, `contenthash_test.go`,
+  `snippet_redact_test.go`, `internal/judge/*_test.go`, `internal/permcheck/permcheck_test.go`,
+  `cmd/aguard/redact_render_test.go` stay green without a single change (`git diff --stat origin/main` is empty for
+  them); the moved patterns, the two-pass function and the entropy check are byte-for-byte equal to that section of
+  `internal/detect/redact.go` on `origin/main` (`diff` is empty after removing the package name and package comment)
+- [x] Fixture binaries before and after (fd28344 vs this branch, same fixture, `--json --inbox off`): token 11 → 0, the
+  counts of the findings and notes above unchanged, overall unchanged
+- [x] `scan --root ~/.claude` on a real machine: the JSON before and after the fix is byte-identical once `scanned_at`
+  and `tool_version` are removed (the only note on this machine that falls at a changed place is `hooks.hooks`, which
+  `Redact` does not change)
+- [x] None of `.claude/rules/*.md` exceeds 200 lines; `make verify` green; `go version` does not switch toolchains, line
+  2 of `go.mod` is still `go 1.23.5`, no dependencies added
 
-## 不做什么
+## Out of scope
 
-- **不改 `Redact` 匹配什么**:模式、熵检测字符类、阈值、两遍的先后,逐字节搬过去;不改 `redactClip`/`clip`;本条改到的笔记一处都不加截断
-- **不改划线 (c) 的那几处**:`unresolvedNote` 与 `connectors.go` 只进 Why 的名字列表、`unowned.go` 的条目名、`ioNote` 的 `err.Error()`、
-  所有 `Evidence.File`。理由见上表;它们是一个问题,要改就整体另开
-- **不改 `aguard hook status`(`Describe`)的输出**(未决 5)
-- **不改被跟进的导入 artifact 的名字** `"@" + ref`(`imports.go` 的 `artifact(...)` 那行):artifact 名是另一类(闸门、信誉库、报告都用它认东西),
-  同属上面那个全引擎问题
-- **不改 `hookOwnedNote`**(P-014 已决)、不改任何规则的严重度、维度、标题和固定的 Why 文案;`docs/rules.md` 不变
-- **不动 canonical 哈希**(`internal/collect/hash.go`);内容哈希(`contenthash.go`)调用的凭据那一遍只换了位置,金样测试不改一字
-- 不加依赖,`go.mod` 不动;新包只用标准库
+- **No change to what `Redact` matches**: the patterns, the entropy check's character classes, the thresholds and the
+  order of the two passes move over byte for byte; no change to `redactClip`/`clip`; no truncation is added to any of
+  the notes this proposal changes
+- **No change to the places under line (c)**: the Why-only name lists of `unresolvedNote` and `connectors.go`, the entry
+  names in `unowned.go`, the `err.Error()` of `ioNote`, every `Evidence.File`. The reasons are in the table above; they
+  are one problem, and changing them means a separate proposal for the whole of it
+- **No change to the output of `aguard hook status` (`Describe`)** (open question 5)
+- **No change to the name of a followed import artifact**, `"@" + ref` (the `artifact(...)` line in `imports.go`): an
+  artifact name is a different category (the gate, the reputation allowlist and the report all use it to identify
+  things), and it belongs to the same engine-wide question above
+- **No change to `hookOwnedNote`** (decided in P-014), nor to any rule's severity, dimension, title or fixed Why text;
+  `docs/rules.md` does not change
+- **The canonical hash is not touched** (`internal/collect/hash.go`); the credential pass that the content hash
+  (`contenthash.go`) calls only moved, and its golden test does not change by a character
+- No dependencies added, `go.mod` does not change; the new package uses only the standard library
 
-## 不能说什么
+## Must not claim
 
-- 不说"路径里的 token 不会再进报告":划线 (c) 的几处、artifact 名(含被跟进的 `@` 导入)、`hook status` 的输出都仍原样
-- 不说 `Redact` 变强了:它认什么、认不出什么(`MYSQL_PASS=…` 这类)一字没变,仍是尽力而为
-- 不说修后这几条笔记和以前一样好读:`Redact` 会误伤的普通名字(真机树内路径 4.1%、常见安装路径 4/11)在这几条里变成 `<REDACTED>`(未决 4、6)
-- 不说 SARIF 指纹不变:snippet 被 `Redact` 改动的那些发现,`partialFingerprints` 会变;普通值的不变
-- 不说真机上修了一处泄漏:本机落在改动处的 note 只有一条,`Redact` 不改它
-- 不说判官收到过这些:collect 的笔记和 `GATE-001` 不进判官的请求;泄漏面是本机生成的报告,以及用户转贴、上传的副本
+- Do not say "a token in a path no longer reaches the report": the places under line (c), artifact names (including
+  followed `@` imports) and the output of `hook status` are all still verbatim
+- Do not say `Redact` got stronger: what it recognises and what it cannot recognise (things like `MYSQL_PASS=…`) has not
+  changed by a word; it is still best-effort
+- Do not say these notes are as readable after the fix as before: ordinary names that `Redact` hits by mistake (4.1% of
+  in-tree paths on a real machine, 4/11 common install paths) become `<REDACTED>` in these notes (open questions 4, 6)
+- Do not say SARIF fingerprints are unchanged: for findings whose snippet `Redact` changes, `partialFingerprints`
+  changes; for ordinary values it does not
+- Do not say a leak was fixed on a real machine: only one note on this machine falls at a changed place, and `Redact`
+  does not change it
+- Do not say the judge received these: collect's notes and `GATE-001` do not go into the judge's requests; the leak
+  surface is the report generated on the machine, and the copies the user reposts or uploads
 
-## 工作项
+## Work items
 
-| W | 一句话 | 提交信息(不写 sha,rebase 会改) |
+| W | In one sentence | Commit message (no sha, a rebase changes it) |
 |---|---|---|
-| 1 | 五个新测试文件(四个包)加反向断言,跑红 | `collect, detect, gate, cmd: tests — a token in an @import line, a plugin or hook key, an unreadable entry name or the gate's registered command reaches the report in clear (P-018)` |
-| 2 | `Redact` 的实现原样搬进叶子包 `internal/redact`,`detect.Redact`/`redactCredentials` 只委托 | `redact: the redactor moves to a leaf package so collect can call the one implementation; detect delegates unchanged (P-018)` |
-| 3 | collect:四条 import note、`SCOPE-001`、`PARSE-000` 拼进 snippet 的那段先过 `redact.Secrets` | `collect: import, plugin-install and hook-shape notes redact the text they copy from a file or a config key (P-018)` |
-| 4 | detect:`unreadableNote` 的列表先过 `Redact`,Why 和 snippet 用同一份 | `detect: the unreadable-entries note redacts its list the way its non-regular sibling does (P-018)` |
-| 5 | gate:`GATE-001` 的命令先过 `detect.Redact`;`Describe` 不动 | `gate: GATE-001 redacts the registered command it quotes; hook status still prints it as written (P-018)` |
-| 6 | 文档:不变量 #3(`.claude/rules/invariants.md`、`docs/architecture*.md` 双语)、spec §16.3 与 §12、`hash.md` 里 `redact.go` 的位置 | `docs: invariant #3 — one redactor in internal/redact, detect delegates, collect and the gate call it (P-018)` |
-| 7 | 本文件、索引 | `proposals: P-018 (P-018)` |
+| 1 | Five new test files (four packages) plus reverse assertions, run red | `collect, detect, gate, cmd: tests — a token in an @import line, a plugin or hook key, an unreadable entry name or the gate's registered command reaches the report in clear (P-018)` |
+| 2 | Move the implementation of `Redact` unchanged into the leaf package `internal/redact`; `detect.Redact`/`redactCredentials` only delegate | `redact: the redactor moves to a leaf package so collect can call the one implementation; detect delegates unchanged (P-018)` |
+| 3 | collect: the part that the four import notes, `SCOPE-001` and `PARSE-000` splice into the snippet goes through `redact.Secrets` first | `collect: import, plugin-install and hook-shape notes redact the text they copy from a file or a config key (P-018)` |
+| 4 | detect: the `unreadableNote` list goes through `Redact` first, and Why and the snippet use the same copy | `detect: the unreadable-entries note redacts its list the way its non-regular sibling does (P-018)` |
+| 5 | gate: the `GATE-001` command goes through `detect.Redact` first; `Describe` unchanged | `gate: GATE-001 redacts the registered command it quotes; hook status still prints it as written (P-018)` |
+| 6 | Docs: invariant #3 (`.claude/rules/invariants.md`, `docs/architecture*.md` in both languages), spec §16.3 and §12, the location of `redact.go` in `hash.md` | `docs: invariant #3 — one redactor in internal/redact, detect delegates, collect and the gate call it (P-018)` |
+| 7 | This file, the index | `proposals: P-018 (P-018)` |
 
-## 未决问题
+## Open questions
 
-1. **实现放哪:叶子包,还是由 detect 在合并 collect 笔记时统一过一遍?**(P-014 未决 3 给的两条路)
-   **建议**:叶子包 `internal/redact`。统一过一遍要改 note 的产出路径(collect 的笔记经 `main.analyze`、`inbox`、`check` 几条路汇合,挂在 artifact
-   上的 `EXFIL-005` 又走 `Engine.Run`),还会把工具自己写的 Why 散文整段喂给 `Redact` —— `looseAssignRE` 认"凭据键名 + 空格 + 12 个字符",
-   英文散文就会被改(实测 `the secret configuration is here` → `the secret <REDACTED> is here`);叶子包只在拼接点调用,其余字节不经过它。
-   **已决(2026-10-09)**:按建议。
-2. **新包的 API 叫什么,`detect.Redact` 留不留?**
-   **建议**:`redact.Secrets`(两遍)与 `redact.Credentials`(只凭据那一遍,内容哈希用);`detect.Redact`、`detect.redactCredentials` 留作一行委托,
-   judge、permcheck、hygiene、clean 的十几处调用和 `redact_test.go` 不改一字。gate 调 `detect.Redact`:gate 经 report 早已传递依赖 detect,
-   不新增依赖方向;只有 collect(在 detect 之下)直接调新包。"只有一个实现"由"模式和两遍函数只在 `internal/redact` 里出现"保证。
-   **已决(2026-10-09)**:按建议。
-3. **划线 (c) 的几处为什么不一起改?**
-   **建议**:不改,写进不做什么,要改另开。它们与 `Evidence.File` 是同一个问题:名字是扫描器自己在磁盘上列出来的、或者就是那条发现的位置;
-   只脱 Why 而 File 照印,是 P-014 修掉的"一半一半"倒过来;而桌面版仓库与会话缓存里的名字是应用生成的 ID,`Redact` 把真实值全部抹掉
-   (13/13、3/3、2/2),等于为一个应用不会写出的形状删掉每一个真实值。
-   **已决(2026-10-09)**:按建议。
-4. **`unreadableNote` 要不要像 `nonRegularNote` 那样再截到 200 字节?**
-   **建议**:不截,只 `Redact`。它今天不截,加截断会改普通的长列表(最多 10 个名字),判据要普通值逐字不变;只脱敏不截断不存在先后问题
-   (不变量 #3 管的是两步都做时的顺序;P-014 未决 4 同理)。
-   **已决(2026-10-09)**:按建议。
-5. **`aguard hook status` 的输出要不要也脱敏?**
-   **建议**:不。它不是发现、不进报告,是运维在自己的终端里问"注册的是哪条命令";`⚠ … THAT FILE DOES NOT EXIST` 那一行,路径就是答案,
-   而 `Redact` 会把 4/11 种常见安装路径改掉,包括 `ephemeralExeWarning` 预言会失效的 npx 缓存路径;同一屏的 `this binary:` 行原样印同一条路径,
-   只脱一行就是"一半一半"。会被转贴的那份(`scan` 报告里的 `GATE-001`)本条脱敏。
-   **已决(2026-10-09)**:按建议。
-6. **`GATE-001` 脱敏后,npx 缓存这类路径在报告里读不全,接受吗?**
-   **建议**:接受。报告是会被转贴、上传的那份;`Why` 给的修法(`aguard hook install`)不需要旧路径;旧路径在 `aguard hook status` 里原样可查。
-   替 `Redact` 分辨"安装路径"和"secret",就是第二个出口(P-014 未决 1 同理)。
-   **已决(2026-10-09)**:按建议。
+1. **Where does the implementation go: a leaf package, or a single pass by detect when it merges collect's notes?** (the
+   two paths offered by P-014's open question 3)
+   **Recommendation**: the leaf package `internal/redact`. A single pass would mean changing the path along which notes
+   are produced (collect's notes converge through several paths — `main.analyze`, `inbox`, `check` — and the `EXFIL-005`
+   attached to an artifact goes through `Engine.Run` as well), and it would also feed whole paragraphs of the tool's own
+   Why prose to `Redact` — `looseAssignRE` recognises "a credential key name + a space + 12 characters", so English
+   prose would get changed (measured: `the secret configuration is here` → `the secret <REDACTED> is here`); the leaf
+   package is called only at the concatenation points, and no other bytes go through it.
+   **Decided (2026-10-09)**: as recommended.
+2. **What is the new package's API called, and does `detect.Redact` stay?**
+   **Recommendation**: `redact.Secrets` (both passes) and `redact.Credentials` (only the credential pass, used by the
+   content hash); `detect.Redact` and `detect.redactCredentials` stay as one-line delegations, so the dozen-plus call
+   sites in judge, permcheck, hygiene and clean and `redact_test.go` do not change by a character. gate calls
+   `detect.Redact`: gate already depends on detect transitively through report, so no new dependency direction is added;
+   only collect (below detect) calls the new package directly. "There is only one implementation" is guaranteed by "the
+   patterns and the two-pass function appear only in `internal/redact`".
+   **Decided (2026-10-09)**: as recommended.
+3. **Why are the places under line (c) not changed along with the rest?**
+   **Recommendation**: do not change them; write them into Out of scope, and open a separate proposal to change them.
+   They are the same problem as `Evidence.File`: the names are ones the scanner itself listed on disk, or they are that
+   finding's location; redacting only Why while File is still printed is the "half and half" P-014 fixed, in reverse;
+   and the names in the desktop app store and the session cache are application-generated IDs, which `Redact` blanks out
+   entirely (13/13, 3/3, 2/2) — that would delete every real value for the sake of a shape the application never writes.
+   **Decided (2026-10-09)**: as recommended.
+4. **Should `unreadableNote` also be clipped to 200 bytes, like `nonRegularNote`?**
+   **Recommendation**: no clipping, only `Redact`. It is not clipped today, adding clipping would change ordinary long
+   lists (up to 10 names), and the done criteria require ordinary values unchanged to the character; with redaction and
+   no clipping there is no ordering question (invariant #3 governs the order when both steps are done; likewise P-014's
+   open question 4).
+   **Decided (2026-10-09)**: as recommended.
+5. **Should the output of `aguard hook status` be redacted too?**
+   **Recommendation**: no. It is not a finding and does not go into a report; it is the operator asking, in their own
+   terminal, "which command is registered"; on the `⚠ … THAT FILE DOES NOT EXIST` line the path is the answer, and
+   `Redact` would change 4/11 common install paths, including the npx cache path that `ephemeralExeWarning` predicts
+   will stop working; the `this binary:` line on the same screen prints the same path verbatim, so redacting only one
+   line would be "half and half". The copy that gets reposted (`GATE-001` in the `scan` report) is redacted by this
+   proposal.
+   **Decided (2026-10-09)**: as recommended.
+6. **After `GATE-001` is redacted, paths like the npx cache cannot be read in full in the report; acceptable?**
+   **Recommendation**: acceptable. The report is the copy that gets reposted and uploaded; the fix that `Why` gives
+   (`aguard hook install`) does not need the old path; the old path can still be looked up verbatim in
+   `aguard hook status`. Telling "install path" from "secret" on `Redact`'s behalf would be a second exit (likewise
+   P-014's open question 1).
+   **Decided (2026-10-09)**: as recommended.
 
-## 完成
+## Done
 
 ```
-合入:PR #41(2026-10-09;sha 用 git log --grep P-018 找)
-发布:待发
-证据:W1 在本仓 main(fd28344)上红,原因与判据一致 —— TestImportNotes_SecretInReferenceIsRedacted 六条 snippet 都是原样 token(如 @~/vault/ghp_<36 位>/.env is a credential path);TestConfigNamesInNotesAreRedacted 两条(install path escapes HOME: ghp_<36 位>@market、hooks.ghp_<36 位>);TestUnreadableNote_SecretInEntryNameIsRedacted 的 Why 与 snippet(unreadable: ghp_<36 位>);TestDeadRegistrationNote_SecretInCommandIsRedacted(missing hook command: /opt/ghp_<36 位>/aguard hook);TestScan_NoteSecretsNeverReachARendering 七个子测试全红 → W5 后全绿
-证据:TestScan_NoteSecretsNeverReachARendering 逐步(token 次数,json/text/verbose/markdown/sarif/html/check --md):W1 11/2/11/11/4/3/2 → W2(只搬家)不变 → W3(collect)3/0/3/3/1/1/2 → W4(unreadableNote)1/0/1/1/0/0/0 → W5(GATE-001)全 0;八类发现与 note 的条数每一步都不变
-证据:反向断言 TestImportNotes_OrdinaryReferenceUnchanged、TestConfigNamesInNotes_OrdinaryUnchanged、TestUnreadableNote_OrdinaryNamesUnchanged(三个子测试,Why 与旧公式逐字相等)、TestDeadRegistrationNote_OrdinaryCommandUnchanged(四种安装命令)、TestStatusDescribe_ShowsTheRegisteredCommandVerbatim(npx 缓存路径,先断言 Redact 会改它)W1 时就绿,修后不改一字仍绿
-证据:搬家不改行为 —— W2 之后 internal/detect、judge、permcheck、hygiene、clean 全绿,只剩 W1 的那条红;git diff --stat origin/main -- internal/detect/redact_test.go internal/detect/contenthash_test.go internal/detect/contenthash.go internal/detect/snippet_redact_test.go internal/judge internal/permcheck internal/hygiene internal/clean cmd/aguard/redact_render_test.go 为空;origin/main 的 internal/detect/redact.go 第 18–213 行与 internal/redact/redact.go 对应段 diff:只差 Redact→Secrets、redactCredentials→Credentials 两个函数头及其注释,和留在 detect 的 redactClip;每个模式、熵判定、两遍函数体逐字节相同
-证据:二进制前后(fd28344 vs 本分支,同一份 fixture,HOME 指向 fixture,scan --json --inbox off):token 11 → 0;JSON 299 行里只差 11 行,恰是那 11 处;各规则条数不变(EXFIL-005 2、COV-000 6、SCOPE-001 1、PARSE-000 1、GATE-001 1),overall 69 → 69。HOME 外那两条路径(/tmp/ag-scratch/018/…,带数字的长路径)整段被熵检测吃成 <REDACTED><REDACTED>/notes.md、<REDACTED><REDACTED>/aguard hook —— 未决 4、6 接受的代价
-证据:真机 ~/.claude(带 Downloads):修前修后 overall 69 / artifact 180 / 发现 806 / note 10;JSON 去掉 scanned_at、tool_version 后 15730 行里只差 3 行,都是两个桌面版 connector artifact 的 path 和一条证据 file —— 会话缓存里"最新的那份工具清单"在两次运行之间换了文件(桌面版在本会话中持续写会话文件;connectors.go 本条未动),把这两个字段遮住后逐字节相同。再背靠背各跑一次(--inbox off):去掉 scanned_at、tool_version 后 15724 行逐字节相同
-证据:不做什么 —— git diff --stat origin/main -- internal/detect/hooks.go internal/report internal/collect/hash.go internal/collect/connectors.go internal/collect/unowned.go internal/collect/loaded.go internal/collect/desktop.go docs/rules.md go.mod go.sum 为空;internal/collect/collect.go 只有包注释一个 hunk(unresolvedNote、ioNote 未动);internal/gate/status.go 三个 hunk:import、DeadRegistrationNote 的注释、snippet 那一行,Describe 未动;internal/detect/detect.go 两个 hunk 都在 unreadableNote
-证据:.claude/rules/invariants.md 84 → 90 行、hash.md 62 → 63 行,detect.md 200 行未动;TestClaudeRulesAreScopedToExistingPaths 绿
-证据:make verify: all gates passed;go version go1.23.5(无工具链切换),go.mod 第二行 go 1.23.5,无新依赖
+Merged: PR #41 (2026-10-09; find the sha with git log --grep P-018)
+Released: pending release
+Evidence: W1 red on this repository's main (fd28344), for the reasons in the criteria — TestImportNotes_SecretInReferenceIsRedacted: all six snippets carry the token verbatim (e.g. @~/vault/ghp_<36 chars>/.env is a credential path); TestConfigNamesInNotesAreRedacted: two (install path escapes HOME: ghp_<36 chars>@market, hooks.ghp_<36 chars>); TestUnreadableNote_SecretInEntryNameIsRedacted: the Why and snippet (unreadable: ghp_<36 chars>); TestDeadRegistrationNote_SecretInCommandIsRedacted (missing hook command: /opt/ghp_<36 chars>/aguard hook); TestScan_NoteSecretsNeverReachARendering: all seven subtests red → all green after W5
+Evidence: TestScan_NoteSecretsNeverReachARendering step by step (token count, json/text/verbose/markdown/sarif/html/check --md): W1 11/2/11/11/4/3/2 → W2 (move only) unchanged → W3 (collect) 3/0/3/3/1/1/2 → W4 (unreadableNote) 1/0/1/1/0/0/0 → W5 (GATE-001) all 0; the counts of the eight kinds of findings and notes unchanged at every step
+Evidence: reverse assertions TestImportNotes_OrdinaryReferenceUnchanged, TestConfigNamesInNotes_OrdinaryUnchanged, TestUnreadableNote_OrdinaryNamesUnchanged (three subtests, Why equal to the old formula character for character), TestDeadRegistrationNote_OrdinaryCommandUnchanged (four install commands), TestStatusDescribe_ShowsTheRegisteredCommandVerbatim (npx cache path, first asserting that Redact would change it) green already at W1, still green after the fix without a single change
+Evidence: the move does not change behaviour — after W2, internal/detect, judge, permcheck, hygiene and clean are all green, only the one red test from W1 remains; git diff --stat origin/main -- internal/detect/redact_test.go internal/detect/contenthash_test.go internal/detect/contenthash.go internal/detect/snippet_redact_test.go internal/judge internal/permcheck internal/hygiene internal/clean cmd/aguard/redact_render_test.go is empty; diff of lines 18–213 of internal/detect/redact.go on origin/main against the corresponding section of internal/redact/redact.go: the only differences are the two function headers Redact→Secrets and redactCredentials→Credentials with their comments, and redactClip, which stays in detect; every pattern, the entropy check and the two-pass function bodies are byte-for-byte identical
+Evidence: binaries before and after (fd28344 vs this branch, same fixture, HOME pointing at the fixture, scan --json --inbox off): token 11 → 0; of the 299 JSON lines only 11 differ, exactly those 11 places; per-rule counts unchanged (EXFIL-005 2, COV-000 6, SCOPE-001 1, PARSE-000 1, GATE-001 1), overall 69 → 69. The two paths outside HOME (/tmp/ag-scratch/018/…, long paths with digits) are eaten whole by the entropy check into <REDACTED><REDACTED>/notes.md and <REDACTED><REDACTED>/aguard hook — the cost accepted in open questions 4 and 6
+Evidence: ~/.claude on a real machine (with Downloads): before and after the fix, overall 69 / artifacts 180 / findings 806 / notes 10; with scanned_at and tool_version removed, only 3 of 15730 JSON lines differ, all of them the path of two desktop connector artifacts and one evidence file — the "latest tool list" in the session cache moved to a different file between the two runs (the desktop app keeps writing session files during this session; connectors.go is not touched by this proposal), and with those two fields masked the output is byte-identical. Another back-to-back run of each (--inbox off): with scanned_at and tool_version removed, 15724 lines byte-identical
+Evidence: Out of scope — git diff --stat origin/main -- internal/detect/hooks.go internal/report internal/collect/hash.go internal/collect/connectors.go internal/collect/unowned.go internal/collect/loaded.go internal/collect/desktop.go docs/rules.md go.mod go.sum is empty; internal/collect/collect.go has a single hunk, in the package comment (unresolvedNote and ioNote untouched); internal/gate/status.go has three hunks: the import, the DeadRegistrationNote comment and the snippet line, Describe untouched; internal/detect/detect.go has two hunks, both in unreadableNote
+Evidence: .claude/rules/invariants.md 84 → 90 lines, hash.md 62 → 63 lines, detect.md 200 lines untouched; TestClaudeRulesAreScopedToExistingPaths green
+Evidence: make verify: all gates passed; go version go1.23.5 (no toolchain switch), go.mod line 2 go 1.23.5, no new dependencies
 ```

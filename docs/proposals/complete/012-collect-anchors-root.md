@@ -1,253 +1,334 @@
 <!-- SPDX-License-Identifier: MIT -->
-# 012 — --root 用相对写法时,符号链接安装的 skill 整个不被收集,`--root .` 还漏掉 home 下的配置;CI 模板的 `.mcp.json` 只是碰巧被读到
+# 012 — With a relative --root, a symlink-installed skill is not collected at all, and `--root .` also misses the configuration under home; the CI template's `.mcp.json` is read only by accident
 
-- **来源**:collect 只 `Clean` 不 `Abs`:相对写法下以符号链接安装的 skill 被整个丢弃,`--root .` 把 home 取错,用户级 MCP、
-  home 的 `CLAUDE.md` 和桌面版仓库都漏掉;发布的 CI 模板 `scan --root .` 读到仓库顶层 `.mcp.json` 只是因为 home 碰巧等于 root,
-  绝对写法从不读它。移植自旧仓 agent-guard 的 P-055(私有仓)
-- **依赖**:无(与 P-010 独立可合,见未决问题)
-- **分支**:`p/012-collect-anchors-root`
+- **Source**: collect only calls `Clean`, not `Abs`: with a relative spelling a symlink-installed skill is dropped
+  entirely, and `--root .` gets home wrong, so the user-level MCP config, the home `CLAUDE.md` and the desktop store are
+  all missed; the published CI template `scan --root .` reads the repository's top-level `.mcp.json` only because home
+  happens to equal root, and the absolute spelling never reads it. Ported from P-055 in the former private repository
+  agent-guard
+- **Depends on**: none (can be merged independently of P-010, see Open questions)
+- **Branch**: `p/012-collect-anchors-root`
 
-<!-- 没有「状态」行:文件所在目录就是状态(draft/ design/ complete/ rejected/),见 README.md。 -->
+<!-- No "Status" line: the directory the file sits in is its state (draft/ design/ complete/ rejected/), see README.md. -->
 
-## 问题
+## Problem
 
-`collect.CollectAll` 入口只 `filepath.Clean(root)`,不 `Abs`,然后 `home := filepath.Dir(root)`
-(`internal/collect/collect.go:216-217`)。`home` 管着两件事:用户级/项目级配置去哪找(`<home>/.claude.json`、
-`<home>/.mcp.json`、`<home>/CLAUDE.md`、桌面版仓库与会话缓存),以及符号链接安装的 skill 解析后必须落在哪
-(不变量 #2:`withinDir(home, real)`,越界出 `SCOPE-001`)。`Dir` 只看字符串,于是:
+At its entry `collect.CollectAll` only calls `filepath.Clean(root)`, not `Abs`, and then takes `home := filepath.Dir(root)`
+(`internal/collect/collect.go:216-217`). `home` governs two things: where the user-level and project-level configuration
+is looked up (`<home>/.claude.json`, `<home>/.mcp.json`, `<home>/CLAUDE.md`, the desktop store and session cache), and
+where a symlink-installed skill must land once resolved (invariant #2: `withinDir(home, real)`, out of bounds yields
+`SCOPE-001`). `Dir` only looks at the string, so:
 
-- **相对写法**(`.claude`、`home/.claude`、`../home/.claude`):home 是相对路径。以绝对路径为目标的 skill 符号链接
-  (`skills/x → ~/.agents/skills/x`,最常见的安装方式)解析出绝对路径,`withinDir` 里 `filepath.Rel(相对, 绝对)` 报错,
-  按出错即拒返回 false —— **这个 skill 整个不被收集**,还得到一条说错原因的 `SCOPE-001`
-  "Skill dir symlink points outside HOME"(它明明在 HOME 里)。以相对路径为目标的符号链接碰巧能活。
-- **`--root .`、`--root ./`**(`cd ~/.claude` 之后最自然的写法):`Dir(".")` 还是 `.`,home == root。上面那些
-  home 级位置全在 root **里面**找;skill 的边界缩成 root,任何指出 root 的 skill 符号链接都被拒。报告的
-  "Locations" 一节(`cmd/aguard/main.go` 的 `scanLocations`,同样 `Dir(Clean(root))`)还把
-  "User MCP config" 写成 `.claude.json`、状态 `absent` —— 告诉读者它看过了、没有。
+- **Relative spelling** (`.claude`, `home/.claude`, `../home/.claude`): home is a relative path. A skill symlink with an
+  absolute target (`skills/x → ~/.agents/skills/x`, the most common installation method) resolves to an absolute path,
+  `filepath.Rel(relative, absolute)` inside `withinDir` returns an error, and fail-closed returns false — **the skill is
+  not collected at all**, and it also gets a `SCOPE-001` that states the wrong reason,
+  "Skill dir symlink points outside HOME" (it is inside HOME). A symlink with a relative target happens to survive.
+- **`--root .`, `--root ./`** (the most natural spelling after `cd ~/.claude`): `Dir(".")` is still `.`, so
+  home == root. All the home-level locations above are looked up **inside** root; the skill boundary shrinks to root, and
+  every skill symlink that points out of root is rejected. The report's "Locations" section (`scanLocations` in
+  `cmd/aguard/main.go`, likewise `Dir(Clean(root))`) also writes "User MCP config" as `.claude.json` with status
+  `absent` — telling the reader it looked and found nothing.
 
-实测(`main` `dec64ca`,v0.18.0 构建的二进制,`HOME` 指向 fixture,`--inbox off`;fixture:root 内一个普通 skill、
-一个以绝对路径链到 HOME 内的 skill、一个以相对路径链到 HOME 内的 skill、一个链到 HOME 外的 skill,
-`<home>/.claude.json` 里一条 `sh -c "curl … | bash"` 的 MCP server、`<home>/.mcp.json` 里一条普通 server,`<home>/CLAUDE.md`;
-每个 skill 脚本都是 `curl … | bash`):
+Measured (`main` `dec64ca`, binary built from v0.18.0, `HOME` pointing at the fixture, `--inbox off`; fixture: one plain
+skill inside root, one skill linked by absolute path to a location inside HOME, one skill linked by relative path to a
+location inside HOME, one skill linked outside HOME, an MCP server `sh -c "curl … | bash"` in `<home>/.claude.json`, an
+ordinary server in `<home>/.mcp.json`, and `<home>/CLAUDE.md`; every skill script is `curl … | bash`):
 
-| `--root` 的写法 | 工作目录 | artifact | 风险发现 | `SCOPE-001` |
+| `--root` spelling | Working directory | artifact | Risk findings | `SCOPE-001` |
 |---|---|---|---|---|
-| `<home>/.claude`、`<home>/.claude/`、`<home>/.claude/.` | 任意 | 6 | 4 × `EXEC-001` | 1(HOME 外那个,正确) |
-| `.claude`、`.claude/` | `<home>` | 5(少绝对链接的 skill) | 3 | **2**(多一条误报) |
-| `home/.claude` | `<home>` 的父目录 | 5 | 3 | **2** |
-| `../home/.claude` | `<home>` 的兄弟目录 | 5 | 3 | **2** |
-| `.claude` | 经符号链接到达的 `<home>` | 5 | 3 | **2** |
-| `.`、`./` | `<home>/.claude` | **1**(只剩普通 skill) | **1** | **3**(两条误报) |
+| `<home>/.claude`, `<home>/.claude/`, `<home>/.claude/.` | any | 6 | 4 × `EXEC-001` | 1 (the one outside HOME, correct) |
+| `.claude`, `.claude/` | `<home>` | 5 (missing the absolutely linked skill) | 3 | **2** (one extra false positive) |
+| `home/.claude` | parent directory of `<home>` | 5 | 3 | **2** |
+| `../home/.claude` | sibling directory of `<home>` | 5 | 3 | **2** |
+| `.claude` | `<home>` reached through a symlink | 5 | 3 | **2** |
+| `.`, `./` | `<home>/.claude` | **1** (only the plain skill left) | **1** | **3** (two false positives) |
 
-`.claude.json` 里那条 `curl | bash` 的 server 在 `--root .` 下整个从清单里消失(绝对写法下它带一条 high 的 `EXEC-001`)。
-总分这几行恰好都是 69(一条 high 封顶),但清单和发现不同 —— 闸门放行与否取决于被丢的东西里有没有比剩下的更重的。
+The `curl | bash` server in `.claude.json` vanishes from the inventory entirely under `--root .` (under the absolute
+spelling it carries a high `EXEC-001`). The overall score happens to be 69 on all these rows (capped by one high), but
+the inventory and the findings differ — whether the gate lets it through depends on whether what was dropped holds
+something heavier than what remains.
 
-**反方向也不一致**:home == root 时,`<home>/.mcp.json` 读的就是 **root 里的** `.mcp.json`。仓库本身当 root
-(`hack/github-action.yml` 发给用户的 CI 模板就是 `aguard scan --root . --fail-on high`)时,`.` 写法读到仓库顶层的 `.mcp.json`,
-绝对写法读不到 —— 同一个二进制实测,仓库顶层 `.mcp.json` 里一条 `curl | bash` 的 server:`--root .` overall 69、一条 `EXEC-001`、
-`--fail-on high` 退出 1;`--root "$PWD"` overall 100、零发现、零 note、退出 0(`unowned.go` 的 `rootOwned` 把 `.mcp.json`
-记成"已有人读",所以连披露都没有)。`--root .` 下仓库顶层的 `CLAUDE.md` 还被收两遍(`CLAUDE.md` 与 `CLAUDE.md (project)`
-同一个文件)。
+**The opposite direction is inconsistent too**: when home == root, `<home>/.mcp.json` reads the `.mcp.json` **inside
+root**. With the repository itself as root (the CI template that `hack/github-action.yml` ships to users is exactly
+`aguard scan --root . --fail-on high`), the `.` spelling reads the repository's top-level `.mcp.json` and the absolute
+spelling does not — measured with the same binary, a `curl | bash` server in the repository's top-level `.mcp.json`:
+`--root .` gives overall 69, one `EXEC-001`, and `--fail-on high` exits 1; `--root "$PWD"` gives overall 100, zero
+findings, zero notes, exit 0 (`rootOwned` in `unowned.go` records `.mcp.json` as "already read by someone", so there is
+not even a disclosure). Under `--root .` the repository's top-level `CLAUDE.md` is also collected twice (`CLAUDE.md` and
+`CLAUDE.md (project)` are the same file).
 
-真机 `~/.claude`(同一个二进制,`--inbox off`):绝对写法 overall 69 / artifact 175 / 发现 806 / note 10;
-`cd ~` 后 `--root .claude` 为 69 / 137 / 643 / 15;`cd ~/.claude` 后 `--root .` 为 69 / 83 / 574 / 15。
+On a real machine, `~/.claude` (same binary, `--inbox off`): the absolute spelling gives overall 69 / artifacts 175 /
+findings 806 / notes 10; `--root .claude` after `cd ~` gives 69 / 137 / 643 / 15; `--root .` after `cd ~/.claude` gives
+69 / 83 / 574 / 15.
 
-后果:同一个环境,清单取决于 root 怎么敲;被丢的是**合法安装方式**的 skill 和用户级 MCP,两者都是这个工具要审的头号对象,
-丢的时候还附一条把原因说错的 note。
+Consequence: for the same environment, the inventory depends on how root is typed; what gets dropped is skills installed
+in a **legitimate way** and the user-level MCP config, both prime targets of this tool's audit, and the drop comes with a
+note that states the wrong reason.
 
-## 初步方向
+## Initial direction
 
-在 `CollectAll` 入口一次锚定 root:`filepath.Abs`(自带 `Clean`),**不** `EvalSymlinks`(解析 root 自己的符号链接会把 home 挪走);
-home 从锚定后的 root 取。`scanEnv` 把同一个锚定后的 root 交给 `analyze`,让 detect、Locations、基线路径和 collect 在同一个
-坐标系里。相对写法下 JSON 里的 `path` 会变成绝对路径;绝对写法的输出必须逐字节不变,树哈希不变(哈希的是内容,不是 root 路径)。
-不碰 `internal/detect`(那半是 P-010)。
+Anchor root once at the entry of `CollectAll`: `filepath.Abs` (which includes `Clean`), **not** `EvalSymlinks` (resolving
+root's own symlink would move home); take home from the anchored root. `scanEnv` hands the same anchored root to
+`analyze`, so detect, Locations, the baseline path and collect share one frame. Under a relative spelling the `path` in
+JSON becomes an absolute path; the output of the absolute spelling must stay byte-for-byte the same, and tree hashes do
+not change (the hash covers content, not the root path). Do not touch `internal/detect` (that half is P-010).
 
-## 完成的判据
+## Done criteria
 
-fixture 都在 `t.TempDir()` 现搭,临时目录先 `EvalSymlinks`(macOS 的 `/var → /private/var`)。"安装形状"那份:root 是
-`<base>/home/.claude`;`skills/plain`(普通 skill,`scripts/run.sh` 里 `curl … | bash`)、`skills/linked → <home>/agents-store/linked`
-(绝对目标,HOME 内)、`skills/rel-linked → ../../agents-store/rel`(相对目标,HOME 内)、`skills/escaper → <base>/outside/evil`
-(HOME 外);`<home>/.claude.json` 一条 `sh -c "curl … | bash"` 的 MCP server;`<home>/.mcp.json` 一条 server;`<home>/CLAUDE.md`。
-写法:`<abs>`、`<abs>/`、`<abs>/.`、`.claude`、`.claude/`(工作目录 `<home>`)、`.`、`./`(工作目录 root)、`home/.claude`
-(工作目录 `<base>`)、`../home/.claude`(工作目录 `<base>/sibling`),外加"工作目录经符号链接"(`<base>/via → home`,
-工作目录 `<base>/via`,`PWD` 指向链接,写 `.claude`)。工作目录用 `os.Chdir` 并在 `t.Cleanup` 里还原(Go 1.23 没有 `t.Chdir`;
-这两个包里没有 `t.Parallel`)。"仓库当 root"那份:root 是 `<base>/work/repo`(`skills/demo`、顶层 `.mcp.json` 里一条
-`sh -c "curl … | bash"` 的 server、顶层 `.claude.json` 里一条 server),它的 home `<base>/work` 也有自己的 `.mcp.json`、`.claude.json`。
+All fixtures are built on the fly in `t.TempDir()`, with the temporary directory passed through `EvalSymlinks` first
+(macOS's `/var → /private/var`). The "install shape" fixture: root is `<base>/home/.claude`; `skills/plain` (a plain
+skill, `curl … | bash` in `scripts/run.sh`), `skills/linked → <home>/agents-store/linked` (absolute target, inside HOME),
+`skills/rel-linked → ../../agents-store/rel` (relative target, inside HOME), `skills/escaper → <base>/outside/evil`
+(outside HOME); one `sh -c "curl … | bash"` MCP server in `<home>/.claude.json`; one server in `<home>/.mcp.json`;
+`<home>/CLAUDE.md`. Spellings: `<abs>`, `<abs>/`, `<abs>/.`, `.claude`, `.claude/` (working directory `<home>`), `.`,
+`./` (working directory root), `home/.claude` (working directory `<base>`), `../home/.claude` (working directory
+`<base>/sibling`), plus "working directory through a symlink" (`<base>/via → home`, working directory `<base>/via`,
+`PWD` pointing at the link, spelling `.claude`). The working directory is set with `os.Chdir` and restored in
+`t.Cleanup` (Go 1.23 has no `t.Chdir`; neither package uses `t.Parallel`). The "repository as root" fixture: root is
+`<base>/work/repo` (`skills/demo`, one `sh -c "curl … | bash"` server in a top-level `.mcp.json`, one server in a
+top-level `.claude.json`), and its home `<base>/work` also has its own `.mcp.json` and `.claude.json`.
 
-- [x] `TestCollectAll_RootSpellingKeepsTheInventory`(`internal/collect/rootspelling_test.go`,新):"安装形状"每行 `CollectAll` 的
-  (kind, name, hash, path) 清单、`Env`、notes 的 (rule, 证据文件)都等于绝对写法;"经符号链接"那行路径在符号链接的坐标系里,
-  只比 kind/name/hash、`Env` 和 note 的规则。预期 W1 红七行:`.claude`、`.claude/`、`home/.claude`、`../home/.claude`、
-  经符号链接那行少 `linked`、多一条 `SCOPE-001`;`.`、`./` 两行只剩 `plain`(「问题」里的二进制实测与此一致)。
-  `<abs>/`、`<abs>/.` 两行 W1 时就绿(`CollectAll` 已经 `Clean`)
-- [x] 反向断言(同一测试):每行 `escaper` 都被拒 —— 有一条证据指向 `skills/escaper` 的 `SCOPE-001`,没有任何 artifact 的
-  path 落在 `<base>/outside` 下。"被拒"W1 时就绿,修后仍绿;"`SCOPE-001` 恰好一条"W1 时在同样那七行红(多出来的是误报)
-- [x] 反向断言(同一测试):三个 skill 的树哈希每行相同,且等于直接对解析后的目录算的 `TreeHash` —— 哈希的是内容,不是
-  root 怎么写;`TestHashGolden` 不改一字仍绿
-- [x] `TestScan_RootSpellingIsTheAbsoluteReport`(`cmd/aguard/collectroot_test.go`,新):"安装形状"每种写法走 `scanEnv`,
-  JSON(去掉 `scanned_at`)与绝对写法**逐字节相同** —— 包括 `root`、`locations`、artifact 的 `path`、全部发现与证据
-  ("经符号链接"那行只比去掉路径字段的视图)。预期 W1 红九行:七行清单就不同(同上),`<abs>/`、`<abs>/.` 两行只差
-  `root` 回显
-- [x] `TestCollectAll_RootLevelMCPConfigIsRead`(`internal/collect/rootspelling_test.go`,新):"仓库当 root"在 `<abs>` 与 `.`
-  两种写法下都收到顶层 `.mcp.json`、`.claude.json` 里的 server **和** home 那两个文件里的 server,两行清单相同。
-  预期 W1 红两行:绝对写法缺 root 顶层的两个(从来不读),`.` 缺 home 的两个(home == root)。反向断言(同一测试):
-  root 顶层的 `.mcp.json` 是指向 `<home>/.mcp.json` 的符号链接时,那个文件的 server 只出现一次(同一个文件不读两遍)
-- [x] `TestScan_CITemplateShapeBlocksUnderEverySpelling`(`cmd/aguard/collectroot_test.go`,新):CI 模板的形状
-  (`hack/github-action.yml` 在本仓 `main` 上仍是 `aguard scan --root . --fail-on high --sarif aguard.sarif`):仓库顶层
-  `.mcp.json` 里一条 `curl | bash` 的 server,`--root .` 与 `--root "$PWD"` **都**带 `EXEC-001`、`--fail-on high` **都**拦
-  (`failGate(out, "high", "", false)` 返回退出 1)。预期 W1 红在 `"$PWD"` 一行(修前 overall 100、零发现、零 note);
-  `.` 一行 W1 时就绿,修后仍绿 —— 原本拦得住的仍然拦得住
-- [x] 反向断言(实现时补,W6):`TestCollectAll_LinkedRootKeepsItsHome`(`internal/collect/rootspelling_test.go`):root 本身是符号链接
-  (`~/.claude → ~/dotfiles/claude`)时,`<abs>`、`<abs>/`、`.`(工作目录在链接里)、`.claude` 四行的清单等于同样内容的普通 root,
-  `Result.Root` 是链接本身而不是它指向的地方 —— 钉住"只 `Abs` 不 `EvalSymlinks`";`TestCheck_RelativeRootShapedTargetIsTheAbsoluteReport`
-  (`cmd/aguard/collectroot_test.go`):`check .claude`、`check ./.claude`、`check ../home/.claude` 的 JSON 与绝对目标逐字节相同 ——
-  钉住 `checkTarget` 用 `Result.Root`
-- [x] 反向断言:root 顶层**没有**这两个文件时,绝对写法的 `scan --json` 修前修后逐字节相同(去掉 `scanned_at`、`tool_version`):
-  "安装形状" fixture 上(二进制前后),以及真机 `scan --root ~/.claude`(真机 `~/.claude` 下两个文件都不存在,已确认);
-  review 包只贴 overall、artifact/发现/note 数
-- [x] 反向断言:不变量 #2 的既有测试一字不改仍绿 —— `TestEscapingSymlinkSkillNoted`、`TestCrossRootSymlinkIgnored`、
-  `TestInstalledSymlinkSkillFound`、`TestWithinRoot`、`TestCollect_UnresolvableSkillEntryIsDisclosed`、
-  `TestCollect_DanglingSkillSymlinkIsNotReportedAsAGap`;`git diff --stat origin/main -- internal/collect/collect_test.go
-  internal/collect/hash_test.go internal/collect/pathsafe.go internal/collect/hash.go internal/detect` 为空
-- [x] `make verify` 绿;`go version` 不切换工具链
+- [x] `TestCollectAll_RootSpellingKeepsTheInventory` (`internal/collect/rootspelling_test.go`, new): for every row of the
+  "install shape" fixture, the `CollectAll` inventory of (kind, name, hash, path), `Env`, and the notes' (rule, evidence
+  file) all equal the absolute spelling; on the "through a symlink" row the paths are in the symlink's frame, so it
+  compares only kind/name/hash, `Env` and the note rules. Expected red at W1 on seven rows: `.claude`, `.claude/`,
+  `home/.claude`, `../home/.claude` and the through-a-symlink row lack `linked` and have one extra `SCOPE-001`; the `.`
+  and `./` rows have only `plain` left (consistent with the binary measurement in "Problem"). The `<abs>/` and
+  `<abs>/.` rows are green already at W1 (`CollectAll` already calls `Clean`)
+- [x] Reverse assertion (same test): `escaper` is rejected on every row — there is a `SCOPE-001` with evidence pointing
+  at `skills/escaper`, and no artifact's path lies under `<base>/outside`. "Rejected" is green at W1 and stays green
+  after the fix; "exactly one `SCOPE-001`" is red at W1 on the same seven rows (the extra ones are false positives)
+- [x] Reverse assertion (same test): the tree hashes of the three skills are the same on every row and equal the
+  `TreeHash` computed directly on the resolved directories — the hash covers content, not how root is spelled;
+  `TestHashGolden` stays green without a single change
+- [x] `TestScan_RootSpellingIsTheAbsoluteReport` (`cmd/aguard/collectroot_test.go`, new): every spelling of the
+  "install shape" fixture goes through `scanEnv`, and the JSON (without `scanned_at`) is **byte-for-byte identical** to
+  the absolute spelling — including `root`, `locations`, the artifacts' `path`, all findings and evidence (the "through a
+  symlink" row compares only a view with the path fields removed). Expected red at W1 on nine rows: seven rows already
+  differ in inventory (as above), and the `<abs>/` and `<abs>/.` rows differ only in the echoed `root`
+- [x] `TestCollectAll_RootLevelMCPConfigIsRead` (`internal/collect/rootspelling_test.go`, new): under both the `<abs>`
+  and `.` spellings, the "repository as root" fixture collects the servers in the top-level `.mcp.json` and
+  `.claude.json` **and** the servers in home's two files, and the two rows have the same inventory. Expected red at W1
+  on two rows: the absolute spelling lacks the two at the top of root (never read), `.` lacks home's two
+  (home == root). Reverse assertion (same test): when the top-level `.mcp.json` of root is a symlink to
+  `<home>/.mcp.json`, that file's server appears only once (the same file is not read twice)
+- [x] `TestScan_CITemplateShapeBlocksUnderEverySpelling` (`cmd/aguard/collectroot_test.go`, new): the CI template's
+  shape (`hack/github-action.yml` on this repository's `main` is still
+  `aguard scan --root . --fail-on high --sarif aguard.sarif`): a `curl | bash` server in the repository's top-level
+  `.mcp.json`; `--root .` and `--root "$PWD"` **both** carry `EXEC-001` and **both** block under `--fail-on high`
+  (`failGate(out, "high", "", false)` returns exit 1). Expected red at W1 on the `"$PWD"` row (before the fix overall
+  100, zero findings, zero notes); the `.` row is green at W1 and stays green after the fix — what blocked before still
+  blocks
+- [x] Reverse assertions (added during implementation, W6): `TestCollectAll_LinkedRootKeepsItsHome`
+  (`internal/collect/rootspelling_test.go`): when root itself is a symlink (`~/.claude → ~/dotfiles/claude`), the
+  inventory on the four rows `<abs>`, `<abs>/`, `.` (working directory inside the link) and `.claude` equals that of a
+  plain root with the same content, and `Result.Root` is the link itself, not where it points — pinning "only `Abs`, not
+  `EvalSymlinks`"; `TestCheck_RelativeRootShapedTargetIsTheAbsoluteReport` (`cmd/aguard/collectroot_test.go`): the JSON
+  of `check .claude`, `check ./.claude` and `check ../home/.claude` is byte-for-byte identical to the absolute target —
+  pinning that `checkTarget` uses `Result.Root`
+- [x] Reverse assertion: when the top of root does **not** have these two files, the absolute spelling's `scan --json`
+  is byte-for-byte identical before and after the fix (without `scanned_at`, `tool_version`): on the "install shape"
+  fixture (binary before and after), and on a real machine with `scan --root ~/.claude` (neither file exists under
+  `~/.claude` on the real machine, confirmed); the review package posts only overall and the artifact/finding/note
+  counts
+- [x] Reverse assertion: the existing tests for invariant #2 stay green without a single change —
+  `TestEscapingSymlinkSkillNoted`, `TestCrossRootSymlinkIgnored`, `TestInstalledSymlinkSkillFound`, `TestWithinRoot`,
+  `TestCollect_UnresolvableSkillEntryIsDisclosed`, `TestCollect_DanglingSkillSymlinkIsNotReportedAsAGap`;
+  `git diff --stat origin/main -- internal/collect/collect_test.go internal/collect/hash_test.go internal/collect/pathsafe.go internal/collect/hash.go internal/detect`
+  is empty
+- [x] `make verify` green; `go version` does not switch toolchains
 
-## 不做什么
+## Out of scope
 
-- **不碰 `internal/detect`**:hook 与授权脚本按 home 跟进是 P-010。`scanEnv` 把锚定后的 root 交给 `analyze`(见未决 1),
-  于是 `scan`/`clean` 这条路上 detect 也拿到绝对 root —— 这是"collect 与 detect 同一坐标系"的必然结果,不是在这里修 detect;
-  `check` 单目标、闸门、`clean` 的恢复预览仍靠 P-010
-- 不改 `withinDir`、install-symlink 守卫、`collectNestedSkills`、`collectPlugins` 的边界逻辑:不变量 #2 的"先解析再判断、出错即拒"
-  一行不动,只改喂给它们的 root 和 home 在哪个坐标系里
-- 不 `EvalSymlinks` root(未决 2)
-- **同根因的另外三处不在这里修,人定(2026-10-09)合成一条 proposal,本条合入后由 lead 另开**:
-  (1) `internal/clean`:本仓 `main` 上实测,fixture 的 root 下有 `.aguard-trash/` 时 `cd <root> && aguard clean --root . --undo last --dry-run`
-  报 "refusing to use .aguard-trash: it resolves to …/.aguard-trash, outside the scanned root"、退出 2(`clean.withinDir` 对相对 root
-  只 `EvalSymlinks` 不 `Abs`),同一 root 的绝对写法正常(`Nothing to undo`、退出 0);`clean` 命令照旧把 `--root` 原样交给 `clean.*`。
-  (2) `CollectTarget` 的路由:`looksLikeRoot` 按敲进来的字符串看目录名 —— 实测工作目录是一个没有 `plugins/installed_plugins.json`
-  的 `.claude` 时,`check .` 按"其他目录"整树读成 1 个 `directory` artifact,`check ../.claude` 走 root 布局出 5 个 artifact。
-  (3) `cmd/aguard/gate.go` 的 `Home: filepath.Dir(root)` 和 `cmd/aguard/version.go` 的 `pluginVersionLine` 从原样 root 取 home
-- `scanLocations` 只多出 root 顶层那两个文件的行(存在时才有,W4);取 home 的那两行不改 —— 它从 `analyze` 收到的 root 已经锚定
-- 不改 `unowned.go` 的 `rootOwned`:它说 `.mcp.json`、`.claude.json` 已有人读,W4 之后这句话成真
-- 不改哈希定义、不改 JSON schema(字段不增不减)、spec 不改(spec 没写 home 怎么从 root 取;本条修的是实现偏离
-  "home 是 root 的父目录"这一既有说法,见 `CollectAll` 的注释)
-- 不改 `hack/`(CI 模板照旧 `--root .`)
-- 不加依赖,`go.mod` 不动
+- **Do not touch `internal/detect`**: following hook and permission-grant scripts relative to home is P-010. `scanEnv`
+  hands the anchored root to `analyze` (see open question 1), so on the `scan`/`clean` path detect also receives an
+  absolute root — this follows necessarily from "collect and detect share one frame", it is not a detect fix made here;
+  `check` on a single target, the gate, and `clean`'s restore preview still depend on P-010
+- Do not change the boundary logic of `withinDir`, the install-symlink guard, `collectNestedSkills` or `collectPlugins`:
+  not one line of invariant #2's "resolve first, then judge; reject on error" changes, only the frame of the root and
+  home fed to them
+- Do not `EvalSymlinks` root (open question 2)
+- **Three other places with the same root cause are not fixed here; decided by the maintainer (2026-10-09) to combine
+  them into one proposal, which the lead opens after this one merges**:
+  (1) `internal/clean`: measured on this repository's `main`, when the fixture's root has `.aguard-trash/`,
+  `cd <root> && aguard clean --root . --undo last --dry-run` reports
+  "refusing to use .aguard-trash: it resolves to …/.aguard-trash, outside the scanned root" and exits 2
+  (`clean.withinDir` only calls `EvalSymlinks`, not `Abs`, on a relative root), while the absolute spelling of the same
+  root works (`Nothing to undo`, exit 0); the `clean` command still hands `--root` unchanged to `clean.*`.
+  (2) `CollectTarget` routing: `looksLikeRoot` looks at the directory name in the string as typed — measured: when the
+  working directory is a `.claude` without `plugins/installed_plugins.json`, `check .` reads the whole tree as "other
+  directory" into 1 `directory` artifact, while `check ../.claude` takes the root layout and yields 5 artifacts.
+  (3) `Home: filepath.Dir(root)` in `cmd/aguard/gate.go` and `pluginVersionLine` in `cmd/aguard/version.go` take home
+  from the root as typed
+- `scanLocations` only gains rows for the two files at the top of root (only when they exist, W4); the two lines that
+  take home do not change — the root it receives from `analyze` is already anchored
+- Do not change `rootOwned` in `unowned.go`: it says `.mcp.json` and `.claude.json` are already read by someone, and
+  after W4 that statement becomes true
+- Do not change the hash definition, do not change the JSON schema (no fields added or removed), do not change the spec
+  (the spec does not say how home is derived from root; this proposal fixes the implementation's departure from the
+  existing statement "home is the parent directory of root", see the comment on `CollectAll`)
+- Do not change `hack/` (the CI template keeps `--root .`)
+- No new dependencies; `go.mod` unchanged
 
-## 不能说什么
+## Must not claim
 
-- 不说"`--root` 怎么写结果都一样":`check` 的路由仍看字符串(不做什么里那条合并 proposal 的 (2));工作目录经符号链接时
-  artifact 的 `path` 留在符号链接的坐标系里(清单、哈希、发现相同,路径字符串不同);P-010 合入前,`check`/闸门里 hook 脚本
-  跟进仍随写法变
-- 不说以前的扫描"漏掉了恶意 skill":能说的是相对写法丢了以绝对路径符号链接安装的 skill、`.`/`./` 还丢了 home 级配置和
-  桌面版;读了会出什么取决于内容
-- **必须说**:相对写法和带尾斜杠的写法,JSON/SARIF/HTML/markdown 里的 `root`、artifact 的 `path`、collect note 证据里的路径
-  都变成锚定后的绝对路径 —— 有意的输出变化,只影响这些写法的用户。SARIF 结果的 `uri` 取自证据的相对路径,对 root 内文件
-  不变(指纹不变),`aguard/root` 属性随 `root` 变
-- **必须说**:root 顶层有 `.mcp.json` 或 `.claude.json` 的环境,**绝对写法**的输出也会变 —— 多出这两个文件里的 MCP server
-  (可能连带发现,用绝对路径跑 CI 的仓库可能因此新红)。这是绝对写法自己的假阴性被修好,不是回归:`rootOwned` 一直声称读了它们,
-  `--root .` 一直在读。root 顶层没有这两个文件时绝对写法逐字节不变;真机 `~/.claude` 下两者都不存在
-- **必须说**:工作目录经符号链接、`--root` 用相对写法时,collect 没解析过的 root 内文件(如 `settings.json`)的证据路径从完整
-  相对路径变成两段尾巴(`settings.json` → `.claude/settings.json`)—— 与同一条经符号链接的**绝对**写法今天的输出相同,
-  skill 的证据不变(未决 9)
-- 不说真机分数变了:真机默认 root 是绝对路径、顶层没有那两个文件,本条不改它的任何输出
+- Do not say "the result is the same however `--root` is spelled": `check` routing still looks at the string (item (2)
+  of the combined proposal in Out of scope); when the working directory is reached through a symlink, artifact `path`s
+  stay in the symlink's frame (same inventory, hashes and findings, different path strings); until P-010 merges,
+  following hook scripts in `check` and the gate still varies with the spelling
+- Do not say earlier scans "missed malicious skills": what can be said is that the relative spelling dropped skills
+  installed by absolute-path symlinks, and `.`/`./` also dropped the home-level configuration and the desktop store; what
+  reading them would have produced depends on their content
+- **Must say**: for relative spellings and spellings with a trailing slash, the `root` in JSON/SARIF/HTML/markdown,
+  artifact `path`s, and the paths in collect note evidence all become the anchored absolute path — an intentional output
+  change that affects only users of these spellings. The `uri` of a SARIF result is taken from the evidence's relative
+  path and does not change for files inside root (fingerprints unchanged); the `aguard/root` property changes with
+  `root`
+- **Must say**: in environments with a `.mcp.json` or `.claude.json` at the top of root, the output of the **absolute
+  spelling** changes too — the MCP servers in these two files are added (possibly with findings, so a repository running
+  CI with an absolute path may newly turn red). This is the absolute spelling's own false negative being fixed, not a
+  regression: `rootOwned` has always claimed they were read, and `--root .` has always read them. When the top of root
+  has neither file, the absolute spelling is byte-for-byte unchanged; neither exists under `~/.claude` on the real
+  machine
+- **Must say**: when the working directory is reached through a symlink and `--root` uses a relative spelling, the
+  evidence path of files inside root that collect did not resolve (such as `settings.json`) changes from the full
+  relative path to a two-segment tail (`settings.json` → `.claude/settings.json`) — the same as today's output for the
+  **absolute** spelling of the same path through the symlink; skill evidence is unchanged (open question 9)
+- Do not say the score on a real machine changed: the default root on a real machine is an absolute path with neither
+  file at its top, and this proposal changes none of its output
 
-## 工作项
+## Work items
 
-| W | 一句话 | 提交信息(不写 sha,rebase 会改) |
+| W | In one sentence | Commit message (no sha; a rebase changes it) |
 |---|---|---|
-| 1 | 两个包的写法矩阵和"仓库当 root",跑红 | `collect, cmd: tests — a relative --root drops a symlink-installed skill, --root . loses the user-level MCP config, and an absolute root never reads its own .mcp.json, so no two spellings report the same inventory (P-012)` |
-| 2 | `CollectAll` 入口锚定 root,`Result.Root` 交出锚定后的 root | `collect: CollectAll anchors the root once, so a relative --root keeps symlink-installed skills and finds the user-level config (P-012)` |
-| 3 | `scanEnv`、`checkTarget` 用 `Result.Root` 调 `analyze` | `cmd: scan and check analyse with the root collect anchored, so evidence, locations and the baseline share collect's frame (P-012)` |
-| 4 | root 顶层的 `.mcp.json`、`.claude.json` 照读(同一个文件不读两遍),`scanLocations` 列出它们 | `collect, cmd: a .mcp.json or .claude.json at the top of the root is read under every spelling, so the CI template's --root . keeps blocking a poisoned repository config (P-012)` |
-| 5 | `.claude/rules/pipeline.md` 补一条防护点(200 行上限,`TestClaudeRulesAreScopedToExistingPaths` 管着) | `rules: pipeline.md says the root is anchored once in CollectAll and callers analyse with Result.Root (P-012)` |
-| 6 | 两条反向测试:root 本身是符号链接;`check` 相对的 root 布局目标 | `collect, cmd: tests — a root that is itself a symlink keeps its home, and check of a relative root-shaped target reports what the absolute one does, so resolving the root or dropping Result.Root turns them red (P-012)` |
-| 7 | 本文件、索引 | `proposals: P-012 (P-012)` |
+| 1 | Spelling matrix for both packages and "repository as root", run red | `collect, cmd: tests — a relative --root drops a symlink-installed skill, --root . loses the user-level MCP config, and an absolute root never reads its own .mcp.json, so no two spellings report the same inventory (P-012)` |
+| 2 | `CollectAll` anchors root at its entry; `Result.Root` hands out the anchored root | `collect: CollectAll anchors the root once, so a relative --root keeps symlink-installed skills and finds the user-level config (P-012)` |
+| 3 | `scanEnv` and `checkTarget` call `analyze` with `Result.Root` | `cmd: scan and check analyse with the root collect anchored, so evidence, locations and the baseline share collect's frame (P-012)` |
+| 4 | `.mcp.json` and `.claude.json` at the top of root are read (the same file is not read twice); `scanLocations` lists them | `collect, cmd: a .mcp.json or .claude.json at the top of the root is read under every spelling, so the CI template's --root . keeps blocking a poisoned repository config (P-012)` |
+| 5 | `.claude/rules/pipeline.md` gains one guard point (200-line cap, enforced by `TestClaudeRulesAreScopedToExistingPaths`) | `rules: pipeline.md says the root is anchored once in CollectAll and callers analyse with Result.Root (P-012)` |
+| 6 | Two reverse tests: root itself is a symlink; `check` on a relative root-shaped target | `collect, cmd: tests — a root that is itself a symlink keeps its home, and check of a relative root-shaped target reports what the absolute one does, so resolving the root or dropping Result.Root turns them red (P-012)` |
+| 7 | This file, the index | `proposals: P-012 (P-012)` |
 
-## 未决问题
+## Open questions
 
-1. **锚定点放在哪?**
-   **建议**:`CollectAll` 入口(`filepath.Abs`),并经新字段 `collect.Result.Root` 交出;`scanEnv` 和 `checkTarget` 用它调
-   `analyze`(`check` 只有走 root 布局的目标才有 `Root`,单 skill/目录/文件的目标原样,`check ./skill` 的输出不变)。
-   只有一个锚定点:另一种做法是 main 里再 `Abs` 一次,那是两份同义代码靠注释同步。不让 detect 拿到原样 root 是必须的 ——
-   collect 交出绝对路径而 detect 拿相对 root 时,`relPath` 关联不了两个坐标系,证据退化成两段尾巴(CI 模板的 SARIF `uri`
-   和指纹就跟着变了)。`main.go` 改三处(`scanEnv`、`checkTarget`、W4 在 `scanLocations` 加的几行)。与 P-005(在 `scanEnv`
-   的 `return` 前加了几行)会有一处文本冲突,解法是保留两边;与 P-010 不冲突(它不碰 `main.go`)。
-   **已决(2026-10-09)**:按建议(旧仓已决,移植沿用)。
-2. **`Abs` 还是 `EvalSymlinks`?**
-   **建议**:只 `Abs`(自带 `Clean`)。解析会把 `~/.claude → ~/dotfiles/claude` 的 home 挪到 `~/dotfiles`(P-010 未决 3 的同一条理由);
-   符号链接仍只在 `withinDir` 检查时解析。`Abs` 失败(工作目录已被删)退回 `Clean`,与今天相同。
-   **已决(2026-10-09)**:按建议(旧仓已决,移植沿用)。
-3. **相对写法下输出里的路径变成绝对路径,接受吗?**
-   **建议**:接受,写进不能说什么。"报告不随写法变"正是判据;`.aguardignore` 按证据的相对 `file` 做 glob,root 内文件的证据不变,
-   已有基线不受影响。
-   **已决(2026-10-09)**:按建议(旧仓已决,移植沿用)。
-4. **和 P-010 的关系?**
-   **建议**:不动 detect,两条谁先合都行。P-010 的 `anchorRoot` 与 P-009 的 `absRoot` 都在 detect 包,本条在 collect 包不另起同名函数
-   (只用 `filepath.Abs`),不会撞出重复定义;cmd 测试文件和辅助函数名避开 P-010 的 `cmd/aguard/rootspelling_test.go`
-   (`spellingTempDir`、`withWorkingDir` 等),本条用 `collectroot_test.go` 和 `anchored*`。两条都合入后,`Engine.Run` 收到的已是
-   绝对 root,`anchorRoot` 幂等。
-   **已决(2026-10-09)**:按建议(旧仓已决,移植沿用)。
-5. **测试矩阵要不要包括"工作目录经符号链接"?**
-   **建议**:要,但只比清单、哈希和 note 规则:`Abs` 用的是 `$PWD`,路径留在符号链接的坐标系里,这是 `Abs` 的定义,不是缺陷;
-   边界由 `withinDir` 解析后判,所以这一行 `linked` 照收、`escaper` 照拒。
-   **已决(2026-10-09)**:按建议(旧仓已决,移植沿用)。
-6. **CI 模板的 `--root .` 会因此失去仓库顶层的 `.mcp.json`。**
-   home == root 时,`<home>/.mcp.json` 读的正是 root 顶层的 `.mcp.json`;绝对写法从来不读它,而 `unowned.go` 的 `rootOwned`
-   把 `.mcp.json`、`.claude.json` 记成"已有人读",所以绝对写法下连 note 都没有(已经是一个违反不变量 #5 的静默缺口)。
-   `hack/github-action.yml` 发给用户的 CI 模板正是 `aguard scan --root . --fail-on high`(仓库本身当 root)。本仓 `main` 实测
-   (仓库顶层 `.mcp.json` 里一条 `sh -c "curl … | bash"` 的 server):`--root .` overall 69、`EXEC-001`、`--fail-on high` 退出 1;
-   `--root "$PWD"` overall 100、零发现、零 note、退出 0。**只做锚定,`--root .` 就变成后者:CI 模板对这种仓库从拦变成静默放行。**
-   - **A(建议)**:本条一并读 root 顶层的 `.mcp.json` 和 `.claude.json`(存在时;与 home 那两个是同一个文件时不读两遍),
-     按 server 出 artifact,与 home 级的同名、不同 `path`(既有先例,见 `mcpServersFrom` 的注释)。`rootOwned` 的说法从此成真。
-     代价:绝对写法的输出会变 —— 只在 root 顶层真有这两个文件时;真机 `~/.claude` 下两者都不存在。
-   - **B**:只锚定;root 顶层这两个文件另开 proposal。合入本条到那条合入之间,CI 模板对仓库顶层 `.mcp.json` 是静默的绿。
-   - **C**:B,再把 `.mcp.json`、`.claude.json` 从 `rootOwned` 拿掉,让它们在 unowned 的 `COV-000` 里被点名"没读"。闸门仍放行,
-     但至少不静默。
-   **建议**:A。
-   **已决(2026-10-09,人)**:A。理由是上面的实测:CI 模板的 `--root .` 今天拦得住仓库顶层 `.mcp.json` 里的 `curl | bash`,
-   只做锚定会让它静默放行。绝对写法的输出因此在 root 顶层有这两个文件时会变,写进不能说什么:那是假阴性被修好,不是回归。
-7. **`check .` 的路由也随写法变,要不要一起修?**
-   **建议**:不,另开(见不做什么):它改的是 `check` 的 artifact 形状(整树一个 directory → root 布局多个 artifact),
-   要单独做前后对比;本条的判据只看 `scan --root` 和 `CollectAll`。
-   **已决(2026-10-09)**:按建议(旧仓已决,移植沿用);人另定它与 `clean`、`gate.go`/`version.go` 两处合成一条 proposal,本条合入后另开。
-8. **与 P-010 都合入后,P-010 的 `TestScan_RootSpellingDoesNotChangeTheResult` 会红,谁来改?**
-   两种写法的报告逐字节相同,红的原因在 P-010 测试的 `spellingView`:它按**敲进来的** root(`filepath.Clean(root)`)去掉 collect note
-   证据的前缀;本条之后那些路径是锚定后的绝对路径,绝对写法那份去得掉前缀,相对写法那份去不掉。改成按报告自己的 root 去前缀
-   就绿:本仓实测要改 `spellingView` 开头**两行**里的 `filepath.Clean(root)`(算前缀的那行和判 `"."` 的那行)为 `filepath.Clean(out.Root)`,
-   只改第一行时 `dot`、`dot slash` 两行仍红;这两行在 P-010 自己的分支上行为不变(那里 `out.Root` 就是敲进来的 root)。
-   **建议**:后合的那个 PR 在 rebase 时带上这两行:P-010 先合,本条 rebase 时改;本条先合,P-010 rebase 时改。PR 描述里写明。
-   **合入时(2026-10-09)**:P-010 先合,本条带上这两行。rebase 后 P-010 的测试在相对写法的六行全红,改完转绿。
-   另有一处与 P-005 的交叠:`scanEnv` 里 P-005 从绝对 root 算判官的 home,本条改为用 collect 锚定后的 `res.Root` 调 `analyze`;
-   合并后两样都在 —— 用 `res.Root` 调 `analyze`,判官的 home 也从 `res.Root` 算(仍过一次 `filepath.Abs`)。
-   本仓的组合实测见「完成」。
-   **已决(2026-10-09)**:按建议(旧仓已决,移植沿用)。
-9. **工作目录经符号链接、`--root` 用相对写法时,root 内一部分文件的证据路径变短,算不算越界?**
-   collect 的路径在 `$PWD` 的坐标系里(未决 5),detect 的 `relPath` 解析 root、不解析绝对文件路径,于是 collect 没解析过的 root 内文件
-   (`settings.json`、三层以上的 `commands/ns/foo.md` 这类)退化成两段尾巴:`settings.json` 上的证据从 `settings.json`(今天的相对写法)
-   变成 `.claude/settings.json`。这正是今天用**同一条经符号链接的绝对路径**写 `--root` 时的输出,所以判据"等于绝对写法"成立;
-   但对这一小类用户是证据路径的倒退(`.aguardignore` 里按 `settings.json` 写的 glob 会失配,方向是多报不是少报)。skill 的证据不受影响
-   (collect 给的是解析后的路径)。修法在 detect 的 `relPath`(绝对路径也解析目录),会改经符号链接的绝对写法的输出,不在本条范围。
-   **建议**:接受,写进不能说什么;`relPath` 这一处交给 lead 决定是否并入那条合并 proposal。本仓实测见「完成」。
-   **已决(2026-10-09)**:按建议(旧仓已决,移植沿用)。
+1. **Where does the anchor point go?**
+   **Recommendation**: the entry of `CollectAll` (`filepath.Abs`), handed out through a new field `collect.Result.Root`;
+   `scanEnv` and `checkTarget` call `analyze` with it (under `check` only targets that take the root layout have a
+   `Root`; targets that are a single skill, directory or file stay as typed, and the output of `check ./skill` does not
+   change). There is only one anchor point: the alternative is a second `Abs` in main, which is two copies of the same
+   code kept in sync by a comment. Keeping the as-typed root away from detect is required — when collect hands out
+   absolute paths and detect gets a relative root, `relPath` cannot relate the two frames and evidence degrades to a
+   two-segment tail (the CI template's SARIF `uri` and fingerprints change with it). `main.go` changes in three places
+   (`scanEnv`, `checkTarget`, and the lines W4 adds to `scanLocations`). There will be one textual conflict with P-005
+   (which adds a few lines before the `return` in `scanEnv`); the resolution is to keep both sides; there is no conflict
+   with P-010 (it does not touch `main.go`).
+   **Decided (2026-10-09)**: as recommended (decided in the former repo, kept on port).
+2. **`Abs` or `EvalSymlinks`?**
+   **Recommendation**: only `Abs` (which includes `Clean`). Resolving would move the home of
+   `~/.claude → ~/dotfiles/claude` to `~/dotfiles` (the same reason as P-010's open question 3); symlinks are still
+   resolved only when `withinDir` checks. If `Abs` fails (the working directory has been deleted), fall back to `Clean`,
+   the same as today.
+   **Decided (2026-10-09)**: as recommended (decided in the former repo, kept on port).
+3. **Under a relative spelling the paths in the output become absolute; is that acceptable?**
+   **Recommendation**: accept it, and write it into Must not claim. "The report does not vary with the spelling" is
+   exactly the criterion; `.aguardignore` globs on the evidence's relative `file`, evidence for files inside root does not
+   change, and existing baselines are unaffected.
+   **Decided (2026-10-09)**: as recommended (decided in the former repo, kept on port).
+4. **Relationship to P-010?**
+   **Recommendation**: do not touch detect; either can merge first. P-010's `anchorRoot` and P-009's `absRoot` are both
+   in the detect package; this proposal does not add a function of the same name in the collect package (it only uses
+   `filepath.Abs`), so no duplicate definition arises; the cmd test file and helper names avoid P-010's
+   `cmd/aguard/rootspelling_test.go` (`spellingTempDir`, `withWorkingDir` and so on) — this proposal uses
+   `collectroot_test.go` and `anchored*`. Once both merge, `Engine.Run` already receives an absolute root and
+   `anchorRoot` is idempotent.
+   **Decided (2026-10-09)**: as recommended (decided in the former repo, kept on port).
+5. **Should the test matrix include "working directory through a symlink"?**
+   **Recommendation**: yes, but compare only the inventory, hashes and note rules: `Abs` uses `$PWD`, so paths stay in
+   the symlink's frame; that is the definition of `Abs`, not a defect; the boundary is judged by `withinDir` after
+   resolution, so on this row `linked` is still collected and `escaper` is still rejected.
+   **Decided (2026-10-09)**: as recommended (decided in the former repo, kept on port).
+6. **The CI template's `--root .` would lose the repository's top-level `.mcp.json` as a result.**
+   When home == root, `<home>/.mcp.json` reads exactly the `.mcp.json` at the top of root; the absolute spelling never
+   reads it, and `rootOwned` in `unowned.go` records `.mcp.json` and `.claude.json` as "already read by someone", so
+   under the absolute spelling there is not even a note (already a silent gap that violates invariant #5). The CI
+   template `hack/github-action.yml` ships to users is exactly `aguard scan --root . --fail-on high` (the repository
+   itself as root). Measured on this repository's `main` (a `sh -c "curl … | bash"` server in the repository's top-level
+   `.mcp.json`): `--root .` overall 69, `EXEC-001`, `--fail-on high` exits 1; `--root "$PWD"` overall 100, zero
+   findings, zero notes, exit 0. **With anchoring alone, `--root .` becomes the latter: the CI template goes from
+   blocking such a repository to silently letting it through.**
+   - **A (recommended)**: this proposal also reads `.mcp.json` and `.claude.json` at the top of root (when present; not
+     read twice when they are the same file as home's two), producing one artifact per server, which may share a name
+     with a home-level one but has a different `path` (existing precedent, see the comment on `mcpServersFrom`).
+     `rootOwned`'s statement becomes true from then on. Cost: the absolute spelling's output changes — only when the top
+     of root actually has these two files; neither exists under `~/.claude` on the real machine.
+   - **B**: anchor only; open a separate proposal for these two files at the top of root. Between this one merging and
+     that one merging, the CI template is silently green on a repository's top-level `.mcp.json`.
+   - **C**: B, plus removing `.mcp.json` and `.claude.json` from `rootOwned` so the unowned `COV-000` names them as "not
+     read". The gate still lets them through, but at least not silently.
+   **Recommendation**: A.
+   **Decided (2026-10-09, by the maintainer)**: A. The reason is the measurement above: the CI template's `--root .`
+   blocks a `curl | bash` in a repository's top-level `.mcp.json` today, and anchoring alone would let it through
+   silently. The absolute spelling's output therefore changes when the top of root has these two files; this goes into
+   Must not claim: it is a false negative being fixed, not a regression.
+7. **`check .` routing also varies with the spelling; fix it together?**
+   **Recommendation**: no, open it separately (see Out of scope): it changes the shape of `check`'s artifacts (one
+   directory for the whole tree → several artifacts under the root layout) and needs its own before/after comparison;
+   this proposal's criteria look only at `scan --root` and `CollectAll`.
+   **Decided (2026-10-09)**: as recommended (decided in the former repo, kept on port); the maintainer separately
+   decided to combine it with `clean` and the two places in `gate.go`/`version.go` into one proposal, opened after this
+   one merges.
+8. **Once both this and P-010 merge, P-010's `TestScan_RootSpellingDoesNotChangeTheResult` turns red; who changes it?**
+   The reports of the two spellings are byte-for-byte identical; the cause of the red is `spellingView` in P-010's test:
+   it strips the prefix of collect note evidence by the root **as typed** (`filepath.Clean(root)`); after this proposal
+   those paths are anchored absolute paths, so the prefix strips from the absolute spelling's copy but not from the
+   relative spelling's. Stripping by the report's own root turns it green: measured on this repository,
+   `filepath.Clean(root)` in the **two lines** at the top of `spellingView` (the line computing the prefix and the line
+   testing for `"."`) must become `filepath.Clean(out.Root)`; changing only the first line leaves the `dot` and
+   `dot slash` rows red; on P-010's own branch these two lines behave the same (there `out.Root` is the root as typed).
+   **Recommendation**: whichever PR merges second carries these two lines when it rebases: if P-010 merges first, this
+   one changes them on rebase; if this one merges first, P-010 changes them on rebase. State it in the PR description.
+   **At merge (2026-10-09)**: P-010 merged first, and this one carries the two lines. After the rebase P-010's test was
+   red on all six relative-spelling rows, and turned green after the change.
+   There is one more overlap, with P-005: in `scanEnv` P-005 computes the judge's home from the absolute root, and this
+   proposal changes `analyze` to be called with collect's anchored `res.Root`; after the merge both are present —
+   `analyze` is called with `res.Root`, and the judge's home is also computed from `res.Root` (still passed through
+   `filepath.Abs` once). The combined measurement on this repository is in "Done".
+   **Decided (2026-10-09)**: as recommended (decided in the former repo, kept on port).
+9. **When the working directory is reached through a symlink and `--root` uses a relative spelling, the evidence paths
+   of some files inside root get shorter; does that count as overstepping?**
+   collect's paths are in `$PWD`'s frame (open question 5), and detect's `relPath` resolves root but not absolute file
+   paths, so files inside root that collect did not resolve (`settings.json`, things like `commands/ns/foo.md` three or
+   more levels deep) degrade to a two-segment tail: evidence on `settings.json` changes from `settings.json` (today's
+   relative spelling) to `.claude/settings.json`. That is exactly today's output when `--root` is written as **the same
+   absolute path through the symlink**, so the criterion "equals the absolute spelling" holds; but for this small class
+   of users it is a regression in evidence paths (a glob written as `settings.json` in `.aguardignore` stops matching, in
+   the direction of reporting more, not less). Skill evidence is unaffected (collect provides the resolved path). The fix
+   belongs in detect's `relPath` (resolve the directory of absolute paths too); it would change the output of the
+   absolute spelling through a symlink, and is outside this proposal's scope.
+   **Recommendation**: accept it, and write it into Must not claim; whether the `relPath` change joins the combined
+   proposal is left to the lead. The measurement on this repository is in "Done".
+   **Decided (2026-10-09)**: as recommended (decided in the former repo, kept on port).
 
-## 完成
+## Done
 
 ```
-合入:PR #30(2026-10-09;sha 用 git log --grep P-012 找)
-发布:待发
-证据:TestCollectAll_RootSpellingKeepsTheInventory(internal/collect/rootspelling_test.go);W1 在本仓 main(dec64ca)上红七行(.claude、.claude/、home/.claude、../home/.claude 和经符号链接那行 env Skills 2 vs 3、SCOPE-001 两条 [skills/escaper, skills/linked];.、./ 两行 Skills 1、MCPServers 0、SCOPE-001 三条 [escaper, linked, rel-linked])→ W2 后十行全绿;<abs>/、<abs>/. 两行 W1 时就绿
-证据:反向断言 同一测试 —— 十行里 escaper 都被拒且只有它(恰好一条 SCOPE-001,没有 artifact 落在 outside 下);三个 skill 的树哈希每行等于直接对解析后目录算的 TreeHash;TestHashGolden 未改仍绿
-证据:TestScan_RootSpellingIsTheAbsoluteReport(cmd/aguard/collectroot_test.go);W1 红九行(<abs>/、<abs>/. 在 JSON 第 2 行即 root 回显处分叉,七行清单不同)→ W3 后九行全绿,JSON 与绝对写法逐字节相同
-证据:TestCollectAll_RootLevelMCPConfigIsRead(internal/collect/rootspelling_test.go);W1 红两行(绝对写法只有 home-proj、home-user,缺 repo-pwn、repo-user;. 只有 repo-pwn、repo-user 且路径是相对的,缺 home 的两个)→ W4 后绿;"同一个文件只读一次"子测试 W1 时就绿,修后仍绿
-证据:TestScan_CITemplateShapeBlocksUnderEverySpelling(cmd/aguard/collectroot_test.go);W1:. 绿、"$PWD" 红(overall 100、无 EXEC-001、failGate 返回 nil)→ W3 后(只锚定). 也红(overall 100)—— 正是未决 6 预言的后果 → W4 后两行都带 EXEC-001、failGate 退出 1
-证据:W6 TestCollectAll_LinkedRootKeepsItsHome、TestCheck_RelativeRootShapedTargetIsTheAbsoluteReport;变异(临时改、跑、还原,未提交):CollectAll 改成 EvalSymlinks(Abs(root)) → 前者四行红;checkTarget 不用 Result.Root → 后者三行红
-证据:变异 去掉 SameFile 去重 → "只读一次"子测试红;CollectAll 不读 RootMCPConfigs → TestCollectAll_RootLevelMCPConfigIsRead 两行红、CI 模板测试两行红;scanEnv 用敲进来的 root 调 analyze → TestScan_RootSpellingIsTheAbsoluteReport 八行红;只 Clean 不 Abs → 清单矩阵七行红;每次还原后 git status 为空
-证据:二进制前后(main dec64ca vs 本分支,fixture 在 /private/tmp 下,HOME 指向 fixture,--inbox off):绝对写法 scan --json 去掉 scanned_at、tool_version 后 cmp 无差(5494 字节);修后八种写法与绝对写法逐字节相同,修前分别差 2/2/68/68/66/66/140/140 行(<abs>/、<abs>/.、.claude、.claude/、home/.claude、../home/.claude、.、./);CI 仓库形状修后 . 与 "$PWD" 逐字节相同、都是 overall 69、EXEC-001、--fail-on high 退出 1(修前 "$PWD" 100 分、零发现、零 note、退出 0)
-证据:未决 9 实测(fixture root 加一个 hook 为 curl … | bash 的 settings.json):工作目录经符号链接、--root .claude 时 EXEC-001/HOOK-001 的证据 main 为 settings.json、本分支为 .claude/settings.json,与 main 和本分支对同一条经符号链接的绝对路径的输出相同;工作目录不经符号链接时两边都是 settings.json
-证据:真机 ~/.claude(--inbox off):main 绝对写法 overall 69 / artifact 175 / 发现 806 / note 10,本分支绝对写法相同;main 绝对写法重跑一次与本分支绝对写法的 JSON(去掉 scanned_at、tool_version)逐字节相同(15678 行)
-证据:真机相对写法(本分支):cd ~ 后 --root .claude、cd ~/.claude 后 --root . 两份 JSON 与上面的绝对写法逐字节相同;main 上同两种写法 .claude 为 artifact 137 / 发现 643 / note 15,. 为 artifact 83 / 发现 574 / note 15
-证据:不做什么 —— git diff --stat origin/main -- internal/detect internal/clean cmd/aguard/gate.go cmd/aguard/version.go internal/collect/pathsafe.go internal/collect/hash.go internal/collect/unowned.go internal/collect/plugins.go internal/collect/collect_test.go internal/collect/hash_test.go docs/spec go.mod go.sum hack 为空;hack/github-action.yml 仍是 aguard scan --root . --fail-on high --sarif aguard.sarif
-证据:不做什么(另开那条的现状,main 上实测):root 下有 .aguard-trash/ 时 cd <root> && clean --root . --undo last --dry-run 退出 2(refusing to use .aguard-trash … outside the scanned root),绝对写法 Nothing to undo、退出 0;check . 在一个没有 plugins/installed_plugins.json 的 .claude 里出 1 个 directory artifact,check ../.claude 出 5 个
-证据:与 P-010 的组合(临时 worktree 合并 origin/p/010-relative-root-hook-scripts,未提交,已删除):代码不冲突(只有索引行);detect、collect 全绿;cmd 只有 P-010 的 TestScan_RootSpellingDoesNotChangeTheResult 六行红(every kind of second stage 的 relative、relative trailing slash、dot、dot slash、relative through the parent、relative from a sibling),spellingView 两处 filepath.Clean(root) 改成 filepath.Clean(out.Root) 后全绿(只改算前缀那行时 dot、dot slash 仍红);同样两行改动单独放在 P-010 分支上该测试仍绿(未决 8)
-证据:与 P-005 的组合(同上,临时合并):唯一冲突在 scanEnv 的 return 处,保留两边(P-005 的 o.home 计算在前,本条的 res := collect.CollectAll(root); return analyze(res.Root, res, o) 在后)后 go test -race ./cmd/aguard/ ./internal/judge/ 全绿;与 P-001、P-002、P-003、P-004、P-009 的 git merge-tree 只在索引行冲突
-证据:make verify: all gates passed;go version go1.23.5(无工具链切换),go.mod 第二行 go 1.23.5,module 行 github.com/basdotio/AgentGuard,无新依赖
+Merged: PR #30 (2026-10-09; find the sha with git log --grep P-012)
+Released: pending release
+Evidence: TestCollectAll_RootSpellingKeepsTheInventory (internal/collect/rootspelling_test.go); W1 on this repository's main (dec64ca) red on seven rows (.claude, .claude/, home/.claude, ../home/.claude and the through-a-symlink row: env Skills 2 vs 3, two SCOPE-001 [skills/escaper, skills/linked]; the ., ./ rows: Skills 1, MCPServers 0, three SCOPE-001 [escaper, linked, rel-linked]) → after W2 all ten rows green; the <abs>/, <abs>/. rows green already at W1
+Evidence: reverse assertion, same test — on all ten rows escaper is rejected and only it (exactly one SCOPE-001, no artifact under outside); the tree hashes of the three skills on every row equal the TreeHash computed directly on the resolved directories; TestHashGolden unchanged and still green
+Evidence: TestScan_RootSpellingIsTheAbsoluteReport (cmd/aguard/collectroot_test.go); W1 red on nine rows (<abs>/, <abs>/. diverge at JSON line 2, the root echo; seven rows have a different inventory) → after W3 all nine rows green, JSON byte-for-byte identical to the absolute spelling
+Evidence: TestCollectAll_RootLevelMCPConfigIsRead (internal/collect/rootspelling_test.go); W1 red on two rows (the absolute spelling has only home-proj, home-user, missing repo-pwn, repo-user; . has only repo-pwn, repo-user with relative paths, missing home's two) → green after W4; the "same file read only once" subtest green already at W1, still green after the fix
+Evidence: TestScan_CITemplateShapeBlocksUnderEverySpelling (cmd/aguard/collectroot_test.go); W1: . green, "$PWD" red (overall 100, no EXEC-001, failGate returns nil) → after W3 (anchoring only) . red too (overall 100) — exactly the consequence open question 6 predicted → after W4 both rows carry EXEC-001, failGate exits 1
+Evidence: W6 TestCollectAll_LinkedRootKeepsItsHome, TestCheck_RelativeRootShapedTargetIsTheAbsoluteReport; mutation (temporary change, run, revert, not committed): CollectAll changed to EvalSymlinks(Abs(root)) → the former red on four rows; checkTarget not using Result.Root → the latter red on three rows
+Evidence: mutation: removing the SameFile dedup → the "read only once" subtest red; CollectAll not reading RootMCPConfigs → TestCollectAll_RootLevelMCPConfigIsRead red on two rows, the CI template test red on two rows; scanEnv calling analyze with the root as typed → TestScan_RootSpellingIsTheAbsoluteReport red on eight rows; only Clean, no Abs → the inventory matrix red on seven rows; git status empty after each revert
+Evidence: binary before/after (main dec64ca vs this branch, fixture under /private/tmp, HOME pointing at the fixture, --inbox off): absolute spelling scan --json with scanned_at, tool_version removed shows no cmp difference (5494 bytes); after the fix eight spellings are byte-for-byte identical to the absolute spelling, before the fix they differed by 2/2/68/68/66/66/140/140 lines respectively (<abs>/, <abs>/., .claude, .claude/, home/.claude, ../home/.claude, ., ./); CI repository shape after the fix: . and "$PWD" byte-for-byte identical, both overall 69, EXEC-001, --fail-on high exits 1 (before the fix "$PWD" scored 100, zero findings, zero notes, exit 0)
+Evidence: open question 9 measured (fixture root plus a settings.json whose hook is curl … | bash): with the working directory through a symlink and --root .claude, the EXEC-001/HOOK-001 evidence is settings.json on main and .claude/settings.json on this branch, the same as the output of main and this branch for the same absolute path through the symlink; with the working directory not through a symlink both sides give settings.json
+Evidence: real machine ~/.claude (--inbox off): main absolute spelling overall 69 / artifacts 175 / findings 806 / notes 10, this branch's absolute spelling the same; a rerun of main's absolute spelling and this branch's absolute spelling give byte-for-byte identical JSON (scanned_at, tool_version removed) (15678 lines)
+Evidence: real machine, relative spellings (this branch): the two JSONs from --root .claude after cd ~ and --root . after cd ~/.claude are byte-for-byte identical to the absolute spelling above; on main the same two spellings give .claude artifacts 137 / findings 643 / notes 15, . artifacts 83 / findings 574 / notes 15
+Evidence: Out of scope — git diff --stat origin/main -- internal/detect internal/clean cmd/aguard/gate.go cmd/aguard/version.go internal/collect/pathsafe.go internal/collect/hash.go internal/collect/unowned.go internal/collect/plugins.go internal/collect/collect_test.go internal/collect/hash_test.go docs/spec go.mod go.sum hack is empty; hack/github-action.yml is still aguard scan --root . --fail-on high --sarif aguard.sarif
+Evidence: Out of scope (current state of the separate proposal, measured on main): with .aguard-trash/ under root, cd <root> && clean --root . --undo last --dry-run exits 2 (refusing to use .aguard-trash … outside the scanned root), the absolute spelling gives Nothing to undo, exit 0; check . inside a .claude without plugins/installed_plugins.json yields 1 directory artifact, check ../.claude yields 5
+Evidence: combination with P-010 (temporary worktree merging origin/p/010-relative-root-hook-scripts, not committed, deleted): no code conflict (index line only); detect, collect all green; in cmd only P-010's TestScan_RootSpellingDoesNotChangeTheResult red on six rows (relative, relative trailing slash, dot, dot slash, relative through the parent, relative from a sibling under every kind of second stage), all green after changing the two filepath.Clean(root) in spellingView to filepath.Clean(out.Root) (changing only the prefix line leaves dot, dot slash red); the same two-line change alone on the P-010 branch keeps that test green (open question 8)
+Evidence: combination with P-005 (as above, temporary merge): the only conflict is at the return in scanEnv; after keeping both sides (P-005's o.home computation first, this proposal's res := collect.CollectAll(root); return analyze(res.Root, res, o) after) go test -race ./cmd/aguard/ ./internal/judge/ is all green; git merge-tree with P-001, P-002, P-003, P-004, P-009 conflicts only on the index line
+Evidence: make verify: all gates passed; go version go1.23.5 (no toolchain switch), go.mod line 2 go 1.23.5, module line github.com/basdotio/AgentGuard, no new dependencies
 ```

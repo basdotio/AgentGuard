@@ -1,171 +1,219 @@
 <!-- SPDX-License-Identifier: MIT -->
-# 024 — frontmatter 前面有空行或 BOM 的规则文件,报告标成 (path-scoped),Claude Code 却每次会话都加载它
+# 024 — A rule file with a blank line or a BOM before its frontmatter is labelled (path-scoped) in the report, while Claude Code loads it every session
 
-- **来源**:P-015 未决 5(`docs/proposals/complete/015-rules-frontmatter-first.md`)。2026-10-09 人批准另开一份,先量 `SKILL.md`
-- **依赖**:无
-- **分支**:`p/024-frontmatter-leading-bytes`
+- **Source**: P-015 open question 5 (`docs/proposals/complete/015-rules-frontmatter-first.md`). On 2026-10-09 the maintainer
+  approved opening a separate proposal, measuring `SKILL.md` first
+- **Depends on**: none
+- **Branch**: `p/024-frontmatter-leading-bytes`
 
-<!-- 没有「状态」行:文件所在目录就是状态(draft/ design/ complete/ rejected/),见 README.md。 -->
+<!-- No "Status" line: the directory the file is in is its status (draft/ design/ complete/ rejected/), see README.md. -->
 
-## 问题
+## Problem
 
-`internal/parse/frontmatter.go` 的 `splitFrontmatter` 在找开头的 `---` 之前,先去掉 UTF-8 BOM 和开头的空白(空格、制表符、
-空行)。`collectRules` 用它判断一份 `rules/**/*.md` 有没有 `paths:`,有就在 artifact 名后面加 ` (path-scoped)`。
+Before looking for the opening `---`, `splitFrontmatter` in `internal/parse/frontmatter.go` first strips a UTF-8 BOM and
+leading whitespace (spaces, tabs, blank lines). `collectRules` uses it to decide whether a `rules/**/*.md` has `paths:`,
+and if it does, appends ` (path-scoped)` to the artifact name.
 
-P-015 在 Claude Code 2.1.107 上量过:`---` 之前有一个空行或一个 BOM 的规则文件,`paths:` 被忽略,每次会话开头都加载。
-于是这两种形状 aguard 标成 `(path-scoped)`,而 agent 实际每次会话都读它。这个名字回答的正是"它占多少上下文"——
-`collectRules` 的注释写着"每次会话都加载"和"打开匹配文件时才加载"值得读者不同的反应——报告在这一点上说少了。
+P-015 measured on Claude Code 2.1.107: for a rule file with one blank line or one BOM before `---`, `paths:` is ignored and
+the file is loaded at the start of every session. So for these two shapes aguard says `(path-scoped)`, while the agent
+actually reads the file every session. That name answers exactly "how much context does it take" — the comment on
+`collectRules` says "loaded every session" and "loaded only when a matching file is opened" deserve different reactions
+from the reader — and on this point the report understates.
 
-同一个函数也给 `SKILL.md`(以及子 agent、斜杠命令)读 `name`/`description`。Claude Code 对 `---` 前有 BOM 或空行的
-`SKILL.md` 认不认 frontmatter,P-015 没有量:如果它不认,aguard 拿来算 context_bloat、重复描述、判官"声明的用途"的那段
-描述,就不是 agent 实际看到的那段。
+The same function also reads `name`/`description` for `SKILL.md` (and for subagents and slash commands). Whether Claude
+Code honours the frontmatter of a `SKILL.md` with a BOM or a blank line before `---` was not measured by P-015: if it does
+not, the description aguard uses for context_bloat, duplicate descriptions and the judge's "declared purpose" is not the one
+the agent actually sees.
 
-### 实测(Claude Code 2.1.107,本机,2026-10-09)
+### Measured (Claude Code 2.1.107, this machine, 2026-10-09)
 
-方法沿用 P-015,外加一个只听回环地址的抓包服务器。隔离的 `CLAUDE_CONFIG_DIR`(用户配置不碰),`env -i` 起一个干净环境,
-在一个现搭的项目目录里跑 `claude -p "hi"`:
+The method follows P-015, plus a capture server that listens only on a loopback address. An isolated `CLAUDE_CONFIG_DIR`
+(the user's configuration is not touched), a clean environment started with `env -i`, and `claude -p "hi"` run in a
+freshly built project directory:
 
-- **规则**:用户级 settings 里注册 `InstructionsLoaded` hook,记下每次加载的 `file_path` 和 `load_reason`。
-  规则同时放在用户级 `<config>/rules/` 和项目级 `.claude/rules/`,每份的 `paths:` 都指向不存在的目录。
-- **`SKILL.md`、斜杠命令、子 agent**:`ANTHROPIC_BASE_URL` 指向 `127.0.0.1` 上的抓包服务器(`ANTHROPIC_API_KEY` 是一个
-  占位串,不是任何真实凭据;服务器记下请求体后回 400,CLI 随即退出)。CLI 发给模型的那份请求里,第一条用户消息带着
-  skill 清单(`- <名字>: <描述>`),`Agent` 工具的说明带着子 agent 清单——这就是模型看到的东西,不经过模型。
+- **Rules**: an `InstructionsLoaded` hook registered in the user-level settings records each load's `file_path` and
+  `load_reason`. Rules are placed both in the user-level `<config>/rules/` and in the project-level `.claude/rules/`, each
+  with a `paths:` pointing to a directory that does not exist.
+- **`SKILL.md`, slash commands, subagents**: `ANTHROPIC_BASE_URL` points to the capture server on `127.0.0.1`
+  (`ANTHROPIC_API_KEY` is a placeholder string, not any real credential; the server records the request body and answers
+  400, and the CLI then exits). In the request the CLI sends to the model, the first user message carries the skill list
+  (`- <name>: <description>`), and the description of the `Agent` tool carries the subagent list — this is what the model
+  sees, without going through the model.
 
-**前导字节**(frontmatter 本身合法;规则两级结果相同):
+**Leading bytes** (the frontmatter itself is valid; rules give the same result at both levels):
 
-| `---` 之前有什么 | 规则:`session_start` 加载? | `SKILL.md`:清单里的描述 | 命令:清单里的描述 | 子 agent:进清单? | aguard fd28344 |
+| What is before `---` | Rule: loaded at `session_start`? | `SKILL.md`: description in the list | Command: description in the list | Subagent: in the list? | aguard fd28344 |
 |---|---|---|---|---|---|
-| 没有,`---` 在第 1 字节(LF) | 否 | frontmatter 的 description | frontmatter 的 description | 是 | 读 frontmatter,规则标 `(path-scoped)` —— 一致 |
-| 没有,CRLF 换行 | 否 | frontmatter 的 description | —(未量) | —(未量) | 一致 |
-| 一个空行 | **是** | `---` | `---` | **否** | 读 frontmatter,标 `(path-scoped)` —— **不一致** |
-| UTF-8 BOM | **是** | `---` | `---` | **否** | 同上 —— **不一致** |
-| 一行空格 | **是** | `---` | —(未量) | —(未量) | 同上 —— **不一致** |
-| 一行 HTML 注释 | 是 | 那行注释 | 那行注释 | 否 | 不读 frontmatter —— 一致 |
-| 一行 `# 标题` | 是 | `Title`(标题文字) | —(未量) | —(未量) | 不读 frontmatter —— 一致 |
+| nothing, `---` at byte 1 (LF) | no | the frontmatter description | the frontmatter description | yes | reads the frontmatter, labels the rule `(path-scoped)` — matches |
+| nothing, CRLF line endings | no | the frontmatter description | — (not measured) | — (not measured) | matches |
+| one blank line | **yes** | `---` | `---` | **no** | reads the frontmatter, labels it `(path-scoped)` — **mismatch** |
+| UTF-8 BOM | **yes** | `---` | `---` | **no** | same as above — **mismatch** |
+| a line of spaces | **yes** | `---` | — (not measured) | — (not measured) | same as above — **mismatch** |
+| a line with an HTML comment | yes | that comment line | that comment line | no | does not read the frontmatter — matches |
+| a `# Title` line | yes | `Title` (the heading text) | — (not measured) | — (not measured) | does not read the frontmatter — matches |
 
-skill 在七种形状下都进清单,名字一律是目录名;frontmatter 不被认时,Claude Code 拿正文第一行非空文本当描述。
+In all seven shapes the skill is in the list, always named after its directory; when the frontmatter is not honoured,
+Claude Code uses the first non-empty line of text in the body as the description.
 
-**`paths:` 的值**(frontmatter 在第 1 字节,用户级规则):
+**The value of `paths:`** (frontmatter at byte 1, user-level rule):
 
-| `paths:` | `session_start` 加载? | aguard fd28344 |
+| `paths:` | Loaded at `session_start`? | aguard fd28344 |
 |---|---|---|
-| 列表 `- "no-such-d/**"`、标量串、`"a/**, b/**"`、嵌套列表、`"no-such-{e,f}/**"` | 否 | `(path-scoped)` —— 一致 |
-| `paths:`(空值) | 是 | 不标 —— 一致 |
-| `[]`、`""`、`- ""`、`- "**"`、`- "**/**"`、`"/**"`、`"**, **"`、`"{**,**}"`、`5`、映射 | **是** | `(path-scoped)` —— **不一致** |
-| 不加引号的 `**/no-such-g/*.ts`(YAML 解析不了) | 否 | 不标 —— 方向相反(报告多算了上下文),见未决 6 |
+| list `- "no-such-d/**"`, scalar string, `"a/**, b/**"`, nested list, `"no-such-{e,f}/**"` | no | `(path-scoped)` — matches |
+| `paths:` (empty value) | yes | not labelled — matches |
+| `[]`, `""`, `- ""`, `- "**"`, `- "**/**"`, `"/**"`, `"**, **"`, `"{**,**}"`, `5`, a mapping | **yes** | `(path-scoped)` — **mismatch** |
+| unquoted `**/no-such-g/*.ts` (YAML cannot parse it) | no | not labelled — the opposite direction (the report overcounts context), see open question 6 |
 
-**源码对照**(`strings` 读出的内嵌 JS):规则、skill、命令、子 agent、output style、memory 都经同一个函数,用
-`/^---\s*\n([\s\S]*?)---\s*\n?/`(不带 `m` 标志)去匹配按 utf-8 读进来、**保留 BOM** 的文本;规则加载器再把 `paths`
-按"深度 0 的逗号切开、去首尾空白、花括号展开、去掉结尾的 `/**`、丢掉空串",剩下的为空或全是 `**` 就当没有 `paths`。
-上面两张表与这段代码逐条一致。
+**Source cross-check** (the embedded JS read with `strings`): rules, skills, commands, subagents, output styles and memory
+all go through the same function, which matches `/^---\s*\n([\s\S]*?)---\s*\n?/` (without the `m` flag) against the text
+read as utf-8 **with the BOM kept**; the rule loader then processes `paths` by "split on depth-0 commas, trim surrounding
+whitespace, expand braces, drop a trailing `/**`, discard empty strings", and if what remains is empty or all `**`, treats
+the rule as having no `paths`. Both tables above match this code entry for entry.
 
-**aguard fd28344 在同样的目录上**:`aguard scan --json --inbox off` 把空行、BOM、空格三份规则和上表十种 `paths` 值都命名为
-`(path-scoped)`。两个 BOM 开头、描述相同且超长的 skill 各出一条 `context_bloat`,两者之间还出一条 `duplicate_fn` ——
-而 Claude Code 给它们列的描述都是 `---`。
+**aguard fd28344 on the same directories**: `aguard scan --json --inbox off` names the three rules (blank line, BOM,
+spaces) and the ten `paths` values in the table above all `(path-scoped)`. Two skills that start with a BOM, with identical
+and overlong descriptions, each get a `context_bloat`, and there is also a `duplicate_fn` between them — while the
+description Claude Code lists for both is `---`.
 
-## 初步方向
+## Initial direction
 
-让 `parse` 判断 frontmatter 的方式跟实测一致:`---` 必须是文件的头三个字节;`(path-scoped)` 只在规则的 `paths:` 照
-Claude Code 的整理办法还剩至少一条不是 `**` 的 glob 时才加。实测 `SKILL.md`、命令、子 agent 同样不认前导字节后面的
-frontmatter,所以共用的解析器一起改,这几类 artifact 的 frontmatter 读法随之和 Claude Code 一致。哈希只看字节,不受影响。
+Make the way `parse` decides on frontmatter match the measurement: `---` must be the first three bytes of the file;
+`(path-scoped)` is added only when a rule's `paths:`, normalised the way Claude Code normalises it, still has at least one
+glob that is not `**`. Measured, `SKILL.md`, commands and subagents likewise do not honour frontmatter after leading bytes,
+so the shared parser changes for all of them, and the way these kinds of artifact read frontmatter then matches Claude
+Code. The hash only looks at bytes and is not affected.
 
-## 完成的判据
+## Done criteria
 
-fixture 都在 `t.TempDir()` 现搭,与现有测试同一写法。
+All fixtures are built on the spot in `t.TempDir()`, the same way as the existing tests.
 
-- [x] `TestPathScoped_MatchesClaudeCode`(`internal/parse/frontmatter_test.go`,新):上面两张表里每一种规则形状一行
-  (前导字节 7 行 + `paths` 值 16 行),期望值就是实测结果。在 fd28344 上红,红的**恰好是**表里标"不一致"的 13 行
-- [x] 反向断言(同一测试):`---` 在第 1 字节的 LF、CRLF 两行,以及列表、标量串、逗号串、嵌套列表、真实花括号五种值,
-  修前修后都是 `true`;HTML 注释、`# 标题`、空值三行修前修后都是 `false`
-- [x] `TestCollectRules_PathScopedOnlyWhenClaudeCodeHonoursIt`(`internal/collect/loaded_test.go`,新):经 `CollectAll`,
-  空行开头、BOM 开头、`paths: []` 的规则名字不带 `(path-scoped)`;第 1 行开始的那份仍带(反向)。原有
-  `TestCollectRules_RecursiveAndPathScoped` 不改、照绿
-- [x] `TestReadSkill_FrontmatterMustStartAtTheFirstByte`(`internal/parse/frontmatter_test.go`,新):BOM、空行、一行空格
-  开头的 `SKILL.md` 读出 `Name == ""`、`Description == ""`,`Body` 含 frontmatter 那几行(Claude Code 调用 skill 时
-  正文里就有它们),`BodyLine` 指向 `---` 那一行;反向:LF、CRLF 在第 1 字节的照旧读出 name 和 description
-  (原有 `TestReadSkill` 不改、照绿)
-- [x] `TestSplitFrontmatter` 的 `leading blank + bom` 一行改为期望"没有 frontmatter":旧期望钉住的正是这个出入
-- [x] `TestContextBloat_OnlyForADescriptionClaudeCodeLists`(`internal/hygiene/hygiene_test.go`,新):BOM 开头、描述超长
-  的 skill 不出 `context_bloat`;同样内容 `---` 在第 1 字节的照出(反向)
-- [x] `TestPathScoped_BraceExpansionIsBounded`(新,带 deadline):40 组 `{,}` 在 2 秒内返回 `false`(每个展开都是空串),
-  40 组 `{x,y}` 返回 `true`;回归的表现是挂死而不是断言失败,所以测试自己计时
-- [x] 哈希不变:`TestHashGolden` 绿,`git diff --stat origin/main -- internal/collect/hash.go` 为空
-- [x] 实测目录复扫:本分支构建的 `aguard scan --json --inbox off` 在上面三个实测目录上的 `(path-scoped)` 标签与实测表逐条一致
-  (不加引号那一行除外,未决 6);两个 BOM skill 不再出 `context_bloat` 和 `duplicate_fn`,两个第 1 字节的照出
-- [x] 真机:`make build && ./bin/aguard scan --root ~/.claude --quiet --json` 修前修后对比,差异逐条解释
-- [x] `make verify` 绿;`go version` 不切换工具链,`go.mod` 第二行仍是 `go 1.23.5`,不加依赖
+- [x] `TestPathScoped_MatchesClaudeCode` (`internal/parse/frontmatter_test.go`, new): one row per rule shape in the two
+  tables above (7 leading-byte rows + 16 `paths`-value rows), with the measured result as the expected value. Red on
+  fd28344, and the rows that are red are **exactly** the 13 marked "mismatch" in the tables
+- [x] Reverse assertion (same test): the LF and CRLF rows with `---` at byte 1, and the five values list, scalar string,
+  comma string, nested list and real braces, are `true` before and after the fix; the HTML comment, `# Title` and empty
+  value rows are `false` before and after the fix
+- [x] `TestCollectRules_PathScopedOnlyWhenClaudeCodeHonoursIt` (`internal/collect/loaded_test.go`, new): through
+  `CollectAll`, the names of the rules that start with a blank line, start with a BOM, or have `paths: []` do not carry
+  `(path-scoped)`; the one starting at line 1 still does (reverse). The existing `TestCollectRules_RecursiveAndPathScoped`
+  is unchanged and still green
+- [x] `TestReadSkill_FrontmatterMustStartAtTheFirstByte` (`internal/parse/frontmatter_test.go`, new): a `SKILL.md` that
+  starts with a BOM, a blank line, or a line of spaces reads `Name == ""`, `Description == ""`, `Body` contains the
+  frontmatter lines (when Claude Code invokes the skill, they are in the body), and `BodyLine` points at the `---` line;
+  reverse: LF and CRLF at byte 1 still read the name and description (the existing `TestReadSkill` is unchanged and still
+  green)
+- [x] The `leading blank + bom` row of `TestSplitFrontmatter` now expects "no frontmatter": the old expectation pinned
+  exactly this discrepancy
+- [x] `TestContextBloat_OnlyForADescriptionClaudeCodeLists` (`internal/hygiene/hygiene_test.go`, new): a skill that starts
+  with a BOM and has an overlong description gets no `context_bloat`; the same content with `---` at byte 1 still does
+  (reverse)
+- [x] `TestPathScoped_BraceExpansionIsBounded` (new, with a deadline): 40 groups of `{,}` return `false` within 2 seconds
+  (every expansion is the empty string), 40 groups of `{x,y}` return `true`; a regression shows up as a hang rather than an
+  assertion failure, so the test times itself
+- [x] Hash unchanged: `TestHashGolden` green, `git diff --stat origin/main -- internal/collect/hash.go` empty
+- [x] Rescan of the measured directories: `aguard scan --json --inbox off` built from this branch gives, on the three
+  measured directories above, `(path-scoped)` labels that match the measured tables entry for entry (except the unquoted
+  row, open question 6); the two BOM skills no longer get `context_bloat` and `duplicate_fn`, the two that start at byte 1
+  still do
+- [x] On a real machine: `make build && ./bin/aguard scan --root ~/.claude --quiet --json` compared before and after the
+  fix, each difference explained
+- [x] `make verify` green; `go version` does not switch toolchains, the second line of `go.mod` is still `go 1.23.5`, no
+  dependency added
 
-## 不做什么
+## Out of scope
 
-- **不动 canonical 哈希**:`internal/collect/hash.go` 一个字节不改。哈希只看字节,这个改动不碰字节
-- **不改任何检测规则、严重度、分数公式**:`internal/detect`、`internal/score` 不动。`parse` 不在计分路径上
-  (只被采集的标签、hygiene、判官用),所以分数和 `--fail-on` 的答案不变
-- **不模拟 Claude Code 的描述回退**:没有 frontmatter 时它拿正文第一行当描述,aguard 的 `Description` 照旧是空(未决 3)
-- **不对齐闭合分隔符和开头那一行的尾巴**:Claude Code 在第一个出现的 `---` 处结束 frontmatter(哪怕在一行中间),开头允许
-  `---` 后跟空白再换行;aguard 在第一个以 `---` 开头的行结束。这些形状没量,不在本条(未决 6)
-- **不移植 Claude Code 的 YAML 修复**:它解析失败时会给 `key: value` 行的值补引号再解析一次,于是不加引号的
-  `paths: **/x` 和带 `: ` 的 description 它读得出、aguard 读不出。方向是 aguard 读少了,不是本条的问题(未决 6)
-- **不新增 note 或发现**来报"这份 frontmatter 被 Claude Code 忽略"(未决 5)
-- **不改 `cmd/aguard/claude_rules_test.go`**:那是 P-015 给本仓自己的规则文件做的检查,它已经报这几种前导形状
+- **No change to the canonical hash**: `internal/collect/hash.go` does not change by a byte. The hash only looks at bytes,
+  and this change does not touch bytes
+- **No change to any detection rule, severity or score formula**: `internal/detect`, `internal/score` untouched. `parse`
+  is not on the scoring path (it is used only by the collection labels, hygiene and the judge), so the score and the
+  `--fail-on` answer do not change
+- **No emulation of Claude Code's description fallback**: without frontmatter it uses the first line of the body as the
+  description; aguard's `Description` stays empty (open question 3)
+- **No alignment of the closing delimiter and the tail of the opening line**: Claude Code ends the frontmatter at the first
+  `---` that appears (even in the middle of a line), and allows the opening `---` to be followed by whitespace before the
+  newline; aguard ends it at the first line that starts with `---`. These shapes were not measured and are not in this item
+  (open question 6)
+- **No port of Claude Code's YAML repair**: when parsing fails it quotes the values of `key: value` lines and parses again,
+  so it can read an unquoted `paths: **/x` and a description containing `: `, which aguard cannot. The direction is aguard
+  reading less, which is not this item's problem (open question 6)
+- **No new note or finding** to report "this frontmatter is ignored by Claude Code" (open question 5)
+- **No change to `cmd/aguard/claude_rules_test.go`**: that is P-015's check on this repository's own rule files, and it
+  already reports these leading shapes
 
-## 不能说什么
+## Must not claim
 
-- 不说"所有版本的 Claude Code 都这样":只量了本机 2.1.107
-- 不说被标 `(path-scoped)` 的规则"会在打开匹配文件时加载":量的只是它们**不**以 `session_start` 加载(与 P-015 同)
-- 不说 output style、memory、workflow 的 frontmatter 也量过:实测只覆盖规则、`SKILL.md`、斜杠命令、子 agent;
-  前两类经同一个函数是读源码得出的,没有行为测量
-- 不说 BOM 开头的 `SKILL.md`"不会被加载":它照样进清单、照样能调用,只是 frontmatter 被忽略;不进清单的是子 agent
-- 不说分数变了:这个改动不碰计分路径,真机扫描的分数前后相同
+- Do not say "every version of Claude Code behaves this way": only 2.1.107 on this machine was measured
+- Do not say a rule labelled `(path-scoped)` "loads when a matching file is opened": what was measured is only that it is
+  **not** loaded at `session_start` (as in P-015)
+- Do not say the frontmatter of output styles, memory or workflows was measured too: the measurement covers only rules,
+  `SKILL.md`, slash commands and subagents; that output styles and memory go through the same function comes from reading
+  the source, not from a behavioural measurement
+- Do not say a `SKILL.md` that starts with a BOM "is not loaded": it is still in the list and can still be invoked, only its
+  frontmatter is ignored; what is not in the list is the subagent
+- Do not say the score changed: this change does not touch the scoring path, and the score of the scan on a real machine
+  is the same before and after
 
-## 工作项
+## Work items
 
-| W | 一句话 | 提交信息(不写 sha,rebase 会改) |
+| W | In one sentence | Commit message (no sha, rebase changes it) |
 |---|---|---|
-| 1 | 测试:前导字节、`paths` 值、`SKILL.md` 读法、context_bloat、花括号上限;跑红 | `parse, collect, hygiene: tests — a rule whose frontmatter does not start at the first byte, or whose paths keep no glob Claude Code uses, is labelled path-scoped, and a skill description after a BOM is read (P-024)` |
-| 2 | `splitFrontmatter`:`---` 必须是头三个字节 | `parse: frontmatter is read only when the file starts with ---, as Claude Code reads it, so a blank line or BOM above it no longer makes a rule path-scoped or a skill description count (P-024)` |
-| 3 | `PathScoped`:照 Claude Code 整理 `paths` 的值 | `parse: a rule is path-scoped only when its paths keep a glob Claude Code uses; empty, ** and non-string values load every session (P-024)` |
-| 4 | 规格 §4 采集表那一行、`pipeline.md` 一条防护 | `docs: spec and pipeline rules say a rule is path-scoped only on the frontmatter and globs Claude Code honours (P-024)` |
-| 5 | 本文件、索引 | `proposals: P-024 (P-024)` |
+| 1 | Tests: leading bytes, `paths` values, how `SKILL.md` is read, context_bloat, the brace-expansion bound; run red | `parse, collect, hygiene: tests — a rule whose frontmatter does not start at the first byte, or whose paths keep no glob Claude Code uses, is labelled path-scoped, and a skill description after a BOM is read (P-024)` |
+| 2 | `splitFrontmatter`: `---` must be the first three bytes | `parse: frontmatter is read only when the file starts with ---, as Claude Code reads it, so a blank line or BOM above it no longer makes a rule path-scoped or a skill description count (P-024)` |
+| 3 | `PathScoped`: normalise the `paths` value the way Claude Code does | `parse: a rule is path-scoped only when its paths keep a glob Claude Code uses; empty, ** and non-string values load every session (P-024)` |
+| 4 | The row in the spec §4 collection table, one guard in `pipeline.md` | `docs: spec and pipeline rules say a rule is path-scoped only on the frontmatter and globs Claude Code honours (P-024)` |
+| 5 | This file, the index | `proposals: P-024 (P-024)` |
 
-## 未决问题
+## Open questions
 
-1. **`paths:` 的值(`[]`、`""`、`**`、数字、映射……)算不算本条?**
-   **建议**:算。它和前导字节是同一个问题——报告说按路径加载,agent 每次会话都读它——任务的判据也写成"只在 Claude Code
-   会遵守 `paths:` 时才标",而这十种值都实测过。另开一份只会让同一个函数改两次。
-   **已决(2026-10-09)**:按建议。
-2. **花括号展开要不要照搬?**
-   **建议**:照搬语义,但不照搬枚举:深度优先,碰到第一个有效 glob 就返回;展开总数设上限(1024),超了按"每次会话都加载"
-   答。照搬枚举会让 `{a,b}` 重复 40 次的一行把扫描器拖进 2^40 次展开——被扫对象不能决定扫描器停不停(`detect.md` 里
-   FIFO、超大文件同一条道理)。超限时往"每次都加载"那边答,最坏是报告多算了上下文,不会再说少。正常写法在第一个展开上就返回。
-   **已决(2026-10-09)**:按建议。
-3. **要不要模拟 Claude Code 的描述回退(没有 frontmatter 时拿正文第一行当描述)?**
-   **建议**:不。aguard 对没有 frontmatter 的文件一直给空描述,本条只让"frontmatter 被忽略"的文件和"没有 frontmatter"的
-   文件同等对待。回退文本最多 100 字符,不会触发 context_bloat;要模拟就改了 HTML 注释、标题开头那些今天已经一致的文件的读法。
-   **已决(2026-10-09)**:按建议。
-4. **子 agent、斜杠命令用的是同一个解析器,一起改吗?**
-   **建议**:一起改。实测 Claude Code 对它们同样不认(命令的描述变成 `---`,子 agent 直接不进清单);判官对它们"声明的用途"
-   随之变成 `(not declared)`,与 agent 看到的一致。为它们留一个宽松的旧解析器,等于在实测之后保留一处已知的不一致。
-   **已决(2026-10-09)**:按建议。
-5. **要不要对"frontmatter 被 Claude Code 忽略"出一条 note 或发现?**(例如 BOM 开头的 `SKILL.md`,它的
-   `disable-model-invocation`、`allowed-tools` 都不生效;子 agent 整个不加载)
-   **建议**:不在本条。那是一条新规则,维度、严重度、在真实安装上的命中数都要单独定和量;本条只让已有的标签和读法说实话。
-   **已决(2026-10-09)**:按建议。
-6. **YAML 修复、闭合分隔符这两处出入呢?**
-   **建议**:不在本条,记为后续。前者方向相反(aguard 读少了),后者没量过;两者都和"前导字节"无关。
-   **已决(2026-10-09)**:按建议。
+1. **Are the `paths:` values (`[]`, `""`, `**`, numbers, mappings…) part of this item?**
+   **Recommendation**: yes. It is the same problem as the leading bytes — the report says the rule loads by path, and the
+   agent reads it every session — and the task's criterion is also written as "label only when Claude Code will honour
+   `paths:`", and all ten of these values were measured. A separate proposal would only mean changing the same function
+   twice.
+   **Decided (2026-10-09)**: as recommended.
+2. **Copy the brace expansion as is?**
+   **Recommendation**: copy the semantics but not the enumeration: depth first, returning on the first valid glob; cap the
+   total number of expansions (1024), and beyond the cap answer "loaded every session". Copying the enumeration would let a
+   line with `{a,b}` repeated 40 times drag the scanner into 2^40 expansions — the scanned object must not decide whether
+   the scanner stops (the same reasoning as for FIFOs and oversized files in `detect.md`). Over the cap the answer leans to
+   "loaded every time": the worst case is the report overcounting context, never undercounting it again. Normal patterns
+   return on the first expansion.
+   **Decided (2026-10-09)**: as recommended.
+3. **Emulate Claude Code's description fallback (the first line of the body as the description when there is no
+   frontmatter)?**
+   **Recommendation**: no. aguard has always given an empty description for a file without frontmatter; this item only
+   makes files whose "frontmatter is ignored" be treated the same as files with "no frontmatter". The fallback text is at
+   most 100 characters and cannot trigger context_bloat; emulating it would change how files starting with an HTML comment
+   or a heading are read, and those already match today.
+   **Decided (2026-10-09)**: as recommended.
+4. **Subagents and slash commands use the same parser; change them together?**
+   **Recommendation**: yes. Measured, Claude Code does not honour them either (the command's description becomes `---`, the
+   subagent does not enter the list at all); the judge's "declared purpose" for them becomes `(not declared)` accordingly,
+   matching what the agent sees. Keeping a lenient old parser for them would mean keeping a known discrepancy after it has
+   been measured.
+   **Decided (2026-10-09)**: as recommended.
+5. **Emit a note or finding for "frontmatter ignored by Claude Code"?** (for example a `SKILL.md` that starts with a BOM,
+   whose `disable-model-invocation` and `allowed-tools` then do not take effect; a subagent that is not loaded at all)
+   **Recommendation**: not in this item. That is a new rule, whose dimension, severity and hit count on real installs all
+   need to be decided and measured separately; this item only makes the existing labels and the existing reading tell the
+   truth.
+   **Decided (2026-10-09)**: as recommended.
+6. **And the two discrepancies, the YAML repair and the closing delimiter?**
+   **Recommendation**: not in this item, recorded as follow-ups. The former goes in the opposite direction (aguard reads
+   less), the latter was not measured; neither has anything to do with "leading bytes".
+   **Decided (2026-10-09)**: as recommended.
 
-## 完成
+## Done
 
 ```
-合入:PR #36(2026-10-09;sha 用 git log --grep P-024 找)
-发布:待发
-证据:实测(本机 Claude Code 2.1.107,隔离 CLAUDE_CONFIG_DIR,claude -p 在回环抓包服务器回 400 后退出):规则 InstructionsLoaded 两级各 7 种前导形状 + 用户级 17 种 paths 值;skill 清单 7 种前导形状、命令与子 agent 各 4 种。结果即「问题」一节两张表
-证据:W1 在 fd28344 上红,原因与判据一致:TestPathScoped_MatchesClaudeCode 23 行里红 13 行,恰好是表里"不一致"的 3 种前导形状 + 10 种 paths 值,均为 "PathScoped = true, want false";TestPathScoped_BraceExpansionIsBounded 的 "every expansion empty" 红(不展开,答 true);TestReadSkill_FrontmatterMustStartAtTheFirstByte 三种前导各红(读出 probe/probe description,Body 只有 "\n# Body\n",BodyLine 4/5/5);TestSplitFrontmatter 的 leading blank + bom 红;TestCollectRules_PathScopedOnlyWhenClaudeCodeHonoursIt 红 3 条(blank、bom、nothing 都带 (path-scoped));TestContextBloat_OnlyForADescriptionClaudeCodeLists 红(targets = [listed ignored])→ W2 后前导字节相关全绿,W3 后全绿
-证据:反向断言:TestPathScoped_MatchesClaudeCode 的 LF/CRLF 第 1 字节、列表、标量串、逗号串、嵌套列表、真实花括号 7 行修前修后都是 true,HTML 注释、标题、空值 3 行修前修后都是 false;TestCollectRules_PathScopedOnlyWhenClaudeCodeHonoursIt 里 line1 修前修后都带 (path-scoped);TestReadSkill_FrontmatterMustStartAtTheFirstByte 的 first byte LF/CRLF 与原有 TestReadSkill、TestContextBloat、TestCollectRules_RecursiveAndPathScoped 不改照绿
-证据:变异确认测试会咬(跑完还原,未提交):去掉展开上限 → BraceExpansionIsBounded 2 秒超时 "brace expansion is unbounded";不做花括号展开 → "braces that expand to **" 与 "every expansion empty" 红;不去结尾 /** → "**/**"、"/**" 红;不按逗号切 → "** twice in one string" 红
-证据:实测目录复扫(aguard scan --json --inbox off,31 份规则):fd28344 构建标签与实测一致 14/31 → 本分支 30/31,剩下那份是不加引号的 **/no-such-g/*.ts(YAML 修复,方向相反,未决 6);两个 BOM 开头的超长描述 skill:fd28344 出 context_bloat ×2 + duplicate_fn ×1 → 本分支 0,两个第 1 字节的照出 context_bloat ×2 + duplicate_fn ×1
-证据:真机 make build && ./bin/aguard scan --root ~/.claude --quiet:前后都无输出、退出码 0;同一命令加 --json 前后对比,除 scanned_at / tool_version 外逐键相同:overall 69 · overall_effective 69 · artifacts 180 · rules 24 · path-scoped 15 · 计分发现 high 162 / medium 451 / low 193 · notes 10 · hygiene context_bloat 6 / duplicate_fn 11 · inbox 4。没有差异的原因:~/.claude 下没有一份 .md 的 --- 前有 BOM 或空白(逐文件查了头部,0 份),15 份 path-scoped 规则的 paths 都留得下有效 glob
-证据:哈希不变:TestHashGolden PASS;不做什么 —— git diff --stat origin/main -- internal/collect/hash.go internal/detect internal/score go.mod go.sum cmd/aguard/claude_rules_test.go 为空
-证据:make verify: all gates passed;go version go1.23.5(无工具链切换),go.mod 第二行 go 1.23.5,无新依赖
+Merged: PR #36 (2026-10-09; find the sha with git log --grep P-024)
+Released: pending release
+Evidence: measured (Claude Code 2.1.107 on this machine, isolated CLAUDE_CONFIG_DIR, claude -p exits after the loopback capture server answers 400): rules via InstructionsLoaded, 7 leading shapes at each of the two levels + 17 paths values at user level; skill list 7 leading shapes, commands and subagents 4 each. The results are the two tables in the "Problem" section
+Evidence: W1 red on fd28344, for the reasons the criteria give: TestPathScoped_MatchesClaudeCode red on 13 of 23 rows, exactly the 3 leading shapes + 10 paths values marked "mismatch" in the tables, all "PathScoped = true, want false"; TestPathScoped_BraceExpansionIsBounded's "every expansion empty" red (no expansion, answers true); TestReadSkill_FrontmatterMustStartAtTheFirstByte red for each of the three leading shapes (reads probe/probe description, Body is only "\n# Body\n", BodyLine 4/5/5); TestSplitFrontmatter's leading blank + bom red; TestCollectRules_PathScopedOnlyWhenClaudeCodeHonoursIt red on 3 (blank, bom, nothing all carry (path-scoped)); TestContextBloat_OnlyForADescriptionClaudeCodeLists red (targets = [listed ignored]) → after W2 everything related to leading bytes green, after W3 all green
+Evidence: reverse assertions: in TestPathScoped_MatchesClaudeCode the 7 rows LF/CRLF at byte 1, list, scalar string, comma string, nested list, real braces are true before and after the fix, the 3 rows HTML comment, heading, empty value are false before and after the fix; in TestCollectRules_PathScopedOnlyWhenClaudeCodeHonoursIt line1 carries (path-scoped) before and after the fix; TestReadSkill_FrontmatterMustStartAtTheFirstByte's first byte LF/CRLF and the existing TestReadSkill, TestContextBloat, TestCollectRules_RecursiveAndPathScoped unchanged and still green
+Evidence: mutation confirms the tests bite (reverted after the run, not committed): remove the expansion cap → BraceExpansionIsBounded times out at 2 seconds "brace expansion is unbounded"; no brace expansion → "braces that expand to **" and "every expansion empty" red; trailing /** not dropped → "**/**", "/**" red; no split on commas → "** twice in one string" red
+Evidence: rescan of the measured directories (aguard scan --json --inbox off, 31 rules): labels from the fd28344 build match the measurement 14/31 → this branch 30/31, the remaining one is the unquoted **/no-such-g/*.ts (YAML repair, opposite direction, open question 6); the two skills with overlong descriptions that start with a BOM: fd28344 gives context_bloat ×2 + duplicate_fn ×1 → this branch 0, the two that start at byte 1 still give context_bloat ×2 + duplicate_fn ×1
+Evidence: on a real machine, make build && ./bin/aguard scan --root ~/.claude --quiet: no output before or after, exit code 0; the same command with --json compared before and after, identical key by key except scanned_at / tool_version: overall 69 · overall_effective 69 · artifacts 180 · rules 24 · path-scoped 15 · scored findings high 162 / medium 451 / low 193 · notes 10 · hygiene context_bloat 6 / duplicate_fn 11 · inbox 4. Why there is no difference: no .md under ~/.claude has a BOM or whitespace before --- (headers checked file by file, 0 files), and the paths of all 15 path-scoped rules keep a valid glob
+Evidence: hash unchanged: TestHashGolden PASS; Out of scope — git diff --stat origin/main -- internal/collect/hash.go internal/detect internal/score go.mod go.sum cmd/aguard/claude_rules_test.go is empty
+Evidence: make verify: all gates passed; go version go1.23.5 (no toolchain switch), go.mod second line go 1.23.5, no new dependencies
 ```
-
