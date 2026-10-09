@@ -71,9 +71,9 @@ func scanInbox(dir string, explicit bool, o scanOpts) (*model.InboxReport, error
 			why := "--llm was passed but config llm.enabled is false (or endpoint unset); the Downloads items had the static check only."
 			rep.Notes = append(rep.Notes, model.Finding{RuleID: "LLM-000", Dimension: 0, Severity: model.SevLow, Source: model.SrcLLM,
 				Title: "LLM judge requested but not enabled", Why: why})
-			rep.Judge = &model.JudgeSummary{Reason: why}
+			rep.Judge = judgeNotConfigured(0, why)
 		} else {
-			rep.Judge = &model.JudgeSummary{Endpoint: c.LLM.BaseURL}
+			rep.Judge = judgeConfigured(c.LLM, 0)
 			if !isLoopbackEndpoint(c.LLM.BaseURL) {
 				rep.Notes = append(rep.Notes, model.Finding{RuleID: "LLM-002", Dimension: 0, Severity: model.SevMedium, Source: model.SrcLLM,
 					Title: "LLM judge endpoint is not local",
