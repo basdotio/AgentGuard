@@ -94,6 +94,25 @@ func TestCollectRules_RecursiveAndPathScoped(t *testing.T) {
 	}
 }
 
+// The label is only true when Claude Code honours the paths (P-024, measured on 2.1.107): a blank line
+// or a BOM above the ---, or a paths list with no usable glob, and the rule loads every session. A name
+// that says path-scoped there tells the reader the rule costs less context than it does.
+func TestCollectRules_PathScopedOnlyWhenClaudeCodeHonoursIt(t *testing.T) {
+	_, root := newRoot(t)
+	const scoped = "---\npaths:\n  - \"src/**/*.ts\"\n---\n# scoped\n"
+	write(t, root, "rules/line1.md", scoped)
+	write(t, root, "rules/blank.md", "\n"+scoped)
+	write(t, root, "rules/bom.md", "\uFEFF"+scoped)
+	write(t, root, "rules/nothing.md", "---\npaths: []\n---\n# nothing to match\n")
+
+	names := byKind(CollectAll(root))[model.KindRule]
+	for _, want := range []string{"line1 (path-scoped)", "blank", "bom", "nothing"} {
+		if !has(names, want) {
+			t.Errorf("rule %q not collected; got %v", want, names)
+		}
+	}
+}
+
 // A dot-prefixed directory is hidden by display convention, not by any loading rule. Skipping it
 // would rebuild the same blind spot this collector exists to close, one name deeper.
 func TestCollectRules_DoesNotSkipDotDirs(t *testing.T) {
