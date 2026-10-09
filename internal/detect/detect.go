@@ -144,7 +144,7 @@ func coalesceCoverageNotes(notes []model.Finding) []model.Finding {
 	// is much less useful than "48 hold an unresolved variable, 5 do not exist", because those
 	// two call for different reactions (nothing to do vs. a stale hook registration).
 	mergeable := map[string]func(n int, whys []string) string{
-		generatedDirNoteTitle: func(n int, _ []string) string {
+		GeneratedDirNoteTitle: func(n int, _ []string) string {
 			return fmt.Sprintf("%d artifact(s) contain THIRD-PARTY or version-control trees whose content "+
 				"was not read: node_modules/, vendor/, .git/, coverage/. Findings inside a dependency describe "+
 				"somebody else's code, not this artifact. Note that an artifact's OWN build output (dist/, build/, "+
@@ -161,7 +161,7 @@ func coalesceCoverageNotes(notes []model.Finding) []model.Finding {
 				"were scanned and are reported as HOOK-001 where they chain shell.",
 				n, reasonBreakdown(whys, hookRefPrefix))
 		},
-		hookOwnedNoteTitle: func(n int, _ []string) string {
+		HookOwnedNoteTitle: func(n int, _ []string) string {
 			return fmt.Sprintf("%d hook script reference(s) resolved inside the plugin tree they ship in, "+
 				"so their CONTENT was scanned under that plugin and any findings are filed there. What is "+
 				"missing is the attribution: those findings do not record that a hook runs the file on every "+
@@ -1102,9 +1102,10 @@ func nonRegularNote(dir string, names []string) model.Finding {
 	}
 }
 
-// generatedDirNoteTitle is shared by the producer and the coalescer, so the two can never
-// drift on what they are matching.
-const generatedDirNoteTitle = "Third-party / VCS trees not read (incomplete coverage)"
+// GeneratedDirNoteTitle is shared by the producer and the coalescer, so the two can never
+// drift on what they are matching. Exported for the report, which tells this deliberate skip apart
+// from a gap in loaded content by the same constant (report.coverageVerdict).
+const GeneratedDirNoteTitle = "Third-party / VCS trees not read (incomplete coverage)"
 
 // skippedDirNote is the DISCLOSURE half (see generatedDirResults): the reader did not look
 // here. The skip itself is deliberate and stays — those trees are machine-produced and
@@ -1127,7 +1128,7 @@ func skippedDirNote(dir string, dirs []string) model.Finding {
 	// is the per-artifact evidence line it carries in.
 	return model.Finding{
 		RuleID: "COV-000", Dimension: 0, Severity: model.SevLow, Source: model.SrcStatic,
-		Title:    generatedDirNoteTitle,
+		Title:    GeneratedDirNoteTitle,
 		Why:      "Directories were not scanned because their name marks them as generated or vendored content.",
 		Evidence: []model.Evidence{{File: filepath.Base(dir), Line: 0, Snippet: redactClip(list)}},
 	}

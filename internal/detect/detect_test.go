@@ -783,7 +783,7 @@ func TestGeneratedDirNotesCoalesce(t *testing.T) {
 	_, notes := New().Run(root, arts)
 	count, evidence := 0, 0
 	for _, n := range notes {
-		if n.Title == generatedDirNoteTitle {
+		if n.Title == GeneratedDirNoteTitle {
 			count++
 			evidence = len(n.Evidence)
 		}
