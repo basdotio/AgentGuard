@@ -270,7 +270,9 @@ func hookExcerpt(file string, h model.Hook, eg egress) (declared, behavior strin
 }
 
 // mcpExcerpt returns an MCP server's configuration as `key=value` lines — the SAME string leaves
-// the static engine scans (detect.ConfigLines), keyed and in a fixed order. It used to be the bare
+// the static engine scans (detect.MCPConfigLines: the entry the rules and the content hash read,
+// found by its key, under mcpServers or at the top level of an unwrapped plugin file), keyed and in
+// a fixed order. It used to be the bare
 // values in Go's map order: keyless, `{"DB_PASS":"hunter2"}` went out as `hunter2`, which no
 // keyed redaction can recognise, and the same config gave a different request body each run.
 //
@@ -283,8 +285,8 @@ func hookExcerpt(file string, h model.Hook, eg egress) (declared, behavior strin
 //
 // shortened says what was left out, empty when nothing was: the caller discloses it (LLM-000),
 // since a real configuration fits and one that does not has been shaped.
-func mcpExcerpt(path, key string, eg egress) (text string, units []sourceUnit, shortened string) {
-	lines := detect.ConfigLines(path, "mcpServers", key)
+func mcpExcerpt(a model.ArtifactReport, eg egress) (text string, units []sourceUnit, shortened string) {
+	lines := detect.MCPConfigLines(a)
 	if len(lines) == 0 {
 		return "", nil, ""
 	}
@@ -315,7 +317,7 @@ func mcpExcerpt(path, key string, eg egress) (text string, units []sourceUnit, s
 		cut = append(cut, fmt.Sprintf("%d line(s) past the %d-byte excerpt not sent", dropped, maxExcerptBytes))
 	}
 	return text, []sourceUnit{{
-		file: detect.Redact(filepath.Base(path)), text: text, firstLine: 0, collapsed: true,
+		file: detect.Redact(filepath.Base(a.Path)), text: text, firstLine: 0, collapsed: true,
 	}}, strings.Join(cut, ", ")
 }
 

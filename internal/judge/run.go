@@ -499,8 +499,10 @@ func planFor(i int, a model.ArtifactReport, eg egress) []task {
 		// Configuration only. What the server's TOOLS do is invisible without connecting to
 		// it, which this tool never does — the prompt says so, so a verdict cannot be read as
 		// a statement about the server's behavior. The entry is found by its KEY: a plugin's
-		// server is named "<key> (plugin …)", and by that name it never got this pass (P-021).
-		if text, units, shortened := mcpExcerpt(a.Path, detect.MCPServerKey(a), eg); text != "" {
+		// server is named "<key> (plugin …)", and by that name it never got this pass (P-021);
+		// and where its file put it — at the top level of an unwrapped plugin file, looked up
+		// under mcpServers it never got this pass either (P-029).
+		if text, units, shortened := mcpExcerpt(a, eg); text != "" {
 			ask(Request{Mode: ModeMCPConfig, Behavior: text}, units)
 			out[len(out)-1].shortened = shortened
 		}
