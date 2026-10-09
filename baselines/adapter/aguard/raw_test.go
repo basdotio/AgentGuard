@@ -4,6 +4,7 @@ package aguard
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,7 +24,8 @@ func TestRawOutputNamesNoWorkDirectory(t *testing.T) {
 	res := model.ScanResult{Root: a.Work + "/s/home/.claude", Artifacts: []model.ArtifactReport{{
 		Kind: model.KindSkill, Name: "x", Path: a.Work + "/s/home/.claude/skills/x"}}}
 
-	a.keepRaw("s", res)
+	b, _ := json.Marshal(res)
+	a.keepRaw("s", b)
 
 	b, err := os.ReadFile(filepath.Join(a.RawDir, "s.json"))
 	if err != nil {
