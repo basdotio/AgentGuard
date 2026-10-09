@@ -43,7 +43,7 @@ triage 的 `<用户名>/x` 兜底只改那一个结构前缀;MCP server 按排�
 
 下面的测试一部分是旧仓实现之后两轮评审(评审 1–7、复审 1–4)补出来的;移植时整组一起带上,标注保留,方便对照它们各自钉住的是哪个漏洞。
 
-- [ ] `TestE2E_JudgeBodiesCarryNoHomeOrKeylessSecret`(`cmd/aguard/e2e_test.go`,新):照 `TestE2E_CredentialImportNeverReachesTheJudge`
+- [x] `TestE2E_JudgeBodiesCarryNoHomeOrKeylessSecret`(`cmd/aguard/e2e_test.go`,新):照 `TestE2E_CredentialImportNeverReachesTheJudge`
   的截包写法,fixture 的家目录是 `TempDir()/home.d/alicemarker`(**标记段不带数字**,熵规则没法让这条测试因为错的理由变绿),里面有:
   一个 hook(command 里有家目录,其中一处是 `EvalSymlinks` 形态)、`~/.claude.json` 的一个 MCP server(args 里有家目录,
   env 是 `{"DB_PASS":"hunter2","NODE_OPTIONS":"--require <家目录>/…"}`,后者让 `EXEC-010` 落在 `alicemarker/.claude.json` 上进 triage)、
@@ -52,42 +52,42 @@ triage 的 `<用户名>/x` 兜底只改那一个结构前缀;MCP server 按排�
   **没有一个请求体**含家目录、它的 `EvalSymlinks` 形态、它的编码形态或 `alicemarker`;没有一个含 `hunter2`;至少一个含 `DB_PASS=<REDACTED>`;
   没有一个含任何 artifact 的 `kind:name` 标签;`~/notes`、`~/logs/audit.log`、`~/.claude/CLAUDE.md`、`~/.claude.json` 都在(换了,没删)。
   今天(`origin/main` dec64ca,W1 测试先行跑过):红,13 个请求体里 11 个带 `alicemarker`、1 个带 `hunter2`、0 个带 `DB_PASS=<REDACTED>`、0 个带那四个 `~/` 路径
-- [ ] `TestScanInbox_JudgeBodiesCarryNoHome`(`cmd/aguard/e2e_test.go`,新;和上一条共用截包的 `capturingJudge`):`HOME` 指到 `TempDir()/home.d/bobmarker`,
+- [x] `TestScanInbox_JudgeBodiesCarryNoHome`(`cmd/aguard/e2e_test.go`,新;和上一条共用截包的 `capturingJudge`):`HOME` 指到 `TempDir()/home.d/bobmarker`,
   `~/Downloads` 里一个候选 skill 的脚本引用家目录,`scanInbox(…, llm: true)` → 没有请求体含 `bobmarker`。今天:红(1 个请求体带 `bobmarker`,没有 `~/notes`)
-- [ ] `TestEgress_*`(`internal/judge/egress_test.go`,新,table-driven):原样 / `EvalSymlinks` / 编码三种形态都换成 `~`;
+- [x] `TestEgress_*`(`internal/judge/egress_test.go`,新,table-driven):原样 / `EvalSymlinks` / 编码三种形态都换成 `~`;
   **反向**:`/Users/alicemarker2/x`、`/data/Users/alicemarker/x` 不动(边界),散文里的裸用户名不动,三段式 `x/alice/.claude.json` 不动,
   空家目录与 `/` 是恒等;`alice/.claude.json` 只在 file 位置改成 `~/.claude.json`;`<REDACTED>.d/alice/…` 和 `/home/first.<REDACTED>`
   这两种被熵规则吃掉一半的形态、以及被 snippet 200 字节截断切在用户名里的 `/Users/alic…` 被补齐(未决 7);截在用户名之前的 `/Users/…` 不动。
   今天:编译红(`newEgress` 未定义)
-- [ ] `TestPlan_MCPExcerptIsKeyedAndByteStable`(`internal/judge/plan_test.go`,新):同一份 MCP 配置规划 30 次,`Behavior` 字节相同;
+- [x] `TestPlan_MCPExcerptIsKeyedAndByteStable`(`internal/judge/plan_test.go`,新):同一份 MCP 配置规划 30 次,`Behavior` 字节相同;
   含 `command=npx`、`env.DB_PASS=<REDACTED>`,不含 `hunter2`;**反向**:`env.LOG_LEVEL=debug` 原样在(不是凭据名的值照发)。
   今天:红(第 2 次规划字节就不同,`hunter2` 原样、不带键名)。
   键名表本身由 `TestMaskCredentialValue`(`internal/judge/excerpt_test.go`,新)逐行钉住,反向行是 `NODE_OPTIONS`、`API_BASE`、`args` 的值不掩
-- [ ] `TestPlan_DeclaredIsCappedOnARuneBoundary`(`internal/judge/plan_test.go`,新):长 description → `Declared` ≤ 1,000 字节、
+- [x] `TestPlan_DeclaredIsCappedOnARuneBoundary`(`internal/judge/plan_test.go`,新):长 description → `Declared` ≤ 1,000 字节、
   是合法 UTF-8,且 intent 那趟 SKILL.md unit 的 text 与 `Declared` 逐字节相等(落地比对的是发出去的字节)。今天:红(intent / injection 两趟各 6,000 字节)。
   评审 2:W1 版用 3,000 个 `é`,两字节、1,000 是偶数,切点本来就落在字符起点,删掉 rune 回退照样绿;W9 改成 2,000 个 `中`
   与 `a`+3,000 个 `é` 两行(前置断言第 1,000 字节落在字符中间),外加"最多退回一个字符"
-- [ ] `TestConfigLines_SameLeavesAsConfigStrings`(`internal/detect/configlines_test.go`,新):`ConfigLines` 去掉键前缀后的值多重集合等于 `configStrings`——
+- [x] `TestConfigLines_SameLeavesAsConfigStrings`(`internal/detect/configlines_test.go`,新):`ConfigLines` 去掉键前缀后的值多重集合等于 `configStrings`——
   判官和静态读的是同一批叶子。今天:编译红(`ConfigLines` 未定义)
-- [ ] 评审 1(相对 `--root` 关掉了替换;`CLAUDE_CONFIG_DIR` 和 `check --llm` 两处没覆盖):`TestE2E_RelativeRootStillStripsTheHome`、
+- [x] 评审 1(相对 `--root` 关掉了替换;`CLAUDE_CONFIG_DIR` 和 `check --llm` 两处没覆盖):`TestE2E_RelativeRootStillStripsTheHome`、
   `TestE2E_ConfigDirUnderTheHomeStripsTheUserHome`、`TestCheckTarget_JudgeBodiesCarryNoHome`(`cmd/aguard/e2e_test.go`);
   `TestRun_EmptyHomeStillStripsTheUserHome`、`TestRun_ScanHomeAndUserHomeAreBothStripped`、`TestRun_ScanHomeInsideTheUserHomeKeepsItsPlace`、
   `TestEgress_RelativeHomeIsResolved`、`TestEgress_LaterHomeInsideAnEarlierIsDropped`(`internal/judge/egress_test.go`)
-- [ ] 评审 3(先替换再脱敏让家目录下 16–23 字节的 token 逃过熵规则):`TestEgress_RedactsBeforeItStripsTheHome`,覆盖每个吃原始内容的构造器和 triage 的文件位置
-- [ ] 评审 4(MCP 键排序 + 只截头,排在最前的填充键每次都把 env 挤出去):`TestPlan_MCPExcerptLeadsWithWhatTheServerRuns`、`TestRun_ShortenedMCPExcerptIsDisclosed`(含反向:装得下的配置零 note)
-- [ ] 评审 5(项目目录编码逐字节):`TestEgress_NonASCIIHomeIsEncodedPerCharacter`(含反向:逐字节拼法不动)
-- [ ] 评审 6(截断补齐跑在原始内容上):`TestEgress_ClipRepairIsForStaticSnippetsOnly`(含反向:两条静态 snippet 路径照补)
-- [ ] 复审 1(`capLine` 的 rune 回退没有测试管:填充全是 ASCII,切点天然落在字符起点):`TestPlan_MCPLineCapCutsOnARuneBoundary`(`internal/judge/plan_test.go`)
-- [ ] 复审 2(`LLM-000` 只被"截了一行"那半触发过;lead 键按恰好相等认没有测试管):`TestRun_DroppedMCPLinesAreDisclosedWithoutACap`、`TestPlan_MCPLeadKeysMatchExactly`(`internal/judge/plan_test.go`)
-- [ ] 复审 3(截断补齐只认原样写法,编码写法 `projects/-Users-alic…` 原样发):`TestEgress_RepairsAnEncodedHomeTheSnippetCapCut`(`internal/judge/egress_test.go`,含反向:截在用户名之前、没截、更长名字的尾巴、原始内容、一段式家目录都不动)
-- [ ] 复审 4(文档说"给定写法"和"三种写法",实际是取绝对路径并规整、一段式家目录不换编码写法):`TestEgress_HomeIsReplacedInItsAbsoluteCleanedForm`(`internal/judge/egress_test.go`);llm-judge、architecture 两对和 spec 改写
-- [ ] 上面带"评审 / 复审"的各条在本仓库复测:补测试的按变异跑红,改代码的在修复前的代码上跑红,数字记在「完成」
-- [ ] 反向断言,**断言一字不改**仍绿:`TestE2E_CredentialImportNeverReachesTheJudge`、`TestRun_GroundedFindingGetsRealLineNumbers`、
+- [x] 评审 3(先替换再脱敏让家目录下 16–23 字节的 token 逃过熵规则):`TestEgress_RedactsBeforeItStripsTheHome`,覆盖每个吃原始内容的构造器和 triage 的文件位置
+- [x] 评审 4(MCP 键排序 + 只截头,排在最前的填充键每次都把 env 挤出去):`TestPlan_MCPExcerptLeadsWithWhatTheServerRuns`、`TestRun_ShortenedMCPExcerptIsDisclosed`(含反向:装得下的配置零 note)
+- [x] 评审 5(项目目录编码逐字节):`TestEgress_NonASCIIHomeIsEncodedPerCharacter`(含反向:逐字节拼法不动)
+- [x] 评审 6(截断补齐跑在原始内容上):`TestEgress_ClipRepairIsForStaticSnippetsOnly`(含反向:两条静态 snippet 路径照补)
+- [x] 复审 1(`capLine` 的 rune 回退没有测试管:填充全是 ASCII,切点天然落在字符起点):`TestPlan_MCPLineCapCutsOnARuneBoundary`(`internal/judge/plan_test.go`)
+- [x] 复审 2(`LLM-000` 只被"截了一行"那半触发过;lead 键按恰好相等认没有测试管):`TestRun_DroppedMCPLinesAreDisclosedWithoutACap`、`TestPlan_MCPLeadKeysMatchExactly`(`internal/judge/plan_test.go`)
+- [x] 复审 3(截断补齐只认原样写法,编码写法 `projects/-Users-alic…` 原样发):`TestEgress_RepairsAnEncodedHomeTheSnippetCapCut`(`internal/judge/egress_test.go`,含反向:截在用户名之前、没截、更长名字的尾巴、原始内容、一段式家目录都不动)
+- [x] 复审 4(文档说"给定写法"和"三种写法",实际是取绝对路径并规整、一段式家目录不换编码写法):`TestEgress_HomeIsReplacedInItsAbsoluteCleanedForm`(`internal/judge/egress_test.go`);llm-judge、architecture 两对和 spec 改写
+- [x] 上面带"评审 / 复审"的各条在本仓库复测:补测试的按变异跑红,改代码的在修复前的代码上跑红,数字记在「完成」
+- [x] 反向断言,**断言一字不改**仍绿:`TestE2E_CredentialImportNeverReachesTheJudge`、`TestRun_GroundedFindingGetsRealLineNumbers`、
   `TestRun_UngroundedFindingIsDroppedAndCounted`、`TestGround_ChecksRedactedTextNotDisk`、`TestPlan_MCPUsesTheSameViewTheScannerSees`、
   `TestPlan_EveryKindIsFencedAndRedacted`、`TestBehaviorExcerpt_PayloadBelowPaddingReachesTheModel`、`TestDecodedPayloads_RedactsSecret`。
   其中直接调用 `planFor` / `behaviorExcerpt` / `decodedPayloads` 的 8 处调用多一个 `egress{}` 实参(零值 = 不替换),除此之外一行不动
-- [ ] 反向断言:同一份 fixture 上**不带 `--llm`** 的 `scan --json`,`origin/main` 的二进制与本分支的二进制输出除版本号外逐字节相同——静态输出没动
-- [ ] `make verify` 绿;`collect`/`detect` 有改动,跑真机扫描并记头部
+- [x] 反向断言:同一份 fixture 上**不带 `--llm`** 的 `scan --json`,`origin/main` 的二进制与本分支的二进制输出除版本号外逐字节相同——静态输出没动
+- [x] `make verify` 绿;`collect`/`detect` 有改动,跑真机扫描并记头部
 
 ## 不做什么
 
@@ -188,8 +188,17 @@ W1–W8 是旧仓的首轮实现,W9–W15 是评审 1–7 的修复,W16–W20 �
    紧跟 `…` 且**已经伸进用户名那一段**时换成 `~…`;只到上级目录为止的 `/Users/…` 不算,它不指向任何人,换了是在猜。不越过「不做什么」,
    不改任何用户可见的契约(报告字节不变),是未决 3 同一件事的第三种切法。
    **已决(2026-10-08)**:按建议。
-8. **真机扫描(记录,不是问题)**:`detect` 有改动(`ConfigLines`、`configEntry`、`configStrings`),按移植约定在本仓库
-   `make build && ./bin/aguard scan --root ~/.claude --quiet` 前后各跑一次(只读,不带 `--llm`),只记摘要行,数字在「完成」。
+8. **真机扫描(记录,不是问题)**:`detect` 有改动(`ConfigLines`、`configEntry`、`configStrings`),按移植约定在本仓库跑了
+   `aguard scan --root ~/.claude`(只读,不带 `--llm`),`origin/main`(dec64ca)与本分支的二进制背靠背,只记摘要行:
+
+   ```
+   Risk score 69/100 (Elevated)
+   The score above is an average over 175 items (149 of them at 100)
+   66 findings need a look (medium or above); 19 more are informational.
+   66 of 85 finding(s) are medium or above
+   ```
+
+   两个二进制的终端输出逐字节相同,`--json` 去掉 `scanned_at`、`tool_version` 后逐字节相同。(`--quiet` 在这台机器上什么都不打,所以摘要行取自不带 `--quiet` 的运行。)
 9. **(评审修复中追加)两个家目录嵌套时换哪个?** 评审 1 要求总是同时换 OS 用户家目录和 `--root` 上一级;`CLAUDE_CONFIG_DIR=~/.config/claude`
    时后者是前者的子目录,两个都按"最长优先"换,`~/.config/claude/x` 就成了 `~/claude/x`——判官会把它读成另一个位置。
    **建议**:按顺序处理(OS 用户的在前),后一个家目录的某种写法落在前一个之内就丢掉那种写法,外层的替换已经覆盖它;**只在这个方向**:
@@ -211,3 +220,29 @@ W1–W8 是旧仓的首轮实现,W9–W15 是评审 1–7 的修复,W16–W20 �
     本条给它加了一个 `home` 参数;P-003(`p/003-zero-dial-test`)给 `openai.go` 的 `NewHTTP` 加了一个测试接缝,并用 `scanOpts{…}` 具名字段调
     `scanEnv` / `scanInbox` / `checkTarget`。本条不碰 `NewHTTP`、只给 `scanOpts` 加一个具名字段,和 P-003 没有语义冲突。
     谁后合谁 rebase:`runJudge` 那一处按两边的意图合;若 P-003 的零外连源码检查对 `NewHTTP` 里客户端字面量的形状有要求,由后合的一方适配。
+
+## 完成
+
+```
+合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-005 找)
+发布:待发
+证据:TestE2E_JudgeBodiesCarryNoHomeOrKeylessSecret(cmd/aguard/e2e_test.go);W1 在 origin/main(dec64ca)上红:13 个请求体 11 个带 alicemarker、1 个带 hunter2、0 个带 DB_PASS=<REDACTED>、0 个带 ~/notes 等四个 ~/ 路径 → W3 后只剩 MCP 两条红(request 4 带 hunter2、没有 DB_PASS=<REDACTED>)→ W5 后绿:0 个带家目录 / EvalSymlinks 形态 / 编码形态 / alicemarker / hunter2 / 任何 kind:name 标签,四个 ~/ 路径都在
+证据:TestScanInbox_JudgeBodiesCarryNoHome(cmd/aguard/e2e_test.go);W1 红(request 0 带 bobmarker,没有 ~/notes)→ W3 后绿
+证据:TestPlan_MCPExcerptIsKeyedAndByteStable(internal/judge/plan_test.go);W1 红(第 2 次规划字节就不同,值不带键、hunter2 原样)→ W2 后仍红 → W5 后绿;反向 env.LOG_LEVEL=debug 原样在
+证据:TestPlan_DeclaredIsCappedOnARuneBoundary(internal/judge/plan_test.go);W1 红(intent / injection 两趟各 6,000 字节)→ W6 后绿;评审 2:W9 之后删掉 declaredPurpose 的 RuneStart 回退(变异,已还原)红 4 处(2 行 × 两趟,1,000 字节、非法 UTF-8)→ 还原绿
+证据:TestEgress_*(internal/judge/egress_test.go)、TestMaskCredentialValue(internal/judge/excerpt_test.go);W1 编译红(egress_test.go:52: undefined: newEgress)→ W2 / W5 后绿;TestEgress_RepairsAHomeTheSnippetCapCut 在 W7 的 egress.go / excerpt.go 上红(/Users/alic… 与 <REDACTED>.d/alicem… 原样发)→ W8 后绿
+证据:TestConfigLines_SameLeavesAsConfigStrings(internal/detect/configlines_test.go);W1 编译红(configlines_test.go:26: undefined: ConfigLines)→ W4 后绿
+证据:评审 5 —— TestEgress_NonASCIIHomeIsEncodedPerCharacter;在 W9 的 egress.go 上红 6 处(/Users/josémarker、/home/李雷marker 按字符编码的 -Users-jos-marker、-home---marker 原样发,逐字节的 -Users-jos--marker、-home-------marker 反被换掉)→ W10 后绿
+证据:评审 1 —— TestE2E_RelativeRootStillStripsTheHome、TestE2E_ConfigDirUnderTheHomeStripsTheUserHome、TestCheckTarget_JudgeBodiesCarryNoHome 在 W10 的 main.go / inbox.go / egress.go / run.go 上红:请求体带家目录或标记 6/6、5/5、2/2 → W11 后绿;judge 包的五条(TestRun_EmptyHomeStillStripsTheUserHome 等)在 W10 的 newEgress 签名下编译红 → W11 后绿;把 within 丢弃判断变异成恒不丢(已还原)时 TestEgress_LaterHomeInsideAnEarlierIsDropped、TestRun_ScanHomeInsideTheUserHomeKeepsItsPlace、TestE2E_ConfigDirUnderTheHomeStripsTheUserHome 三条一起红
+证据:评审 3 —— TestEgress_RedactsBeforeItStripsTheHome;在 W11 的代码上红 7/7(redact、declared、hook、instruction file、skill tree、mcp、triage file 都发出 ~/Xk9mQ2vL8pR4tZ7wB3n)→ W12 后绿
+证据:评审 6 —— TestEgress_ClipRepairIsForStaticSnippetsOnly;在 W12 的代码上(临时加一行 snippet = scrub 的探针以便编译,已删)红 4/4(declared、hook、instruction file、skill tree 把结尾的 /Users/alic… 改写成 ~…)→ W13 后绿
+证据:评审 4 —— TestPlan_MCPExcerptLeadsWithWhatTheServerRuns、TestRun_ShortenedMCPExcerptIsDisclosed;在 W13 的 excerpt.go 上(临时探针补上三返回值签名与 maxConfigLineBytes,已删)红:command=node、args、env.NODE_OPTIONS、url、headers、zzz 都不在,6,000 字节的一行没截,没有 LLM-000 → W14 后绿
+证据:复审 1 —— TestPlan_MCPLineCapCutsOnARuneBoundary;删掉 capLine 的 RuneStart 回退(变异,已还原)只有它红:保留 500 字节、非法 UTF-8
+证据:复审 2 —— TestRun_DroppedMCPLinesAreDisclosedWithoutACap;去掉 dropped 那半句 note(变异,已还原)只有它红:没有 LLM-000。TestPlan_MCPLeadKeysMatchExactly;lead 键改按 key+"." 前缀认、或裸 strings.HasPrefix 认(两种变异,已还原)只有它红:env.NODE_OPTIONS、url、headers 被挤出,command.x0=pad 越位
+证据:复审 3 —— TestEgress_RepairsAnEncodedHomeTheSnippetCapCut;在 W18 的 egress.go 上红 5 处(-Users-alicem…、-Users-a…、-home---a…、-home-first-l… 四条 snippet 加 triage 证据)→ W19 后绿
+证据:复审 4 —— TestEgress_HomeIsReplacedInItsAbsoluteCleanedForm;homeSpellings 改成绝对路径原样用(变异,已还原)红 3/3;一段式家目录也编码(变异,已还原)时 TestEgress_NoHomeIsIdentity 与 TestEgress_RepairsAnEncodedHomeTheSnippetCapCut 的 /root 反向用例一起红
+证据:反向断言断言一字不改仍绿 —— TestE2E_CredentialImportNeverReachesTheJudge、TestRun_GroundedFindingGetsRealLineNumbers、TestRun_UngroundedFindingIsDroppedAndCounted、TestGround_ChecksRedactedTextNotDisk、TestPlan_MCPUsesTheSameViewTheScannerSees、TestPlan_EveryKindIsFencedAndRedacted、TestBehaviorExcerpt_PayloadBelowPaddingReachesTheModel、TestDecodedPayloads_RedactsSecret;git diff origin/main 里既有测试删掉的行只有 8 处调用(planFor ×3、behaviorExcerpt ×2、decodedPayloads ×3,多一个 egress{} 实参)
+证据:静态输出不变 —— 临时 fixture(家目录 home.d/alicemarker,hook、MCP、CLAUDE.md 的 @~/.env、skill、memory;命中 EXEC-010 EXFIL-001 EXFIL-005 FS-001 HOOK-001 INJ-001 COV-000)不带 --llm,origin/main 与本分支二进制的 scan --json、--sarif、终端输出逐字节相同;真机 ~/.claude 上终端输出相同、--json 去掉 scanned_at / tool_version 后逐字节相同(未决 8)
+证据:不做什么 —— git diff --stat origin/main -- internal/judge/judge.go internal/judge/ground.go internal/judge/prompt.go internal/judge/triage.go internal/judge/openai.go internal/detect/redact.go internal/collect internal/report go.mod go.sum 为空;detect.go 的改动不含 relPath
+证据:make verify: all gates passed;go version go1.23.5(无工具链切换),go.mod 第二行 go 1.23.5,无新依赖
+```
