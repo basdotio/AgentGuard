@@ -54,27 +54,27 @@ chmod 000 的单文件 notes.md          → approved instruction "notes.md" (10
 
 ## 完成的判据
 
-- [ ] `TestApproveRefusesWhatHasNoContentHash`(`cmd/aguard/gate_approve_test.go`,新),两种今天就能走到的目标各一行:
+- [x] `TestApproveRefusesWhatHasNoContentHash`(`cmd/aguard/gate_approve_test.go`,新),两种今天就能走到的目标各一行:
   `settings.json` 坏掉的 `.claude` 目录(`PARSE-000`),和一个 `chmod 000` 的单文件。每行断言:`approvePath` 返回错误,
   错误里有 `<kind> "<name>" has no content hash`、`nothing was approved` 和指向 `--json` 的提示(`PARSE-000` 那行还要说出
   `did not parse`,另一行说 `the scanner could not compute one`);错误**不是** `*failExit`(于是 `main` 走运行错误,退出码 2);
   输出里没有 `approved`;批准库文件**没有被创建**。今天红:返回 nil,打印 `approved … hash `,并新建了一个空的批准库
-- [ ] `TestApproveRefusalLeavesTheStoreAlone`(同文件,新):批准库里已有一条批准时,拒绝之后它**还是同一个文件**
+- [x] `TestApproveRefusalLeavesTheStoreAlone`(同文件,新):批准库里已有一条批准时,拒绝之后它**还是同一个文件**
   (`os.SameFile`)、字节不变、那条批准还在。今天红:`Save` 用临时文件 + rename 重写了它
-- [ ] `TestApproveNeverFallsBackToAnotherArtifact`(同文件,新):坏 `settings.json` + 一个 subagent + 一个 command 的 root
+- [x] `TestApproveNeverFallsBackToAnotherArtifact`(同文件,新):坏 `settings.json` + 一个 subagent + 一个 command 的 root
   → 拒绝,批准库不被创建。拒绝不能退到"第一个有哈希的 artifact"
-- [ ] `TestCleanLoadWithNoHashIsNotClaimedTrusted`(`internal/gate/unhashed_test.go`,新):`PreToolUse` 干净分支遇到空哈希
+- [x] `TestCleanLoadWithNoHashIsNotClaimedTrusted`(`internal/gate/unhashed_test.go`,新):`PreToolUse` 干净分支遇到空哈希
   (`PARSE-000` 的 hook、没有任何 note 的 instruction 各一行)→ 不返回决定(照常放行)、消息里没有 `trusted`、说
   `not remembered, it has no content hash: <原因>`、不报 store 变更、批准库为空。今天红:说 `trusted from now on for content (none)`
   并报 store 变更
-- [ ] 反向断言 `TestApproveStillRecordsWhatHasAHash`(`cmd/aguard/gate_approve_test.go`,新,今天就绿):干净的 skill → 返回 nil,打印
+- [x] 反向断言 `TestApproveStillRecordsWhatHasAHash`(`cmd/aguard/gate_approve_test.go`,新,今天就绿):干净的 skill → 返回 nil,打印
   `approved skill "<name>" (…, clean)`,批准库里恰好一条,key 等于 `collect.TreeHash` 算出的哈希;
   带凭据外泄链的 skill → 记为 `accepted-risk`,并打印那句 "you accepted a risk" 的提醒。修完不改一字仍绿
-- [ ] 反向断言 `TestCleanLoadWithAHashIsStillRemembered`(`internal/gate/unhashed_test.go`,新,今天就绿):同一个 artifact 带哈希
+- [x] 反向断言 `TestCleanLoadWithAHashIsStillRemembered`(`internal/gate/unhashed_test.go`,新,今天就绿):同一个 artifact 带哈希
   → 记为 `clean`、说 `trusted from now on for content <短哈希>`、报 store 变更
-- [ ] 反向断言:`internal/gate` 已有的测试文件一字不改仍绿(含 `TestEmptyHashIsNeverApproved`);闸门不变量 #2 不动 ——
+- [x] 反向断言:`internal/gate` 已有的测试文件一字不改仍绿(含 `TestEmptyHashIsNeverApproved`);闸门不变量 #2 不动 ——
   写批准的调用点仍是原来那三处(`approvePath`、`handlePre`、`handlePost`),没有哪一处接收外部给的哈希
-- [ ] `make verify` 绿;`go version` 不切换工具链
+- [x] `make verify` 绿;`go version` 不切换工具链
 
 ## 不做什么
 
@@ -107,7 +107,8 @@ chmod 000 的单文件 notes.md          → approved instruction "notes.md" (10
 | 5 | 修:不说 trusted、不报 store 变更;未解析的原因写出文件和 `PARSE-000` | `gate: a clean load with no content hash says it was not remembered and why, and leaves the store alone (P-011)` |
 | 6 | 拒绝里的 `check` 提示改指 `check --json`;加"不退到别的 artifact"的测试 | `cmd: approve's refusal points at check --json, which does list what was not read, and never falls back to another artifact (P-011)` |
 | 7 | gate.md 补干净分支这一句 | `rules: gate.md says the PreToolUse clean branch, like approve, never claims trust over an empty hash (P-011)` |
-| 8 | 本文件、索引 | `proposals: P-011 (P-011)` |
+| 8 | install-gate 对子里那句 `aguard check <path>` 的提示同样不实 → 改指 `check --json`(移植时发现,旧仓没有这一条) | `docs: install-gate points at check --json, the report that lists what approve could not read (P-011)` |
+| 9 | 本文件、索引 | `proposals: P-011 (P-011)` |
 
 ## 未决问题
 
@@ -143,3 +144,24 @@ chmod 000 的单文件 notes.md          → approved instruction "notes.md" (10
    "`PARSE-000` 的 artifact 仍是 `""`,`approve` 对它们仍会空打印一句 `approved`(待修,不在 P-009 里)"改成"`approve` 拒绝它们(P-011)"
    —— 两条各自合入时那句都是真的,一起合入后它就是假的。实测见「完成」。
    **已决(2026-10-09)**:按建议(旧仓已决,移植沿用)。
+
+## 完成
+
+```
+合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-011 找)
+发布:待发
+证据:TestApproveRefusesWhatHasNoContentHash(cmd/aguard/gate_approve_test.go);W1 在本仓 main 上红,两行都是 "approve reported success for a target with no content hash" 后跟 approved hook "settings.json" (100/100, clean) / approved instruction "notes.md" (100/100, clean) 和一个空的 hash 行 → W2 后绿;W6 后错误里带 --json 提示,仍绿
+证据:TestApproveRefusalLeavesTheStoreAlone(同文件);W1 红 "approve reported success …" + "a refused approve rewrote the approvals store" → W2 后绿:os.SameFile 为真、字节不变、原有 1 条批准仍在
+证据:反向断言 TestApproveStillRecordsWhatHasAHash(同文件);W1 时就绿(clean skill / accepted-risk 两行),之后不改一字仍绿
+证据:TestCleanLoadWithNoHashIsNotClaimedTrusted(internal/gate/unhashed_test.go);W4 红,两行都 "claimed trust over an empty hash"(… trusted from now on for content (none))+ "reported the store as changed" → W5 后绿;反向 TestCleanLoadWithAHashIsStillRemembered 修前修后都绿
+证据:TestApproveNeverFallsBackToAnotherArtifact(cmd/aguard/gate_approve_test.go);变异(空哈希时退到 res.Artifacts 里第一个有哈希的)→ 红 "approve reported success for a root whose worst artifact has no content hash",还原后绿
+证据:真机二进制,main(dec64ca)→ 本分支,--root 指向空目录:坏 settings.json 的 .claude、chmod 000 的 notes.md、只有一条 hook 的 .claude 三个目标都从 exit 0 + approved + 新建 38 字节空批准库 → exit 2、stderr 一行 error: … has no content hash: …; nothing was approved (aguard check "…" --json …)、--root 目录保持为空
+证据:真机二进制,批准库已有 1 条时再 approve 坏 settings.json 的 .claude:main exit 0、文件被换掉(inode 206776258 → 206776259)→ 本分支 exit 2、inode 不变、sha 不变、1 条批准仍在
+证据:真机二进制,闸门 PreToolUse[Skill](skills/x/ 里有 plugins/installed_plugins.json 和坏 settings.json):main 说 trusted from now on for content (none) 并写出空批准库 → 本分支说 not remembered, it has no content hash: "…/skills/x/settings.json" did not parse, so it was not fully read [PARSE-000: Parse failed, artifact not fully covered] · it is audited again on every load,--root 下不写任何文件
+证据:未决问题 6 —— 旧仓 P-009 的补丁叠在本分支上:代码补丁全部可应用,文档补丁在 .claude/rules/gate.md、hash.md 上冲突(正是问题 6 说的那半句所在);叠加后 go test -race ./internal/gate/ ./cmd/aguard/ 全绿,含 P-009 的 TestGate_ApprovedHookLeavesSessionStart;只有一条 hook 的 .claude 此时 approve 成功并存下哈希,坏 settings.json 仍被拒绝。试验分支只在本地,已删除
+证据:反向断言 —— internal/gate 已有测试文件未改且仍绿(含 TestEmptyHashIsNeverApproved);写批准的调用点 main 3 处 → HEAD 3 处(cmd/aguard/gate.go approvePath、internal/gate/hook.go handlePre、handlePost),没有新增、没有哪一处接收外部给的哈希
+证据:不做什么 —— git diff --stat origin/main -- internal/gate/approvals.go internal/gate/approvals_test.go internal/gate/gate_test.go internal/gate/hook_test.go internal/gate/memory_test.go internal/gate/deadline_test.go internal/gate/install_test.go internal/gate/resolve_test.go internal/gate/status_test.go internal/collect internal/detect go.mod go.sum 为空;internal/gate/hook.go 只在 handlePre 干净分支加 5 行;cmd/aguard/gate.go 里 approved 那三行的 Fprintf 未改
+证据:已知局限 —— 只有一条 hook 的 .claude 在 main 上被拒绝时,原因是 the scanner could not compute one,而 check --json 对这个 artifact 没有任何 note(hash 为空、findings 为空):提示里 "lists the notes that say what was not read" 对这一种不成立,P-009 合入后这一种目标不再走到拒绝。不按 kind 补一句原因,见未决问题 3
+证据:不能说什么 —— main 上 aguard check 坏 settings.json 的 .claude,终端报告 Your Claude Code setup looks safe. No findings.,--json 里有 PARSE-000 和 COV-000;所以拒绝提示和 install-gate 对子都指向 --json(W6、W8)
+证据:make verify: all gates passed;go version go1.23.5(无工具链切换),go.mod 第二行 go 1.23.5
+```
