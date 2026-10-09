@@ -76,7 +76,7 @@ func Markdown(w io.Writer, r0 model.ScanResult) error {
 			det = append(det, g)
 		}
 	}
-	trust, coverage := splitNotes(r.Notes)
+	trust, coverage := splitNotes(notesOf(r))
 
 	// SUMMARY — derived sentences only.
 	p("\n## Summary\n\n%s  \n%s  \n", verdictSentence(score.Level(r.Overall), actionable(det), len(det)), checkedLine(r.Env))

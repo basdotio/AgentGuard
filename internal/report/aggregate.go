@@ -67,8 +67,30 @@ func (g Group) MoreFiles() int {
 	return 0
 }
 
+// notesOf is every dimension-0 note a human renderer shows: the scan-level notes first, then each
+// artifact's own, in artifact order. The two live in different places in the data and that is
+// right — a corrupt settings.json becomes a hook artifact carrying PARSE-000 (collect's
+// withParseError), so JSON and SARIF attribute the note to the thing that was not read. But the
+// terminal, markdown and HTML reports read ScanResult.Notes alone, and Aggregate (below) skips
+// dimension 0, so a note on an artifact was printed by none of them: the report said "looks safe"
+// over a settings.json it never parsed (invariant #5). One function, used by all three, so they
+// cannot disagree about what was not read. A new slice every call: r.Notes is never appended to.
+func notesOf(r model.ScanResult) []model.Finding {
+	out := make([]model.Finding, 0, len(r.Notes))
+	out = append(out, r.Notes...)
+	for _, a := range r.Artifacts {
+		for _, f := range a.Findings {
+			if f.Dimension == 0 {
+				out = append(out, f)
+			}
+		}
+	}
+	return out
+}
+
 // Aggregate folds all non-dim0 findings by (artifact, rule), sorted by severity then
-// hit count. Nothing is dropped — only folded (spec §12 honesty).
+// hit count. Nothing is dropped — only folded (spec §12 honesty). The dim-0 notes it skips are
+// rendered through notesOf.
 func Aggregate(r model.ScanResult) []Group {
 	index := map[string]*Group{}
 	var order []*Group
@@ -83,7 +105,7 @@ func Aggregate(r model.ScanResult) []Group {
 			triageByRule[t.RuleID] = t
 		}
 		for _, f := range a.Findings {
-			if f.Dimension == 0 { // parse/IO/coverage notes shown separately
+			if f.Dimension == 0 { // parse/IO/coverage notes shown separately (notesOf)
 				continue
 			}
 			art := string(a.Kind) + ":" + a.Name
