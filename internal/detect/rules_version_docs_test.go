@@ -53,13 +53,14 @@ func docPassage(t *testing.T, rel, start string, oneLine bool) string {
 	return ""
 }
 
-// TestRulesVersionDocs_IdentifyTheJudgeOnlyByToolVersion: every passage that puts the judge
-// outside the rules version used to send the reader somewhere else for it — "the report's judge
-// summary and the llm config say how it ran". Neither does: JudgeSummary records whether the judge
-// ran, over how much and against which endpoint — not its model, prompt version, samples or
-// authority — and the llm config is not in the report at all. The only thing in a report that
-// pins the judge's code today is tool_version, so that is all these passages may promise.
-func TestRulesVersionDocs_IdentifyTheJudgeOnlyByToolVersion(t *testing.T) {
+// TestRulesVersionDocs_NameTheJudgeInItsOwnBlock: every passage that puts the judge outside the
+// rules version has to say where a reader finds it instead. P-002 wrote that a report identifies the
+// judge's code only through tool_version — true then, and a commit that moves without the judge,
+// stays one suffix apart while the excerpts change, and reads `dev` from a plain `go build`. A
+// --llm report now names the judge in its own block (P-031): prompt_version and excerpt_version
+// for this build's judge, model and samples for how it ran. So each passage names the two versions,
+// and none still says tool_version is the only way.
+func TestRulesVersionDocs_NameTheJudgeInItsOwnBlock(t *testing.T) {
 	const (
 		en = "only through tool_version"
 		zh = "只通过 tool_version"
@@ -67,21 +68,23 @@ func TestRulesVersionDocs_IdentifyTheJudgeOnlyByToolVersion(t *testing.T) {
 	for _, c := range []struct {
 		file, start string
 		oneLine     bool
-		want, avoid string
+		avoid       string
 	}{
-		{"internal/detect/rules_version.go", "// The LLM judge is outside the rules version", false, en, "how it ran"},
-		{"internal/model/model.go", "// RulesVersion names the rule table", false, en, "how it ran"},
-		{"docs/architecture.md", "**The rule table has a version.**", false, en, "how it ran"},
-		{"docs/architecture.zh-CN.md", "**规则表有版本号。**", false, zh, "怎么跑的"},
-		{"docs/spec/spec.zh-CN.md", "- **规则表版本 `rules_version`**", false, zh, "怎么跑的"},
-		{"docs/spec/spec.zh-CN.md", "RulesVersion string // 规则表版本", true, zh, "Judge 说明"},
+		{"internal/detect/rules_version.go", "// The LLM judge is outside the rules version", false, en},
+		{"internal/model/model.go", "// RulesVersion names the rule table", false, en},
+		{"docs/architecture.md", "**The rule table has a version.**", false, en},
+		{"docs/architecture.zh-CN.md", "**规则表有版本号。**", false, zh},
+		{"docs/spec/spec.zh-CN.md", "- **规则表版本 `rules_version`**", false, zh},
+		{"docs/spec/spec.zh-CN.md", "RulesVersion string // 规则表版本", true, zh},
 	} {
 		p := docPassage(t, c.file, c.start, c.oneLine)
-		if !strings.Contains(p, c.want) {
-			t.Errorf("%s (%q…) does not say the report identifies the judge's code %q", c.file, c.start, c.want)
+		for _, want := range []string{"prompt_version", "excerpt_version"} {
+			if !strings.Contains(p, want) {
+				t.Errorf("%s (%q…) does not name %s; a --llm report names its judge in its judge block", c.file, c.start, want)
+			}
 		}
 		if strings.Contains(p, c.avoid) {
-			t.Errorf("%s (%q…) says %q: no field in a report records which judge ran or how it was configured", c.file, c.start, c.avoid)
+			t.Errorf("%s (%q…) still says %q; the judge block names the judge now (P-031)", c.file, c.start, c.avoid)
 		}
 	}
 }
