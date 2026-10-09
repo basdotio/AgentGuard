@@ -19,7 +19,7 @@
    一个只计数、拒绝请求的 RoundTripper,**先**断言上面三条路径确实被判官那个计数器看见(否则测试是瞎的),**再**断言
    零表里每个入口两个计数器都是 0:`scan`(含它追加的闸门存活探测;`clean` 用的是同一个 `scanEnv`)、不带 `--llm` 的下载项、`scan --llm` 但
    `llm.enabled: false`、`check`、`check --llm` 但 `llm.enabled: false`、`hook` 的 `PreToolUse`/`PostToolUse` 重扫/`SessionStart`、`approve`、`approvals`、
-   `llm setup`、`llm status`、`version`(`pluginVersionLine`/`versionLine` 每个出口一行,外加一行从构建信息盖版本)、`hash`。**加一条出网路径,就改这张清单,并把它从零表挪进正对照**;
+   `llm setup`、`llm status`、`llm preview`(一个目标,以及环境加下载项;两行都要求确实列出了调用,P-027)、`version`(`pluginVersionLine`/`versionLine` 每个出口一行,外加一行从构建信息盖版本)、`hash`。**加一条出网路径,就改这张清单,并把它从零表挪进正对照**;
    零表里的入口一旦出网就红,但**新加的命令要自己进表**,测试不会替你发现它。`TestZeroDial_ClaimsNameTheTest` 让这里
    和 `baselines/tools.yaml` 都必须写那条测试的真名,并且**上面那张路径清单与正对照(`zeroDialControl`)是同一个集合**:
    正对照多一条路径而清单没写、清单写了而没有正对照看着它出网,两个方向都红;每条路径还必须出现在

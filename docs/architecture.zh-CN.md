@@ -67,7 +67,7 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
 | [`inbox`](../internal/inbox/) | 下载目录扫描:候选发现、带上限且拒绝路径穿越的 zip 解包 | 376 |
 | [`safeio`](../internal/safeio/) | 打开一个不是自己写的文件的唯一途径:非常规文件在 Open 前拒绝,大小由读强制 | 101 |
 | [`redact`](../internal/redact/) | 唯一的脱敏器:已知 token 前缀、键名/旗标自证的凭据、URL userinfo、高熵串。是叶子包,`collect` 也用它;`detect.Redact` 委托它 | 209 |
-| [`cmd/aguard`](../cmd/aguard/) | CLI 接线、`analyze()`、下载目录那一趟、hook runner、`llm setup/test/status` | — |
+| [`cmd/aguard`](../cmd/aguard/) | CLI 接线、`analyze()`、下载目录那一趟、hook runner、`llm setup/test/status/preview` | — |
 
 有一处职责是被刻意切成两半的,值得先知道,因为两半都叫"permission":
 

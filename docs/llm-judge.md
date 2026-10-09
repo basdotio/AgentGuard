@@ -78,6 +78,7 @@ aguard llm setup --list                 # deepseek · openai · qwen · openai_c
 aguard llm setup --provider deepseek    # prompts for the key with hidden input (no history, no screen)
 aguard llm test                         # one call; fails HERE if the key/model/URL is wrong
 aguard llm status                       # what would be used (never the key)
+aguard llm preview ./some-skill         # what --llm would send for it; nothing is sent, no key needed
 ```
 
 For scripts, pipe the key instead: `printf '%s\n' "$KEY" | aguard llm setup --provider deepseek --key-stdin`.
@@ -148,6 +149,18 @@ everything on your machine. That trade-off is yours.
 
 ## Privacy
 
+- **See it before it is sent: `aguard llm preview`.** With a path it prints the calls
+  `check <path> --llm` would make; without one, the calls `scan --llm` would make for `--root` and
+  the Downloads items under `--inbox`. For each artifact its kind, name and content hash; for each
+  call the pass, how often it is sent (`samples`, and how many `max_calls` refuses), the text that
+  goes inside the call's nonce fence, the file lines it came from, and what was shortened. It is
+  the plan and the payload code a real run uses, compared byte for byte in the tests with what an
+  endpoint receives from `scan --llm` and `check --llm`. Nothing is sent, no key is read, and
+  `llm.enabled` does not have to be on. `--json` carries the exact bytes and each pass's
+  instruction; the terminal view clears control and bidi characters. Not shown: the
+  `Authorization` header, and the barrier rule naming the per-call nonce, which is drawn when a
+  call is made. A real run can send fewer calls than the preview lists (the run deadline, a
+  refused endpoint, a missing key), never other text.
 - **Only redacted excerpts are sent.** Every byte — behavior scripts, the SKILL.md body, the
   declared description, decoded blobs, triage evidence — passes through the same
   `detect.Redact` used for report snippets before it leaves the process.

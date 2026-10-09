@@ -46,5 +46,9 @@ hook capability(`LLM-008`,维度 2)、MCP config(`LLM-009`,维度 5,**只提示*
 失败**,而不是退化成一个可被猜到的围栏。`base_url` 非 loopback 时追加 `LLM-002` 隐私警告。**`ScanResult.Judge`(2026-09-05)**:`--llm` 时必填,记录跑没跑、
 判了几个、几次调用、补了几条、没跑的原因;两个渲染器在摘要里印一行,HTML 的判官区块在请求了就出现(空则放那一行),
 没开 `--llm` 一律不提 —— "跑了没发现"和"没跑"以前在报告上一模一样,这是不变量 #5 用在判官自己身上。
+**`aguard llm preview` 和真跑共用同一份计划和同一段载荷代码**(`judge.Plan`,P-027):`Run` 和 `Plan` 都走 `schedule`
+(建表 + `max_calls` 截断 + shortened 注记),客户端和预览都用 `judgePayload`/`triagePayload` 渲染栅栏里的文本,趟名和规则 ID 都读
+`modeInfo`。**不要在 `cmd/` 里另写一份渲染,也不要给预览单独的截断或排序**——预览一旦和发出去的字节不同,就成了会漂移的第二实现。
+`TestPlan_PayloadsAreWhatTheClientSends`(真 `NewHTTP` + httptest)和 `TestLLMPreview_MatchesWhatScanAndCheckSend`(二进制,真跑)逐字节钉着。
 完整参考:[docs/llm-judge.md](../../docs/llm-judge.md)。
 

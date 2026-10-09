@@ -73,7 +73,7 @@ Each package is an approximately pure stage over the immutable types in
 | [`inbox`](../internal/inbox/) | The Downloads scan: candidate discovery and bounded, traversal-refusing zip extraction | 376 |
 | [`safeio`](../internal/safeio/) | The one way a file the tool did not write is opened: non-regular files refused before Open, size capped by the read | 101 |
 | [`redact`](../internal/redact/) | The one secret redactor: known token prefixes, announced credentials, URL userinfo, high-entropy runs. A leaf, so `collect` uses it too; `detect.Redact` delegates | 209 |
-| [`cmd/aguard`](../cmd/aguard/) | CLI wiring, `analyze()`, the Downloads pass, the gate runner, `llm setup/test/status` | — |
+| [`cmd/aguard`](../cmd/aguard/) | CLI wiring, `analyze()`, the Downloads pass, the gate runner, `llm setup/test/status/preview` | — |
 
 Two responsibilities are split in a way worth knowing up front, because both halves say
 "permission":
