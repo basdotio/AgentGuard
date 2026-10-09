@@ -44,8 +44,19 @@ func TestText_AggregatesAndLabels(t *testing.T) {
 	if !strings.Contains(out, "advisory: not confirmed") {
 		t.Error("advisory (dim7) label missing")
 	}
-	if strings.Contains(out, "COV-000") {
+	// The artifact's own dim-0 note is not a RISK ROW, so it must stay out of the findings. It is
+	// still a note, and a note is shown: it folds into the Not checked line with the scan-level
+	// ones. (This used to assert the note appeared nowhere at all, which pinned the defect where an
+	// artifact-level note — a settings.json that did not parse — was rendered by no human report.)
+	staticAt, notesAt := strings.Index(out, "Findings · STATIC"), strings.Index(out, "\nNot checked —")
+	if staticAt < 0 || notesAt < staticAt {
+		t.Fatalf("expected the findings, then the Not checked line:\n%s", out)
+	}
+	if strings.Contains(out[staticAt:notesAt], "COV-000") {
 		t.Error("dim0 coverage note must not appear as a risk finding row")
+	}
+	if !strings.Contains(out[notesAt:], "COV-000") {
+		t.Error("the artifact's own dim0 note must fold into the Not checked line, not vanish")
 	}
 	// Default mode folds the notes to one line — but the line still names them, so a reader
 	// knows a gap exists without being handed the rationale for it.
