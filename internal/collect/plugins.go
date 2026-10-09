@@ -2,6 +2,7 @@
 package collect
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/basdotio/AgentGuard/internal/model"
@@ -329,7 +331,8 @@ func collectPluginHooks(pluginRoot, nameSuffix string, env *model.EnvSummary) ([
 var pluginMCPFiles = []string{".mcp.json", "mcp.json"}
 
 // collectPluginMCP turns a plugin's bundled MCP servers into MCP artifacts, one per server, through
-// the same reader the user-level and project-level configs go through.
+// the same reader the user-level and project-level configs go through, with the one layout only a
+// plugin file has: servers listed without the wrapper (pluginMCPServers).
 //
 // Until this existed the bundle's `.mcp.json` was read only as text inside the plugin tree, so a
 // plugin's servers were invisible where it mattered: the inventory said `mcp=0`, and a summary built
@@ -349,11 +352,85 @@ func collectPluginMCP(pluginRoot, nameSuffix string, env *model.EnvSummary) ([]m
 		if !withinDir(pluginRoot, p) {
 			continue
 		}
-		m, mn := mcpServersFrom(p, nameSuffix, env) // absent file → nil, nil
+		m, mn := readMCPServers(p, nameSuffix, pluginMCPServers, env) // absent file → nil, nil
 		out = append(out, m...)
 		notes = append(notes, mn...)
 	}
 	return out, notes
+}
+
+// pluginMCPServers is how Claude Code reads a plugin's MCP file: `doc.mcpServers || doc` (2.1.107,
+// measured in P-029). The wrapper, when present and truthy in JavaScript's sense, is the server map
+// exactly as wrappedMCPServers reads it — an empty object included, which starts nothing. Absent or
+// falsy (null, false, 0, ""), the document itself is the server map, and Claude Code starts those
+// servers like wrapped ones. Decoding only the wrapper left them uncollected: not counted, not
+// scanned, not hashed, no note.
+//
+// The key is matched in exact case, as JavaScript does. Go's struct decoder matched it
+// case-insensitively, so `{"MCPSERVERS": {}, "evil": …}` read as an empty wrapper and hid a server
+// Claude Code starts, and `{"McpServers": {…}}` made up servers it never starts.
+//
+// At the top level, only an entry shaped like a server is one (mcpServerShaped); the rest of the
+// document — "$schema", "version", the falsy wrapper itself — is not, and is not reported: Claude
+// Code skips it too, so nothing is missed. User-level and project-level configs never take this
+// path: Claude Code rejects a flat project .mcp.json, and ~/.claude.json's top level is settings.
+func pluginMCPServers(b []byte) (map[string]json.RawMessage, bool, bool) {
+	var top map[string]json.RawMessage
+	if json.Unmarshal(b, &top) != nil {
+		return nil, false, false
+	}
+	if raw, ok := top["mcpServers"]; ok && jsTruthy(raw) {
+		var servers map[string]json.RawMessage
+		if json.Unmarshal(raw, &servers) != nil {
+			return nil, false, false
+		}
+		return servers, false, true
+	}
+	servers := map[string]json.RawMessage{}
+	for k, v := range top {
+		if mcpServerShaped(v) {
+			servers[k] = v
+		}
+	}
+	return servers, true, true
+}
+
+// mcpServerShaped: an object with a `command` or a `type` member. Every branch of Claude Code's
+// server schema requires one of the two (stdio needs command; sse, http, ws and the rest need type),
+// so this is a necessary condition — looser than the schema on purpose. Where it admits an entry
+// Claude Code rejects, the cost is one scanned artifact; a copy of the schema that ended up
+// stricter than Claude Code's would leave a running server unscanned.
+func mcpServerShaped(raw json.RawMessage) bool {
+	var entry map[string]json.RawMessage
+	if json.Unmarshal(raw, &entry) != nil || entry == nil {
+		return false
+	}
+	_, command := entry["command"]
+	_, typ := entry["type"]
+	return command || typ
+}
+
+// jsTruthy is JavaScript's truthiness of a JSON value: null, false, a numeric zero and "" are
+// falsy; every other value, an empty object or array included, is truthy.
+func jsTruthy(raw json.RawMessage) bool {
+	d := json.NewDecoder(bytes.NewReader(raw))
+	d.UseNumber()
+	var v any
+	if d.Decode(&v) != nil {
+		return true // a member of a document that already decoded; keep it on the wrapper's path
+	}
+	switch x := v.(type) {
+	case nil:
+		return false
+	case bool:
+		return x
+	case json.Number:
+		f, _ := strconv.ParseFloat(string(x), 64) // ±Inf on overflow: truthy, as in JavaScript
+		return f != 0
+	case string:
+		return x != ""
+	}
+	return true
 }
 
 // collectSyncedPlugins walks plugins/synced/<uuid>/<plugin>/ — the layout the Cowork/Cloud
