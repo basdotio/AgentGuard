@@ -40,6 +40,6 @@
 | [004](complete/004-check-llm.md) | 装前检查不能用判官,CI 用户只能走 scan --root 的绕路 | `check` 恒静态,装前检查用不上判官;`scan` 已对同样不可信的 Downloads 内容提供 `--llm`;移植自旧仓 P-047 | PR 待合入;待发 |
 | [005](complete/005-judge-egress-paths.md) | BYO 判官把用户名、绝对路径和不带键名的 env 值发给模型厂商 | `--llm` 摘录里带家目录绝对路径和用户名,MCP env 值不带键名发出;移植自旧仓 P-045 | PR 待合入;待发 |
 | [006](complete/006-judge-rendering.md) | 模型的整段 evidence 被渲染成证据,triage reason 能逃出 markdown | 判官 snippet 是模型的整段 evidence、triage reason 未脱敏能逃出代码跨度、模型文本无长度上限;移植自旧仓 P-046 | PR 待合入;待发 |
-| [007](draft/007-gate-pending-survives.md) | 在闸门弹窗里批准过的 skill,下次加载还会再问:批准从来没被记下来 | 每个 hook 事件是新进程,pending 从没被读回;移植自旧仓 P-049 | 分支上 |
+| [007](design/007-gate-pending-survives.md) | 在闸门弹窗里批准过的 skill,下次加载还会再问:批准从来没被记下来 | 每个 hook 事件是新进程,pending 从没被读回;移植自旧仓 P-049 | 分支上 |
 | [008](complete/008-undo-hint-pastes.md) | 闸门批准后给的撤销命令照抄就失败:哈希后面带着省略号 | 接受风险后的撤销命令照抄失败、`forget ""` 删掉唯一批准;移植自 agent-guard 的 P-050 | PR 待合入;待发 |
 | [009](complete/009-content-hash-three-kinds.md) | hook、MCP、permission 没有哈希,闸门和信誉库对它们恒"不认识" | 三类 artifact 哈希为空,闸门 SessionStart 与信誉库对它们恒判未知;移植自旧仓 P-051 | PR 待合入;待发 |
