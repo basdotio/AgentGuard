@@ -1,60 +1,66 @@
 <!-- SPDX-License-Identifier: MIT -->
 # Proposals
 
-每份 proposal 回答"要做什么、做到什么程度算完、明确不做什么"。新建照 [TEMPLATE.md](TEMPLATE.md)。
-编号三位递增、全局唯一,建文件时取 `origin/main` 索引里最大号加一。本仓库的编号从 **001** 重新开始;
-旧仓 `agent-guard` 的 P-001 到 P-041 是那边的历史,这里不续。
+Each proposal answers "what is to be done, how far it has to go to count as done, and what is explicitly not done". Start
+a new one from [TEMPLATE.md](TEMPLATE.md). Numbers are three digits, increasing and globally unique; when you create the
+file, take the largest number in the index on `origin/main` and add one. Numbering in this repository restarts at
+**001**; P-001 to P-041 of the former repository `agent-guard` are that repository's history and are not continued here.
 
-什么样的改动要先写 proposal:动了规则、不变量、数据模型、采集面,或者任何"做到什么程度算完"不显然的事。
-一处错别字、一条 CI、一行注释不用。规矩的英文摘要在 [../../CONTRIBUTING.md](../../CONTRIBUTING.md)。
+Which changes need a proposal first: a change to a rule, an invariant, the data model or the collection surface, or
+anything where "how far it has to go to count as done" is not obvious. A typo, a CI line or a one-line comment does not.
+An English summary of these rules is in [../../CONTRIBUTING.md](../../CONTRIBUTING.md).
 
-## 目录即状态
+## The directory is the state
 
-文件在哪个子目录,就是什么状态;文件里**不写** `状态:` 行,两份真相必漂。状态变更是一次 `git mv`,文件名不变,
-`git log --follow` 和 `git log --grep P-NNN` 照常。**draft 和 design 只在 `p/NNN-slug` 分支上**,`main` 上只有
-`complete/` 和 `rejected/`;在做什么看 `git branch -r --list 'origin/p/*'` 和打开的 PR。
+The subdirectory a file sits in is its state; the file does **not** carry a "Status:" line, because two sources of truth
+always drift. A state change is one `git mv`; the file name stays the same, and `git log --follow` and
+`git log --grep P-NNN` work as before. **draft and design exist only on the `p/NNN-slug` branch**; `main` has only
+`complete/` and `rejected/`. To see what is in progress, look at `git branch -r --list 'origin/p/*'` and the open PRs.
 
-| 目录 | 含义 | 文件里有什么 |
+| Directory | Meaning | What the file contains |
 |---|---|---|
-| `draft/` | 提出了,人还没说值不值得设计(分支上) | 只有问题、来源、后果、初步方向 |
-| `design/` | 人说值得设计。补判据、不做什么、不能说什么、工作项,把未决问题**一次问完**;人答完即接受,接着实现;直到开 PR 都留在这里(分支上) | 六节齐全 |
-| `complete/` | 做完了,人说交付;「完成」一节填好,带证据行,随 PR 到 `main`。**发版记录也放这里**(`NNN-release-x.y.z.md`,不走 draft/design) | 六节 + 「完成」;发版记录是包含的 P、changelog、改了哪里、证据行 |
-| `rejected/` | 做完或做到一半人说不要,或与另一份是同一件事;同样随 PR 到 `main` | 正文写否决理由,或并入哪份 |
+| `draft/` | Proposed; the maintainer has not yet said whether it is worth designing (on the branch) | Only the problem, source, consequences and initial direction |
+| `design/` | The maintainer said it is worth designing. Add the Done criteria, Out of scope, Must not claim and Work items, and ask the Open questions **all at once**; once the maintainer has answered, it is accepted and implementation follows; it stays here until the PR is opened (on the branch) | All six sections |
+| `complete/` | Finished, and the maintainer said ship it; the "Done" section is filled in, with evidence lines, and reaches `main` with the PR. **Release records also go here** (`NNN-release-x.y.z.md`, not through draft/design) | Six sections + "Done"; a release record holds the included Ps, the changelog, what changed where, and evidence lines |
+| `rejected/` | Finished or half done and the maintainer said no, or the same thing as another proposal; also reaches `main` with the PR | The body gives the reason for rejection, or which proposal it was merged into |
 
-"进行中"不是目录:`p/NNN-*` 分支存在就是进行中。四个目录各带一个 `.gitkeep`,空着也在。
+"In progress" is not a directory: an existing `p/NNN-*` branch means in progress. Each of the four directories carries a
+`.gitkeep`, so it exists even when empty.
 
-## 提交与回溯
+## Commits and tracing back
 
-- 分支名 `p/NNN-slug`;每个提交信息末尾带 `(P-NNN)`。本仓库**不装 hook 强制**这两条,靠 review。
-- 从代码到 proposal:`git blame` → 提交信息末尾 `(P-NNN)` → 本目录(四个子目录里找编号)。
-- 从 proposal 到代码和版本:`git log --grep 'P-NNN'`;`git tag --contains <合入提交>`;
-  文末「完成」一节直接记着合入的 PR 和发布版本。
+- Branch name `p/NNN-slug`; every commit message ends with `(P-NNN)`. This repository **installs no hook to enforce**
+  either of these; review does.
+- From code to proposal: `git blame` → the `(P-NNN)` at the end of the commit message → this directory (look for the
+  number in the four subdirectories).
+- From proposal to code and release: `git log --grep 'P-NNN'`; `git tag --contains <merge-commit>`;
+  the "Done" section at the end of the file records the merged PR and the release directly.
 
-## 索引
+## Index
 
-| P | 标题 | 来源 | PR / 发布 |
+| P | Title | Source | PR / Release |
 |---|---|---|---|
-| [001](complete/001-judge-usage-in-json.md) | 判官的 token、triage 调用、重试数从不进报告,成本只能从 stderr 抄 | 判官用量只打到 stderr,`--quiet` 时(Downloads 每一项)哪里都没有;移植自旧仓 P-042 | PR #19;待发 |
-| [002](complete/002-rules-version.md) | 报告不说自己是哪一版规则跑出来的,两份报告分不清是规则变了还是输入变了 | 新发现(2026-10-09):两次扫描得分不同时,报告说不出规则表变没变;移植自旧仓 P-043 | PR #21;待发 |
-| [003](complete/003-zero-dial-test.md) | "绝不外连"没有一条测试钉住,baselines 的模板却说有 | 新发现(2026-10-09);移植自旧仓 agent-guard 的 P-044 | PR #22;待发 |
-| [004](complete/004-check-llm.md) | 装前检查不能用判官,CI 用户只能走 scan --root 的绕路 | `check` 恒静态,装前检查用不上判官;`scan` 已对同样不可信的 Downloads 内容提供 `--llm`;移植自旧仓 P-047 | PR #26;待发 |
-| [005](complete/005-judge-egress-paths.md) | BYO 判官把用户名、绝对路径和不带键名的 env 值发给模型厂商 | `--llm` 摘录里带家目录绝对路径和用户名,MCP env 值不带键名发出;移植自旧仓 P-045 | PR #24;待发 |
-| [006](complete/006-judge-rendering.md) | 模型的整段 evidence 被渲染成证据,triage reason 能逃出 markdown | 判官 snippet 是模型的整段 evidence、triage reason 未脱敏能逃出代码跨度、模型文本无长度上限;移植自旧仓 P-046 | PR #23;待发 |
-| [007](complete/007-gate-pending-survives.md) | 在闸门弹窗里批准过的 skill,下次加载还会再问:批准从来没被记下来 | 每个 hook 事件是新进程,pending 从没被读回;移植自旧仓 P-049 | PR #18;待发 |
-| [008](complete/008-undo-hint-pastes.md) | 闸门批准后给的撤销命令照抄就失败:哈希后面带着省略号 | 接受风险后的撤销命令照抄失败、`forget ""` 删掉唯一批准;移植自 agent-guard 的 P-050 | PR #17;待发 |
-| [009](complete/009-content-hash-three-kinds.md) | hook、MCP、permission 没有哈希,闸门和信誉库对它们恒"不认识" | 三类 artifact 哈希为空,闸门 SessionStart 与信誉库对它们恒判未知;移植自旧仓 P-051 | PR #29;待发 |
-| [010](complete/010-relative-root-hook-scripts.md) | --root 带尾斜杠或用相对路径时,hook 和授权引用的脚本不被跟进,同一份配置分数变高 | `--root` 写成 `<abs>/`、`.`、`./`、`home/.claude` 时 hook 和授权引用的 `~/…` 脚本不读,分数 69 → 100;移植自 agent-guard 的 P-052 | PR #27;待发 |
-| [011](complete/011-approve-empty-hash.md) | aguard approve 对没有内容哈希的东西也打印 approved,实际什么都没存 | `approve` 对没有哈希的最差 artifact 照样报 approved 退出 0,闸门干净分支对空哈希也说 trusted;移植自 agent-guard 的 P-053 | PR #20;待发 |
-| [012](complete/012-collect-anchors-root.md) | --root 用相对写法时,符号链接安装的 skill 整个不被收集,`--root .` 还漏掉 home 下的配置;CI 模板的 `.mcp.json` 只是碰巧被读到 | collect 只 `Clean` 不 `Abs`:相对写法丢掉符号链接安装的 skill,`--root .` 把 home 取错;CI 模板读到仓库顶层 `.mcp.json` 只因 home 碰巧等于 root;移植自 agent-guard 的 P-055 | PR #30;待发 |
-| [013](complete/013-artifact-notes-rendered.md) | settings.json 解析失败时,终端和 markdown 报告说 "looks safe":artifact 自己的 dim-0 note 从不渲染 | collect 把 `PARSE-000` 挂在 artifact 上,三个人读渲染器只渲染扫描级 note,解析不了的 `settings.json` 被报成 "looks safe … Nothing was found to check"(不变量 #5);移植自 agent-guard 的 P-054 | PR #28;待发 |
-| [014](complete/014-hook-outside-snippet-redacted.md) | hook 越界提示的证据里,箭头后面的解析路径没经过脱敏 | `HOOK-002` 箭头后的解析路径、`SUP-006` 的 `Why` 里的注册表地址没经过脱敏;移植自 agent-guard 的 P-056 | PR #25;待发 |
-| [015](complete/015-rules-frontmatter-first.md) | 许可证注释把十份规则的 frontmatter 挤下第一行:按路径加载失效,范围测试不再查 glob | 新发现:首个公开提交在十份按路径加载的规则文件的 frontmatter 上方加了一行许可证注释,范围测试从此不查 glob,Claude Code 也不再按路径加载它们 | PR #32;待发 |
-| [016](complete/016-zip-check-reproducible.md) | 同一个 zip 查两遍,SARIF 不一样:随机解压目录名进了 uri、artifact 和指纹,Code Scanning 每跑一次开一批新告警 | 同一个 zip 查两遍报告不同:随机解压目录名漏进 artifact 名、uri 和指纹,Code Scanning 每次 CI 开新告警;`approve x.zip` 记下已删的临时路径;root 形状的 zip 把共享 `$TMPDIR` 当 home;移植自 agent-guard 的 P-048 | PR #31;待发 |
-| [017](complete/017-checked-line-and-scan-notes.md) | 摘要自相矛盾:check 一个文件一边列发现一边说 "Nothing was found to check";已加载内容里没读到的部分不动 "looks safe" | P-013 记下的后续:Checked 那句只从清单计数推,`check <文件>` / `check <目录>` / 只有 `CLAUDE.md` 的 root / 读不了的 `settings.json` 都说 "Nothing was found to check";detect 关于已加载内容的扫描级 `COV-000`(读不了的子目录、超大文件、没跟进的 hook 脚本)不对冲头条 | PR #39;待发 |
-| [018](complete/018-collect-notes-redacted.md) | 导入行、插件名、树内条目名里的 token 经几条笔记原样进报告:那几处证据片段没经过脱敏 | P-014 的「不做什么」与未决 3 留下的:collect 的笔记、`unreadableNote`、`GATE-001` 的 snippet 把文件正文或配置值原样拼进证据,没过 `Redact` | PR #41;待发 |
-| [019](complete/019-raw-root-entry-points.md) | 同一个目录换一种写法就换一个答案:`clean --root .` 拒绝撤销,`check .` 不按 root 布局读,相对写法下闸门对插件 skill 不审就放行 | P-012 留下的同根因入口:`clean` 判 trash 越界、`check`/`hash` 按字符串路由、闸门和 `version` 从原样 root 取 home;人定(2026-10-09)合成一条 | PR #40;待发 |
-| [020](complete/020-excerpt-padding-evasion.md) | 一行指令垫满空白,判官摘录里就只剩一行省略标记:判官恰好看不见它存在要读的那句话 | P-005、P-006 记下的后续:摘录按字节封顶,行内垫几千字节空白(含 Unicode 空白、零宽字符)的指令行在发出去之前就被换成省略标记或截成纯空白前缀 | PR #38;待发 |
-| [021](complete/021-plugin-mcp-unscanned.md) | 插件自带的 MCP server 从不过规则:同一份配置手写进 ~/.claude.json 是 75 分,随插件装进来是 100 分 | P-009 未决 6 记下的已有缺口:detect 和判官按带 ` (plugin …)` 后缀的 artifact 名去 `mcpServers` 里找条目,找不到,零 unit,记成干净的 100 | PR #37;待发 |
-| [022](complete/022-bench-fold-reads-judge-usage.md) | 基准折叠判官运行时,triage 调用数和每题用量是推出来的:aguard 的 JSON 已经报了真数,rig 一个都不读 | P-001 记下的后续:`judge.jsonl` 的 `triage_calls` / `questions` 按文档推导,rig 不读 `--json` 判官摘要里的真数,raw/ 还把没报的字段写成 0 | PR #35;待发 |
-| [023](complete/023-judge-redirect.md) | 判官端点回一个重定向,API key 就用明文发出去,或者被扫内容的摘录发给一台用户从没配置过的主机 | P-003 在「不做什么」里记下的后续:判官的 client 用 Go 默认的重定向策略,跟着 30x 走时不再过 `CheckEndpoint` | PR #34;待发 |
-| [024](complete/024-frontmatter-leading-bytes.md) | frontmatter 前面有空行或 BOM 的规则文件,报告标成 (path-scoped),Claude Code 却每次会话都加载它 | P-015 未决 5:`splitFrontmatter` 先去 BOM 和开头空白再找 `---`,而 Claude Code 2.1.107 只认第一个字节开始的 frontmatter;`SKILL.md` 同一个解析器,先量 | PR #36;待发 |
+| [001](complete/001-judge-usage-in-json.md) | The judge's tokens, triage calls and retries never reach the report; the cost can only be copied from stderr | The judge's usage is printed only to stderr, and with `--quiet` (every Downloads item) it is nowhere; ported from P-042 in the former repository | PR #19; pending release |
+| [002](complete/002-rules-version.md) | A report does not say which version of the rules produced it, so two reports cannot tell whether the rules changed or the input did | New finding (2026-10-09): when two scans score differently, the report cannot say whether the rule table changed; ported from P-043 in the former repository | PR #21; pending release |
+| [003](complete/003-zero-dial-test.md) | No test pins "never connects out", yet the baselines template says one does | New finding (2026-10-09); ported from P-044 in the former repository agent-guard | PR #22; pending release |
+| [004](complete/004-check-llm.md) | A pre-install check cannot use the judge; CI users have to take the detour through scan --root | `check` is always static, so a pre-install check cannot use the judge; `scan` already offers `--llm` for Downloads content that is just as untrusted; ported from P-047 in the former repository | PR #26; pending release |
+| [005](complete/005-judge-egress-paths.md) | A BYO judge sends the user name, absolute paths and env values without their key names to the model vendor | `--llm` excerpts carry absolute home-directory paths and the user name, and MCP env values are sent without their key names; ported from P-045 in the former repository | PR #24; pending release |
+| [006](complete/006-judge-rendering.md) | The model's whole evidence passage is rendered as evidence, and a triage reason can escape the markdown | The judge snippet is the model's whole evidence passage, the triage reason is not redacted and can escape the code span, and model text has no length cap; ported from P-046 in the former repository | PR #23; pending release |
+| [007](complete/007-gate-pending-survives.md) | A skill approved in the gate's prompt is asked about again on the next load: the approval was never recorded | Each hook event is a new process, and what is held in pending is never read back; ported from P-049 in the former repository | PR #18; pending release |
+| [008](complete/008-undo-hint-pastes.md) | The undo command the gate prints after an approval fails when pasted as is: the hash is followed by an ellipsis | The undo command printed after accepting a risk fails when pasted, and `forget ""` deletes the only approval; ported from P-050 in agent-guard | PR #17; pending release |
+| [009](complete/009-content-hash-three-kinds.md) | Hook, MCP and permission artifacts have no hash, so the gate and the reputation allowlist always see them as "unknown" | Three artifact kinds have an empty hash, so the gate's SessionStart and the reputation allowlist always judge them unknown; ported from P-051 in the former repository | PR #29; pending release |
+| [010](complete/010-relative-root-hook-scripts.md) | With a trailing slash or a relative path in --root, scripts referenced by hooks and permission grants are not followed, and the same configuration scores higher | When `--root` is written as `<abs>/`, `.`, `./` or `home/.claude`, the `~/…` scripts referenced by hooks and permission grants are not read, and the score goes 69 → 100; ported from P-052 in agent-guard | PR #27; pending release |
+| [011](complete/011-approve-empty-hash.md) | aguard approve prints approved even for something with no content hash, and actually stores nothing | `approve` still reports approved and exits 0 for a worst artifact that has no hash, and the gate's clean branch also says trusted for an empty hash; ported from P-053 in agent-guard | PR #20; pending release |
+| [012](complete/012-collect-anchors-root.md) | With a relative --root, a skill installed as a symlink is not collected at all, and `--root .` also misses the configuration under home; the CI template's `.mcp.json` is read only by chance | collect calls `Clean` but not `Abs`: a relative form drops skills installed as symlinks, and `--root .` takes the wrong home; the CI template reads the repository's top-level `.mcp.json` only because home happens to equal the root; ported from P-055 in agent-guard | PR #30; pending release |
+| [013](complete/013-artifact-notes-rendered.md) | When settings.json fails to parse, the terminal and markdown reports say "looks safe": an artifact's own dim-0 notes are never rendered | collect attaches `PARSE-000` to the artifact, the three human-readable renderers render only scan-level notes, and an unparseable `settings.json` is reported as "looks safe … Nothing was found to check" (invariant #5); ported from P-054 in agent-guard | PR #28; pending release |
+| [014](complete/014-hook-outside-snippet-redacted.md) | In the evidence of the hook-outside-the-boundary finding, the resolved path after the arrow is not redacted | The resolved path after the arrow in `HOOK-002` and the registry address in the `Why` of `SUP-006` are not redacted; ported from P-056 in agent-guard | PR #25; pending release |
+| [015](complete/015-rules-frontmatter-first.md) | A licence comment pushes the frontmatter of ten rule files off line 1: path-scoped loading stops working, and the scope test no longer checks the globs | New finding: the first public commit added a licence comment above the frontmatter of ten path-scoped rule files; since then the scope test checks no glob, and Claude Code no longer loads them by path | PR #32; pending release |
+| [016](complete/016-zip-check-reproducible.md) | Checking the same zip twice gives different SARIF: the random extraction directory name gets into the uri, the artifact and the fingerprint, and Code Scanning opens a batch of new alerts on every run | Checking the same zip twice gives different reports: the random extraction directory name leaks into the artifact name, the uri and the fingerprint, and Code Scanning opens new alerts on every CI run; `approve x.zip` records a temporary path that has already been deleted; a root-shaped zip treats the shared `$TMPDIR` as home; ported from P-048 in agent-guard | PR #31; pending release |
+| [017](complete/017-checked-line-and-scan-notes.md) | The summary contradicts itself: checking a file lists findings while saying "Nothing was found to check"; the parts of loaded content that were not read leave "looks safe" untouched | Follow-up recorded in P-013: the Checked sentence is derived only from the inventory counts, so `check <file>` / `check <dir>` / a root with only `CLAUDE.md` / an unreadable `settings.json` all say "Nothing was found to check"; detect's scan-level `COV-000` about loaded content (unreadable subdirectories, oversized files, hook scripts not followed) does not hedge the headline | PR #39; pending release |
+| [018](complete/018-collect-notes-redacted.md) | A token in an import line, a plugin name or the name of an entry inside a tree reaches the report verbatim through several notes: those evidence snippets are not redacted | Left by P-014's "Out of scope" and its open question 3: collect's notes, `unreadableNote` and the `GATE-001` snippet splice file text or configuration values into the evidence verbatim, without going through `Redact` | PR #41; pending release |
+| [019](complete/019-raw-root-entry-points.md) | Writing the same directory another way gives another answer: `clean --root .` refuses to undo, `check .` does not read it as a root layout, and with a relative form the gate lets plugin skills through unaudited | Entry points with the same root cause, left by P-012: `clean` judges the trash to be out of bounds, `check`/`hash` route by string, and the gate and `version` take home from the raw root; decided by the maintainer (2026-10-09) to combine them into one | PR #40; pending release |
+| [020](complete/020-excerpt-padding-evasion.md) | Pad an instruction line with whitespace and the judge's excerpt holds only an omission marker: the judge cannot see exactly the sentence it exists to read | Follow-up recorded in P-005 and P-006: the excerpt is capped in bytes, so an instruction line padded with several thousand bytes of whitespace (including Unicode whitespace and zero-width characters) is replaced by an omission marker, or cut to a whitespace-only prefix, before it is sent | PR #38; pending release |
+| [021](complete/021-plugin-mcp-unscanned.md) | A plugin's bundled MCP server never goes through the rules: the same configuration scores 75 when written by hand into ~/.claude.json and 100 when installed with a plugin | An existing gap recorded in P-009's open question 6: detect and the judge look up the entry in `mcpServers` by the artifact name with its ` (plugin …)` suffix, find nothing, get zero units, and record a clean 100 | PR #37; pending release |
+| [022](complete/022-bench-fold-reads-judge-usage.md) | When the benchmark folds a judge run, the triage call count and per-question usage are inferred: aguard's JSON already reports the real numbers, and the rig reads none of them | Follow-up recorded in P-001: `triage_calls` / `questions` in `judge.jsonl` are derived from the documentation, the rig does not read the real numbers in the `--json` judge summary, and raw/ also writes unreported fields as 0 | PR #35; pending release |
+| [023](complete/023-judge-redirect.md) | If the judge endpoint answers with a redirect, the API key goes out in plain text, or an excerpt of the scanned content goes to a host the user never configured | Follow-up recorded by P-003 in its "Out of scope": the judge's client uses Go's default redirect policy, and following a 30x no longer goes through `CheckEndpoint` | PR #34; pending release |
+| [024](complete/024-frontmatter-leading-bytes.md) | A rule file with a blank line or a BOM before its frontmatter is labelled (path-scoped) in the report, yet Claude Code loads it every session | P-015 open question 5: `splitFrontmatter` strips the BOM and leading whitespace before looking for `---`, while Claude Code 2.1.107 only accepts frontmatter that starts at the first byte; `SKILL.md` uses the same parser, so measure first | PR #36; pending release |

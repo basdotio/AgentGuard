@@ -1,153 +1,198 @@
 <!-- SPDX-License-Identifier: MIT -->
-# 023 — 判官端点回一个重定向,API key 就用明文发出去,或者被扫内容的摘录发给一台用户从没配置过的主机
+# 023 — When the judge's endpoint answers with a redirect, the API key goes out in cleartext, or an excerpt of the scanned content goes to a host the user never configured
 
-- **来源**:P-003 在「不做什么」里记下的后续 ——"不做重定向处理(`CheckRedirect` / 跨主机重定向带走 Bearer 头)"
+- **Source**: a follow-up P-003 recorded in "Out of scope" — "no redirect handling (`CheckRedirect` / a cross-host redirect
+  carrying the Bearer header away)"
   ([complete/003-zero-dial-test.md](../complete/003-zero-dial-test.md))
-- **依赖**:无(P-003 已合入)
-- **分支**:`p/023-judge-redirect`
+- **Depends on**: none (P-003 is merged)
+- **Branch**: `p/023-judge-redirect`
 
-<!-- 没有「状态」行:文件所在目录就是状态(draft/ design/ complete/ rejected/),见 README.md。 -->
+<!-- No "Status" line: the directory the file is in is its status (draft/ design/ complete/ rejected/), see README.md. -->
 
-## 问题
+## Problem
 
-`CheckEndpoint`(`internal/config/config.go`)拒绝非 https 的远程 `llm.base_url`,理由写在它自己的报错里:API key 是
-Bearer 头、摘录是请求体,明文 http 会让两样都过网。setup、`llm test`、判官三处都过它。**但它只看配置里写的那个地址。**
-判官的 client(`internal/judge/openai.go` `NewHTTP`,`&http.Client{Transport: Transport}`)用的是 Go 默认的重定向策略:
-端点回一个 30x,client 照着 `Location` 再发一次,**不再过 `CheckEndpoint`**,报告里也一个字都没有。
+`CheckEndpoint` (`internal/config/config.go`) refuses a remote `llm.base_url` that is not https, and the reason is in its
+own error message: the API key is a Bearer header and the excerpt is the request body, so cleartext http puts both on the
+wire. Setup, `llm test` and the judge all go through it. **But it only looks at the address written in the config.** The
+judge's client (`NewHTTP` in `internal/judge/openai.go`, `&http.Client{Transport: Transport}`) uses Go's default redirect
+policy: the endpoint answers with a 30x, the client sends the request again to `Location`, **without going through
+`CheckEndpoint` again**, and the report says not a word about it.
 
-在本仓库(go1.23.5)用 httptest 实测,`NewHTTP(…, nil)` 经 `judge.Transport` 接缝接到本机的几台 server 上(拨号按主机名路由,
-不出网),`Judge` 发一个带标记的摘录,端点回重定向,看**目标**收到什么:
+Measured in this repository (go1.23.5) with httptest: `NewHTTP(…, nil)` wired through the `judge.Transport` seam to several
+local servers (dialing routed by host name, no network egress), `Judge` sends a marked excerpt, the endpoint answers with a
+redirect, and we look at what the **target** receives:
 
-| 配置的端点 | 重定向到 | 301 / 302 / 303(改成 GET、丢 body) | 307 / 308(原样重发 POST) |
+| Configured endpoint | Redirected to | 301 / 302 / 303 (switches to GET, drops the body) | 307 / 308 (resends the POST as is) |
 |---|---|---|---|
-| `https://example.com/v1` | `http://example.com/…`(同主机、降成明文) | **key 明文发出** | **key 和摘录都明文发出** |
-| 同上 | `https://collector.test/…`(别的主机) | key 被去掉 | key 被去掉,**摘录发给了它** |
-| 同上 | `http://collector.test/…`(别的主机、明文) | key 被去掉 | key 被去掉,**摘录明文发给了它** |
-| 同上 | `https://eu.example.com/…`(子域) | **key 发出** | **key 和摘录都发出** |
-| 同上 | `https://example.com/…/`(同源,只差路径) | key 发回同一个源 | key 和摘录发回同一个源 |
-| `http://localhost:11434/v1`(本机) | `http://collector.test/…`(远程) | key 被去掉 | key 被去掉,**摘录明文过网** |
-| 同上 | `http://localhost:8080/…`(同主机、另一端口) | key 发出 | key 和摘录都发出 |
+| `https://example.com/v1` | `http://example.com/…` (same host, downgraded to cleartext) | **key sent in cleartext** | **key and excerpt both sent in cleartext** |
+| same as above | `https://collector.test/…` (another host) | key stripped | key stripped, **excerpt sent to it** |
+| same as above | `http://collector.test/…` (another host, cleartext) | key stripped | key stripped, **excerpt sent to it in cleartext** |
+| same as above | `https://eu.example.com/…` (subdomain) | **key sent** | **key and excerpt both sent** |
+| same as above | `https://example.com/…/` (same origin, only the path differs) | key sent back to the same origin | key and excerpt sent back to the same origin |
+| `http://localhost:11434/v1` (local) | `http://collector.test/…` (remote) | key stripped | key stripped, **excerpt crosses the network in cleartext** |
+| same as above | `http://localhost:8080/…` (same host, another port) | key sent | key and excerpt both sent |
 
-- **同主机降成 http,key 一定明文发出**:Go 判断"要不要带 `Authorization`"只比主机名、不比 scheme 和端口
-  (子域也算同一个),所以 `https://h` → `http://h` 照带不误。这正是 `CheckEndpoint` 拒绝的那件事,只是换成由端点来说。
-- **换主机时 key 被去掉了,摘录没有**:307/308 按规范原样重发请求体,而请求体就是脱敏过的摘录(不变量 #3 的
-  "尽力而为"那一份)。收到它的是一台用户从没写进配置、`CheckEndpoint` 从没看过的主机。从本机端点跳出去的那一行,
-  摘录还是明文过网 —— `CheckEndpoint` 放行 http 的唯一理由"不过线"在这里不成立。
-- **全程没有报错**:35 次调用(5 种状态码 × 7 种目标)`Judge` 全部返回 `err == nil`,目标回的 200 被当成判决收下;
-  `scan --llm` 的报告里没有任何一条说"判官的请求被转去了别处"。不变量 #5("任何遗漏都不许静默")管的是没看到的东西,
-  这里是**发到了没说过的地方**,同样不该静默。
-- 已知的 Go 缺陷 CVE-2024-45336(`a.com` → `b.com/1` → `b.com/2` 时把 `Authorization` 又带回来)在 go1.23.5 上实测已修:
-  两跳都不带 key。所以问题不在 Go 的这层过滤,而在**判官根本不该跟着一个跨源的重定向走**。
+- **A same-host downgrade to http always sends the key in cleartext**: when Go decides "whether to carry `Authorization`"
+  it compares only the host name, not the scheme or the port (a subdomain counts as the same too), so `https://h` →
+  `http://h` carries it all the same. This is exactly what `CheckEndpoint` refuses, only now it is the endpoint that asks
+  for it.
+- **On a host change the key is stripped, the excerpt is not**: 307/308 resend the request body as is, per the spec, and the
+  request body is the redacted excerpt (the "best effort" one of invariant #3). What receives it is a host the user never
+  wrote into the config and `CheckEndpoint` never saw. In the row that jumps out from a local endpoint, the excerpt still
+  crosses the network in cleartext — the only reason `CheckEndpoint` allows http, "it does not cross the wire", does not
+  hold here.
+- **No error anywhere**: in 35 calls (5 status codes × 7 targets) `Judge` returned `err == nil` every time, and the target's
+  200 was accepted as a verdict; the `scan --llm` report has nothing saying "the judge's request was forwarded elsewhere".
+  Invariant #5 ("no omission may be silent") is about what was not seen; here something was **sent to a place never
+  mentioned**, and that should not be silent either.
+- The known Go defect CVE-2024-45336 (`Authorization` carried again on `a.com` → `b.com/1` → `b.com/2`) is measured as fixed
+  on go1.23.5: neither hop carries the key. So the problem is not in Go's filtering layer, but that **the judge should not
+  follow a cross-origin redirect at all**.
 
-## 初步方向
+## Initial direction
 
-给 `NewHTTP` 造的那个 client 加一条 `CheckRedirect`:只跟**同源**(scheme 与 host:port 都和配置的端点一样)的重定向,
-其余一律拒绝、不发出那一跳;拒绝不是崩溃,而是这次调用失败,经现有的 `LLM-000` 路径("LLM judge failed on N call(s) …")
-进报告,报错里写明被转去的 scheme://host,静态结果一字不动,也不重试(那是一个确定的回答,不是抖动)。
-P-003 的源码检查 `TestZeroDial_NoClientOutsideTheJudge` 描述的是 `http.Client{Transport: Transport}` 这个字面量,多一个字段
-要让它、不变量 #1 和 spec §16.4/§13 的措辞一起跟上,让"只有一个 client、在 `NewHTTP` 里造、transport 就是接缝"仍然名副其实。
+Add a `CheckRedirect` to the client `NewHTTP` builds: follow only **same-origin** redirects (scheme and host:port both equal
+to those of the configured endpoint), refuse all others without sending that hop; a refusal is not a crash but a failure of
+this call, which reaches the report through the existing `LLM-000` path ("LLM judge failed on N call(s) …"), with the error
+naming the scheme://host it was redirected to; the static results do not change by a character, and there is no retry (it
+is a definite answer, not jitter). P-003's source check `TestZeroDial_NoClientOutsideTheJudge` describes the literal
+`http.Client{Transport: Transport}`; one more field means its wording, invariant #1 and spec §16.4/§13 have to follow
+together, so that "there is only one client, built in `NewHTTP`, and its transport is the seam" stays true to its word.
 
-## 完成的判据
+## Done criteria
 
-- [x] `TestNewHTTP_RefusesCrossOriginRedirects`(`internal/judge/redirect_test.go`,新):经 `NewHTTP(…, nil)` 和 `Transport` 接缝
-  (按主机名路由到本机的 httptest,https 那几台用 httptest 自带的证书,不出网),问题表里六个跨源目标 × 301/302/303/307/308 共 30 行:
-  **目标收到 0 个请求**;端点恰好收到 1 个;调用返回错误,`errors.As` 取得到重定向拒绝、`isRetryable` 为假;报错里写着状态码、
-  目标的 scheme://host 和配置的源,**不带**目标的路径。今天 30 行全红(目标收到请求、`err == nil`)
-- [x] **反向断言**(同一文件):不重定向的 https 端点和今天一样 —— key 和摘录照发、判决照解析、接缝计数 1;同源重定向
-  (307/308 到同源另一路径,301 改 GET)照跟,第二跳经同一个接缝、带着 key 和摘录到同一台 server(接缝计数 2);
-  同源重定向环在第 10 跳停下(Go 默认的上限保留),不会一直跟到超时
-- [x] `TestE2E_JudgeRedirectIsRefusedAndReported`(`cmd/aguard/judge_redirect_test.go`,新):`scan --llm` 对一个回 307、
-  `Location` 指向另一个源(本机另一端口 —— 主机名相同,所以 Go 今天连 key 一起带过去)的端点:目标收到 0 个请求;
-  报告里有一条 `LLM-000`,`Why` 里写着重定向和目标;`JudgeSummary` 跑了、`Failed == Calls`、`Retries == 0`(`max_retries` 为 2);
-  `Overall` 和每个 artifact 的静态发现与不带 `--llm` 的扫描逐条相同。今天红:目标收到 key 和摘录,报告里没有任何一条
-- [x] `TestLLMTest_RedirectIsRefused`(同上):`llm test` 对同一个端点失败,报错点名重定向和目标,目标收到 0 个请求。
-  **反向断言**:`TestLLMCommands_SetupTestStatus` 不改一字仍绿 —— 不重定向的端点 `llm test` 照旧报 `OK ·`
-- [x] P-003 的 `TestZeroDial_OnlyTheJudgeConnects`、`TestZeroDial_ClaimsNameTheTest`、`TestZeroDial_NoClientOutsideTheJudge` 仍绿;
-  源码检查的注释和报错、不变量 #1、spec §16.4/§13 写的是新字面量的形状,"判官包里只有 `NewHTTP` 那一个 client、transport 就是接缝"
-  这句话仍然一字不差地成立
-- [x] `TestZeroDial_SeamClientLiteralShapes`(`cmd/aguard/zero_dial_source_test.go`,新,实现时加的):今天 `NewHTTP` 的字面量
-  (接缝 + `CheckRedirect`)算接缝 client;加了这个键没有放松真正要紧的那条 —— `Transport` 不是接缝、没写 `Transport`
-  (于是落回 `http.DefaultTransport`)、或没有全写键名的字面量,都不算
-- [x] 反向断言不改一字仍绿:`TestHTTPClient_RoundTripAndRedaction`、`TestHTTPClient_ClassifiesRetryable`、`TestRun_RetriesOnlyRetryableErrors`、
-  `TestCheckEndpoint`、`TestLLMSetup_KeyRoutesAndCleartextRefusal`、现有 `TestE2E_*`
-- [x] `make verify` 绿;`go.mod` 第二行仍是 `go 1.23.5`,`go version` 无工具链切换
+- [x] `TestNewHTTP_RefusesCrossOriginRedirects` (`internal/judge/redirect_test.go`, new): through `NewHTTP(…, nil)` and the
+  `Transport` seam (routed by host name to local httptest servers, the https ones with httptest's own certificates, no
+  network egress), the six cross-origin targets in the problem table × 301/302/303/307/308, 30 rows in total: **the target
+  receives 0 requests**; the endpoint receives exactly 1; the call returns an error, `errors.As` retrieves the redirect
+  refusal, `isRetryable` is false; the error states the status code, the target's scheme://host and the configured origin,
+  and does **not** carry the target's path. Today all 30 rows are red (the target receives requests, `err == nil`)
+- [x] **Reverse assertion** (same file): an https endpoint that does not redirect behaves as today — key and excerpt sent,
+  verdict parsed, seam count 1; same-origin redirects (307/308 to another path on the same origin, 301 switching to GET) are
+  still followed, and the second hop goes through the same seam, carrying the key and the excerpt to the same server (seam
+  count 2); a same-origin redirect loop stops at the 10th hop (Go's default limit is kept), instead of being followed until
+  the timeout
+- [x] `TestE2E_JudgeRedirectIsRefusedAndReported` (`cmd/aguard/judge_redirect_test.go`, new): `scan --llm` against an
+  endpoint that answers 307 with `Location` pointing to another origin (another local port — the same host name, so today Go
+  carries the key along too): the target receives 0 requests; the report has one `LLM-000` whose `Why` names the redirect
+  and the target; `JudgeSummary` ran, `Failed == Calls`, `Retries == 0` (`max_retries` is 2); `Overall` and each artifact's
+  static findings are identical, finding for finding, to a scan without `--llm`. Red today: the target receives the key and
+  the excerpt, and the report has nothing
+- [x] `TestLLMTest_RedirectIsRefused` (same as above): `llm test` fails against the same endpoint, the error names the
+  redirect and the target, and the target receives 0 requests. **Reverse assertion**: `TestLLMCommands_SetupTestStatus`
+  still green without a character changed — against an endpoint that does not redirect, `llm test` still reports `OK ·`
+- [x] P-003's `TestZeroDial_OnlyTheJudgeConnects`, `TestZeroDial_ClaimsNameTheTest`, `TestZeroDial_NoClientOutsideTheJudge`
+  still green; the source check's comment and error, invariant #1, and spec §16.4/§13 describe the shape of the new literal,
+  and the sentence "the judge package has only the one client in `NewHTTP`, and its transport is the seam" still holds word
+  for word
+- [x] `TestZeroDial_SeamClientLiteralShapes` (`cmd/aguard/zero_dial_source_test.go`, new, added during implementation):
+  today's `NewHTTP` literal (seam + `CheckRedirect`) counts as a seam client; adding this key did not loosen the part that
+  actually matters — a literal whose `Transport` is not the seam, that has no `Transport` (and so falls back to
+  `http.DefaultTransport`), or that does not name all its keys, does not count
+- [x] Reverse assertions still green without a character changed: `TestHTTPClient_RoundTripAndRedaction`,
+  `TestHTTPClient_ClassifiesRetryable`, `TestRun_RetriesOnlyRetryableErrors`, `TestCheckEndpoint`,
+  `TestLLMSetup_KeyRoutesAndCleartextRefusal`, the existing `TestE2E_*`
+- [x] `make verify` green; the second line of `go.mod` is still `go 1.23.5`, and `go version` shows no toolchain switch
 
-## 不做什么
+## Out of scope
 
-- **不改 `CheckEndpoint`**:配置那一头的规则(远程必须 https、本机可以 http)一个字不动;本条只管端点回的 30x
-- **不改 `http.Client` 的 `Transport`、`Timeout`、`Jar`**:只加一个 `CheckRedirect`。接缝、"默认 client 不带超时"都不动
-- **不动调用方自带的 client**:`NewHTTP` 收到非 nil 的 client 时原样使用(P-003 的 `TestNewHTTP_TransportSeam` 钉着);
-  产品代码造不出自己的 client(源码检查),所以这只影响测试
-- **不改重试策略**:429/5xx/传输错误照旧重试;只让"重定向被拒"不进重试。重定向环的 10 跳上限照旧按传输错误处理(和今天一样)
-- **不让判官在第一次被拒后提前收工**:和 401 一样,每次调用各自失败,汇成一条 `LLM-000`
-- **不加规则 ID、不改报告格式**:复用 `LLM-000` 和它现成的那句 "LLM judge failed on N call(s) …"
-- **不碰 `internal/collect`、`internal/detect`、`internal/gate`、`internal/score`、`internal/report`**;不加依赖,不碰 `go.mod`/`go.sum`
-- **不改代理行为**:`http.DefaultTransport` 照旧读 `HTTPS_PROXY` 等环境变量 —— 那是用户自己的设置
+- **No change to `CheckEndpoint`**: the config-side rule (remote must be https, local may be http) does not change by a
+  character; this item only deals with the 30x the endpoint answers
+- **No change to the `http.Client`'s `Transport`, `Timeout`, `Jar`**: only a `CheckRedirect` is added. The seam and "the
+  default client has no timeout" are untouched
+- **No change to a caller-supplied client**: when `NewHTTP` receives a non-nil client it uses it as is (pinned by P-003's
+  `TestNewHTTP_TransportSeam`); product code cannot build its own client (the source check), so this only affects tests
+- **No change to the retry policy**: 429/5xx/transport errors are retried as before; only "redirect refused" is kept out of
+  the retry. The 10-hop limit on redirect loops is still handled as a transport error (as today)
+- **The judge does not stop early after the first refusal**: as with a 401, each call fails on its own, and they add up to
+  one `LLM-000`
+- **No new rule ID, no change to the report format**: `LLM-000` and its existing sentence "LLM judge failed on N call(s) …"
+  are reused
+- **No change to `internal/collect`, `internal/detect`, `internal/gate`, `internal/score`, `internal/report`**; no dependency
+  added, `go.mod`/`go.sum` untouched
+- **No change to proxy behaviour**: `http.DefaultTransport` still reads `HTTPS_PROXY` and similar environment variables —
+  that is the user's own setting
 
-## 不能说什么
+## Must not claim
 
-- **不说"判官只连配置的那台主机"**。能说的是:**判官不跟跨源的重定向**(scheme、主机名、端口任一不同即拒)。
-  同源重定向照跟;DNS 把那个名字解析到哪、环境变量里的代理把请求转去哪,不归这一条管
-- **不说"key 绝不明文发出"**:本条堵的是重定向这一条路;本机端点(`http://localhost…`)本来就是明文,`CheckEndpoint` 放行它的
-  理由是不过线
-- **不说 Go 的头过滤"已经够了"**,也不反过来说 Go 有漏洞:Go 按文档行为去掉跨主机的 `Authorization`,只是它比的是主机名
-  (不比 scheme 和端口、子域算同一家),而且它从不去掉请求体 —— 问题表就是这两点
-- **不把被拒的重定向说成"端点是恶意的"**:报错是中性的 —— 没跟、什么都没发过去、如果那才是真端点就把 `llm.base_url` 改成它
-- 不说"所有重定向都被拒":同源的照跟
+- **Do not say "the judge connects only to the configured host"**. What can be said is: **the judge does not follow a
+  cross-origin redirect** (refused if any of scheme, host name, port differs). Same-origin redirects are still followed;
+  where DNS resolves that name to, and where a proxy set in the environment variables forwards the request, are not covered
+  by this item
+- **Do not say "the key is never sent in cleartext"**: this item closes the redirect path; a local endpoint
+  (`http://localhost…`) is cleartext to begin with, and `CheckEndpoint` allows it because it does not cross the wire
+- **Do not say Go's header filtering "is already enough"**, nor the reverse, that Go has a vulnerability: Go strips
+  cross-host `Authorization` as documented; it just compares host names (not the scheme or the port, and a subdomain counts
+  as the same party), and it never strips the request body — those two points are the problem table
+- **Do not describe a refused redirect as "the endpoint is malicious"**: the error is neutral — not followed, nothing sent
+  there, and if that address is the real endpoint, set `llm.base_url` to it
+- Do not say "all redirects are refused": same-origin ones are followed
 
-## 工作项
+## Work items
 
-| W | 一句话 | 提交信息(不写 sha,rebase 会改) |
+| W | In one sentence | Commit message (no sha, rebase changes it) |
 |---|---|---|
-| 1 | 判官包与 cmd 的新测试,跑红(目标收到请求、`err == nil`、报告里没有 `LLM-000`) | `judge, cmd: tests — a redirect from the judge's endpoint is followed to a plaintext or unconfigured origin, and nothing says so (P-023)` |
-| 2 | `NewHTTP` 的 client 加同源重定向策略,拒绝是不重试的调用失败 | `judge: the client follows a redirect only within the configured origin; any other is refused before the hop is sent, and not retried (P-023)` |
-| 3 | 源码检查的注释与报错、不变量 #1、spec §16.4/§13 跟上新字面量的形状,并写明判官不跟跨源重定向 | `cmd, rules, spec: the zero-dial source check names the seam client with its redirect policy, and invariant #1 says the judge does not follow a redirect out of its origin (P-023)` |
-| 4 | `judge.md`、`docs/llm-judge*.md`、spec §11 写上重定向那一句 | `docs, rules: the judge follows a redirect only within the configured origin (P-023)` |
-| 5 | (实现时追加)去掉"和 `via[0]` 比能防一步步走远"这句错话(见未决 2 的更正) | `judge, rules: same origin is an equivalence, so the comparison with via[0] guards no chain a previous-hop comparison would miss — drop that claim (P-023)` |
-| 6 | (实现时追加)测试的 TLS 夹具改成克隆 httptest 自带 client 的 transport,不再自己拼 TLS 配置 | `judge: tests — the redirect fixtures clone httptest's TLS client transport instead of building a TLS config of their own (P-023)` |
-| 7 | 本文件「完成」、索引 | `proposals: P-023 (P-023)` |
+| 1 | New tests in the judge package and in cmd, run red (the target receives requests, `err == nil`, no `LLM-000` in the report) | `judge, cmd: tests — a redirect from the judge's endpoint is followed to a plaintext or unconfigured origin, and nothing says so (P-023)` |
+| 2 | Same-origin redirect policy on `NewHTTP`'s client; a refusal is a call failure that is not retried | `judge: the client follows a redirect only within the configured origin; any other is refused before the hop is sent, and not retried (P-023)` |
+| 3 | The source check's comment and error, invariant #1, spec §16.4/§13 follow the shape of the new literal, and state that the judge does not follow a cross-origin redirect | `cmd, rules, spec: the zero-dial source check names the seam client with its redirect policy, and invariant #1 says the judge does not follow a redirect out of its origin (P-023)` |
+| 4 | `judge.md`, `docs/llm-judge*.md`, spec §11 get the redirect sentence | `docs, rules: the judge follows a redirect only within the configured origin (P-023)` |
+| 5 | (added during implementation) remove the false sentence "comparing with `via[0]` guards against drifting away step by step" (see the correction in open question 2) | `judge, rules: same origin is an equivalence, so the comparison with via[0] guards no chain a previous-hop comparison would miss — drop that claim (P-023)` |
+| 6 | (added during implementation) the tests' TLS fixtures clone the transport of httptest's own client instead of assembling a TLS config of their own | `judge: tests — the redirect fixtures clone httptest's TLS client transport instead of building a TLS config of their own (P-023)` |
+| 7 | "Done" in this file, the index | `proposals: P-023 (P-023)` |
 
-## 未决问题
+## Open questions
 
-1. **全拒,还是只拒跨源?**
-   **建议**:只拒跨源。同源重定向(只差路径)不把任何东西送到新地方:key 和摘录去的还是用户配置、`CheckEndpoint` 放行过的那个源。
-   全拒会让"端点把路径规范化一下"这种无害行为变成判官失败,这超出了本条要解决的两件事(明文、没配置过的主机)。
-   **已决(2026-10-09)**:按建议。
-2. **"同源"怎么比?和谁比?**
-   **建议**:scheme 小写、主机名小写、端口(没写的按 scheme 补成 443/80)三样都相等才算;比的是**配置的端点**那一跳(`via[0]`)。
-   (实现时更正:设计时这里写过"不和上一跳比,否则能一步步走远",那是错的 —— 同源是等价关系,和上一跳比结果完全一样;
-   选 `via[0]` 只是让"配置的源"在代码里直接可见。)端口要比:同一台主机另一个端口上的可以是另一个服务,
-   而 Go 判断带不带 key 时不看端口(问题表最后一行)。
-   **已决(2026-10-09)**:按建议。
-3. **被拒的重定向要不要重试?**
-   **建议**:不重试。那是端点给出的确定回答,不是抖动;重试只会让同一个端点再收几份一样的摘录,再被拒几次。
-   **已决(2026-10-09)**:按建议。
-4. **报错里写不写重定向的目标?写多少?**
-   **建议**:写状态码、目标的 scheme://host[:port](用 `%q` 引起来:`Location` 是端点写的,引号让控制字符、方向字符显形)、配置的源,
-   **不写路径和 query**(签名 URL 之类会把一次性凭据放在 query 里)。运维要的是"被转去了哪里",以便决定要不要改 `llm.base_url`。
-   **已决(2026-10-09)**:按建议。
-5. **自己写 `CheckRedirect` 会替掉 Go 默认的"10 跳即停",要不要保留?**
-   **建议**:保留,同样 10 跳、同样的报错原文,按今天的方式(传输错误)处理;不然一个同源的重定向环会一直跟到单次调用超时。
-   **已决(2026-10-09)**:按建议。
-6. **P-003 的源码检查要不要顺带钉住"`NewHTTP` 的字面量必须带 `CheckRedirect`"?**
-   **建议**:不。实测 `isSeamClientLiteral` 本来就放行带键的其他字段(它的注释原话是"重定向策略、超时可以加进来,它们都不带
-   transport"),加上 `CheckRedirect` 之后检查照绿;错的只是它的注释、报错和不变量 #1 / spec 里写的字面量形状。源码检查管的是
-   "有没有绕开两个计数器拨号",重定向策略由行为测试经 `NewHTTP(…, nil)` 钉住;把两件事绑进一条检查,改哪一边都要先读懂另一边。
-   所以只改措辞,并写明:`CheckRedirect` 只决定下一跳发不发,放行的每一跳都过同一个 `Transport`,计数器照样数得到。
-   **已决(2026-10-09)**:按建议。
+1. **Refuse all, or only cross-origin?**
+   **Recommendation**: only cross-origin. A same-origin redirect (only the path differs) sends nothing anywhere new: the key
+   and the excerpt still go to the origin the user configured and `CheckEndpoint` allowed. Refusing all would turn harmless
+   behaviour such as "the endpoint normalises its path" into a judge failure, which goes beyond the two things this item
+   addresses (cleartext, an unconfigured host).
+   **Decided (2026-10-09)**: as recommended.
+2. **How is "same origin" compared? Against what?**
+   **Recommendation**: lowercase scheme, lowercase host name, and port (filled in as 443/80 by scheme when not written) must
+   all three be equal; the comparison is against the hop of the **configured endpoint** (`via[0]`). (Correction during
+   implementation: the design said here "do not compare with the previous hop, or it can drift away step by step", which was
+   wrong — same origin is an equivalence relation, and comparing with the previous hop gives exactly the same result;
+   choosing `via[0]` only makes "the configured origin" directly visible in the code.) The port has to be compared: another
+   port on the same host can be another service, and Go ignores the port when deciding whether to carry the key (the last
+   row of the problem table).
+   **Decided (2026-10-09)**: as recommended.
+3. **Should a refused redirect be retried?**
+   **Recommendation**: no. It is a definite answer from the endpoint, not jitter; a retry would only send the same endpoint
+   a few more copies of the same excerpt, to be refused a few more times.
+   **Decided (2026-10-09)**: as recommended.
+4. **Should the error name the redirect target? How much of it?**
+   **Recommendation**: the status code, the target's scheme://host[:port] (quoted with `%q`: `Location` is written by the
+   endpoint, and the quotes make control and direction characters visible), and the configured origin; **not the path or
+   the query** (signed URLs and the like put one-time credentials in the query). What the operator needs is "where it was
+   redirected to", to decide whether to change `llm.base_url`.
+   **Decided (2026-10-09)**: as recommended.
+5. **A custom `CheckRedirect` replaces Go's default "stop after 10 hops"; keep that?**
+   **Recommendation**: keep it, the same 10 hops and the same error text, handled as today (as a transport error);
+   otherwise a same-origin redirect loop would be followed until the single call's timeout.
+   **Decided (2026-10-09)**: as recommended.
+6. **Should P-003's source check also pin "`NewHTTP`'s literal must carry `CheckRedirect`"?**
+   **Recommendation**: no. Measured: `isSeamClientLiteral` already allows other keyed fields (its comment says, in its own
+   words, "a redirect policy or a timeout may be added; they carry no transport"), and with `CheckRedirect` added the check
+   is still green; what is wrong is only its comment, its error, and the shape of the literal written in invariant #1 / the
+   spec. The source check is about "is there dialing that bypasses the two counters"; the redirect policy is pinned by the
+   behavioural tests through `NewHTTP(…, nil)`; binding the two into one check would mean that changing either side requires
+   understanding the other first. So only the wording changes, and it states: `CheckRedirect` only decides whether the next
+   hop is sent, every hop it allows goes through the same `Transport`, and the counters still count it.
+   **Decided (2026-10-09)**: as recommended.
 
-## 完成
+## Done
 
 ```
-合入:PR #34(2026-10-09;sha 用 git log --grep P-023 找)
-发布:待发
-证据:TestNewHTTP_RefusesCrossOriginRedirects(internal/judge/redirect_test.go);W1 时在 origin/main 上 30/30 个子测试红,每行两条:"the redirect target received 1 request(s) (first: POST, API key true, excerpt true)…"(同主机降 http、子域、本机另一端口的 307/308;301–303 是 GET、key true)/ 换主机的 "API key false, excerpt true"(307/308),外加 "the call succeeded: a verdict was taken from <目标>";W2 后 30/30 绿
-证据:TestE2E_JudgeRedirectIsRefusedAndReported(cmd/aguard/judge_redirect_test.go);W1 时红:"the redirect target received 4 request(s)" + "no LLM-000 note … notes = []";W2 后绿 —— 目标 0 个请求,LLM-000 的 Why = "LLM judge failed on 4 call(s); those checks did not run (first error: call judge endpoint: the endpoint answered 307 with a redirect to "http://127.0.0.1:<端口>", outside the configured origin http://127.0.0.1:<端口>: not followed, and nothing was sent there (if that address is the real endpoint, set llm.base_url to it))",JudgeSummary Calls 4 / Failed 4 / Retries 0(max_retries 2),Overall 与不带 --llm 的扫描相同,静态发现逐条相同,没有 LLM 发现
-证据:TestLLMTest_RedirectIsRefused(同上);W1 时红:"llm test passed against an endpoint that redirects to http://127.0.0.1:<端口>: output "OK · test-model answered in 1ms …"";W2 后绿,报错 "<端点> did not answer for model test-model: call judge endpoint: the endpoint answered 307 with a redirect to …",目标 0 个请求
-证据:反向断言 TestNewHTTP_SameOriginRedirectsAndPlainCallsUnchanged 在 origin/main 上就绿(5/5 子测试:不重定向、同源 301/307/308、同源环 10 跳即停),W2 后照绿 —— 不重定向的 https 端点接缝计数 1,同源重定向接缝计数 2、第二跳带 key(307/308 还带摘录)
-证据:变异(未提交,跑完即 git checkout 还原,git status 为空)—— a. 去掉 CheckRedirect:跨源 30/30 红 + 两条 cmd 测试红,TestZeroDial_* 三条照绿(源码检查不钉重定向策略,见未决 6);b. 只比主机名(不比 scheme、端口):10/30 红(同主机降 http、本机另一端口两行 × 5)+ 两条 cmd 测试红;c. 去掉 chat 里的 errors.As 分支:30/30 红(isRetryable 为真,而且报错里冒出 url.Error 带的整条 Location:"Post \"http://example.com/landing/chat?sig=one-time-token\": …")+ e2e 红(重试);d. 报错写整条 Location:30/30 红(带 query);e. 去掉 10 跳上限:同源环那一行红;f. isSeamClientLiteral 对没写 Transport 的字面量放行:TestZeroDial_SeamClientLiteralShapes 红
-证据:源码检查对新字面量本来就是绿的 —— W2 加上 CheckRedirect 之后、W3 改措辞之前,TestZeroDial_NoClientOutsideTheJudge PASS(isSeamClientLiteral 放行带键的其他字段);W3 改的是它的注释与报错、不变量 #1、spec §16.4/§13 里写的字面量形状;TestZeroDial_OnlyTheJudgeConnects、TestZeroDial_ClaimsNameTheTest 照绿
-证据:反向断言不改一字 —— git diff origin/main -- cmd/aguard/main_test.go cmd/aguard/e2e_test.go cmd/aguard/zero_dial_test.go internal/judge/judge_test.go internal/config/config_test.go 为空;internal/judge/run_test.go 只改 TestNewHTTP_TransportSeam 的一句注释(+2 −1,"nil client 就是 &http.Client{}"在加了重定向策略后不再成立);TestHTTPClient_RoundTripAndRedaction、TestHTTPClient_ClassifiesRetryable、TestHTTPClient_CountsTokens、TestRun_RetriesOnlyRetryableErrors、TestNewHTTP_TransportSeam、TestCheckEndpoint、TestLLMCommands_SetupTestStatus、TestLLMSetup_KeyRoutesAndCleartextRefusal、现有 TestE2E_* 十四条照绿
-证据:不做什么 —— git diff --stat origin/main -- internal/config internal/collect internal/detect internal/gate internal/score internal/report internal/model go.mod go.sum README.md README.zh-CN.md docs/architecture.md docs/architecture.zh-CN.md baselines 为空;产品代码的改动是 internal/judge/openai.go(+12 −1:字面量多一个 CheckRedirect、chat 里一个不重试的分支、注释)和新文件 internal/judge/redirect.go(74 行)
-证据:make verify: all gates passed;go version go1.23.5(无工具链切换),go.mod 第二行 go 1.23.5;collect / detect 未改,不需要真机扫描
+Merged: PR #34 (2026-10-09; find the sha with git log --grep P-023)
+Released: pending release
+Evidence: TestNewHTTP_RefusesCrossOriginRedirects (internal/judge/redirect_test.go); at W1, on origin/main, 30/30 subtests red, two lines each: "the redirect target received 1 request(s) (first: POST, API key true, excerpt true)…" (307/308 for the same-host downgrade to http, the subdomain, another local port; 301–303 are GET, key true) / for a host change "API key false, excerpt true" (307/308), plus "the call succeeded: a verdict was taken from <target>"; 30/30 green after W2
+Evidence: TestE2E_JudgeRedirectIsRefusedAndReported (cmd/aguard/judge_redirect_test.go); red at W1: "the redirect target received 4 request(s)" + "no LLM-000 note … notes = []"; green after W2 — target 0 requests, LLM-000's Why = "LLM judge failed on 4 call(s); those checks did not run (first error: call judge endpoint: the endpoint answered 307 with a redirect to "http://127.0.0.1:<port>", outside the configured origin http://127.0.0.1:<port>: not followed, and nothing was sent there (if that address is the real endpoint, set llm.base_url to it))", JudgeSummary Calls 4 / Failed 4 / Retries 0 (max_retries 2), Overall the same as the scan without --llm, static findings identical one for one, no LLM findings
+Evidence: TestLLMTest_RedirectIsRefused (same as above); red at W1: "llm test passed against an endpoint that redirects to http://127.0.0.1:<port>: output "OK · test-model answered in 1ms …""; green after W2, error "<endpoint> did not answer for model test-model: call judge endpoint: the endpoint answered 307 with a redirect to …", target 0 requests
+Evidence: reverse assertion TestNewHTTP_SameOriginRedirectsAndPlainCallsUnchanged already green on origin/main (5/5 subtests: no redirect, same-origin 301/307/308, same-origin loop stops at 10 hops), still green after W2 — https endpoint without a redirect seam count 1, same-origin redirect seam count 2, second hop carries the key (307/308 also the excerpt)
+Evidence: mutation (not committed, reverted with git checkout right after each run, git status empty) — a. remove CheckRedirect: cross-origin 30/30 red + two cmd tests red, the three TestZeroDial_* still green (the source check does not pin the redirect policy, see open question 6); b. compare the host name only (not scheme, port): 10/30 red (the same-host downgrade to http and the other-local-port rows × 5) + two cmd tests red; c. remove the errors.As branch in chat: 30/30 red (isRetryable true, and the full Location carried by url.Error shows up in the error: "Post \"http://example.com/landing/chat?sig=one-time-token\": …") + e2e red (retries); d. error writes the full Location: 30/30 red (carries the query); e. remove the 10-hop limit: the same-origin loop row red; f. isSeamClientLiteral allows a literal without Transport: TestZeroDial_SeamClientLiteralShapes red
+Evidence: the source check was already green on the new literal — after W2 added CheckRedirect and before W3 changed the wording, TestZeroDial_NoClientOutsideTheJudge PASS (isSeamClientLiteral allows other keyed fields); what W3 changed is its comment and error, and the shape of the literal written in invariant #1 and spec §16.4/§13; TestZeroDial_OnlyTheJudgeConnects, TestZeroDial_ClaimsNameTheTest still green
+Evidence: reverse assertions not changed by a character — git diff origin/main -- cmd/aguard/main_test.go cmd/aguard/e2e_test.go cmd/aguard/zero_dial_test.go internal/judge/judge_test.go internal/config/config_test.go is empty; internal/judge/run_test.go only changes one comment sentence in TestNewHTTP_TransportSeam (+2 −1, "a nil client is &http.Client{}" no longer holds once the redirect policy is added); TestHTTPClient_RoundTripAndRedaction, TestHTTPClient_ClassifiesRetryable, TestHTTPClient_CountsTokens, TestRun_RetriesOnlyRetryableErrors, TestNewHTTP_TransportSeam, TestCheckEndpoint, TestLLMCommands_SetupTestStatus, TestLLMSetup_KeyRoutesAndCleartextRefusal, the fourteen existing TestE2E_* still green
+Evidence: Out of scope — git diff --stat origin/main -- internal/config internal/collect internal/detect internal/gate internal/score internal/report internal/model go.mod go.sum README.md README.zh-CN.md docs/architecture.md docs/architecture.zh-CN.md baselines is empty; the product-code changes are internal/judge/openai.go (+12 −1: one more CheckRedirect in the literal, a non-retrying branch in chat, comments) and the new file internal/judge/redirect.go (74 lines)
+Evidence: make verify: all gates passed; go version go1.23.5 (no toolchain switch), go.mod second line go 1.23.5; collect / detect unchanged, no scan on a real machine needed
 ```

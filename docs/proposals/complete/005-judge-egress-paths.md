@@ -1,195 +1,287 @@
 <!-- SPDX-License-Identifier: MIT -->
-# 005 — BYO 判官把用户名、绝对路径和不带键名的 env 值发给模型厂商
+# 005 — The BYO judge sends the username, absolute paths and env values without their key names to the model vendor
 
-- **来源**:新发现(2026-10-09)—— 开 `--llm` 时,发给用户自配模型端点的摘录里带着 `$HOME` 绝对路径和用户名
-  (hook 命令、MCP 参数、memory 内容、triage 里的文件位置),MCP 的 env 值不带键名发出,按键名的脱敏因此从不触发。
-  移植自旧仓 agent-guard 的 P-045(私有仓)
-- **依赖**:无
-- **分支**:`p/005-judge-egress-paths`
+- **Source**: new finding (2026-10-09) — with `--llm`, the excerpts sent to the model endpoint the user configured carry
+  the absolute `$HOME` path and the username (hook commands, MCP arguments, memory content, file locations in triage);
+  MCP env values go out without their key names, so key-based redaction never fires. Ported from P-045 in the former
+  private repository agent-guard
+- **Depends on**: none
+- **Branch**: `p/005-judge-egress-paths`
 
-<!-- 没有「状态」行:文件所在目录就是状态(draft/ design/ complete/ rejected/),见 README.md。 -->
+<!-- No "Status" line: the directory the file is in is the status (draft/ design/ complete/ rejected/), see README.md. -->
 
-## 问题
+## Problem
 
-`--llm` 对着在线端点跑时,请求体(`internal/judge/openai.go` 的 `chatRequest`:`model`、`messages[system,user]`、`temperature`)
-里的 user 消息由 `prompt.go` 的 `userPrompt` 拼出,内容是各趟的 `Behavior` / `Declared`,再加 triage 的
-`[RULE] file:line snippet`。`Request.Artifact`(`kind:name` 标签,`run.go` 的 `planFor` 里赋值)**从不进请求体**——这一点是对的。
-但另外三样东西会出去,而 `detect.Redact` 一样都不管:
+When `--llm` runs against an online endpoint, the user message in the request body (`chatRequest` in
+`internal/judge/openai.go`: `model`, `messages[system,user]`, `temperature`) is assembled by `userPrompt` in
+`prompt.go`. Its content is each pass's `Behavior` / `Declared`, plus triage's `[RULE] file:line snippet`.
+`Request.Artifact` (the `kind:name` label, assigned in `planFor` in `run.go`) **never enters the request body** — that
+part is right. But three other things do go out, and `detect.Redact` handles none of them:
 
-| 漏出去的 | 从哪进的请求体 | 后果 |
+| What leaks | How it enters the request body | Consequence |
 |---|---|---|
-| **家目录绝对路径,即用户名** | **内容**:hook command(`excerpt.go` `hookExcerpt`)、MCP 的 command / args / env(`mcpExcerpt` 经 `detect.ConfigStrings`)、`CLAUDE.md` 与 memory 正文、skill 脚本和描述、解码出来的 blob。**triage**:`run.go` `triageItems` 把静态发现的 `File:Line Snippet` 原样拼进去,其中 `EXFIL-005` 的 `Evidence.File` 是导入方的**绝对路径**(`collect/imports.go` `importCredentialFinding`),`~/.claude.json` 上的发现经 `detect.relPath` 的兜底变成 **`<用户名>/.claude.json`** | 厂商侧每次调用都拿到"这台机器的用户名 + 目录结构"。`Redact` 只认 secret 形状;它的高熵类含 `/`,于是**带数字的长临时路径**偶尔会被前半截抹掉,但留下的后半截恰好是用户名(`<REDACTED>.d/alice/…`);真机上的 `/Users/alice` 只有 12 个字符,根本不碰 |
-| **Claude Code 的项目目录编码** | memory 文件的静态发现,`Evidence.File` 是 `projects/-Users-alice-work-x/memory/MEMORY.md`,经 triage 出去 | 同上,换了一种拼法;`-Users-alice-work-x` 不到 24 字符、不带数字,熵规则也不碰 |
-| **MCP env 的值,不带键名** | `detect.collectStrings` 只收值,所以 `{"DB_PASS":"hunter2"}` 出去时是一行孤零零的 `hunter2` | 按键名脱敏(`redact.go` 的 `assignRE`)**结构上不可能触发**:它要看见键名。而且 `collectStrings` 走 map 的随机顺序,同一份配置两次运行的请求体字节不同 |
+| **The absolute home directory path, i.e. the username** | **Content**: the hook command (`excerpt.go` `hookExcerpt`), MCP command / args / env (`mcpExcerpt` via `detect.ConfigStrings`), `CLAUDE.md` and memory body text, skill scripts and descriptions, decoded blobs. **Triage**: `run.go` `triageItems` concatenates the static findings' `File:Line Snippet` as is; for `EXFIL-005`, `Evidence.File` is the importer's **absolute path** (`collect/imports.go` `importCredentialFinding`), and findings on `~/.claude.json` become **`<username>/.claude.json`** through the fallback in `detect.relPath` | The vendor gets "this machine's username + its directory layout" on every call. `Redact` only recognises secret shapes; its high-entropy class includes `/`, so **long temp paths containing digits** occasionally have their first half wiped, but the second half left behind is exactly the username (`<REDACTED>.d/alice/…`); on a real machine `/Users/alice` is only 12 characters and is not touched at all |
+| **Claude Code's project directory encoding** | Static findings on memory files have `Evidence.File` = `projects/-Users-alice-work-x/memory/MEMORY.md`, which goes out through triage | Same as above, spelled differently; `-Users-alice-work-x` is under 24 characters and has no digits, so the entropy rule does not touch it either |
+| **MCP env values, without key names** | `detect.collectStrings` collects only values, so `{"DB_PASS":"hunter2"}` goes out as a lone line `hunter2` | Key-based redaction (`assignRE` in `redact.go`) **structurally cannot fire**: it needs to see the key name. And `collectStrings` walks the map in random order, so the same config produces different request-body bytes on two runs |
 
-另有一处没有上限:skill 的 `Declared`(SKILL.md 的 description)整段照发,`parse.ReadMarkdown` 读到 1 MiB 为止;
-intent 与 injection 两趟各发一次,`samples: 3` 时再乘三。
+One more place has no limit: a skill's `Declared` (the SKILL.md description) is sent whole, and `parse.ReadMarkdown`
+reads up to 1 MiB; the intent and injection passes each send it once, and `samples: 3` multiplies that by three.
 
-实测(本仓库 `origin/main`,dec64ca;fixture 是下面判据第一条那条 e2e 测试的:家目录以无数字的标记段 `alicemarker` 结尾,
-里面一个 hook、一个 MCP server、`CLAUDE.md` 的 `@~/.env` 导入、一个 skill、一个 memory 文件,先在本地跑过一遍):
-**13 个请求体里 11 个带这个用户名,1 个带 `hunter2`,没有一个带 `DB_PASS=<REDACTED>`**。
-完整的家目录一次都没出现——熵规则把带数字的临时路径前半截抹成了 `<REDACTED>`,留下的正好是用户名那半截。
-同一份 MCP 配置规划两次,第二次的值顺序就不同;3,000 个 `é` 的 description 在 intent 与 injection 两趟各发 6,000 字节。
+Measured (this repository's `origin/main`, dec64ca; the fixture is the one from the e2e test in the first item of Done
+criteria below: the home directory ends in the digit-free marker segment `alicemarker` and contains one hook, one MCP
+server, an `@~/.env` import in `CLAUDE.md`, one skill and one memory file; it was run locally first):
+**11 of 13 request bodies carry this username, 1 carries `hunter2`, none carries `DB_PASS=<REDACTED>`**. The full home
+directory never appeared — the entropy rule wiped the first half of the temp path (which contains digits) to
+`<REDACTED>`, and what was left was exactly the username half. Planning the same MCP config twice gives a different
+value order the second time; a description of 3,000 `é` sends 6,000 bytes in each of the intent and injection passes.
 
-一句话:**用户选了一个在线端点,同意的是"发脱敏摘录";实际发出去的还有他是谁、他的目录长什么样,和一个没被认出来的密码。**
+In one sentence: **the user picked an online endpoint and agreed to "send redacted excerpts"; what actually goes out
+also includes who they are, what their directories look like, and a password that was not recognised.**
 
-## 初步方向
+## Initial direction
 
-在 `internal/judge` 里**构造摘录的那一刻**把家目录的各种写法(原样、`EvalSymlinks` 之后、Claude Code 的项目目录编码)换成 `~`,
-triage 的 `<用户名>/x` 兜底只改那一个结构前缀;MCP server 按排好序的 `key=value` 行渲染,让键名脱敏能触发、请求体字节稳定;
-`Declared` 截到 1,000 字节。**不进 `detect.Redact`**:它是所有静态 snippet 的唯一收口,改它会改 text/JSON/SARIF 输出并重算 SARIF 指纹。
+In `internal/judge`, **at the moment the excerpt is built**, replace every spelling of the home directory (as is, after
+`EvalSymlinks`, Claude Code's project directory encoding) with `~`; for triage's `<username>/x` fallback, change only
+that one structural prefix. Render an MCP server as sorted `key=value` lines, so key-based redaction can fire and the
+request body bytes are stable. Cap `Declared` at 1,000 bytes. **Not in `detect.Redact`**: it is the single exit for
+every static snippet; changing it would change the text/JSON/SARIF output and recompute SARIF fingerprints.
 
-## 完成的判据
+## Done criteria
 
-下面的测试一部分是旧仓实现之后两轮评审(评审 1–7、复审 1–4)补出来的;移植时整组一起带上,标注保留,方便对照它们各自钉住的是哪个漏洞。
+Some of the tests below were added by the two review rounds after the implementation in the former repository (reviews
+1–7, re-reviews 1–4); on port the whole set came along with its labels kept, so it is easy to see which hole each one
+pins.
 
-- [x] `TestE2E_JudgeBodiesCarryNoHomeOrKeylessSecret`(`cmd/aguard/e2e_test.go`,新):照 `TestE2E_CredentialImportNeverReachesTheJudge`
-  的截包写法,fixture 的家目录是 `TempDir()/home.d/alicemarker`(**标记段不带数字**,熵规则没法让这条测试因为错的理由变绿),里面有:
-  一个 hook(command 里有家目录,其中一处是 `EvalSymlinks` 形态)、`~/.claude.json` 的一个 MCP server(args 里有家目录,
-  env 是 `{"DB_PASS":"hunter2","NODE_OPTIONS":"--require <家目录>/…"}`,后者让 `EXEC-010` 落在 `alicemarker/.claude.json` 上进 triage)、
-  `projects/<编码后的家目录>/memory/MEMORY.md`(正文有家目录,外加一句 `INJ-001` 让编码路径经 triage 出去)、`CLAUDE.md`
-  (正文有家目录 + `@~/.env`,`EXFIL-005` 的绝对路径进 triage)、一个 skill(description、脚本、一段 base64 blob 里都有家目录)。断言:
-  **没有一个请求体**含家目录、它的 `EvalSymlinks` 形态、它的编码形态或 `alicemarker`;没有一个含 `hunter2`;至少一个含 `DB_PASS=<REDACTED>`;
-  没有一个含任何 artifact 的 `kind:name` 标签;`~/notes`、`~/logs/audit.log`、`~/.claude/CLAUDE.md`、`~/.claude.json` 都在(换了,没删)。
-  今天(`origin/main` dec64ca,W1 测试先行跑过):红,13 个请求体里 11 个带 `alicemarker`、1 个带 `hunter2`、0 个带 `DB_PASS=<REDACTED>`、0 个带那四个 `~/` 路径
-- [x] `TestScanInbox_JudgeBodiesCarryNoHome`(`cmd/aguard/e2e_test.go`,新;和上一条共用截包的 `capturingJudge`):`HOME` 指到 `TempDir()/home.d/bobmarker`,
-  `~/Downloads` 里一个候选 skill 的脚本引用家目录,`scanInbox(…, llm: true)` → 没有请求体含 `bobmarker`。今天:红(1 个请求体带 `bobmarker`,没有 `~/notes`)
-- [x] `TestEgress_*`(`internal/judge/egress_test.go`,新,table-driven):原样 / `EvalSymlinks` / 编码三种形态都换成 `~`;
-  **反向**:`/Users/alicemarker2/x`、`/data/Users/alicemarker/x` 不动(边界),散文里的裸用户名不动,三段式 `x/alice/.claude.json` 不动,
-  空家目录与 `/` 是恒等;`alice/.claude.json` 只在 file 位置改成 `~/.claude.json`;`<REDACTED>.d/alice/…` 和 `/home/first.<REDACTED>`
-  这两种被熵规则吃掉一半的形态、以及被 snippet 200 字节截断切在用户名里的 `/Users/alic…` 被补齐(未决 7);截在用户名之前的 `/Users/…` 不动。
-  今天:编译红(`newEgress` 未定义)
-- [x] `TestPlan_MCPExcerptIsKeyedAndByteStable`(`internal/judge/plan_test.go`,新):同一份 MCP 配置规划 30 次,`Behavior` 字节相同;
-  含 `command=npx`、`env.DB_PASS=<REDACTED>`,不含 `hunter2`;**反向**:`env.LOG_LEVEL=debug` 原样在(不是凭据名的值照发)。
-  今天:红(第 2 次规划字节就不同,`hunter2` 原样、不带键名)。
-  键名表本身由 `TestMaskCredentialValue`(`internal/judge/excerpt_test.go`,新)逐行钉住,反向行是 `NODE_OPTIONS`、`API_BASE`、`args` 的值不掩
-- [x] `TestPlan_DeclaredIsCappedOnARuneBoundary`(`internal/judge/plan_test.go`,新):长 description → `Declared` ≤ 1,000 字节、
-  是合法 UTF-8,且 intent 那趟 SKILL.md unit 的 text 与 `Declared` 逐字节相等(落地比对的是发出去的字节)。今天:红(intent / injection 两趟各 6,000 字节)。
-  评审 2:W1 版用 3,000 个 `é`,两字节、1,000 是偶数,切点本来就落在字符起点,删掉 rune 回退照样绿;W9 改成 2,000 个 `中`
-  与 `a`+3,000 个 `é` 两行(前置断言第 1,000 字节落在字符中间),外加"最多退回一个字符"
-- [x] `TestConfigLines_SameLeavesAsConfigStrings`(`internal/detect/configlines_test.go`,新):`ConfigLines` 去掉键前缀后的值多重集合等于 `configStrings`——
-  判官和静态读的是同一批叶子。今天:编译红(`ConfigLines` 未定义)
-- [x] 评审 1(相对 `--root` 关掉了替换;`CLAUDE_CONFIG_DIR` 和 `check --llm` 两处没覆盖):`TestE2E_RelativeRootStillStripsTheHome`、
-  `TestE2E_ConfigDirUnderTheHomeStripsTheUserHome`、`TestCheckTarget_JudgeBodiesCarryNoHome`(`cmd/aguard/e2e_test.go`);
-  `TestRun_EmptyHomeStillStripsTheUserHome`、`TestRun_ScanHomeAndUserHomeAreBothStripped`、`TestRun_ScanHomeInsideTheUserHomeKeepsItsPlace`、
-  `TestEgress_RelativeHomeIsResolved`、`TestEgress_LaterHomeInsideAnEarlierIsDropped`(`internal/judge/egress_test.go`)
-- [x] 评审 3(先替换再脱敏让家目录下 16–23 字节的 token 逃过熵规则):`TestEgress_RedactsBeforeItStripsTheHome`,覆盖每个吃原始内容的构造器和 triage 的文件位置
-- [x] 评审 4(MCP 键排序 + 只截头,排在最前的填充键每次都把 env 挤出去):`TestPlan_MCPExcerptLeadsWithWhatTheServerRuns`、`TestRun_ShortenedMCPExcerptIsDisclosed`(含反向:装得下的配置零 note)
-- [x] 评审 5(项目目录编码逐字节):`TestEgress_NonASCIIHomeIsEncodedPerCharacter`(含反向:逐字节拼法不动)
-- [x] 评审 6(截断补齐跑在原始内容上):`TestEgress_ClipRepairIsForStaticSnippetsOnly`(含反向:两条静态 snippet 路径照补)
-- [x] 复审 1(`capLine` 的 rune 回退没有测试管:填充全是 ASCII,切点天然落在字符起点):`TestPlan_MCPLineCapCutsOnARuneBoundary`(`internal/judge/plan_test.go`)
-- [x] 复审 2(`LLM-000` 只被"截了一行"那半触发过;lead 键按恰好相等认没有测试管):`TestRun_DroppedMCPLinesAreDisclosedWithoutACap`、`TestPlan_MCPLeadKeysMatchExactly`(`internal/judge/plan_test.go`)
-- [x] 复审 3(截断补齐只认原样写法,编码写法 `projects/-Users-alic…` 原样发):`TestEgress_RepairsAnEncodedHomeTheSnippetCapCut`(`internal/judge/egress_test.go`,含反向:截在用户名之前、没截、更长名字的尾巴、原始内容、一段式家目录都不动)
-- [x] 复审 4(文档说"给定写法"和"三种写法",实际是取绝对路径并规整、一段式家目录不换编码写法):`TestEgress_HomeIsReplacedInItsAbsoluteCleanedForm`(`internal/judge/egress_test.go`);llm-judge、architecture 两对和 spec 改写
-- [x] 上面带"评审 / 复审"的各条在本仓库复测:补测试的按变异跑红,改代码的在修复前的代码上跑红,数字记在「完成」
-- [x] 反向断言,**断言一字不改**仍绿:`TestE2E_CredentialImportNeverReachesTheJudge`、`TestRun_GroundedFindingGetsRealLineNumbers`、
-  `TestRun_UngroundedFindingIsDroppedAndCounted`、`TestGround_ChecksRedactedTextNotDisk`、`TestPlan_MCPUsesTheSameViewTheScannerSees`、
-  `TestPlan_EveryKindIsFencedAndRedacted`、`TestBehaviorExcerpt_PayloadBelowPaddingReachesTheModel`、`TestDecodedPayloads_RedactsSecret`。
-  其中直接调用 `planFor` / `behaviorExcerpt` / `decodedPayloads` 的 8 处调用多一个 `egress{}` 实参(零值 = 不替换),除此之外一行不动
-- [x] 反向断言:同一份 fixture 上**不带 `--llm`** 的 `scan --json`,`origin/main` 的二进制与本分支的二进制输出除版本号外逐字节相同——静态输出没动
-- [x] `make verify` 绿;`collect`/`detect` 有改动,跑真机扫描并记头部
+- [x] `TestE2E_JudgeBodiesCarryNoHomeOrKeylessSecret` (`cmd/aguard/e2e_test.go`, new): using the request-capture
+  approach of `TestE2E_CredentialImportNeverReachesTheJudge`, the fixture's home directory is
+  `TempDir()/home.d/alicemarker` (**the marker segment has no digits**, so the entropy rule cannot turn this test green
+  for the wrong reason), containing: one hook (the command contains the home directory, once in its `EvalSymlinks`
+  form), one MCP server in `~/.claude.json` (args contain the home directory; env is
+  `{"DB_PASS":"hunter2","NODE_OPTIONS":"--require <home>/…"}`, the latter makes `EXEC-010` land on
+  `alicemarker/.claude.json` and enter triage), `projects/<encoded-home>/memory/MEMORY.md` (the body contains the home
+  directory, plus an `INJ-001` sentence so the encoded path goes out through triage), `CLAUDE.md` (the body contains the
+  home directory + `@~/.env`, so `EXFIL-005`'s absolute path enters triage), one skill (the home directory appears in
+  the description, a script and a base64 blob). Asserts:
+  **no request body** contains the home directory, its `EvalSymlinks` form, its encoded form or `alicemarker`; none
+  contains `hunter2`; at least one contains `DB_PASS=<REDACTED>`; none contains any artifact's `kind:name` label;
+  `~/notes`, `~/logs/audit.log`, `~/.claude/CLAUDE.md`, `~/.claude.json` are all present (replaced, not deleted). Today
+  (`origin/main` dec64ca, W1 test run first): red, 11 of 13 request bodies carry `alicemarker`, 1 carries `hunter2`, 0
+  carry `DB_PASS=<REDACTED>`, 0 carry those four `~/` paths
+- [x] `TestScanInbox_JudgeBodiesCarryNoHome` (`cmd/aguard/e2e_test.go`, new; shares the capturing `capturingJudge` with
+  the previous item): `HOME` points at `TempDir()/home.d/bobmarker`, a candidate skill in `~/Downloads` has a script
+  that references the home directory, `scanInbox(…, llm: true)` → no request body contains `bobmarker`. Today: red (1
+  request body carries `bobmarker`, no `~/notes`)
+- [x] `TestEgress_*` (`internal/judge/egress_test.go`, new, table-driven): the raw / `EvalSymlinks` / encoded forms are
+  all replaced with `~`;
+  **reverse**: `/Users/alicemarker2/x`, `/data/Users/alicemarker/x` are untouched (boundaries), a bare username in prose
+  is untouched, the three-segment `x/alice/.claude.json` is untouched, an empty home and `/` are the identity;
+  `alice/.claude.json` becomes `~/.claude.json` only in the file position; the two forms the entropy rule ate half of,
+  `<REDACTED>.d/alice/…` and `/home/first.<REDACTED>`, and `/Users/alic…`, cut inside the username by the 200-byte
+  snippet cap, are completed (open question 7); `/Users/…` cut before the username is untouched. Today: compile red
+  (`newEgress` undefined)
+- [x] `TestPlan_MCPExcerptIsKeyedAndByteStable` (`internal/judge/plan_test.go`, new): the same MCP config planned 30
+  times gives identical `Behavior` bytes; contains `command=npx`, `env.DB_PASS=<REDACTED>`, not `hunter2`; **reverse**:
+  `env.LOG_LEVEL=debug` is present as is (a value whose key is not a credential name is still sent). Today: red (the
+  bytes already differ on the 2nd planning, `hunter2` as is, without its key name). The key-name table itself is pinned
+  row by row by `TestMaskCredentialValue` (`internal/judge/excerpt_test.go`, new); its reverse rows are that the values
+  of `NODE_OPTIONS`, `API_BASE` and `args` are not masked
+- [x] `TestPlan_DeclaredIsCappedOnARuneBoundary` (`internal/judge/plan_test.go`, new): a long description → `Declared` ≤
+  1,000 bytes, valid UTF-8, and the text of the intent pass's SKILL.md unit equals `Declared` byte for byte (grounding
+  compares against the bytes that were sent). Today: red (6,000 bytes in each of the intent / injection passes). Review
+  2: the W1 version used 3,000 `é`; at two bytes each and with 1,000 being even, the cut already fell on a character
+  start, so deleting the rune walk-back stayed green; W9 changed it to two rows, 2,000 × U+4E2D (a 3-byte CJK character)
+  and `a` + 3,000 `é` (a precondition asserts that byte 1,000 falls inside a character), plus "walks back at most one
+  character"
+- [x] `TestConfigLines_SameLeavesAsConfigStrings` (`internal/detect/configlines_test.go`, new): the multiset of
+  `ConfigLines` values with the key prefixes stripped equals `configStrings` — the judge and the static pass read the
+  same leaves. Today: compile red (`ConfigLines` undefined)
+- [x] Review 1 (a relative `--root` turned the replacement off; `CLAUDE_CONFIG_DIR` and `check --llm` were not covered):
+  `TestE2E_RelativeRootStillStripsTheHome`, `TestE2E_ConfigDirUnderTheHomeStripsTheUserHome`,
+  `TestCheckTarget_JudgeBodiesCarryNoHome` (`cmd/aguard/e2e_test.go`); `TestRun_EmptyHomeStillStripsTheUserHome`,
+  `TestRun_ScanHomeAndUserHomeAreBothStripped`, `TestRun_ScanHomeInsideTheUserHomeKeepsItsPlace`,
+  `TestEgress_RelativeHomeIsResolved`, `TestEgress_LaterHomeInsideAnEarlierIsDropped` (`internal/judge/egress_test.go`)
+- [x] Review 3 (replacing before redacting let 16–23-byte tokens under the home directory escape the entropy rule):
+  `TestEgress_RedactsBeforeItStripsTheHome`, covering every builder that takes raw content and the file position in
+  triage
+- [x] Review 4 (MCP keys sorted + a head-only cut, so padding keys sorted first pushed env out every time):
+  `TestPlan_MCPExcerptLeadsWithWhatTheServerRuns`, `TestRun_ShortenedMCPExcerptIsDisclosed` (with a reverse: a config
+  that fits gets zero notes)
+- [x] Review 5 (the project directory encoding was per byte): `TestEgress_NonASCIIHomeIsEncodedPerCharacter` (with a
+  reverse: the per-byte spelling is untouched)
+- [x] Review 6 (the cut repair ran on raw content): `TestEgress_ClipRepairIsForStaticSnippetsOnly` (with a reverse: the
+  two static snippet paths are still repaired)
+- [x] Re-review 1 (no test covered `capLine`'s rune walk-back: the padding was all ASCII, so the cut naturally fell on a
+  character start): `TestPlan_MCPLineCapCutsOnARuneBoundary` (`internal/judge/plan_test.go`)
+- [x] Re-review 2 (`LLM-000` had only been triggered by the "a line was cut" half; no test covered matching lead keys by
+  exact equality): `TestRun_DroppedMCPLinesAreDisclosedWithoutACap`, `TestPlan_MCPLeadKeysMatchExactly`
+  (`internal/judge/plan_test.go`)
+- [x] Re-review 3 (the cut repair only recognised the raw spelling; the encoded spelling `projects/-Users-alic…` was
+  sent as is): `TestEgress_RepairsAnEncodedHomeTheSnippetCapCut` (`internal/judge/egress_test.go`, with reverses: cut
+  before the username, not cut, the tail of a longer name, raw content, and a one-segment home are all untouched)
+- [x] Re-review 4 (the docs said "the given spelling" and "three spellings"; in fact the path is made absolute and
+  cleaned, and a one-segment home does not get its encoded spelling replaced):
+  `TestEgress_HomeIsReplacedInItsAbsoluteCleanedForm` (`internal/judge/egress_test.go`); the llm-judge and architecture
+  pairs and the spec rewritten
+- [x] Each item above marked "review / re-review" re-tested in this repository: those that add tests were run red by
+  mutation, those that change code were run red on the pre-fix code; the numbers are recorded in "Done"
+- [x] Reverse assertions, still green **with not a word of the assertions changed**:
+  `TestE2E_CredentialImportNeverReachesTheJudge`, `TestRun_GroundedFindingGetsRealLineNumbers`,
+  `TestRun_UngroundedFindingIsDroppedAndCounted`, `TestGround_ChecksRedactedTextNotDisk`,
+  `TestPlan_MCPUsesTheSameViewTheScannerSees`, `TestPlan_EveryKindIsFencedAndRedacted`,
+  `TestBehaviorExcerpt_PayloadBelowPaddingReachesTheModel`, `TestDecodedPayloads_RedactsSecret`. Of these, the 8 call
+  sites that call `planFor` / `behaviorExcerpt` / `decodedPayloads` directly gain an `egress{}` argument (zero value =
+  no replacement); apart from that, not a line changes
+- [x] Reverse assertion: on the same fixture, `scan --json` **without `--llm`** gives byte-identical output from the
+  `origin/main` binary and this branch's binary, apart from the version — the static output did not change
+- [x] `make verify` green; `collect`/`detect` changed, so run a scan on a real machine and record the header
 
-## 不做什么
+## Out of scope
 
-- **不动 `detect.Redact`**(`credKeys`、`assignRE`、熵规则都不动):它是所有静态 snippet 的唯一收口,改它会改 text/JSON/SARIF/HTML/markdown 输出、
-  重算 SARIF 指纹。本条的替换只发生在判官构造摘录时
-- **不动 `detect.relPath`,不动 `EXFIL-005` 的 `Evidence.File`**:用户 `.aguardignore` 里的 glob 是对着 `e.File` 匹配的
-- **不替换裸用户名**:只换完整的家目录路径形态,和 triage 里 `<用户名>/x` 这一个两段式结构前缀;用户名可能是个常用词
-- 不加 `ExcerptVersion`
-- **不碰模型输出的渲染**:`judge.go` 的 `finding()` / `barrierFinding()`、`ground.go` 不动(P-006 并行在改,避免冲突)
-- 报告里 LLM 发现引用的 `file` 不变:`sourceUnit.file` 是给报告用的,不出网,不改
-- 不改提示词,不改 `judge.Client` 接口,不碰 `openai.go`(`NewHTTP` 不动),不加依赖,不动 `go.mod` / `go.sum`
+- **`detect.Redact` is not changed** (`credKeys`, `assignRE` and the entropy rule all stay): it is the exit for every
+  static snippet; changing it would change the text/JSON/SARIF/HTML/markdown output and recompute SARIF fingerprints.
+  This proposal's replacement happens only when the judge builds an excerpt
+- **`detect.relPath` is not changed, nor `EXFIL-005`'s `Evidence.File`**: the globs in the user's `.aguardignore` match
+  against `e.File`
+- **A bare username is not replaced**: only full home-directory path forms are, plus the one two-segment structural
+  prefix `<username>/x` in triage; a username may be a common word
+- No `ExcerptVersion` is added
+- **The rendering of model output is not touched**: `finding()` / `barrierFinding()` in `judge.go` and `ground.go` stay
+  as they are (P-006 changes them in parallel; this avoids conflicts)
+- The `file` an LLM finding cites in the report does not change: `sourceUnit.file` is for the report, never leaves the
+  machine, and is not changed
+- No prompt changes, no change to the `judge.Client` interface, `openai.go` not touched (`NewHTTP` unchanged), no new
+  dependencies, `go.mod` / `go.sum` unchanged
 
-## 不能说什么
+## Must not claim
 
-- 不说"请求体里不再有身份信息":散文里的裸用户名、git 作者名、邮箱,家目录**之外**的绝对路径(`/opt`、`/srv`、临时目录),
-  家目录的兄弟目录(`/Users/alice.bak`)都照发。本条换掉的是**两个具体目录**的几种写法:OS 用户的家目录(`os.UserHomeDir()`,即 `$HOME`)
-  和被扫环境的家目录(绝对 `--root` 的上一级)。`$HOME` 指的不是本人(`sudo` 下、服务账户下),或者别的用户的家目录出现在内容里,照发。
-  (评审 1 之前连这句都太强:相对 `--root` 时一个都没换,`check --llm` 从没换过,`CLAUDE_CONFIG_DIR=~/.config/claude` 时只换了 `~/.config`)
-- 不说先脱敏再替换没有代价(评审 3 的修法):带数字、中间没有熵字符类之外字节的长家目录(典型是临时目录)会被熵规则整段吃掉,
-  发出去是 `<REDACTED>.claude/…`——不泄露,但判官看不到 `~`,路径信息少了一截
-- 不说 MCP 摘录总能装下 `env`:`command`、`args`、`env`、`url`、`headers` 排最前、每行 500 字节,但 `args` 元素(或名字以 `env.` 开头的顶层键)
-  足够多时,排在后面的 lead 键仍会被挤出 6,000 字节。挤出去会在文本里写明、出一条 `LLM-000`,但模型没看到它
-- 不说 `Redact` 现在认识路径或 `DB_PASS`:静态报告里一条规则命中 `DB_PASS=hunter2` 那一行时,snippet 仍是明文,而 triage 会把那条
-  snippet 原样发出去。本条只改判官**自己构造**的 MCP 摘录
-- 不说 `~` 一定是用户的家:`scan --root /proj/.claude` 时 `/proj` 和用户的家目录**都**换成 `~`,同一个请求体里的两个 `~` 指的不是同一处
-  (被扫环境的家目录落在用户家目录之内时只换外层,那种情况下 `~` 只有一个意思)
-- 不说凭据名掩码是完整的:它是键名启发式,只用在 MCP 配置这一处——那里键名是结构,不是散文。叫 `DB_CONN` 的密码照样只靠 `Redact`
-- 不说项目目录编码规则是 Claude Code 文档写的:"非 ASCII 字母数字的**字符**一律换成一个 `-`"是从真机目录名反推的(评审 5 之前按字节换,
-  非 ASCII 家目录的编码形态原样漏);BMP 之外的字符(emoji)怎么编码没观测过,按一个 `-` 处理。它一变,编码形态就重新漏
-- 不说静态 snippet 里的家目录残片都补齐了:只补三种已知的切法(熵规则吃头、吃尾,200 字节截断切在用户名里);
-  几种切法叠在同一个家目录上的其他组合,或者别的 `Redact` 规则(键名、URL 凭据)整段吃掉路径后留下的东西,不在覆盖里。
-  第三种(截断)**只补静态 snippet**(评审 6):原始内容结尾的 `/Users/alic…` 是作者写的,照发。
-  编码写法(`projects/-Users-alic…`)只补截断这一种(复审 3):它整段落在熵规则的字符类里,熵规则要么整段吃掉要么不碰,没有吃一半的形态;
-  别的 `Redact` 规则切进编码写法中间留下的东西照样不在覆盖里
-- 不说每个家目录的"三种写法"都换了(复审 4):换的是 `filepath.Abs` 之后的写法(相对的按工作目录解析,路径被 `Clean` 规整),
-  只有调用方原字节才有的写法(内容里的 `/Users/./alice`)照发;只有一段的家目录(`HOME=/root`)**故意**不换编码写法,`-root` 照发(未决 6),
-  原样写法 `/root/…` 照换
-- 不说判官的 MCP 判断和以前一样:模型现在看到的是带键名的排序行,不再是一串值;`baselines/results/` 里已提交的 `LLM-009` 判官运行是在旧渲染上量的
+- Do not say "request bodies no longer carry identifying information": bare usernames in prose, git author names, email
+  addresses, absolute paths **outside** the home directory (`/opt`, `/srv`, temp directories), sibling directories of
+  the home (`/Users/alice.bak`) are all still sent. What this proposal replaces is a few spellings of **two specific
+  directories**: the OS user's home directory (`os.UserHomeDir()`, i.e. `$HOME`) and the scanned environment's home
+  directory (the parent of the absolute `--root`). When `$HOME` is not the person (under `sudo`, under a service
+  account), or another user's home directory appears in the content, it is still sent. (Before review 1 even this
+  sentence was too strong: with a relative `--root` nothing was replaced, `check --llm` never replaced anything, and
+  with `CLAUDE_CONFIG_DIR=~/.config/claude` only `~/.config` was replaced)
+- Do not say redacting before replacing is free (review 3's fix): a long home directory with digits and no bytes outside
+  the entropy character class in between (typically a temp directory) is eaten whole by the entropy rule, and goes out
+  as `<REDACTED>.claude/…` — nothing leaks, but the judge does not see `~`, and part of the path information is lost
+- Do not say the MCP excerpt always fits `env`: `command`, `args`, `env`, `url`, `headers` come first and each line is
+  capped at 500 bytes, but with enough `args` elements (or top-level keys whose names start with `env.`), lead keys
+  further down are still pushed out of the 6,000 bytes. When that happens the text says so and an `LLM-000` is emitted,
+  but the model did not see it
+- Do not say `Redact` now recognises paths or `DB_PASS`: when a rule in the static report matches the `DB_PASS=hunter2`
+  line, the snippet is still plaintext, and triage sends that snippet as is. This proposal only changes the MCP excerpt
+  the judge **builds itself**
+- Do not say `~` is always the user's home: with `scan --root /proj/.claude`, `/proj` and the user's home directory are
+  **both** replaced with `~`, and two `~` in the same request body do not point to the same place (when the scanned
+  environment's home lies inside the user's home, only the outer one is replaced, and in that case `~` has only one
+  meaning)
+- Do not say the credential-name mask is complete: it is a key-name heuristic, used only for MCP configuration — where
+  key names are structure, not prose. A password named `DB_CONN` still relies on `Redact` alone
+- Do not say the project directory encoding rule is documented by Claude Code: "every **character** that is not an ASCII
+  letter or digit becomes one `-`" was inferred from directory names on a real machine (before review 5 it was replaced
+  per byte, and the encoded form of a non-ASCII home leaked as is); how characters outside the BMP (emoji) are encoded
+  has not been observed, and they are treated as one `-`. If it changes, the encoded form leaks again
+- Do not say every home-directory fragment in static snippets is completed: only three known cuts are repaired (the
+  entropy rule eating the head, eating the tail, and the 200-byte cap cutting inside the username); other combinations
+  of several cuts on the same home directory, or what is left after another `Redact` rule (key names, URL credentials)
+  eats a path whole, are not covered. The third (the cap) **is repaired only in static snippets** (review 6): a
+  `/Users/alic…` at the end of raw content was written by the author and is sent as is. The encoded spelling
+  (`projects/-Users-alic…`) is repaired only for the cap (re-review 3): it lies entirely inside the entropy rule's
+  character class, so the entropy rule either eats it whole or leaves it alone, and there is no half-eaten form; what
+  another `Redact` rule leaves after cutting into the middle of the encoded spelling is still not covered
+- Do not say all "three spellings" of each home are replaced (re-review 4): what is replaced is the spelling after
+  `filepath.Abs` (a relative path resolved against the working directory, the path normalised by `Clean`); a spelling
+  that only the caller's original bytes have (`/Users/./alice` in content) is still sent; for a one-segment home
+  (`HOME=/root`) the encoded spelling is **deliberately** not replaced, so `-root` is still sent (open question 6),
+  while the raw spelling `/root/…` is still replaced
+- Do not say the judge's MCP verdicts are the same as before: the model now sees sorted lines with key names, no longer
+  a list of values; the `LLM-009` judge runs committed in `baselines/results/` were measured on the old rendering
 
-## 工作项
+## Work items
 
-W1–W8 是旧仓的首轮实现,W9–W15 是评审 1–7 的修复,W16–W20 是复审 1–4 的修复;移植时一条一个提交,顺序不变。
+W1–W8 are the first implementation round in the former repository, W9–W15 the fixes for reviews 1–7, W16–W20 the fixes
+for re-reviews 1–4; on port, one commit per item, in the same order.
 
-| W | 一句话 | 提交信息(不写 sha,rebase 会改) |
+| W | In one sentence | Commit message (no sha; rebase changes it) |
 |---|---|---|
-| 1 | 六组新测试,跑红 | `judge, detect, cmd: tests — judge request bodies carry the home path, the username and a keyless env password (P-005)` |
-| 2 | `judge.egress`:家目录三种形态 + 两种半截形态 → `~`,`<用户名>/x` 结构前缀;`Options.Home`;在每个摘录、triage、能力摘要里先替换再 `Redact` | `judge: every excerpt replaces the home directory with ~ before redaction, so no request body names the user (P-005)` |
-| 3 | `scanOpts.home`:环境扫描给 `filepath.Dir(root)`,Downloads 给 `os.UserHomeDir()`,经 `runJudge` 进 `Options.Home` | `cmd: the scan and Downloads judges are told which home to strip (P-005)` |
-| 4 | `detect.ConfigLines`:同一批字符串叶子,按键排序渲染成 `key=value` 行;`configEntry` 一个读条目的函数;`configStrings` 包内版本(导出名留一个提交的过渡包装,判官还在用) | `detect: ConfigLines renders a config entry as sorted key=value lines from the same leaves the scanner reads (P-005)` |
-| 5 | MCP 摘录改用 `ConfigLines`,键名是凭据名的值不发;去掉 `ConfigStrings` 过渡包装 | `judge: the MCP excerpt is sorted key=value lines and a value whose key names a credential is not sent (P-005)` |
-| 6 | `Declared` 截到 1,000 字节,落在 rune 边界 | `judge: a declared purpose is capped at 1,000 bytes on a rune boundary (P-005)` |
-| 7 | spec §5.2 / §16 不变量 3、`docs/llm-judge.md` 与 zh 对子的 Privacy、`docs/architecture.md` 与 zh 对子 | `docs: spec, llm-judge and architecture pairs say the judge strips the home directory and sends MCP config by key (P-005)` |
-| 8 | 静态 snippet 的 200 字节截断切在用户名里的形态也补齐(未决 7,实现中发现) | `judge: a home the static snippet cap cut inside the username is completed before triage sends it (P-005)` |
-| 9 | 评审 2:rune 边界那条测试改用 3 字节字符和错开一字节的 2 字节字符,删掉回退就红 | `judge: the declared-purpose cap test cuts inside a character, so deleting the rune walk-back turns it red (P-005)` |
-| 10 | 评审 5:`projectDirName` 按字符编码 | `judge: a non-ASCII home is encoded one '-' per character, as Claude Code names the project directory (P-005)` |
-| 11 | 评审 1:`Run` 总是加上 OS 用户家目录;家目录取绝对路径;后一个家目录落在前一个之内的写法丢掉;`scanEnv` 从绝对 root 取上一级;Downloads 的覆写删掉 | `judge, cmd: the judge always strips the OS user's home as well as an absolute scan home, so an empty or relative home no longer sends paths unchanged (P-005)` |
-| 12 | 评审 3:先 `Redact` 再替换(文件位置也一样) | `judge: excerpts are redacted before the home is stripped, so a short token under the home is judged as the run the report saw (P-005)` |
-| 13 | 评审 6:截断补齐只给静态 snippet(`egress.snippet`,triage 与串通摘要) | `judge: only static snippets get the clipped-home repair, so raw text ending in a path fragment is sent as written (P-005)` |
-| 14 | 评审 4:MCP 摘录 lead 键在前、每行 500 字节、按行装预算、截了出 `LLM-000` | `judge: the MCP excerpt leads with command, args, env, url and headers, caps each line at 500 bytes and says when it was cut (P-005)` |
-| 15 | 评审 7:llm-judge、spec、architecture 三对文档按实际保证改写 | `docs: llm-judge, spec and architecture pairs say both homes are replaced, after redaction, and nothing beyond them (P-005)` |
-| 16 | 复审 1:MCP 行上限那条测试切在 3 字节字符中间,删掉 rune 回退就红 | `judge: the MCP line-cap test cuts inside a 3-byte character, so deleting the rune walk-back turns it red (P-005)` |
-| 17 | 复审 2:只丢行、一行没截的 MCP 摘录单独测 `LLM-000` | `judge: an MCP excerpt that drops lines without capping one is disclosed by a test of its own, so losing that half of the note turns it red (P-005)` |
-| 18 | 复审 2:lead 键按恰好相等认,`command.x` 一类顶层键排在其余键里 | `judge: a top-level MCP key that only starts with command, args or url is pinned to rank with the rest, so matching lead keys by prefix turns a test red (P-005)` |
-| 19 | 复审 3:截断补齐扩到编码写法,用户名起点按编码后的偏移算;spec 同步 | `judge: a static snippet the cap cut inside the encoded home is completed like the raw one, so projects/-Users-alic… no longer goes out with the username's head (P-005)` |
-| 20 | 复审 4:llm-judge、architecture 两对和 spec 写明"取绝对路径并规整"与"一段式家目录不换编码写法";`newEgress` 注释同步,补一条钉住规整形态的测试 | `docs, judge: llm-judge, architecture and spec say a home is replaced made absolute and cleaned, not as given, and a one-segment home such as /root keeps its encoded form (P-005)` |
-| 21 | 本文件、索引 | `proposals: P-005 (P-005)` |
+| 1 | Six new test groups, run red | `judge, detect, cmd: tests — judge request bodies carry the home path, the username and a keyless env password (P-005)` |
+| 2 | `judge.egress`: the home directory's three forms + two half forms → `~`, the `<username>/x` structural prefix; `Options.Home`; in every excerpt, triage and the capability summary, replace first, then `Redact` | `judge: every excerpt replaces the home directory with ~ before redaction, so no request body names the user (P-005)` |
+| 3 | `scanOpts.home`: the environment scan passes `filepath.Dir(root)`, Downloads passes `os.UserHomeDir()`, into `Options.Home` via `runJudge` | `cmd: the scan and Downloads judges are told which home to strip (P-005)` |
+| 4 | `detect.ConfigLines`: the same string leaves, rendered as `key=value` lines sorted by key; `configEntry`, one function that reads an entry; `configStrings`, the package-internal version (the exported name stays for one commit as a transitional wrapper, since the judge still uses it) | `detect: ConfigLines renders a config entry as sorted key=value lines from the same leaves the scanner reads (P-005)` |
+| 5 | The MCP excerpt switches to `ConfigLines`; a value whose key is a credential name is not sent; the `ConfigStrings` transitional wrapper is removed | `judge: the MCP excerpt is sorted key=value lines and a value whose key names a credential is not sent (P-005)` |
+| 6 | `Declared` capped at 1,000 bytes, on a rune boundary | `judge: a declared purpose is capped at 1,000 bytes on a rune boundary (P-005)` |
+| 7 | spec §5.2 / §16 invariant 3, Privacy in `docs/llm-judge.md` and its zh pair, `docs/architecture.md` and its zh pair | `docs: spec, llm-judge and architecture pairs say the judge strips the home directory and sends MCP config by key (P-005)` |
+| 8 | The form where the static snippet's 200-byte cap cuts inside the username is also completed (open question 7, found during implementation) | `judge: a home the static snippet cap cut inside the username is completed before triage sends it (P-005)` |
+| 9 | Review 2: the rune-boundary test switches to a 3-byte character and a 2-byte character offset by one byte, so deleting the walk-back turns it red | `judge: the declared-purpose cap test cuts inside a character, so deleting the rune walk-back turns it red (P-005)` |
+| 10 | Review 5: `projectDirName` encodes per character | `judge: a non-ASCII home is encoded one '-' per character, as Claude Code names the project directory (P-005)` |
+| 11 | Review 1: `Run` always adds the OS user's home; homes are made absolute; a spelling of a later home that lies inside an earlier one is dropped; `scanEnv` takes the parent of the absolute root; the Downloads override is removed | `judge, cmd: the judge always strips the OS user's home as well as an absolute scan home, so an empty or relative home no longer sends paths unchanged (P-005)` |
+| 12 | Review 3: `Redact` first, then replace (the same for file positions) | `judge: excerpts are redacted before the home is stripped, so a short token under the home is judged as the run the report saw (P-005)` |
+| 13 | Review 6: the cut repair only for static snippets (`egress.snippet`, triage and the collusion summary) | `judge: only static snippets get the clipped-home repair, so raw text ending in a path fragment is sent as written (P-005)` |
+| 14 | Review 4: the MCP excerpt puts lead keys first, caps each line at 500 bytes, fills the budget line by line, and emits `LLM-000` when cut | `judge: the MCP excerpt leads with command, args, env, url and headers, caps each line at 500 bytes and says when it was cut (P-005)` |
+| 15 | Review 7: the three doc pairs llm-judge, spec and architecture rewritten to the actual guarantees | `docs: llm-judge, spec and architecture pairs say both homes are replaced, after redaction, and nothing beyond them (P-005)` |
+| 16 | Re-review 1: the MCP line-cap test cuts inside a 3-byte character, so deleting the rune walk-back turns it red | `judge: the MCP line-cap test cuts inside a 3-byte character, so deleting the rune walk-back turns it red (P-005)` |
+| 17 | Re-review 2: an MCP excerpt that only drops lines, with no line capped, gets its own `LLM-000` test | `judge: an MCP excerpt that drops lines without capping one is disclosed by a test of its own, so losing that half of the note turns it red (P-005)` |
+| 18 | Re-review 2: lead keys matched by exact equality; top-level keys such as `command.x` rank with the rest | `judge: a top-level MCP key that only starts with command, args or url is pinned to rank with the rest, so matching lead keys by prefix turns a test red (P-005)` |
+| 19 | Re-review 3: the cut repair extended to the encoded spelling, the username's start computed from the encoded offset; spec updated to match | `judge: a static snippet the cap cut inside the encoded home is completed like the raw one, so projects/-Users-alic… no longer goes out with the username's head (P-005)` |
+| 20 | Re-review 4: the llm-judge and architecture pairs and the spec state "made absolute and cleaned" and "a one-segment home does not get its encoded spelling replaced"; the `newEgress` comment updated to match, plus a test pinning the cleaned form | `docs, judge: llm-judge, architecture and spec say a home is replaced made absolute and cleaned, not as given, and a one-segment home such as /root keeps its encoded form (P-005)` |
+| 21 | This file, the index | `proposals: P-005 (P-005)` |
 
-## 未决问题
+## Open questions
 
-1. **`DB_PASS` 不在 `Redact` 的凭据键名表里**(`credKeys` 只有 `password|passwd|…`,`e2e_test.go` 里那条老测试的注释原话就是
-   "`pass` is not in the redaction key list")。按 `key=value` 渲染之后 `DB_PASS=hunter2` 仍然原样出去——渲染本身救不了它。怎么办?
-   **建议**:只在判官的 MCP 摘录里,键名(最后一段)含 `pass` `pwd` `secret` `token` `key` `auth` `cred` `private` `cookie`,或某一段恰好是 `pw` 时,
-   值换成 `<REDACTED>`,然后整段照常过 `Redact`。**不**把 `pass` 加进 `credKeys`:那张表跑在散文和代码上,`bypass=`、`compass:` 会被抹,
-   而且它动的是静态输出(不做什么第一条)。MCP 配置里键名是结构不是散文,宽一点的表在这里没有误伤散文的问题;误伤的代价是模型少看一个值。
-   triage 里的静态 snippet 不套这张表(那是静态视图,见不能说什么第四条)。
-   **已决(2026-10-08)**:按建议。
-2. **Downloads 那一路用哪个家目录?** 环境扫描的约定是 `filepath.Dir(root)`,而 Downloads 候选的 root 是候选本身,上一级是 `~/Downloads`。
-   **建议**:`scanInbox` 用 `os.UserHomeDir()`(它本来就用它展开 `~/`);环境扫描保持 `filepath.Dir(root)`。
-   **已决(2026-10-08)**:按建议。(评审 1 之后 `Run` 总是换 OS 用户的家目录,Downloads 的单独覆写随 W11 删掉,结论不变)
-3. **静态 snippet 进 triage 前已经被 `Redact` 吃掉了家目录的前半截**(实测 `<REDACTED>.d/alicemarker/…`:带数字的临时路径一段被熵规则抹掉,
-   在 `.` 处断开,用户名那半截留下),判官这边看不到完整的家目录。
-   **建议**:精确补两种相邻形态——`<REDACTED>` 紧跟家目录在某个断点字符(不在熵字符类里的字符,如 `.`)之后的后缀,换成 `~`;
-   家目录到某个断点字符为止的前缀紧跟 `<REDACTED>`,换成 `~/<REDACTED>`。不做模糊匹配。
-   **已决(2026-10-08)**:按建议。
-4. **`detect.ConfigStrings` 导出的理由("让判官发同一份视图")不再成立,留着还是降为包内?**
-   **建议**:降为 `configStrings`。判官改用 `ConfigLines`,两者共用同一个读条目的函数,`TestConfigLines_SameLeavesAsConfigStrings` 钉住叶子一致。
-   **已决(2026-10-08)**:按建议。
-5. **数组怎么渲染:每个元素一行 `args=-y`,还是拼成一行?**
-   **建议**:每个元素一行。和静态视图同一颗粒度(一条字符串叶子一行),模型引一个元素也能落地。
-   **已决(2026-10-08)**:按建议。
-6. **一段式家目录(`/root`)的编码形态 `-root` 也换吗?**
-   **建议**:不换。`-root` 太像一个命令行选项(`tool -root-dir x`),换了会改坏被审的命令;原样路径 `/root/…` 照换。
-   **已决(2026-10-08)**:按建议。
-7. **(实现中追加)静态 snippet 的 200 字节截断也会把家目录切成半截。** 对着 e2e fixture 看实际请求体时发现:一条 `HOOK-001`
-   的 snippet 结尾是 `-d @/…/home…`——`detect` 的 `clip` 在 200 字节处切断、补一个 `…`,切点落在哪里不看内容;长 hook command 上
-   这个切点完全可能落在用户名中间(`/Users/alic…`)。未决 3 只补了熵规则的两种切法。
-   **建议**:同样精确地补:只看**以 `…` 结尾**的文本(截断标记只会出现在 snippet 末尾),家目录的某个前缀(或熵规则吃头之后的某段尾巴)
-   紧跟 `…` 且**已经伸进用户名那一段**时换成 `~…`;只到上级目录为止的 `/Users/…` 不算,它不指向任何人,换了是在猜。不越过「不做什么」,
-   不改任何用户可见的契约(报告字节不变),是未决 3 同一件事的第三种切法。
-   **已决(2026-10-08)**:按建议。
-8. **真机扫描(记录,不是问题)**:`detect` 有改动(`ConfigLines`、`configEntry`、`configStrings`),按移植约定在本仓库跑了
-   `aguard scan --root ~/.claude`(只读,不带 `--llm`),`origin/main`(dec64ca)与本分支的二进制背靠背,只记摘要行:
+1. **`DB_PASS` is not in `Redact`'s credential key table** (`credKeys` only has `password|passwd|…`; the comment on the
+   old test in `e2e_test.go` literally says "`pass` is not in the redaction key list"). Rendered as `key=value`,
+   `DB_PASS=hunter2` still goes out as is — the rendering alone cannot save it. What to do?
+   **Recommendation**: only in the judge's MCP excerpt, when the key name (its last segment) contains `pass` `pwd`
+   `secret` `token` `key` `auth` `cred` `private` `cookie`, or some segment is exactly `pw`, replace the value with
+   `<REDACTED>`, then pass the whole thing through `Redact` as usual. Do **not** add `pass` to `credKeys`: that table
+   runs on prose and code, so `bypass=` and `compass:` would be wiped, and it changes static output (the first item of
+   Out of scope). In MCP configuration key names are structure, not prose, so a wider table here has no problem of
+   hitting prose; the cost of a false hit is the model seeing one value fewer. Static snippets in triage do not get this
+   table (that is the static view; see the fourth item of Must not claim).
+   **Decided (2026-10-08)**: as recommended.
+2. **Which home does the Downloads path use?** The environment scan's convention is `filepath.Dir(root)`, but a
+   Downloads candidate's root is the candidate itself, whose parent is `~/Downloads`.
+   **Recommendation**: `scanInbox` uses `os.UserHomeDir()` (it already uses it to expand `~/`); the environment scan
+   keeps `filepath.Dir(root)`.
+   **Decided (2026-10-08)**: as recommended. (After review 1, `Run` always replaces the OS user's home, and the separate
+   Downloads override was removed with W11; the conclusion stands)
+3. **Before a static snippet enters triage, `Redact` has already eaten the first half of the home directory** (measured:
+   `<REDACTED>.d/alicemarker/…`: a segment of the temp path containing digits is wiped by the entropy rule, the break is
+   at `.`, and the username half remains), so the judge side never sees the full home directory.
+   **Recommendation**: repair exactly two adjacent forms — `<REDACTED>` immediately followed by the home directory's
+   suffix after some break character (a character not in the entropy character class, such as `.`) becomes `~`; the home
+   directory's prefix up to some break character immediately followed by `<REDACTED>` becomes `~/<REDACTED>`. No fuzzy
+   matching.
+   **Decided (2026-10-08)**: as recommended.
+4. **The reason `detect.ConfigStrings` is exported ("so the judge sends the same view") no longer holds; keep it or make
+   it package-internal?**
+   **Recommendation**: demote it to `configStrings`. The judge switches to `ConfigLines`; the two share one function
+   that reads an entry, and `TestConfigLines_SameLeavesAsConfigStrings` pins that the leaves are the same.
+   **Decided (2026-10-08)**: as recommended.
+5. **How are arrays rendered: one line per element, `args=-y`, or joined into one line?**
+   **Recommendation**: one line per element. The same granularity as the static view (one string leaf per line), and a
+   model quoting one element can still be grounded.
+   **Decided (2026-10-08)**: as recommended.
+6. **Is the encoded form `-root` of a one-segment home (`/root`) replaced too?**
+   **Recommendation**: no. `-root` looks too much like a command-line option (`tool -root-dir x`); replacing it would
+   corrupt the command under review; the raw path `/root/…` is still replaced.
+   **Decided (2026-10-08)**: as recommended.
+7. **(Added during implementation) The static snippet's 200-byte cap also cuts the home directory in half.** Found while
+   looking at the actual request bodies against the e2e fixture: a `HOOK-001` snippet ends in `-d @/…/home…` —
+   `detect`'s `clip` cuts at 200 bytes and appends a `…`, regardless of where the cut lands in the content; on a long
+   hook command the cut can easily land in the middle of the username (`/Users/alic…`). Open question 3 only repaired
+   the entropy rule's two cuts.
+   **Recommendation**: repair it just as exactly: look only at text **ending in `…`** (the cut marker only appears at
+   the end of a snippet); when a prefix of the home directory (or some tail left after the entropy rule ate the head) is
+   immediately followed by `…` and **already reaches into the username segment**, replace it with `~…`; a `/Users/…`
+   that stops at the parent directory does not count — it points at nobody, and replacing it would be guessing. It does
+   not cross Out of scope and changes no user-visible contract (report bytes unchanged); it is a third cut of the same
+   thing as open question 3.
+   **Decided (2026-10-08)**: as recommended.
+8. **Real-machine scan (a record, not a question)**: `detect` changed (`ConfigLines`, `configEntry`, `configStrings`),
+   so per the port convention `aguard scan --root ~/.claude` was run in this repository (read-only, without `--llm`),
+   the `origin/main` (dec64ca) and this branch's binaries back to back; only the summary lines are recorded:
 
    ```
    Risk score 69/100 (Elevated)
@@ -198,55 +290,79 @@ W1–W8 是旧仓的首轮实现,W9–W15 是评审 1–7 的修复,W16–W20 �
    66 of 85 finding(s) are medium or above
    ```
 
-   两个二进制的终端输出逐字节相同,`--json` 去掉 `scanned_at`、`tool_version` 后逐字节相同。(`--quiet` 在这台机器上什么都不打,所以摘要行取自不带 `--quiet` 的运行。)
-9. **(评审修复中追加)两个家目录嵌套时换哪个?** 评审 1 要求总是同时换 OS 用户家目录和 `--root` 上一级;`CLAUDE_CONFIG_DIR=~/.config/claude`
-   时后者是前者的子目录,两个都按"最长优先"换,`~/.config/claude/x` 就成了 `~/claude/x`——判官会把它读成另一个位置。
-   **建议**:按顺序处理(OS 用户的在前),后一个家目录的某种写法落在前一个之内就丢掉那种写法,外层的替换已经覆盖它;**只在这个方向**:
-   被扫环境的家目录**包含**用户家目录时(`--root /Users/.claude`)两个都留,否则 `/Users/alice/x` 会成 `~/alice/x`。
-   `TestEgress_LaterHomeInsideAnEarlierIsDropped` 钉住两个方向。**按建议实现。已决(2026-10-09,人):接受(人在旧仓评审时确认过这四处)。**
-10. **(评审修复中追加)评审 6 的字面修法和评审 3 冲突。** 评审 6 说"`repairHalves` 只用于静态 snippet,原始内容的构造器不做";
-    但评审 3 把原始内容改成先 `Redact` 再替换之后,原始内容也会出现熵规则吃头/吃尾的形态(e2e fixture 的临时家目录 `<REDACTED>.d/alicemarker`),
-    不补就把用户名发出去——e2e 会红,而且红得对。**建议**:把 `repairHalves` 拆成两半,熵规则那两种切法(凡是先过 `Redact` 的文本都会有)
-    所有路径都补;200 字节截断那一种(只有 detect 的 `clip` 会产生)只给 `egress.snippet`,即 triage 与串通摘要。这是评审 6 的意图
-    (不在没被截过的文本上按截断去猜)在评审 3 之后的正确形态。**按建议实现。已决(2026-10-09,人):接受(人在旧仓评审时确认过这四处)。**
-11. **(评审修复中追加)MCP 的 500 字节上限按值还是按行?** 评审 4 写的是"每个值"。键名同样是配置作者可控的,一个 6 KB 的键名照样能占满预算。
-    **建议**:按行(`key=value` 整行)截,值和键一起管住;rune 边界,标记 ` … (N bytes omitted)`。**按建议实现。已决(2026-10-09,人):接受(人在旧仓评审时确认过这四处)。**
-12. **(评审修复中追加)lead 键怎么认?** `ConfigLines` 用 `.` 拼路径,顶层键 `command.x` 和 `command` 下的嵌套键分不开;按前缀认的话,
-    一串 `command.a…` 顶层填充键会排进 command 组、把 env 挤出去。**建议**:`command`、`args`、`url` 是字符串或字符串数组,只认键名**恰好**相等;
-    `env`、`headers` 是对象,认 `env.` / `headers.` 前缀——而 `ConfigLines` 的排序让真正的 `env` 对象的行总排在 `env.<任何>` 顶层键之前。
-    不改 `detect.ConfigLines`(那样要动 `detect`、要跑真机)。**按建议实现。已决(2026-10-09,人):接受(人在旧仓评审时确认过这四处)。**
-    复审 2 起由 `TestPlan_MCPLeadKeysMatchExactly` 钉住:command、args、url 改成按前缀认,它就红。
-13. **(移植时追加,记录,不是问题)与并行的 P-001 / P-003 的交叠。** P-001(`p/001-judge-usage-in-json`)也改 `cmd/aguard/main.go` 的 `runJudge` 函数体、`internal/judge/run.go` 和 llm-judge 对子,
-    本条给它加了一个 `home` 参数;P-003(`p/003-zero-dial-test`)给 `openai.go` 的 `NewHTTP` 加了一个测试接缝,并用 `scanOpts{…}` 具名字段调
-    `scanEnv` / `scanInbox` / `checkTarget`。本条不碰 `NewHTTP`、只给 `scanOpts` 加一个具名字段,和 P-003 没有语义冲突。
-    谁后合谁 rebase:`runJudge` 那一处按两边的意图合;若 P-003 的零外连源码检查对 `NewHTTP` 里客户端字面量的形状有要求,由后合的一方适配。
-    **合入时(2026-10-09,本条在 P-001、P-003、P-004 之后)**:`runJudge` 自动合并,两边都在(P-001 的用量进 summary,本条的 `home`
-    进 `judge.Options`);`NewHTTP` 没动,零外连源码检查照常过。P-004 把"`check --llm`(目录与 `.zip`)发出去的内容已擦 home"的断言
-    交给后合入的一方,也就是本条:`TestCheckTarget_JudgeBodiesCarryNoHome` 改成目录和 `.zip` 各跑一次;变异(建好 zip 后把 `HOME`
-    换成别的目录,出口就不知道该擦哪个 home)两行都红,还原绿。
+   The two binaries' terminal output is byte-identical, and `--json` is byte-identical once `scanned_at` and
+   `tool_version` are removed. (`--quiet` prints nothing on this machine, so the summary lines come from a run without
+   `--quiet`.)
+9. **(Added during the review fixes) Which one is replaced when the two homes are nested?** Review 1 requires always
+   replacing both the OS user's home and the parent of `--root`; with `CLAUDE_CONFIG_DIR=~/.config/claude` the latter is
+   a subdirectory of the former, and replacing both "longest first" turns `~/.config/claude/x` into `~/claude/x` — the
+   judge would read it as a different location.
+   **Recommendation**: process them in order (the OS user's first); when some spelling of a later home lies inside an
+   earlier one, drop that spelling, since the outer replacement already covers it; **only in this direction**: when the
+   scanned environment's home **contains** the user's home (`--root /Users/.claude`), keep both, otherwise
+   `/Users/alice/x` would become `~/alice/x`. `TestEgress_LaterHomeInsideAnEarlierIsDropped` pins both directions.
+   **Implemented as recommended. Decided (2026-10-09, by the maintainer): accepted (the maintainer confirmed these four
+   points during the review in the former repository).**
+10. **(Added during the review fixes) Review 6's literal fix conflicts with review 3.** Review 6 says "`repairHalves` is
+    only for static snippets; the raw-content builders do not do it"; but once review 3 changed raw content to `Redact`
+    first and replace second, raw content can also show the entropy rule's eaten-head / eaten-tail forms (the e2e
+    fixture's temp home `<REDACTED>.d/alicemarker`), and without the repair the username goes out — the e2e goes red,
+    and rightly so. **Recommendation**: split `repairHalves` in two: the entropy rule's two cuts (which any text that
+    went through `Redact` first can have) are repaired on every path; the 200-byte cap cut (which only detect's `clip`
+    produces) only in `egress.snippet`, i.e. triage and the collusion summary. This is the correct form, after review 3,
+    of review 6's intent (do not guess a cap on text that was never cut). **Implemented as recommended. Decided
+    (2026-10-09, by the maintainer): accepted (the maintainer confirmed these four points during the review in the
+    former repository).**
+11. **(Added during the review fixes) Is the MCP 500-byte cap per value or per line?** Review 4 says "each value". Key
+    names are just as much under the config author's control, and a 6 KB key name can fill the budget just the same.
+    **Recommendation**: cap per line (the whole `key=value` line), bounding value and key together; on a rune boundary,
+    with the marker ` … (N bytes omitted)`. **Implemented as recommended. Decided (2026-10-09, by the maintainer):
+    accepted (the maintainer confirmed these four points during the review in the former repository).**
+12. **(Added during the review fixes) How are lead keys recognised?** `ConfigLines` joins paths with `.`, so a top-level
+    key `command.x` cannot be told apart from a nested key under `command`; matching by prefix, a run of `command.a…`
+    top-level padding keys would rank in the command group and push env out. **Recommendation**: `command`, `args`,
+    `url` are strings or string arrays, matched only when the key name is **exactly** equal; `env`, `headers` are
+    objects, matched by the `env.` / `headers.` prefix — and `ConfigLines`'s sort order always puts the real `env`
+    object's lines before any `env.<anything>` top-level keys. `detect.ConfigLines` is not changed (that would touch
+    `detect` and require a real-machine run). **Implemented as recommended. Decided (2026-10-09, by the maintainer):
+    accepted (the maintainer confirmed these four points during the review in the former repository).** From re-review 2
+    on, `TestPlan_MCPLeadKeysMatchExactly` pins this: switch command, args, url to prefix matching and it goes red.
+13. **(Added on port; a record, not a question) Overlap with the parallel P-001 / P-003.** P-001
+    (`p/001-judge-usage-in-json`) also changes the body of `runJudge` in `cmd/aguard/main.go`, `internal/judge/run.go`
+    and the llm-judge pair; this proposal adds a `home` parameter to it. P-003 (`p/003-zero-dial-test`) adds a test seam
+    to `NewHTTP` in `openai.go` and calls `scanEnv` / `scanInbox` / `checkTarget` with `scanOpts{…}` named fields. This
+    proposal does not touch `NewHTTP` and only adds one named field to `scanOpts`, so there is no semantic conflict with
+    P-003. Whoever merges later rebases: the `runJudge` spot is merged by both sides' intent; if P-003's zero-dial
+    source check requires a particular shape of the client literal in `NewHTTP`, the side that merges later adapts.
+    **At merge (2026-10-09, this proposal after P-001, P-003, P-004)**: `runJudge` merged automatically with both sides
+    present (P-001's usage goes into the summary, this proposal's `home` into `judge.Options`); `NewHTTP` unchanged, and
+    the zero-dial source check passes as usual. P-004 left the assertion "what `check --llm` (directory and `.zip`)
+    sends has the home scrubbed" to whichever merged later, i.e. this proposal: `TestCheckTarget_JudgeBodiesCarryNoHome`
+    now runs once for a directory and once for a `.zip`; under mutation (after building the zip, point `HOME` at another
+    directory, so the egress step no longer knows which home to scrub) both rows go red, and green again when restored.
 
-## 完成
+## Done
 
 ```
-合入:PR #24(2026-10-09;sha 用 git log --grep P-005 找)
-发布:待发
-证据:TestE2E_JudgeBodiesCarryNoHomeOrKeylessSecret(cmd/aguard/e2e_test.go);W1 在 origin/main(dec64ca)上红:13 个请求体 11 个带 alicemarker、1 个带 hunter2、0 个带 DB_PASS=<REDACTED>、0 个带 ~/notes 等四个 ~/ 路径 → W3 后只剩 MCP 两条红(request 4 带 hunter2、没有 DB_PASS=<REDACTED>)→ W5 后绿:0 个带家目录 / EvalSymlinks 形态 / 编码形态 / alicemarker / hunter2 / 任何 kind:name 标签,四个 ~/ 路径都在
-证据:TestScanInbox_JudgeBodiesCarryNoHome(cmd/aguard/e2e_test.go);W1 红(request 0 带 bobmarker,没有 ~/notes)→ W3 后绿
-证据:TestPlan_MCPExcerptIsKeyedAndByteStable(internal/judge/plan_test.go);W1 红(第 2 次规划字节就不同,值不带键、hunter2 原样)→ W2 后仍红 → W5 后绿;反向 env.LOG_LEVEL=debug 原样在
-证据:TestPlan_DeclaredIsCappedOnARuneBoundary(internal/judge/plan_test.go);W1 红(intent / injection 两趟各 6,000 字节)→ W6 后绿;评审 2:W9 之后删掉 declaredPurpose 的 RuneStart 回退(变异,已还原)红 4 处(2 行 × 两趟,1,000 字节、非法 UTF-8)→ 还原绿
-证据:TestEgress_*(internal/judge/egress_test.go)、TestMaskCredentialValue(internal/judge/excerpt_test.go);W1 编译红(egress_test.go:52: undefined: newEgress)→ W2 / W5 后绿;TestEgress_RepairsAHomeTheSnippetCapCut 在 W7 的 egress.go / excerpt.go 上红(/Users/alic… 与 <REDACTED>.d/alicem… 原样发)→ W8 后绿
-证据:TestConfigLines_SameLeavesAsConfigStrings(internal/detect/configlines_test.go);W1 编译红(configlines_test.go:26: undefined: ConfigLines)→ W4 后绿
-证据:评审 5 —— TestEgress_NonASCIIHomeIsEncodedPerCharacter;在 W9 的 egress.go 上红 6 处(/Users/josémarker、/home/李雷marker 按字符编码的 -Users-jos-marker、-home---marker 原样发,逐字节的 -Users-jos--marker、-home-------marker 反被换掉)→ W10 后绿
-证据:评审 1 —— TestE2E_RelativeRootStillStripsTheHome、TestE2E_ConfigDirUnderTheHomeStripsTheUserHome、TestCheckTarget_JudgeBodiesCarryNoHome 在 W10 的 main.go / inbox.go / egress.go / run.go 上红:请求体带家目录或标记 6/6、5/5、2/2 → W11 后绿;judge 包的五条(TestRun_EmptyHomeStillStripsTheUserHome 等)在 W10 的 newEgress 签名下编译红 → W11 后绿;把 within 丢弃判断变异成恒不丢(已还原)时 TestEgress_LaterHomeInsideAnEarlierIsDropped、TestRun_ScanHomeInsideTheUserHomeKeepsItsPlace、TestE2E_ConfigDirUnderTheHomeStripsTheUserHome 三条一起红
-证据:评审 3 —— TestEgress_RedactsBeforeItStripsTheHome;在 W11 的代码上红 7/7(redact、declared、hook、instruction file、skill tree、mcp、triage file 都发出 ~/Xk9mQ2vL8pR4tZ7wB3n)→ W12 后绿
-证据:评审 6 —— TestEgress_ClipRepairIsForStaticSnippetsOnly;在 W12 的代码上(临时加一行 snippet = scrub 的探针以便编译,已删)红 4/4(declared、hook、instruction file、skill tree 把结尾的 /Users/alic… 改写成 ~…)→ W13 后绿
-证据:评审 4 —— TestPlan_MCPExcerptLeadsWithWhatTheServerRuns、TestRun_ShortenedMCPExcerptIsDisclosed;在 W13 的 excerpt.go 上(临时探针补上三返回值签名与 maxConfigLineBytes,已删)红:command=node、args、env.NODE_OPTIONS、url、headers、zzz 都不在,6,000 字节的一行没截,没有 LLM-000 → W14 后绿
-证据:复审 1 —— TestPlan_MCPLineCapCutsOnARuneBoundary;删掉 capLine 的 RuneStart 回退(变异,已还原)只有它红:保留 500 字节、非法 UTF-8
-证据:复审 2 —— TestRun_DroppedMCPLinesAreDisclosedWithoutACap;去掉 dropped 那半句 note(变异,已还原)只有它红:没有 LLM-000。TestPlan_MCPLeadKeysMatchExactly;lead 键改按 key+"." 前缀认、或裸 strings.HasPrefix 认(两种变异,已还原)只有它红:env.NODE_OPTIONS、url、headers 被挤出,command.x0=pad 越位
-证据:复审 3 —— TestEgress_RepairsAnEncodedHomeTheSnippetCapCut;在 W18 的 egress.go 上红 5 处(-Users-alicem…、-Users-a…、-home---a…、-home-first-l… 四条 snippet 加 triage 证据)→ W19 后绿
-证据:复审 4 —— TestEgress_HomeIsReplacedInItsAbsoluteCleanedForm;homeSpellings 改成绝对路径原样用(变异,已还原)红 3/3;一段式家目录也编码(变异,已还原)时 TestEgress_NoHomeIsIdentity 与 TestEgress_RepairsAnEncodedHomeTheSnippetCapCut 的 /root 反向用例一起红
-证据:反向断言断言一字不改仍绿 —— TestE2E_CredentialImportNeverReachesTheJudge、TestRun_GroundedFindingGetsRealLineNumbers、TestRun_UngroundedFindingIsDroppedAndCounted、TestGround_ChecksRedactedTextNotDisk、TestPlan_MCPUsesTheSameViewTheScannerSees、TestPlan_EveryKindIsFencedAndRedacted、TestBehaviorExcerpt_PayloadBelowPaddingReachesTheModel、TestDecodedPayloads_RedactsSecret;git diff origin/main 里既有测试删掉的行只有 8 处调用(planFor ×3、behaviorExcerpt ×2、decodedPayloads ×3,多一个 egress{} 实参)
-证据:静态输出不变 —— 临时 fixture(家目录 home.d/alicemarker,hook、MCP、CLAUDE.md 的 @~/.env、skill、memory;命中 EXEC-010 EXFIL-001 EXFIL-005 FS-001 HOOK-001 INJ-001 COV-000)不带 --llm,origin/main 与本分支二进制的 scan --json、--sarif、终端输出逐字节相同;真机 ~/.claude 上终端输出相同、--json 去掉 scanned_at / tool_version 后逐字节相同(未决 8)
-证据:不做什么 —— git diff --stat origin/main -- internal/judge/judge.go internal/judge/ground.go internal/judge/prompt.go internal/judge/triage.go internal/judge/openai.go internal/detect/redact.go internal/collect internal/report go.mod go.sum 为空;detect.go 的改动不含 relPath
-证据:make verify: all gates passed;go version go1.23.5(无工具链切换),go.mod 第二行 go 1.23.5,无新依赖
+Merged: PR #24 (2026-10-09; find the sha with git log --grep P-005)
+Released: pending release
+Evidence: TestE2E_JudgeBodiesCarryNoHomeOrKeylessSecret (cmd/aguard/e2e_test.go); W1 red on origin/main (dec64ca): 11 of 13 request bodies carry alicemarker, 1 carries hunter2, 0 carry DB_PASS=<REDACTED>, 0 carry the four ~/ paths such as ~/notes → after W3 only the two MCP checks are still red (request 4 carries hunter2, no DB_PASS=<REDACTED>) → green after W5: 0 carry the home / its EvalSymlinks form / its encoded form / alicemarker / hunter2 / any kind:name label, all four ~/ paths present
+Evidence: TestScanInbox_JudgeBodiesCarryNoHome (cmd/aguard/e2e_test.go); W1 red (request 0 carries bobmarker, no ~/notes) → green after W3
+Evidence: TestPlan_MCPExcerptIsKeyedAndByteStable (internal/judge/plan_test.go); W1 red (bytes already differ on the 2nd planning, values without keys, hunter2 as is) → still red after W2 → green after W5; reverse: env.LOG_LEVEL=debug present as is
+Evidence: TestPlan_DeclaredIsCappedOnARuneBoundary (internal/judge/plan_test.go); W1 red (6,000 bytes in each of the intent / injection passes) → green after W6; review 2: after W9, deleting declaredPurpose's RuneStart walk-back (mutation, restored) is red in 4 places (2 rows × two passes, 1,000 bytes, invalid UTF-8) → green when restored
+Evidence: TestEgress_* (internal/judge/egress_test.go), TestMaskCredentialValue (internal/judge/excerpt_test.go); W1 compile red (egress_test.go:52: undefined: newEgress) → green after W2 / W5; TestEgress_RepairsAHomeTheSnippetCapCut red on W7's egress.go / excerpt.go (/Users/alic… and <REDACTED>.d/alicem… sent as is) → green after W8
+Evidence: TestConfigLines_SameLeavesAsConfigStrings (internal/detect/configlines_test.go); W1 compile red (configlines_test.go:26: undefined: ConfigLines) → green after W4
+Evidence: review 5 — TestEgress_NonASCIIHomeIsEncodedPerCharacter; red in 6 places on W9's egress.go (for /Users/josémarker and /home/\u674e\u96f7marker (two 3-byte CJK characters) the per-character encodings -Users-jos-marker and -home---marker were sent as is, while the per-byte -Users-jos--marker and -home-------marker were replaced instead) → green after W10
+Evidence: review 1 — TestE2E_RelativeRootStillStripsTheHome, TestE2E_ConfigDirUnderTheHomeStripsTheUserHome, TestCheckTarget_JudgeBodiesCarryNoHome red on W10's main.go / inbox.go / egress.go / run.go: request bodies carrying the home or the marker 6/6, 5/5, 2/2 → green after W11; the five in the judge package (TestRun_EmptyHomeStillStripsTheUserHome etc.) compile red under W10's newEgress signature → green after W11; mutating the within drop check to never drop (restored) turns TestEgress_LaterHomeInsideAnEarlierIsDropped, TestRun_ScanHomeInsideTheUserHomeKeepsItsPlace and TestE2E_ConfigDirUnderTheHomeStripsTheUserHome red together
+Evidence: review 3 — TestEgress_RedactsBeforeItStripsTheHome; red 7/7 on W11's code (redact, declared, hook, instruction file, skill tree, mcp, triage file all send ~/Xk9mQ2vL8pR4tZ7wB3n) → green after W12
+Evidence: review 6 — TestEgress_ClipRepairIsForStaticSnippetsOnly; on W12's code (with a temporary one-line probe snippet = scrub so it compiles, since deleted) red 4/4 (declared, hook, instruction file, skill tree rewrite the trailing /Users/alic… to ~…) → green after W13
+Evidence: review 4 — TestPlan_MCPExcerptLeadsWithWhatTheServerRuns, TestRun_ShortenedMCPExcerptIsDisclosed; on W13's excerpt.go (a temporary probe supplied the three-return-value signature and maxConfigLineBytes, since deleted) red: command=node, args, env.NODE_OPTIONS, url, headers, zzz all missing, a 6,000-byte line not cut, no LLM-000 → green after W14
+Evidence: re-review 1 — TestPlan_MCPLineCapCutsOnARuneBoundary; deleting capLine's RuneStart walk-back (mutation, restored) turns only it red: 500 bytes kept, invalid UTF-8
+Evidence: re-review 2 — TestRun_DroppedMCPLinesAreDisclosedWithoutACap; removing the dropped half of the note (mutation, restored) turns only it red: no LLM-000. TestPlan_MCPLeadKeysMatchExactly; matching lead keys by a key+"." prefix, or by a bare strings.HasPrefix (two mutations, restored), turns only it red: env.NODE_OPTIONS, url, headers pushed out, command.x0=pad out of place
+Evidence: re-review 3 — TestEgress_RepairsAnEncodedHomeTheSnippetCapCut; red in 5 places on W18's egress.go (the four snippets -Users-alicem…, -Users-a…, -home---a…, -home-first-l… plus the triage evidence) → green after W19
+Evidence: re-review 4 — TestEgress_HomeIsReplacedInItsAbsoluteCleanedForm; changing homeSpellings to use the absolute path as given (mutation, restored) red 3/3; encoding a one-segment home too (mutation, restored) turns the /root reverse cases of TestEgress_NoHomeIsIdentity and TestEgress_RepairsAnEncodedHomeTheSnippetCapCut red together
+Evidence: reverse assertions still green with not a word of the assertions changed — TestE2E_CredentialImportNeverReachesTheJudge, TestRun_GroundedFindingGetsRealLineNumbers, TestRun_UngroundedFindingIsDroppedAndCounted, TestGround_ChecksRedactedTextNotDisk, TestPlan_MCPUsesTheSameViewTheScannerSees, TestPlan_EveryKindIsFencedAndRedacted, TestBehaviorExcerpt_PayloadBelowPaddingReachesTheModel, TestDecodedPayloads_RedactsSecret; in git diff origin/main the only deleted lines of existing tests are 8 call sites (planFor ×3, behaviorExcerpt ×2, decodedPayloads ×3, each gaining an egress{} argument)
+Evidence: static output unchanged — a temporary fixture (home home.d/alicemarker; hook, MCP, CLAUDE.md's @~/.env, skill, memory; hits EXEC-010 EXFIL-001 EXFIL-005 FS-001 HOOK-001 INJ-001 COV-000) without --llm: scan --json, --sarif and terminal output byte-identical between the origin/main binary and this branch's; on the real machine's ~/.claude the terminal output is identical and --json byte-identical once scanned_at / tool_version are removed (open question 8)
+Evidence: Out of scope — git diff --stat origin/main -- internal/judge/judge.go internal/judge/ground.go internal/judge/prompt.go internal/judge/triage.go internal/judge/openai.go internal/detect/redact.go internal/collect internal/report go.mod go.sum is empty; the change to detect.go does not include relPath
+Evidence: make verify: all gates passed; go version go1.23.5 (no toolchain switch), go.mod line 2 go 1.23.5, no new dependencies
 ```

@@ -1,196 +1,265 @@
 <!-- SPDX-License-Identifier: MIT -->
-# 017 — 摘要自相矛盾:check 一个文件一边列发现一边说 "Nothing was found to check";已加载内容里没读到的部分不动 "looks safe"
+# 017 — The summary contradicts itself: checking a file lists findings while saying "Nothing was found to check"; parts of loaded content that were not read leave "looks safe" untouched
 
-- **来源**:P-013 记下的后续(它的「不做什么」(a)(b)、「不能说什么」最后一条、未决问题 8;人定 2026-10-09 合成一份,P-013 合入后另开)
-- **依赖**:P-013(已合入 `main`)
-- **分支**:`p/017-checked-line-and-scan-notes`
+- **Source**: follow-ups recorded by P-013 (its Out of scope (a)(b), the last item of Must not claim, open question 8;
+  decided by the maintainer on 2026-10-09 to combine them into one, opened separately after P-013 merged)
+- **Depends on**: P-013 (merged into `main`)
+- **Branch**: `p/017-checked-line-and-scan-notes`
 
-<!-- 没有「状态」行:文件所在目录就是状态(draft/ design/ complete/ rejected/),见 README.md。 -->
+<!-- No "Status" line: the directory the file sits in is the status (draft/ design/ complete/ rejected/), see README.md. -->
 
-## 问题
+## Problem
 
-报告的 Summary 是不写代码的读者真正会读的那一半,它有两句:头条(等级档 + 计数派生的一句话)和 Checked 那句(检查了什么)。
-在本仓 `main`(`fd28344`)编出的二进制上实测,两句都会和**同一份报告**下面列出的东西打架。夹具全部现搭在临时目录里。
+The report's Summary is the half that a reader who does not write code actually reads. It has two sentences: the
+headline (one sentence derived from the level band + counts) and the Checked line (what was checked). Measured with a
+binary built from this repository's `main` (`fd28344`), both sentences can contradict what **the same report** lists
+below them. All fixtures are built on the spot in temp directories.
 
-**1. Checked 那句只从采集器的清单计数(`EnvSummary`)推,而有几类被扫过的东西不在清单里。** 于是:
+**1. The Checked line is derived only from the collector's inventory counts (`EnvSummary`), and several kinds of scanned
+things are not in the inventory.** So:
 
-| 目标 | 报告里同时出现的 | Summary 的第二句 |
+| Target | Also in the report | The Summary's second sentence |
 |---|---|---|
-| `check install.sh`(`curl … \| bash`) | `EXEC-001` high,"There are problems you should fix…" | `Nothing was found to check under this root.` |
-| `check hello.sh`(干净) | "Your Claude Code setup looks safe." | `Nothing was found to check under this root.` |
-| `check tool/`(普通目录,带同一个 `install.sh`) | `EXEC-001` high | `Nothing was found to check under this root.` |
-| `scan --root` 一个只有 `CLAUDE.md` 的 `.claude`(带 `curl … \| bash`) | `EXEC-001`,69/100 Elevated | `Nothing was found to check under this root.` |
-| `scan --root` 一个只有 `settings.json`、里面只有 `env` 块的 `.claude` | 一个 `permission:settings env` artifact | `Nothing was found to check under this root.` |
-| `scan --root` 一个 `settings.json` 是 `chmod 000` 的 `.claude` | 头条已对冲(P-013),Not checked 里有 `IO-000` 指着 `settings.json` | `Nothing was found to check under this root.` |
+| `check install.sh` (`curl … \| bash`) | `EXEC-001` high, "There are problems you should fix…" | `Nothing was found to check under this root.` |
+| `check hello.sh` (clean) | "Your Claude Code setup looks safe." | `Nothing was found to check under this root.` |
+| `check tool/` (an ordinary directory, with the same `install.sh`) | `EXEC-001` high | `Nothing was found to check under this root.` |
+| `scan --root` on a `.claude` holding only `CLAUDE.md` (with `curl … \| bash`) | `EXEC-001`, 69/100 Elevated | `Nothing was found to check under this root.` |
+| `scan --root` on a `.claude` holding only `settings.json`, which holds only an `env` block | a `permission:settings env` artifact | `Nothing was found to check under this root.` |
+| `scan --root` on a `.claude` whose `settings.json` is `chmod 000` | headline already hedged (P-013), Not checked has an `IO-000` pointing at `settings.json` | `Nothing was found to check under this root.` |
 
-终端默认、`--verbose`、`--md`、HTML(`scan --html`)四个渲染器一字不差。原因:`check <单文件>` 产出 `instruction`(或 `command`)类
-artifact、`check <普通目录>` 产出 `directory` 类 artifact,`CollectTarget` 给这两种的 `EnvSummary` 都是空的;root 里的
-`CLAUDE.md` 是 `instruction` 类,`settings.json` 的 `env` 块是不计条数的 `permission` 类 —— 清单里都没有它们,于是
-`checkedParts` 什么都数不出来,`checkedWithGaps` 落到 "Nothing was found"。读不了的 `settings.json` 是扫描级 `IO-000`、
-没有 artifact,P-013 的"找到了、没检查全"只点名挂在 artifact 上的 note,所以它也落到同一句。
+All four renderers — terminal default, `--verbose`, `--md`, HTML (`scan --html`) — say exactly the same. Cause:
+`check <single-file>` produces an `instruction` (or `command`) artifact and `check <plain-directory>` produces a
+`directory` artifact, and `CollectTarget` gives both an empty `EnvSummary`; a `CLAUDE.md` in a root is of kind
+`instruction`, and the `env` block of `settings.json` is of kind `permission`, which is not counted — none of them is in
+the inventory, so `checkedParts` counts nothing and `checkedWithGaps` falls through to "Nothing was found". An
+unreadable `settings.json` is a scan-level `IO-000` with no artifact, and P-013's "found, not fully checked" names only
+notes attached to an artifact, so it falls through to the same sentence too.
 
-一句"什么都没查"紧挨着它自己查出来的 high,读者只能二选一地不信其中一句。
+A sentence saying "nothing was checked" right next to a high that the same check found leaves the reader to disbelieve
+one of the two.
 
-**2. 头条只在"挂在 artifact 上的覆盖 note,或任何位置的 `IO-000` / `PARSE-000`"时对冲(P-013 人定的集合),而 detect 关于已加载
-内容的覆盖 note 全部是扫描级的 `COV-000`**(`detect.Engine.Run` 把每个 artifact 的维度 0 结果收进扫描级 notes)。实测:
+**2. The headline hedges only on "a coverage note attached to an artifact, or an `IO-000` / `PARSE-000` anywhere" (the
+set decided by the maintainer in P-013), while detect's coverage notes about loaded content are all scan-level
+`COV-000`** (`detect.Engine.Run` gathers each artifact's dimension-0 results into the scan-level notes). Measured:
 
-| 夹具 | 没读到的 | 分数 / 头条 |
+| Fixture | What was not read | Score / headline |
 |---|---|---|
-| skill 的 `SKILL.md` 写 "Run sh sub/inner.sh",`sub/` 是 `chmod 0111`,里面是 `curl … \| bash` | `COV-000` medium "Entries in this artifact could not be read" | 100 / "Your Claude Code setup looks safe." |
-| skill 里一个 1.1 MB 的 `big.sh`,末尾是 `curl … \| bash` | `COV-000` "File too large, content scan skipped" | 100 / "looks safe" |
-| skill 的 `SKILL.md` 写 "Run node node_modules/dep/setup.js" | `SUP-004` medium(指向扫描不读的目录)+ `COV-000` "Third-party / VCS trees not read" | 88 / "looks safe. 1 finding needs a look" |
-| `settings.json` 注册的 hook 跑 `sh ~/.claude/hooks/missing.sh` | `COV-000` "Hook script not followed" | 100 / "looks safe" |
-| `.claude/rules` 是指向 root 外的软链(dotfiles 常见布局) | `COV-000` medium "Entries resolve outside the scanned root, not read"(Why:"They are loaded by Claude Code but were NOT scanned") | 100 / "looks safe" + "Nothing was found to check" |
+| a skill's `SKILL.md` says "Run sh sub/inner.sh", `sub/` is `chmod 0111`, and inside it is `curl … \| bash` | `COV-000` medium "Entries in this artifact could not be read" | 100 / "Your Claude Code setup looks safe." |
+| a 1.1 MB `big.sh` in a skill, ending in `curl … \| bash` | `COV-000` "File too large, content scan skipped" | 100 / "looks safe" |
+| a skill's `SKILL.md` says "Run node node_modules/dep/setup.js" | `SUP-004` medium (points into a directory the scan does not read) + `COV-000` "Third-party / VCS trees not read" | 88 / "looks safe. 1 finding needs a look" |
+| a hook registered in `settings.json` runs `sh ~/.claude/hooks/missing.sh` | `COV-000` "Hook script not followed" | 100 / "looks safe" |
+| `.claude/rules` is a symlink pointing outside the root (a common dotfiles layout) | `COV-000` medium "Entries resolve outside the scanned root, not read" (Why: "They are loaded by Claude Code but were NOT scanned") | 100 / "looks safe" + "Nothing was found to check" |
 
-前两行就是 W-001 / 超大文件这两种规避形状:payload 放在扫描器读不到的地方,报告的头条照样说安全,只有折起来的
-"Not checked — 1 coverage note(s), highest medium [COV-000]" 那一行知道。四个渲染器的头条相同。不变量 #5 要求的是"缺口不静默",
-这些 note 确实进了 Not checked;但 P-013 已经把"looks safe"定义成"Claude Code 加载的东西都读全了"的断言,而上面每一行都是
-加载的东西没读全 —— 头条说错了话。
+The first two rows are exactly the two evasion shapes, W-001 and the oversized file: the payload sits where the scanner
+cannot read it, the report's headline still says safe, and only the collapsed "Not checked — 1 coverage note(s), highest
+medium [COV-000]" line knows. All four renderers have the same headline. Invariant #5 requires "no silent gaps", and
+these notes do go into Not checked; but P-013 already defined "looks safe" as the claim "everything Claude Code loads
+was read in full", and in every row above something loaded was not read in full — the headline says the wrong thing.
 
-`collect` 也有几条同类的扫描级 `COV-000`(加载命名空间里解析不了的条目、`rules/` 等解析到 root 外、目录深度上限、托管策略
-指令文件、隔离区越界、`@import` 越界 / 拒读凭据 / 深度上限、桌面版会话缓存上限),同样不动头条。
+`collect` also has several scan-level `COV-000` of the same kind (unresolvable entries in a load namespace, `rules/` and
+the like resolving outside the root, the directory depth cap, the managed-policy instruction file, quarantine escapes,
+`@import` out of bounds / refused credential reads / depth cap, the desktop session-cache cap), and they leave the
+headline untouched as well.
 
-## 初步方向
+## Initial direction
 
-只改 `internal/report` 的白话层(`plain.go`)和三个人读渲染器调用它的地方,从 `ScanResult` 里已有的数据派生,不加阈值、
-不挪数据:Checked 那句在清单数不出东西时改数实际扫过的 artifact,并把扫描级 `IO-000` / `PARSE-000` 也点名成"没检查全";
-头条的集合扩到"已加载内容没读全"的扫描级覆盖 note,按设计不读的几条照旧不动头条。JSON / SARIF、分数、退出码不动。
+Change only the plain-language layer of `internal/report` (`plain.go`) and the places where the three human-facing
+renderers call it, deriving from data already in `ScanResult`, adding no thresholds and moving no data: when the
+inventory counts nothing, the Checked line counts the artifacts actually scanned instead, and it also names scan-level
+`IO-000` / `PARSE-000` as "not fully checked"; the headline's set widens to scan-level coverage notes meaning "loaded
+content not read in full", while the few notes for deliberate skips still leave the headline untouched. JSON / SARIF,
+the score and the exit code do not change.
 
-## 完成的判据
+## Done criteria
 
-夹具都在 `t.TempDir()` 里现搭,走真实流水线(`checkTarget` / `scanEnv`),四个给人读的渲染器(终端默认、`--verbose`、markdown、HTML)
-各取 Summary 一段(`summaryOf`,P-013 的同一个切法)。
+All fixtures are built on the spot in `t.TempDir()` and go through the real pipeline (`checkTarget` / `scanEnv`); for
+each of the four human-facing renderers (terminal default, `--verbose`, markdown, HTML) the Summary section is taken
+(`summaryOf`, the same cut as in P-013).
 
-- [x] `TestCheckedLineCountsWhatWasScanned`(`cmd/aguard/checked_line_test.go`,新):`check <带 curl|bash 的 install.sh>`、
-  `check <干净的 hello.sh>`、`check <commands/deploy.md>`、`check <普通目录>`、`scan` 只有 `CLAUDE.md` 的 root、`scan` 只有 `env` 块的
-  `settings.json` 的 root —— 四个渲染器的 Summary 都**不含** `Nothing was found to check`,分别含 `Checked 1 file.` / `Checked 1 file.` /
-  `Checked 1 command.` / `Checked 1 directory.` / `Checked 1 file.` / `Checked 1 settings block.`。今天红:6 × 4 处都是 "Nothing was found"
-- [x] `TestUnreadableSettingsIsNamedNotFullyChecked`(同文件,新):`chmod 000` 的 `settings.json`(扫描级 `IO-000`、没有 artifact)→ 四个
-  渲染器的 Summary 含 `Not fully checked:`、`settings.json`、`IO-000`,不含 `Nothing was found to check`。今天红。以 root 运行读得到时 skip
-- [x] `TestLoadedContentLeftUnreadHedgesTheHeadline`(同文件,新):五个 Low 档夹具 —— skill 里 `chmod 0111` 的子目录(以 root 运行时 skip)、
-  skill 里超过 1 MiB 的脚本、`SKILL.md` 指向 `node_modules/` 里的文件(`SUP-004`)、hook 跑一个不存在的脚本、`rules/` 是指向 root 外的软链
-  —— 四个渲染器的 Summary 都含 `Low risk in what was read, but coverage is incomplete.`、不含 `looks safe`。今天红:5 × 4 处都是 "looks safe"
-- [x] `TestScanLevelNotesThatHedge`(`internal/report/scan_gaps_test.go`,新):同一个干净的 Low 档结果各加一条扫描级说明。对冲:`IO-000`、
-  `PARSE-000`、detect 与 collect 关于已加载内容的每一种 `COV-000`(读不了的条目、超大文件、非常规文件、hook 脚本没跟进、授权脚本没跟进、
-  解析到 root 外、托管策略文件)、一个带 `SUP-004` 的 artifact。**不**对冲(反向):按设计不读的四条(无人认领的顶层条目、空 root、
-  第三方 / VCS 树、hook 脚本记在插件名下)、`LLM-000`、`LLM-002`、`LLM-005`、`GATE-001`、`REP-GOOD`、`IGN-000`。今天红在对冲那一半
-- [x] 反向断言 `TestDeliberateSkipsKeepTheHeadline`(`cmd/aguard/checked_line_test.go`,新,今天就绿):真实流水线,skill 里没人指向的
-  `node_modules/`、插件的 hook 脚本在插件树里找到(`Hook script attributed to its plugin`)、空 root、干净的 skill —— 四个渲染器都仍是
-  `Your Claude Code setup looks safe.`;前两个的说明仍在 Not checked 里(P-013 的 `notCheckedMarker`);干净 skill 仍是 `Checked 1 skill.`,
-  空 root 仍是 `Nothing was found to check under this root.`。修完不改一字仍绿
-- [x] 反向断言:P-013 的 `TestCleanSettingsReportIsUnchanged`(干净配置终端默认 / `--verbose` / markdown 逐字节 golden)、
-  `TestUnownedEntriesKeepTheHeadline`、`TestUnreadableSettingsHedgesTheHeadline`、`TestSummaryDoesNotCallIncompleteCoverageSafe`、
-  `TestCoverageVerdict`、`TestCheckedWithGaps`,以及 `TestCheckedLine`、`TestVerdictSentence` 不改一字仍绿(`git diff origin/main -- <这些测试文件>` 为空)
-- [x] 真机二进制:本仓 `main` 与本分支各编一个,上面每个夹具的 `--json`(去掉 `scanned_at`)和 `--sarif` 输出 `diff` 为 0 字节(数据不动)
-- [x] 真机 `~/.claude`(`scan --inbox off`):与 `main` 的终端输出只差 Checked 那一行(扫描级 `PARSE-000` 被点名),头条不变(不在 Low 档)
-- [x] `make verify` 绿;`go version` 不切换工具链,`go.mod` 第二行仍是 `go 1.23.5`
+- [x] `TestCheckedLineCountsWhatWasScanned` (`cmd/aguard/checked_line_test.go`, new):
+  `check <install.sh with curl|bash>`, `check <clean hello.sh>`, `check <commands/deploy.md>`,
+  `check <plain-directory>`, `scan` of a root holding only `CLAUDE.md`, `scan` of a root whose `settings.json` holds
+  only an `env` block — in all four renderers the Summary does **not** contain `Nothing was found to check`, and
+  contains, respectively, `Checked 1 file.` / `Checked 1 file.` / `Checked 1 command.` / `Checked 1 directory.` /
+  `Checked 1 file.` / `Checked 1 settings block.`. Red today: all 6 × 4 places say "Nothing was found"
+- [x] `TestUnreadableSettingsIsNamedNotFullyChecked` (same file, new): a `chmod 000` `settings.json` (scan-level
+  `IO-000`, no artifact) → in all four renderers the Summary contains `Not fully checked:`, `settings.json` and
+  `IO-000`, and does not contain `Nothing was found to check`. Red today. Skipped when running as root makes it readable
+- [x] `TestLoadedContentLeftUnreadHedgesTheHeadline` (same file, new): five Low-band fixtures — a `chmod 0111`
+  subdirectory in a skill (skipped when running as root), a script over 1 MiB in a skill, a `SKILL.md` pointing at a
+  file in `node_modules/` (`SUP-004`), a hook running a script that does not exist, `rules/` as a symlink pointing
+  outside the root — in all four renderers the Summary contains `Low risk in what was read, but coverage is incomplete.`
+  and does not contain `looks safe`. Red today: all 5 × 4 places say "looks safe"
+- [x] `TestScanLevelNotesThatHedge` (`internal/report/scan_gaps_test.go`, new): the same clean Low-band result, each
+  time with one scan-level note added. Hedges: `IO-000`, `PARSE-000`, every kind of detect and collect `COV-000` about
+  loaded content (unreadable entries, oversized file, non-regular file, hook script not followed, permission-grant
+  script not followed, resolves outside the root, managed-policy file), an artifact carrying `SUP-004`. Does **not**
+  hedge (reverse): the four deliberate-skip notes (unclaimed top-level entries, empty root, third-party / VCS trees,
+  hook script attributed to its plugin), `LLM-000`, `LLM-002`, `LLM-005`, `GATE-001`, `REP-GOOD`, `IGN-000`. Red today
+  on the hedging half
+- [x] Reverse assertion `TestDeliberateSkipsKeepTheHeadline` (`cmd/aguard/checked_line_test.go`, new, green today): real
+  pipeline; a `node_modules/` in a skill that nothing points to, a plugin's hook script found in the plugin tree
+  (`Hook script attributed to its plugin`), an empty root, a clean skill — all four renderers still say
+  `Your Claude Code setup looks safe.`; the notes of the first two are still in Not checked (P-013's
+  `notCheckedMarker`); the clean skill still reads `Checked 1 skill.`, and the empty root still reads
+  `Nothing was found to check under this root.`. Still green after the fix without a single change
+- [x] Reverse assertion: P-013's `TestCleanSettingsReportIsUnchanged` (byte-for-byte golden of a clean config in
+  terminal default / `--verbose` / markdown), `TestUnownedEntriesKeepTheHeadline`,
+  `TestUnreadableSettingsHedgesTheHeadline`, `TestSummaryDoesNotCallIncompleteCoverageSafe`, `TestCoverageVerdict`,
+  `TestCheckedWithGaps`, and `TestCheckedLine`, `TestVerdictSentence` stay green without a single change
+  (`git diff origin/main -- <these-test-files>` is empty)
+- [x] Binaries on a real machine: one built each from this repository's `main` and this branch; for every fixture above,
+  the `diff` of the `--json` (without `scanned_at`) and `--sarif` output is 0 bytes (the data does not move)
+- [x] `~/.claude` on a real machine (`scan --inbox off`): the terminal output differs from `main` only in the Checked
+  line (the scan-level `PARSE-000` is named); the headline does not change (not in the Low band)
+- [x] `make verify` green; `go version` does not switch toolchains, line 2 of `go.mod` is still `go 1.23.5`
 
-## 不做什么
+## Out of scope
 
-- **不挪数据**:`ScanResult`、`model`、JSON / SARIF 的字节不动。detect 照旧把它的覆盖 note 放在扫描级,coalescer 照旧合并;
-  collect 照旧产出同样的 note。`collect` / `detect` 只把**四条已有标题**从包内常量 / 字面量改成导出常量(字符串一字不改),此外一行不动
-- **不改分数、退出码、`--fail-on` / `--fail-on-llm`**:维度 0 永不 gate(`score.Deterministic`、`report.HasAtLeast` 不动);`SUP-004`
-  的严重度不动
-- **不改 Not checked 那一行**:条数、最高严重度、规则 ID 照旧数全部覆盖 note
-- **不改其余三档的结论句**(Watch / Elevated / Critical),也不改计数子句
-- **清单计数不为空时 Checked 那句一字不变**:不把 `CLAUDE.md` 之类清单不数的东西补进有计数的那一行(那会改掉几乎每台真机的那一行,
-  而那一行今天没有说错)
-- **不碰 Downloads 一节**(`inboxAdvice` 不看条目自己的覆盖说明,是另一件事,见「完成」的后续)、**不碰闸门**(`internal/gate`)
-- **不修 collect 的空 root 说明**:root 里唯一的加载内容解析到 root 外时,collect 仍出 `Nothing to audit under this root`,Checked 那句
-  跟着它说 "Nothing was found to check"(头条会对冲),见未决问题 7
-- `go.mod` / `go.sum` 不动,不加依赖
+- **No data moves**: `ScanResult`, `model`, and the JSON / SARIF bytes do not change. detect still puts its coverage
+  notes at scan level, and the coalescer still merges them; collect still produces the same notes. `collect` / `detect`
+  only turn **four existing titles** from package-internal constants / literals into exported constants (the strings
+  unchanged to the character), and not a line beyond that changes
+- **No change to the score, the exit code, `--fail-on` / `--fail-on-llm`**: dimension 0 never gates
+  (`score.Deterministic` and `report.HasAtLeast` do not change); the severity of `SUP-004` does not change
+- **No change to the Not checked line**: the count, the highest severity and the rule ID still count all coverage notes
+- **No change to the verdict sentence of the other three bands** (Watch / Elevated / Critical), nor to the count clause
+- **When the inventory count is not empty, the Checked line does not change by a character**: things the inventory does
+  not count, such as `CLAUDE.md`, are not added to a line that has counts (that would change the line on almost every
+  real machine, and that line is not wrong today)
+- **The Downloads section is not touched** (`inboxAdvice` not looking at an entry's own coverage notes is a separate
+  matter, see the follow-ups in Done), **the gate is not touched** (`internal/gate`)
+- **collect's empty-root note is not fixed**: when the only loaded content in a root resolves outside the root, collect
+  still emits `Nothing to audit under this root`, and the Checked line follows it in saying "Nothing was found to check"
+  (the headline does hedge), see open question 7
+- `go.mod` / `go.sum` do not change; no dependencies added
 
-## 不能说什么
+## Must not claim
 
-- 不说"读不全的内容现在会让 `check` 失败":修的是摘要的措辞。分数、退出码、`--fail-on` 都没变,一个 `chmod 0111` 子目录里藏着
-  `curl | bash` 的 skill 仍是 100/100、退出 0 —— 报告现在**说**它没读全,不是**挡住**它
-- 不说"凡是没读的都会对冲头条":按设计不读的四条(无人认领的顶层条目、空 root、第三方 / VCS 树、hook 脚本记在插件名下)不动头条;
-  判官的 `LLM-*`、闸门的 `GATE-001`、压制类 note 也不动。头条和 Not checked 那一行仍**不是**同一个集合
-- 不说"`node_modules/` 现在会对冲头条":没人指向它时不会;只有 artifact 把 agent 指进去(`SUP-004`)才会
-- 不说"Summary 现在点名所有没读全的东西":Checked 那句点名的是挂在 artifact 上的覆盖 note 和扫描级 `IO-000` / `PARSE-000`;detect 与
-  collect 的扫描级 `COV-000` 只让头条对冲,文件在 Not checked 里
-- 不说"'Nothing was found to check' 不会再出现":空 root 照旧;root 里唯一的加载内容解析到 root 外时也照旧(未决问题 7)
-- 不说"清单现在列出 `CLAUDE.md`":只有清单什么都没数到时,Checked 那句才改数扫过的 artifact
+- Do not say "content that cannot be read in full now makes `check` fail": what is fixed is the summary's wording. The
+  score, the exit code and `--fail-on` are all unchanged; a skill hiding `curl | bash` in a `chmod 0111` subdirectory is
+  still 100/100 and exits 0 — the report now **says** it was not read in full; it does not **block** it
+- Do not say "everything not read hedges the headline": the four deliberate-skip notes (unclaimed top-level entries,
+  empty root, third-party / VCS trees, hook script attributed to its plugin) leave the headline untouched; so do the
+  judge's `LLM-*`, the gate's `GATE-001` and the suppression notes. The headline and the Not checked line are still
+  **not** the same set
+- Do not say "`node_modules/` now hedges the headline": it does not when nothing points to it; it does only when an
+  artifact points the agent into it (`SUP-004`)
+- Do not say "the Summary now names everything not read in full": the Checked line names the coverage notes attached to
+  an artifact and the scan-level `IO-000` / `PARSE-000`; the scan-level `COV-000` from detect and collect only make the
+  headline hedge, and their files are in Not checked
+- Do not say "'Nothing was found to check' will not appear any more": an empty root still gets it; so does a root whose
+  only loaded content resolves outside the root (open question 7)
+- Do not say "the inventory now lists `CLAUDE.md`": only when the inventory counts nothing does the Checked line count
+  the scanned artifacts instead
 
-## 工作项
+## Work items
 
-| W | 一句话 | 提交信息(不写 sha,rebase 会改) |
+| W | In one sentence | Commit message (no sha, a rebase changes it) |
 |---|---|---|
-| 1 | 端到端与单元测试,跑红;反向断言今天就绿 | `report, cmd: tests — a checked file or directory reads "Nothing was found to check", and loaded content left unread still reads "looks safe" (P-017)` |
-| 2 | Checked 那句:清单数不出东西时数扫过的 artifact;扫描级 `IO-000` / `PARSE-000` 点名成没检查全 | `report: the Checked line counts what was scanned when the inventory counts nothing, and names a file that could not be read or parsed (P-017)` |
-| 3 | collect / detect 导出四条按设计不读的说明的标题常量,字符串不变 | `collect, detect: export the titles of the four notes that disclose a deliberate skip, so the report can tell them from a gap (P-017)` |
-| 4 | 头条集合:扫描级 `COV-000` 除四条按设计不读的都对冲;带 `SUP-004` 的 artifact 对冲 | `report: loaded content the scan did not read takes "looks safe" away wherever its note sits; the four deliberate skips do not (P-017)` |
-| 5 | `.claude/rules/report.md`、spec §9、README 与 architecture 两个对子 | `docs: report rules, spec §9 and the README and architecture pairs say what the Checked line counts and which scan-level notes hedge the headline (P-017)` |
-| 6 | W4 的收尾:`IO-000` / `PARSE-000` 的判断只留一个谓词(头条和 Checked 那句共用);四条例外从可变 map 改成 switch,行为不变 | `report: one predicate for a file found and not read, shared by the headline and the Checked line; the deliberate skips are a switch, not a mutable map (P-017)` |
-| 7 | 本文件、索引 | `proposals: P-017 (P-017)` |
+| 1 | End-to-end and unit tests, run red; the reverse assertions are green today | `report, cmd: tests — a checked file or directory reads "Nothing was found to check", and loaded content left unread still reads "looks safe" (P-017)` |
+| 2 | The Checked line: count the scanned artifacts when the inventory counts nothing; name scan-level `IO-000` / `PARSE-000` as not fully checked | `report: the Checked line counts what was scanned when the inventory counts nothing, and names a file that could not be read or parsed (P-017)` |
+| 3 | collect / detect export the title constants of the four deliberate-skip notes, strings unchanged | `collect, detect: export the titles of the four notes that disclose a deliberate skip, so the report can tell them from a gap (P-017)` |
+| 4 | The headline set: every scan-level `COV-000` hedges except the four deliberate skips; an artifact carrying `SUP-004` hedges | `report: loaded content the scan did not read takes "looks safe" away wherever its note sits; the four deliberate skips do not (P-017)` |
+| 5 | `.claude/rules/report.md`, spec §9, the README and architecture pairs | `docs: report rules, spec §9 and the README and architecture pairs say what the Checked line counts and which scan-level notes hedge the headline (P-017)` |
+| 6 | Finishing W4: a single predicate for `IO-000` / `PARSE-000` (shared by the headline and the Checked line); the four exceptions go from a mutable map to a switch, behaviour unchanged | `report: one predicate for a file found and not read, shared by the headline and the Checked line; the deliberate skips are a switch, not a mutable map (P-017)` |
+| 7 | This file, the index | `proposals: P-017 (P-017)` |
 
-W6 是 W4、W5 之后自审时补的:`IO-000` / `PARSE-000` 两个字面量在 `unreadLoaded` 和 `scanGaps` 里各写了一遍,正是本仓库反复拒绝的
-"两份条件靠注释同步"。只是重构,W1 的测试与变异检查在它前后都同样通过。
+W6 was added during a self-review after W4 and W5: the two literals `IO-000` / `PARSE-000` were written once each in
+`unreadLoaded` and in `scanGaps`, which is exactly the "two copies of a condition kept in sync by a comment" that this
+repository keeps rejecting. It is only a refactor; the W1 tests and the mutation check pass the same way before and
+after it.
 
-## 未决问题
+## Open questions
 
-1. **清单什么都没数到时,Checked 那句说什么?**
-   **建议**:数实际扫过的 artifact(不算 P-013 的"没检查全"项),按种类各用一个固定名词:`instruction` → file、`directory` → directory、
-   `permission` → settings block、`quarantined` → quarantined item,其余沿用清单自己的名词(skill、hook、command…);种类顺序固定,
-   与 artifact 顺序无关。只在清单计数为空时这么做,所以每一份清单里有数的报告那一行逐字节不变。
-   **否决的备选**:(a) 总是把清单不数的种类补上(`CLAUDE.md` 旁边有 skill 时也写 "1 file")—— 几乎每台真机都有 `CLAUDE.md`,
-   会改掉每台真机的那一行,而那一行今天并没说错;(b) 点名文件 —— 每个渲染器要各自引用一个被扫目录给的名字,而点名是下面发现列表的事;
-   (c) 一律写 "N items" —— `check install.sh` 说 "Checked 1 item." 不如 "Checked 1 file." 让人看得懂。
-   **已决(2026-10-09)**:按建议。
-2. **扫描级 `IO-000` / `PARSE-000` 要不要在 Checked 那句里点名?**
-   **建议**:要,无条件,和 artifact 自带的 note 排在一起(artifact 的在前、扫描级的在后,同一个 3 项上限)。它们是 P-013 那个"孪生"论证的
-   另一半:同一个 `settings.json` 解析不了(artifact 上的 `PARSE-000`)今天点名,读不了(扫描级 `IO-000`)却落到 "Nothing was found";
-   collect 给这两种 note 的证据都是一个文件路径。**代价**:真机 `~/.claude` 有一条扫描级 `PARSE-000`(一个插件 `hooks.json` 里的 hook 条目没看懂),那份
-   Elevated 报告的 Checked 那句会多出 `Not fully checked: hooks.json [PARSE-000].` —— 是真话,写进「完成」。(design 时这里误写成
-   `settings.json`;实测是 `hooks.json`,collect 给这条 note 的证据只有文件的 base 名。)扫描级 `COV-000` **不**点名:
-   detect 的那些说的是已经数进清单的项的一部分(skill 的一个子目录、插件里的一个大文件、hook 的第二段),证据路径是相对 artifact 的
-   (读不了的子目录那条是 `.`),点出来是噪音;它们在 Not checked 里有自己的行。
-   **已决(2026-10-09)**:按建议。
-3. **哪些扫描级 `COV-000` 对冲头条?**
-   **建议**:全部,**除了**四条按设计不读、由生产方以导出的标题常量标明的说明:无人认领的顶层条目(`collect.UnownedNoteTitle`,P-013 人定)、
-   空 root(`collect.EmptyRootNoteTitle`:什么都没采到,没有"加载了却没读"的东西)、第三方 / VCS 树(`detect.GeneratedDirNoteTitle`:按设计
-   不读,真机上就有;artifact 把 agent 指进去时 `SUP-004` 负责)、hook 脚本记在插件名下(`detect.HookOwnedNoteTitle`:内容**读了**,只是归属
-   不全,真机上一条合并了 50 处)。以后新加的扫描级 `COV-000` 默认对冲 —— 错的方向是"少说一句安全",不是"多说"。
-   **否决的备选**:(a) 正向列出对冲的标题(十几条常量)—— 以后新加的缺口默认不对冲,正是这次要修的形状;(b) 让 detect 把覆盖 note 挂到
-   artifact 上 —— JSON 与 SARIF 的归属都变,还会拆掉 coalescer 的合并(一条变 50 行);(c) 按证据路径的形状猜(相对路径 = detect 的)——
-   collect 也出相对路径(hook 条目没看懂那条 `PARSE-000` 的证据就是 `settings.json`),证据路径是给人看的,不是契约。
-   **已决(2026-10-09)**:按建议。
-4. **这和 P-013 写进 `report.md` 的"按规则 ID 和挂载位置选,不按标题匹配"冲突吗?**
-   **建议**:那条防的是渲染器自己写一段标题字面量、生产方一改措辞集合就悄悄漂走。扫描级的 `COV-000` 之间,规则 ID、挂载位置、来源全都相同
-   —— 数据里除了标题没有别的东西能把"用户自己的会话记录没读"和"skill 里一个子目录读不了"分开。用生产方**导出的常量**比较,是 detect 自己的
-   coalescer 已经在用的做法(`generatedDirNoteTitle` 的注释:producer 和 coalescer 共用,两边不会漂);渲染器里仍然不出现任何标题字面量,
-   改措辞的人改的是同一个常量。`report.md` 那一条改写成这个意思。
-   **已决(2026-10-09)**:按建议。
-5. **`SUP-004` 要不要对冲?** 它是计分发现,不是覆盖 note。
-   **建议**:要。它是唯一一条意思就是"加载的东西没读"的计分规则(agent 被指进一个按名字不读的目录),而它旁边那条说明是按设计不读的
-   第三方树、不对冲;不加它,"指进 `node_modules/`"这一种就仍说 looks safe。`HOOK-002`、`EXFIL-005` 不需要:它们各自带一条会对冲的 `COV-000`。
-   按规则 ID 选,只看静态来源。
-   **已决(2026-10-09)**:按建议。
-6. **collect 的那几条扫描级 `COV-000`(解析不了的加载命名空间条目、解析到 root 外、深度上限、托管策略文件、隔离区越界、`@import` 三条、
-   桌面版会话缓存上限)算不算在内?**
-   **建议**:算。它们说的是同一件事(不少条的 Why 原文就是 "loaded by Claude Code but were NOT scanned"),由问题 3 的规则自然覆盖,
-   不需要额外代码。托管策略文件在受管机器上总在,那里的 Low 档头条会一直对冲 —— 它每次会话最先加载、而这次扫描没读,对冲是真话。
-   **已决(2026-10-09)**:按建议。
-7. **root 里只有一个解析到 root 外的 `rules/` 软链时,Checked 那句仍是 "Nothing was found to check"?**
-   **建议**:本条不改。那时 collect 一个 artifact 都没采到,它自己的 `Nothing to audit under this root` 说明照样出,Checked 那句与它一致;
-   头条已经对冲。要改的是 collect 什么时候出空 root 说明,不在渲染器里,记为后续。
-   **已决(2026-10-09)**:按建议。
+1. **What does the Checked line say when the inventory counts nothing?**
+   **Recommendation**: count the artifacts actually scanned (not counting P-013's "not fully checked" items), with one
+   fixed noun per kind: `instruction` → file, `directory` → directory, `permission` → settings block, `quarantined` →
+   quarantined item, and the rest keep the inventory's own nouns (skill, hook, command…); the order of kinds is fixed
+   and independent of artifact order. Do this only when the inventory count is empty, so the line in every report whose
+   inventory has counts stays byte-for-byte the same.
+   **Rejected alternatives**: (a) always add the kinds the inventory does not count (write "1 file" even when there is a
+   skill next to `CLAUDE.md`) — almost every real machine has a `CLAUDE.md`, so it would change that line on every real
+   machine, and that line is not wrong today; (b) name the files — each renderer would have to quote a name supplied by
+   the scanned directory, and naming is the job of the findings list below; (c) always write "N items" —
+   `check install.sh` saying "Checked 1 item." is less understandable than "Checked 1 file.".
+   **Decided (2026-10-09)**: as recommended.
+2. **Should scan-level `IO-000` / `PARSE-000` be named in the Checked line?**
+   **Recommendation**: yes, unconditionally, listed together with the artifacts' own notes (the artifacts' first, the
+   scan-level ones after, under the same 3-item cap). They are the other half of P-013's "twin" argument: today the same
+   `settings.json` is named when it cannot be parsed (`PARSE-000` on the artifact), but falls through to "Nothing was
+   found" when it cannot be read (scan-level `IO-000`); collect's evidence for both notes is a file path. **Cost**:
+   `~/.claude` on a real machine has one scan-level `PARSE-000` (a hook entry in a plugin's `hooks.json` was not
+   understood), so the Checked line of that Elevated report gains `Not fully checked: hooks.json [PARSE-000].` — it is
+   true, and it is recorded in Done. (At design time this was mistakenly written as `settings.json`; measured, it is
+   `hooks.json`, and collect's evidence for this note is only the file's base name.) Scan-level `COV-000` are **not**
+   named: detect's ones describe part of an item already counted in the inventory (a subdirectory of a skill, a large
+   file in a plugin, the second segment of a hook), their evidence paths are relative to the artifact (the
+   unreadable-subdirectory one is `.`), and naming them would be noise; they have their own line in Not checked.
+   **Decided (2026-10-09)**: as recommended.
+3. **Which scan-level `COV-000` hedge the headline?**
+   **Recommendation**: all of them, **except** the four notes that disclose a deliberate skip, marked by their producer
+   with an exported title constant: unclaimed top-level entries (`collect.UnownedNoteTitle`, decided by the maintainer
+   in P-013), empty root (`collect.EmptyRootNoteTitle`: nothing was collected, so there is nothing "loaded but not
+   read"), third-party / VCS trees (`detect.GeneratedDirNoteTitle`: not read by design, present on real machines; when
+   an artifact points the agent into one, `SUP-004` takes over), hook script attributed to its plugin
+   (`detect.HookOwnedNoteTitle`: the content **was read**, only the attribution is incomplete; on a real machine one
+   note merged 50 places). Any scan-level `COV-000` added later hedges by default — when it is wrong, the error is
+   "saying safe once too few times", not "once too many".
+   **Rejected alternatives**: (a) list the hedging titles positively (a dozen-plus constants) — then gaps added later
+   would not hedge by default, which is exactly the shape being fixed here; (b) have detect attach its coverage notes to
+   artifacts — the attribution changes in both JSON and SARIF, and it would also break up the coalescer's merging (one
+   note becomes 50 lines); (c) guess from the shape of the evidence path (relative path = detect's) — collect emits
+   relative paths too (the evidence of the `PARSE-000` for a hook entry that was not understood is just
+   `settings.json`), and the evidence path is for humans, not a contract.
+   **Decided (2026-10-09)**: as recommended.
+4. **Does this conflict with what P-013 wrote into `report.md`, "select by rule ID and attachment point, not by matching
+   titles"?**
+   **Recommendation**: that rule guards against a renderer writing its own title literal, so that the set silently
+   drifts as soon as the producer changes the wording. Among scan-level `COV-000`, the rule ID, the attachment point and
+   the source are all identical — nothing in the data other than the title can tell "the user's own session records were
+   not read" from "a subdirectory in a skill could not be read". Comparing against the producer's **exported constant**
+   is what detect's own coalescer already does (the comment on `generatedDirNoteTitle`: shared by the producer and the
+   coalescer, so the two sides cannot drift); the renderer still contains no title literal at all, and whoever changes
+   the wording changes that same constant. That rule in `report.md` is rewritten to say this.
+   **Decided (2026-10-09)**: as recommended.
+5. **Should `SUP-004` hedge?** It is a scored finding, not a coverage note.
+   **Recommendation**: yes. It is the only scored rule whose meaning is exactly "something loaded was not read" (the
+   agent is pointed into a directory that is not read because of its name), and the note next to it is the
+   third-party-tree deliberate skip, which does not hedge; without it, the "pointed into `node_modules/`" case would
+   still say looks safe. `HOOK-002` and `EXFIL-005` do not need it: each comes with a `COV-000` that hedges. Selected by
+   rule ID, static source only.
+   **Decided (2026-10-09)**: as recommended.
+6. **Do collect's scan-level `COV-000` (unresolvable load-namespace entries, resolving outside the root, the depth cap,
+   the managed-policy file, quarantine escapes, the three `@import` ones, the desktop session-cache cap) count?**
+   **Recommendation**: yes. They say the same thing (the Why of quite a few of them literally says "loaded by Claude
+   Code but were NOT scanned"), they are covered by the rule from question 3 as is, and no extra code is needed. The
+   managed-policy file is always there on managed machines, so a Low-band headline there will always hedge — that file
+   is loaded first in every session and this scan did not read it, so the hedge is true.
+   **Decided (2026-10-09)**: as recommended.
+7. **When a root holds only a `rules/` symlink resolving outside the root, is the Checked line still "Nothing was found
+   to check"?**
+   **Recommendation**: not changed in this proposal. In that case collect collects no artifact at all, its own
+   `Nothing to audit under this root` note is still emitted, and the Checked line agrees with it; the headline already
+   hedges. What would need to change is when collect emits the empty-root note, which is not in the renderer; recorded
+   as a follow-up.
+   **Decided (2026-10-09)**: as recommended.
 
-## 完成
+## Done
 
 ```
-合入:PR #39(2026-10-09;sha 用 git log --grep P-017 找)
-发布:待发
-证据:TestCheckedLineCountsWhatWasScanned(cmd/aguard/checked_line_test.go);W1 在本仓 main 的渲染器上红:6 个子测试 × 终端默认 / --verbose / markdown / HTML 共 24 处都是 "Nothing was found to check"(check install.sh、check hello.sh、check commands/deploy.md、check 普通目录、只有 CLAUDE.md 的 root、只有 env 块的 settings.json)→ W2 后绿:Checked 1 file. / 1 file. / 1 command. / 1 directory. / 1 file. / 1 settings block.
-证据:TestUnreadableSettingsIsNamedNotFullyChecked(同文件);W1 红:四个渲染器都缺 "Not fully checked:"、"settings.json"、"IO-000" 且说 "Nothing was found to check"(16 处)→ W2 后绿:"Not fully checked: …/.claude/settings.json [IO-000]."(markdown 是代码跨度)
-证据:TestLoadedContentLeftUnreadHedgesTheHeadline(同文件);W1 红:5 个 Low 档夹具 × 4 个渲染器共 20 处说 "looks safe"(chmod 0111 子目录里的 curl|bash、1.1 MB 脚本末尾的 curl|bash、指进 node_modules 的 SUP-004、hook 跑不存在的脚本、指向 root 外的 rules/ 软链)→ W2 后仍红(只改了 Checked 那句)→ W4 后绿
-证据:TestScanLevelNotesThatHedge(internal/report/scan_gaps_test.go);W1 红 10 行 × 4 个渲染器(8 种 detect / collect 的扫描级 COV-000 + 托管策略 + SUP-004),IO-000 / PARSE-000 两行与 10 行不对冲的(四条按设计不读、LLM-000/002/005、GATE-001、REP-GOOD、IGN-000)W1 起就绿 → W4 后全绿
-证据:TestCheckedLineDerivesFromWhatWasScanned(同文件);W1 红 6 / 9 行(单个文件、各种不计数的种类按固定顺序、gap 不算"检查了"、扫描级 IO-000 接在计数后 / 单独出现、artifact 的 gap 排在扫描级前)→ W2 后绿;"扫描级 COV-000 不点名"、"清单有数时那一行不变"、"什么都没有"三行 W1 起就绿
-证据:反向断言 TestDeliberateSkipsKeepTheHeadline(cmd/aguard/checked_line_test.go);W1 起绿,W2–W6 后不改一字仍绿:没人指向的 node_modules、在插件树里找到的 hook 脚本、空 root、干净 skill 四个渲染器都是 "Your Claude Code setup looks safe.",前两个的说明仍在 Not checked 里。变异:去掉 deliberateSkip 里的 HookOwnedNoteTitle → 插件 hook 子测试红、单元测试那一行红 ×4;去掉 GeneratedDirNoteTitle → node_modules 子测试红;还原后绿
-证据:反向断言 —— git diff origin/main -- internal/report/artifact_notes_test.go internal/report/plain_test.go internal/report/text_test.go cmd/aguard/artifact_notes_test.go 为空:P-013 的 TestCleanSettingsReportIsUnchanged(golden 逐字节)、TestUnownedEntriesKeepTheHeadline、TestUnreadableSettingsHedgesTheHeadline、TestSummaryDoesNotCallIncompleteCoverageSafe、TestCoverageVerdict、TestCheckedWithGaps,以及 TestCheckedLine、TestVerdictSentence 不改一字仍绿
-证据:真机二进制 —— main(fd28344)与本分支各编一个,19 个夹具 × (--json 去掉 scanned_at / tool_version,--sarif 版本串归一)共 38 个文件 0 字节差;Summary 段(终端默认 / --verbose / --md / scan --html)与上面判据一致,没人指向的 node_modules 与干净 skill 两个夹具 0 字节差
-证据:真机 ~/.claude(scan --inbox off,605 行,69/100 Elevated):main 与本分支只差第 7 行 —— Checked 那句多出 "Not fully checked: hooks.json [PARSE-000]."(一个插件 hooks.json 里的 hook 条目没看懂,未决问题 2);头条不变。scan --quiet 前后都是退出 0、0 行输出
-证据:不做什么 —— git diff --stat origin/main -- internal/model internal/score internal/gate internal/inbox cmd/aguard/main.go cmd/aguard/inbox.go internal/report/sarif.go internal/report/sanitize.go go.mod go.sum 为空;internal/collect、internal/detect 只有 6 个文件 26+/15-:四个标题改成导出常量(字符串不变)和它们的注释、引用
-证据:make verify: all gates passed;go version go1.23.5(无工具链切换),go.mod 第二行 go 1.23.5
-后续(没做,只记名):(1) collect 的空 root 说明在"唯一的加载内容解析到 root 外"时照样出,Checked 那句跟着说 Nothing was found to check(未决问题 7);(2) Downloads 一节的 inboxAdvice 不看条目自己的覆盖说明 —— 实测(本分支二进制):Downloads 里一个子目录 chmod 0111、里面是 curl|bash 的 skill 得 100/100,建议句是 "Nothing flagged by the static rules. Install it if you know where it came from.",那条 COV-000 印在下一行
+Merged: PR #39 (2026-10-09; find the sha with git log --grep P-017)
+Released: pending release
+Evidence: TestCheckedLineCountsWhatWasScanned (cmd/aguard/checked_line_test.go); W1 red on the renderers of this repository's main: 6 subtests × terminal default / --verbose / markdown / HTML, all 24 places say "Nothing was found to check" (check install.sh, check hello.sh, check commands/deploy.md, check a plain directory, a root with only CLAUDE.md, a settings.json with only an env block) → green after W2: Checked 1 file. / 1 file. / 1 command. / 1 directory. / 1 file. / 1 settings block.
+Evidence: TestUnreadableSettingsIsNamedNotFullyChecked (same file); W1 red: all four renderers lack "Not fully checked:", "settings.json", "IO-000" and say "Nothing was found to check" (16 places) → green after W2: "Not fully checked: …/.claude/settings.json [IO-000]." (a code span in markdown)
+Evidence: TestLoadedContentLeftUnreadHedgesTheHeadline (same file); W1 red: 5 Low-band fixtures × 4 renderers, 20 places say "looks safe" (curl|bash in a chmod 0111 subdirectory, curl|bash at the end of a 1.1 MB script, SUP-004 pointing into node_modules, a hook running a script that does not exist, a rules/ symlink pointing outside the root) → still red after W2 (only the Checked line changed) → green after W4
+Evidence: TestScanLevelNotesThatHedge (internal/report/scan_gaps_test.go); W1 red on 10 rows × 4 renderers (8 kinds of detect / collect scan-level COV-000 + managed policy + SUP-004); the two IO-000 / PARSE-000 rows and the 10 non-hedging rows (the four deliberate skips, LLM-000/002/005, GATE-001, REP-GOOD, IGN-000) green from W1 on → all green after W4
+Evidence: TestCheckedLineDerivesFromWhatWasScanned (same file); W1 red on 6 / 9 rows (a single file, the various uncounted kinds in fixed order, a gap does not count as "checked", scan-level IO-000 after the counts / on its own, artifact gaps before scan-level ones) → green after W2; the three rows "scan-level COV-000 not named", "the line unchanged when the inventory has counts" and "nothing at all" green from W1 on
+Evidence: reverse assertion TestDeliberateSkipsKeepTheHeadline (cmd/aguard/checked_line_test.go); green from W1 on, still green after W2–W6 without a single change: a node_modules nothing points to, a hook script found in the plugin tree, an empty root, a clean skill — all four renderers say "Your Claude Code setup looks safe.", and the notes of the first two are still in Not checked. Mutation: remove HookOwnedNoteTitle from deliberateSkip → the plugin-hook subtest goes red, and that row of the unit test goes red ×4; remove GeneratedDirNoteTitle → the node_modules subtest goes red; green after restoring
+Evidence: reverse assertion — git diff origin/main -- internal/report/artifact_notes_test.go internal/report/plain_test.go internal/report/text_test.go cmd/aguard/artifact_notes_test.go is empty: P-013's TestCleanSettingsReportIsUnchanged (byte-for-byte golden), TestUnownedEntriesKeepTheHeadline, TestUnreadableSettingsHedgesTheHeadline, TestSummaryDoesNotCallIncompleteCoverageSafe, TestCoverageVerdict, TestCheckedWithGaps, and TestCheckedLine, TestVerdictSentence still green without a single change
+Evidence: binaries on a real machine — one built each from main (fd28344) and this branch, 19 fixtures × (--json without scanned_at / tool_version, --sarif with the version string normalised), 38 files in all, 0 bytes of difference; the Summary sections (terminal default / --verbose / --md / scan --html) match the criteria above, and the two fixtures with an unreferenced node_modules and a clean skill differ by 0 bytes
+Evidence: ~/.claude on a real machine (scan --inbox off, 605 lines, 69/100 Elevated): main and this branch differ only on line 7 — the Checked line gains "Not fully checked: hooks.json [PARSE-000]." (a hook entry in a plugin's hooks.json was not understood, open question 2); the headline does not change. scan --quiet exits 0 with 0 lines of output both before and after
+Evidence: Out of scope — git diff --stat origin/main -- internal/model internal/score internal/gate internal/inbox cmd/aguard/main.go cmd/aguard/inbox.go internal/report/sarif.go internal/report/sanitize.go go.mod go.sum is empty; internal/collect and internal/detect have only 6 files, 26+/15-: the four titles turned into exported constants (strings unchanged), plus their comments and references
+Evidence: make verify: all gates passed; go version go1.23.5 (no toolchain switch), go.mod line 2 go 1.23.5
+Follow-ups (not done, named only): (1) collect's empty-root note is still emitted when "the only loaded content resolves outside the root", and the Checked line follows it in saying Nothing was found to check (open question 7); (2) the inboxAdvice of the Downloads section does not look at an entry's own coverage notes — measured (this branch's binary): a skill in Downloads with a chmod 0111 subdirectory containing curl|bash gets 100/100, the advice sentence is "Nothing flagged by the static rules. Install it if you know where it came from.", and that COV-000 is printed on the next line
 ```

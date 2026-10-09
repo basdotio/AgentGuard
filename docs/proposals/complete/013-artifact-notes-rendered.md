@@ -1,18 +1,19 @@
 <!-- SPDX-License-Identifier: MIT -->
-# 013 — settings.json 解析失败时,终端和 markdown 报告说 "looks safe":artifact 自己的 dim-0 note 从不渲染
+# 013 — When settings.json fails to parse, the terminal and markdown reports say "looks safe": an artifact's own dim-0 note is never rendered
 
-- **来源**:collect 把 `PARSE-000` 挂在 artifact 上而不是扫描级 note,终端、markdown、HTML 只渲染扫描级 note,
-  于是一个解析不了的 `settings.json` 被报成 "looks safe … Nothing was found to check"(不变量 #5:任何遗漏都不许静默)。
-  移植自旧仓 agent-guard 的 P-054(私有仓)
-- **依赖**:无
-- **分支**:`p/013-artifact-notes-rendered`
+- **Source**: collect attaches `PARSE-000` to an artifact rather than as a scan-level note, and the terminal, markdown
+  and HTML render only scan-level notes, so a `settings.json` that does not parse is reported as
+  "looks safe … Nothing was found to check" (invariant #5: no omission may be silent).
+  Ported from P-054 in the former private repository agent-guard
+- **Depends on**: none
+- **Branch**: `p/013-artifact-notes-rendered`
 
-<!-- 没有「状态」行:文件所在目录就是状态(draft/ design/ complete/ rejected/),见 README.md。 -->
+<!-- No "Status" line: the directory the file sits in is its state (draft/ design/ complete/ rejected/), see README.md. -->
 
-## 问题
+## Problem
 
-一个 `settings.json` 写坏了的 `.claude`(内容 `{"hooks": {"PreToolUse": [ broken`),用 `main`(`dec64ca`,v0.18.0)
-构建的二进制实测:
+A `.claude` with a broken `settings.json` (content `{"hooks": {"PreToolUse": [ broken`), measured with a binary built
+from `main` (`dec64ca`, v0.18.0):
 
 ```
 $ aguard check …/broken/.claude
@@ -33,196 +34,256 @@ $ echo $?
 0
 ```
 
-`--verbose` 与默认输出一字不差;`--md -` 同样是 "looks safe" + "Nothing was found to check",没有 "Not checked" 一节;
-`scan --root … --html`(`check` 没有 `--html`)同样,页面里 `PARSE-000` 出现 0 次。而 `check --json` 里那条说明就在:
+`--verbose` is identical to the default output word for word; `--md -` likewise says "looks safe" + "Nothing was found
+to check", with no "Not checked" section; `scan --root … --html` (`check` has no `--html`) is the same, and `PARSE-000`
+appears 0 times on the page. Yet the note is right there in `check --json`:
 
 ```
 artifacts: [("hook", "settings.json", hash "", score 100, findings [("PARSE-000", dimension 0, "Parse failed, artifact not fully covered")])]
 notes: []
 ```
 
-`check --sarif` 也带着它(`PARSE-000`,`properties.artifact = "hook:settings.json"`)。
+`check --sarif` carries it too (`PARSE-000`, `properties.artifact = "hook:settings.json"`).
 
-原因:`collect.withParseError`(`internal/collect/collect.go:580`)把 `PARSE-000` 挂在**它造出来的那个 artifact 上**,不放进
-扫描级 `notes`。三个给人读的渲染器只从 `ScanResult.Notes` 取 dimension-0 说明(`text.go:167` 的 `writeNotes(w, r.Notes, …)`、
-`markdown.go:79` 与 `html.go:264` 的 `splitNotes(r.Notes)`),而 `report.Aggregate`(`aggregate.go:86`)跳过所有 dimension-0
-的发现 —— 于是 artifact 自己的 note **哪里都不印**。SARIF 印了(它遍历每个 artifact 的 findings),JSON 印了(原样序列化),
-给人看的三个都没有。
+Cause: `collect.withParseError` (`internal/collect/collect.go:580`) attaches `PARSE-000` **to the artifact it creates**,
+and does not put it in the scan-level `notes`. The three human-read renderers take dimension-0 notes only from
+`ScanResult.Notes` (`writeNotes(w, r.Notes, …)` at `text.go:167`, `splitNotes(r.Notes)` at `markdown.go:79` and
+`html.go:264`), and `report.Aggregate` (`aggregate.go:86`) skips every dimension-0 finding — so the artifact's own note
+is **printed nowhere**. SARIF prints it (it walks each artifact's findings), JSON prints it (serialised as is), and none
+of the three human-facing ones do.
 
-同一份配置里装着 hooks、permissions、env,是这个工具最在意的那块面;它没被读,报告却说 "looks safe"、"Nothing was found to
-check"(找到了,只是没读成)。这正是不变量 #5("任何遗漏都不许静默")要防的事:说明产出了,读者看不到。README 里
-"`--json` / `--html` / `--md` always carry everything"(`README.md:186`)对 html 和 md 也不成立。
+That one config file holds hooks, permissions and env, the surface this tool cares about most; it was not read, yet the
+report says "looks safe" and "Nothing was found to check" (it was found, it just could not be read). This is exactly
+what invariant #5 ("no omission may be silent") is there to prevent: the note was produced, and the reader cannot see
+it. The README's "`--json` / `--html` / `--md` always carry everything" (`README.md:186`) does not hold for html and md
+either.
 
-`withParseError` 有三个调用点:`settings.json` / `settings.local.json`(hook 类 artifact,`collect.go:540`)、MCP 配置
-(`~/.claude.json` 等,mcp 类,`collect.go:476`)、`plugins/installed_plugins.json`(plugin 类,`plugins.go:144`)。
-`main` 上实测三种都是同一个缺口:坏的 `~/.claude.json`(`{"mcpServers": {`)和坏的 `installed_plugins.json` 同样报
-"looks safe … Nothing was found to check",JSON 里各有一个带 `PARSE-000` 的 artifact、`notes` 为空。
+`withParseError` has three call sites: `settings.json` / `settings.local.json` (hook-kind artifact, `collect.go:540`),
+MCP configs (`~/.claude.json` and others, mcp kind, `collect.go:476`), and `plugins/installed_plugins.json` (plugin
+kind, `plugins.go:144`). Measured on `main`, all three are the same gap: a broken `~/.claude.json` (`{"mcpServers": {`)
+and a broken `installed_plugins.json` likewise report "looks safe … Nothing was found to check", and the JSON has one
+artifact carrying `PARSE-000` each, with `notes` empty.
 
-退出码 0 本身不是这次要改的:dimension-0 note 从不参与 `--fail-on`(`score.Deterministic`),这是不变量 #4 的一部分。
+Exit code 0 itself is not what this changes: dimension-0 notes never take part in `--fail-on` (`score.Deterministic`);
+that is part of invariant #4.
 
-## 初步方向
+## Initial direction
 
-只改给人读的三个渲染器(`internal/report` 的 text / markdown / html):artifact 自己的 dimension-0 note 和扫描级 note 进同一条
-"Not checked" 通道(同一行折叠、同一段 `--verbose`、同一个 `<details>`、同一个 HTML 区块)。数据不挪 —— JSON / SARIF
-已经带着它,字节不变。Summary 里的两句("looks safe"、"Nothing was found to check")要知道覆盖不全,措辞沿用现有的
-"coverage is incomplete"。分数、退出码、`--fail-on` 都不动。
+Change only the three human-read renderers (text / markdown / html in `internal/report`): an artifact's own
+dimension-0 notes and the scan-level notes go into the same "Not checked" channel (the same folded line, the same
+`--verbose` section, the same `<details>`, the same HTML block). The data does not move — JSON / SARIF already carry
+it, and their bytes do not change. The two sentences in the Summary ("looks safe", "Nothing was found to check") need to
+know coverage is incomplete, using the existing wording "coverage is incomplete". Score, exit code and `--fail-on` all
+stay as they are.
 
-## 完成的判据
+## Done criteria
 
-夹具是同一个 `.claude` 的两份 `settings.json`:**坏的** `{"hooks": {"PreToolUse": [ broken`,**好的**是同一个开头写完整、
-注册一条 `echo ok` 的 hook(`main` 上 100/100、零发现、零 note,输出 "looks safe" + "Checked 1 hook.")。
+The fixture is the same `.claude` with two versions of `settings.json`: the **broken** one
+`{"hooks": {"PreToolUse": [ broken`, and the **good** one, the same opening written out completely, registering one
+`echo ok` hook (on `main` 100/100, zero findings, zero notes, output "looks safe" + "Checked 1 hook.").
 
-- [x] `TestBrokenSettingsIsNotReportedSafe`(`cmd/aguard/artifact_notes_test.go`,新):坏夹具分别走 `scanEnv` 和 `checkTarget`,
-  四个给人读的渲染器(终端默认、`--verbose`、markdown、HTML)每一个都含 `PARSE-000` 和 `settings.json` 的路径,
-  每一个都**不含** `looks safe` 和 `Nothing was found to check`。今天红:四个渲染器都没有 `PARSE-000`
-- [x] `TestCheckBrokenSettingsCLI`(同文件,新):真二进制 `aguard check <坏夹具>` 的 stdout 含 `PARSE-000`、不含 `looks safe`,
-  **退出码 0**。今天红在 stdout 那半;退出码那半今天就是 0,修完仍是 0
-- [x] `TestArtifactNoteReachesEveryHumanRenderer`(`internal/report/artifact_notes_test.go`,新):手搭的结果,artifact 自带一条
-  dim-0 note,文件名里带 U+202E 和 ESC;四个渲染器都显示这条 note,且输出里**没有** U+202E / ESC(不变量 #7,
-  文件名是被扫目录给的)。今天红:note 不显示
-- [x] `TestSummaryDoesNotCallIncompleteCoverageSafe`(同文件,新):Low 档 + **Claude Code 加载的东西没读全**(人定的集合,
-  见未决问题 2:挂在 artifact 上的覆盖 note,或任何位置的 `IO-000` / `PARSE-000`)→ 三个渲染器的 Summary 都说
-  `coverage is incomplete`、不说 `looks safe`。今天红。另有三行:只有"顶层条目没读"的扫描级 `COV-000` → 仍说
-  `looks safe`;只有 `LLM-002` → 仍说 `looks safe`;扫描级 `PARSE-000`(hook 条目没看懂)→ 对冲
-- [x] `TestUnownedEntriesKeepTheHeadline`(`cmd/aguard/artifact_notes_test.go`,新):真实流水线,好夹具 + 一个
-  `sessions/a.jsonl` → 恰好一条扫描级 `COV-000`、Low 档;四个渲染器都仍是 `Your Claude Code setup looks safe.`,且这条
-  note 仍然披露(终端的 "Not checked —" 行、`--verbose` 的 "⚠ Scan warnings"、markdown 的 "## Not checked"、HTML 的
-  `notchecked` 区块)
-- [x] 反向断言 `TestUnreadableSettingsHedgesTheHeadline`(同文件,新):`chmod 000` 的 `settings.json` → 扫描级
-  `IO-000`、没有 artifact → 四个渲染器的头条都对冲(以 root 运行读得到时 skip)
-- [x] 反向断言 `TestCleanSettingsReportIsUnchanged`(`cmd/aguard/artifact_notes_test.go`,新,今天就绿):好夹具的终端默认、
-  `--verbose`、markdown 输出与**本仓 `main` 上录下**的 golden **逐字节相同**(只把临时目录替换成占位符、把时间和版本固定);
-  HTML 说 `looks safe`、`Checked 1 hook.`、没有 "Not checked" 区块。修完不改一字仍绿
-- [x] 反向断言 `TestBrokenSettingsMachineOutputUnchanged`(同文件,新,今天就绿):坏夹具的 JSON 里 `PARSE-000` 仍在
-  `artifacts[0].findings`、`notes` 仍为空,SARIF 仍有这条结果且归属 `hook:settings.json` —— 数据没挪;分数 100 不变;
-  `failGate` 在 `--fail-on high` 与 `--fail-on low` 下都放行(dim-0 不 gate)。修完不改一字仍绿
-- [x] 反向断言:Low 档、没有覆盖 note → 仍是 `Your Claude Code setup looks safe.`;只有压制类 note(`REP-GOOD`/`IGN-000`)
-  → 仍是 `looks safe`(压制不是覆盖缺口,Summary 已有自己的一行);`TestVerdictSentence`、`TestCheckedLine` 不改一字仍绿
-- [x] 真机:坏夹具和好夹具在 `main` 与本分支的 `check --json` / `check --sarif` 输出(去掉 `scanned_at`)`diff` 为 0 字节;
-  只带"顶层条目没读"的夹具和空 root 的终端输出与 `main` 逐字节相同;真机 `~/.claude` 输出不变(若它不在 Low 档或没有
-  artifact 自带的 note)
-- [x] `make verify` 绿;`go version` 不切换工具链
+- [x] `TestBrokenSettingsIsNotReportedSafe` (`cmd/aguard/artifact_notes_test.go`, new): the broken fixture goes through
+  `scanEnv` and through `checkTarget`, and each of the four human-read renderers (terminal default, `--verbose`,
+  markdown, HTML) contains `PARSE-000` and the path of `settings.json`, and **does not** contain `looks safe` or
+  `Nothing was found to check`. Red today: none of the four renderers has `PARSE-000`
+- [x] `TestCheckBrokenSettingsCLI` (same file, new): the stdout of the real binary's `aguard check <broken-fixture>`
+  contains `PARSE-000` and not `looks safe`, with **exit code 0**. Red today on the stdout half; the exit-code half is 0
+  today and is still 0 after the fix
+- [x] `TestArtifactNoteReachesEveryHumanRenderer` (`internal/report/artifact_notes_test.go`, new): a hand-built result
+  where an artifact carries its own dim-0 note, with U+202E and ESC in the file name; all four renderers show the note,
+  and the output contains **no** U+202E / ESC (invariant #7, the file name comes from the scanned directory). Red today:
+  the note is not shown
+- [x] `TestSummaryDoesNotCallIncompleteCoverageSafe` (same file, new): Low band + **something Claude Code loads was not
+  fully read** (the set decided by the maintainer, see open question 2: a coverage note attached to an artifact, or an
+  `IO-000` / `PARSE-000` anywhere) → the Summary of all three renderers says `coverage is incomplete` and not
+  `looks safe`. Red today. Three more rows: only a scan-level "top-level entries not read" `COV-000` → still says
+  `looks safe`; only `LLM-002` → still says `looks safe`; a scan-level `PARSE-000` (a hook entry not understood) → hedges
+- [x] `TestUnownedEntriesKeepTheHeadline` (`cmd/aguard/artifact_notes_test.go`, new): the real pipeline, good fixture +
+  a `sessions/a.jsonl` → exactly one scan-level `COV-000`, Low band; all four renderers still say
+  `Your Claude Code setup looks safe.`, and the note is still disclosed (the terminal's "Not checked —" line,
+  `--verbose`'s "⚠ Scan warnings", markdown's "## Not checked", HTML's `notchecked` block)
+- [x] Reverse assertion `TestUnreadableSettingsHedgesTheHeadline` (same file, new): a `settings.json` with `chmod 000` →
+  scan-level `IO-000`, no artifact → the headline of all four renderers hedges (skipped when running as root, where the
+  file is readable)
+- [x] Reverse assertion `TestCleanSettingsReportIsUnchanged` (`cmd/aguard/artifact_notes_test.go`, new, green today): the
+  good fixture's terminal default, `--verbose` and markdown output are **byte-for-byte identical** to goldens
+  **recorded on this repository's `main`** (only the temporary directory replaced by a placeholder, time and version
+  fixed); HTML says `looks safe`, `Checked 1 hook.`, and has no "Not checked" block. Stays green after the fix without a
+  single change
+- [x] Reverse assertion `TestBrokenSettingsMachineOutputUnchanged` (same file, new, green today): in the broken fixture's
+  JSON, `PARSE-000` is still in `artifacts[0].findings` and `notes` is still empty, and SARIF still has this result
+  attributed to `hook:settings.json` — the data did not move; the score stays 100; `failGate` passes under both
+  `--fail-on high` and `--fail-on low` (dim-0 does not gate). Stays green after the fix without a single change
+- [x] Reverse assertion: Low band, no coverage note → still `Your Claude Code setup looks safe.`; only suppression notes
+  (`REP-GOOD`/`IGN-000`) → still `looks safe` (a suppression is not a coverage gap, and the Summary already has its own
+  line for it); `TestVerdictSentence` and `TestCheckedLine` stay green without a single change
+- [x] On a real machine: for the broken and good fixtures, `diff` of the `check --json` / `check --sarif` output (without
+  `scanned_at`) between `main` and this branch is 0 bytes; the terminal output for a fixture with only "top-level
+  entries not read" and for an empty root is byte-for-byte identical to `main`; the output for the real machine's
+  `~/.claude` does not change (if it is not in the Low band or has no note carried by an artifact)
+- [x] `make verify` green; `go version` does not switch toolchains
 
-## 不做什么
+## Out of scope
 
-- **不挪数据**:`collect.withParseError` 照旧把 `PARSE-000` 挂在 artifact 上;`model`、`collect`、`detect`、`score`、
-  `cmd/aguard/main.go` 的 `analyze` 一行不动。JSON / SARIF 的渲染(`internal/report/sarif.go`、`main` 里的 JSON 编码)不动
-- **不改退出码、不改 `--fail-on` / `--fail-on-llm` 语义**:dim-0 note 永不 gate(`score.Deterministic`、`report.HasAtLeast` 不动)
-- **不改分数**:坏夹具仍是 100/100(这个 artifact 没被读,所以没有发现;让它扣分是另一个契约)
-- **不改 `PARSE-000` 的严重度**(仍是 low):改了 JSON 就变了
-- **不改其余三档的结论句**(Watch / Elevated / Critical):它们不是"安全"的断言
-- **不修 Checked 那句的两个措辞缺陷,它们合成一份独立 proposal,本条合入后另开**(人定,2026-10-09):
-  (a) `check <单个脚本>` / `check <普通目录>` 一边报发现一边说 "Nothing was found to check under this root."(清单计数
-  不含 file / directory 类 artifact,和 dim-0 note 无关);
-  (b) 读不了的 `settings.json`(扫描级 `IO-000`)头条已对冲,但 Checked 那句仍是 "Nothing was found to check"(未决问题 8)。
-  两者都是"Checked 那句只从采集器抽出的计数推",修在同一处。detect 自己放在扫描级的、关于已加载内容的覆盖 note
-  不对冲头条(见「不能说什么」)也归那一份
-- **不动按设计不读的那些扫描级 note 的展示**:"顶层条目没读"的 `COV-000`、`LLM-002` 仍在 "Not checked" 那行里,条数、
-  最高严重度、规则 ID 照旧;收窄只改它们**不**影响头条
-- **不碰 Downloads 一节**(`cmd/aguard/inbox.go` 已经把条目里 artifact 的 dim-0 分进 `it.Notes`)和**闸门**(`internal/gate`)
-- `go.mod` / `go.sum` 不动,不加依赖
+- **Do not move the data**: `collect.withParseError` still attaches `PARSE-000` to the artifact; not one line of `model`,
+  `collect`, `detect`, `score` or `analyze` in `cmd/aguard/main.go` changes. JSON / SARIF rendering
+  (`internal/report/sarif.go`, the JSON encoding in `main`) does not change
+- **Do not change exit codes or the semantics of `--fail-on` / `--fail-on-llm`**: dim-0 notes never gate
+  (`score.Deterministic` and `report.HasAtLeast` unchanged)
+- **Do not change the score**: the broken fixture is still 100/100 (this artifact was not read, so there are no
+  findings; making it cost points is a different contract)
+- **Do not change the severity of `PARSE-000`** (still low): changing it would change the JSON
+- **Do not change the verdict sentences of the other three bands** (Watch / Elevated / Critical): they are not claims
+  of "safe"
+- **Do not fix the two wording defects in the Checked sentence; they are combined into one separate proposal, opened
+  after this one merges** (decided by the maintainer, 2026-10-09):
+  (a) `check <single-script>` / `check <plain-directory>` reports findings while saying
+  "Nothing was found to check under this root." (the inventory counts exclude file / directory artifacts, unrelated to
+  dim-0 notes);
+  (b) for an unreadable `settings.json` (scan-level `IO-000`) the headline already hedges, but the Checked sentence
+  still says "Nothing was found to check" (open question 8).
+  Both are "the Checked sentence is derived only from the counts the collectors extract", fixed in the same place.
+  Coverage notes that detect itself puts at scan level about loaded content not hedging the headline (see "Must not
+  claim") also belong to that proposal
+- **Do not change how the scan-level notes for things not read by design are shown**: the "top-level entries not read"
+  `COV-000` and `LLM-002` are still in the "Not checked" line, with count, highest severity and rule IDs as before; the
+  narrowing only changes them so they do **not** affect the headline
+- **Do not touch the Downloads section** (`cmd/aguard/inbox.go` already sorts the dim-0 notes of an entry's artifacts
+  into `it.Notes`) or **the gate** (`internal/gate`)
+- `go.mod` / `go.sum` unchanged; no new dependencies
 
-## 不能说什么
+## Must not claim
 
-- 不说"坏掉的配置现在会让 `check` 失败":修的是**看得见**,不是**挡得住**。报告显示这条 note 之后,`check` 在默认
-  `--fail-on high` 下(以及任何 `--fail-on`)仍退出 0,CI 照样绿
-- 不说"坏配置现在扣分":仍是 100/100,头条说的是覆盖不全,不是有风险
-- 不说"所有读不全的情形现在都会点名文件":Summary 里点名的只有 artifact 自带 note 的那几项;扫描级 note 仍折在
-  "Not checked" 那一行,文件在 `--verbose` / markdown / HTML 里
-- 不说"终端报告以前漏掉了扫描级 note":扫描级的一直在 "Not checked" 那行里;漏的只是挂在 artifact 上的那种
-- 不说 `--json` / SARIF 以前不全:它们一直带着这条
-- 不说"头条和 'Not checked' 那行说的是同一个集合"(人定收窄):头条只看 Claude Code 加载的东西有没有读全;
-  "Not checked — … coverage is incomplete" 那行仍数全部覆盖 note。所以 Low 档报告可以同时出现 `looks safe` 和那一行
-  (例如只有"顶层条目没读"的 `COV-000`,真机上几乎总是这样)
-- 不说"凡是加载内容没读全都会对冲头条":detect 把它自己的覆盖 note(artifact 里读不了的条目、超大文件、hook 脚本没跟进)
-  放在**扫描级**、规则 ID 是 `COV-000`,按人定的集合(挂在 artifact 上的 note + 任何位置的 `IO-000` / `PARSE-000`)不动头条,
-  只进 "Not checked"
+- Do not say "a broken config now makes `check` fail": what is fixed is **visibility**, not **blocking**. With the
+  report showing the note, `check` still exits 0 under the default `--fail-on high` (and under any `--fail-on`), and CI
+  stays green
+- Do not say "a broken config now costs points": it is still 100/100; the headline says coverage is incomplete, not that
+  there is risk
+- Do not say "every case of incomplete reading now names the file": the Summary names only the items whose artifact
+  carries its own note; scan-level notes are still folded into the "Not checked" line, with the files in `--verbose` /
+  markdown / HTML
+- Do not say "the terminal report used to miss scan-level notes": scan-level ones have always been in the "Not checked"
+  line; only the kind attached to an artifact was missing
+- Do not say `--json` / SARIF used to be incomplete: they have always carried this note
+- Do not say "the headline and the 'Not checked' line talk about the same set" (narrowing decided by the maintainer):
+  the headline only looks at whether what Claude Code loads was fully read; the
+  "Not checked — … coverage is incomplete" line still counts every coverage note. So a Low-band report can show both
+  `looks safe` and that line (for example with only a "top-level entries not read" `COV-000`, which is nearly always the
+  case on a real machine)
+- Do not say "whenever loaded content was not fully read the headline hedges": detect puts its own coverage notes
+  (unreadable entries in an artifact, oversized files, hook scripts not followed) at **scan level** with rule ID
+  `COV-000`, and under the set decided by the maintainer (notes attached to an artifact + an `IO-000` / `PARSE-000`
+  anywhere) they leave the headline alone and go only into "Not checked"
 
-## 工作项
+## Work items
 
-| W | 一句话 | 提交信息(不写 sha,rebase 会改) |
+| W | In one sentence | Commit message (no sha; a rebase changes it) |
 |---|---|---|
-| 1 | 坏 / 好两个夹具的端到端测试、渲染器单测、头条测试,跑红;改正一条把缺陷钉成合格的旧断言;golden 从本仓 `main` 录 | `report, cmd: tests — a settings.json that does not parse renders as "looks safe" with no note in any human report (P-013)` |
-| 2 | 三个给人读的渲染器把 artifact 自带的 dim-0 note 和扫描级 note 放进同一条通道;HTML 的单条证据 note 显示文件 | `report: an artifact's own coverage note reaches the terminal, markdown and HTML reports (P-013)` |
-| 3 | Summary:有覆盖 note 时 Low 档不说 looks safe;Checked 句点名没检查全的项 | `report: the summary stops calling a scan safe when coverage is incomplete, and names what was not fully checked (P-013)` |
-| 4 | `.claude/rules/report.md`、spec §9、README 与 architecture 两个对子各一句 | `docs: report rules, spec §9 and the README and architecture pairs say artifact-level notes render and the headline follows coverage (P-013)` |
-| 5 | 人定收窄:只带"顶层条目没读"的 `COV-000` / 只带 `LLM-002` 的结果仍该说 looks safe,跑红;读不了的 `settings.json` 仍该对冲(反向) | `report, cmd: tests — an unowned top-level entry or the judge's privacy notice takes "looks safe" away from the headline (P-013)` |
-| 6 | `coverageVerdict` 收窄:集合 = 挂在 artifact 上的覆盖 note + 任何位置的 `IO-000` / `PARSE-000`,只在这一处定义,按规则 ID 和挂载位置选 | `report: only what Claude Code loads and did not fully read takes "looks safe" away; unowned entries and the privacy notice stay in Not checked (P-013)` |
-| 7 | `.claude/rules/report.md`、spec §9、README 与 architecture 对子按收窄改写 | `docs: report rules, spec §9 and the README and architecture pairs say only unread loaded content hedges the headline (P-013)` |
-| 8 | 本文件、索引 | `proposals: P-013 (P-013)` |
+| 1 | End-to-end tests on the broken / good fixtures, renderer unit tests, headline tests, run red; correct one old assertion that pinned the defect as passing; goldens recorded from this repository's `main` | `report, cmd: tests — a settings.json that does not parse renders as "looks safe" with no note in any human report (P-013)` |
+| 2 | The three human-read renderers put an artifact's own dim-0 notes and the scan-level notes into one channel; HTML shows the file for a single-evidence note | `report: an artifact's own coverage note reaches the terminal, markdown and HTML reports (P-013)` |
+| 3 | Summary: with a coverage note the Low band does not say looks safe; the Checked sentence names the items not fully checked | `report: the summary stops calling a scan safe when coverage is incomplete, and names what was not fully checked (P-013)` |
+| 4 | One sentence each in `.claude/rules/report.md`, spec §9, and the README and architecture pairs | `docs: report rules, spec §9 and the README and architecture pairs say artifact-level notes render and the headline follows coverage (P-013)` |
+| 5 | Narrowing decided by the maintainer: a result with only a "top-level entries not read" `COV-000` / only `LLM-002` should still say looks safe, run red; an unreadable `settings.json` should still hedge (reverse) | `report, cmd: tests — an unowned top-level entry or the judge's privacy notice takes "looks safe" away from the headline (P-013)` |
+| 6 | `coverageVerdict` narrowed: set = coverage notes attached to an artifact + `IO-000` / `PARSE-000` anywhere, defined only in this one place, selected by rule ID and attachment point | `report: only what Claude Code loads and did not fully read takes "looks safe" away; unowned entries and the privacy notice stay in Not checked (P-013)` |
+| 7 | `.claude/rules/report.md`, spec §9, and the README and architecture pairs rewritten for the narrowing | `docs: report rules, spec §9 and the README and architecture pairs say only unread loaded content hedges the headline (P-013)` |
+| 8 | This file, the index | `proposals: P-013 (P-013)` |
 
-W2–W4 是旧仓第一轮的宽集合,W5–W7 是人定的收窄;两段按原顺序各自成提交,一个 W 一个提交。
+W2–W4 are the former repository's first-round wide set, W5–W7 the narrowing decided by the maintainer; both stretches
+are committed in their original order, one commit per W.
 
-## 未决问题
+## Open questions
 
-1. **artifact 自带的 note 在哪一层并进去?**
-   **建议**:在 `internal/report` 里给三个人读渲染器一个共同的取数函数(扫描级 note 在前,各 artifact 自带的按 artifact 顺序在后),
-   数据不挪。挪数据(在 `analyze` 里把它们搬进 `ScanResult.Notes`)会改 JSON 字节和 SARIF 的 artifact 归属,而这两份本来就是对的;
-   Downloads 一节已经这么做(`checkCandidate` 在组条目时把 dim-0 分进条目 notes),是同一个做法。
-   **已决(2026-10-09)**:按建议(旧仓已决,移植沿用)。
-2. **覆盖不全时头条说什么?**
-   **建议**:Low 档的 `Your Claude Code setup looks safe.` 在**有任何覆盖 note** 时换成 `Low risk in what was read, but coverage is incomplete.`,
-   计数子句照旧。"任何覆盖 note"就是 "Not checked — N coverage note(s) … coverage is incomplete" 那一行数的**同一个集合**
-   (`splitNotes` 的覆盖那半);压制类 note 不算(它们在 Summary 里本来就有自己的一行)。其余三档不变。
-   **否决的备选**:只在 artifact 自带 note 时改 —— 同一个 `settings.json` 读不了(`IO-000`,扫描级)和解析不了
-   (`PARSE-000`,artifact 级)会得到相反的头条。**代价**:真机的 `~/.claude` 几乎总带一条"顶层目录没读"的 `COV-000`,
-   落在 Low 档的真机报告头条会一直是这句;空 root 也是。
-   **已决(2026-10-09)**:按建议(旧仓)。
-   **已决(2026-10-09,人)**:收窄。只有 **Claude Code 实际加载的东西没读全**时才把 Low 档的 "looks safe" 换成对冲句:
-   `PARSE-000`、`IO-000`(扫描级的也算,例如读不了的 `settings.json`),以及挂在 artifact 上的覆盖 note(`COV-000` / `SCOPE-001`
-   挂在 artifact 上时;`SCOPE-001` 今天是维度 9 的计分发现,不是 note,将来若以维度 0 挂在 artifact 上同样触发)。扫描级的
-   "顶层条目没读" `COV-000`(无人认领的非配置条目,按设计不读)和 `LLM-002`(隐私告知)**不改头条**,仍照原样出现在
-   "Not checked" 那行。理由:真机上那条 `COV-000` 几乎总在,宽规则会让对冲句出现在几乎每一份 Low 档报告上,它就不再有
-   任何意义。实现:集合只在 `coverageVerdict` 里定义,按规则 ID 和挂载位置(artifact / 扫描)选,不按标题匹配;上面
-   "否决的备选"里担心的 `IO-000` / `PARSE-000` 头条不一致,因为 `IO-000` 在集合里而不存在。W5–W7。
-3. **"Nothing was found to check under this root." 怎么办?**
-   **建议**:那句是清单的派生。artifact 自带覆盖 note 意味着"找到了、没检查全",所以在那句里点名:`Not fully checked: <短路径> [<规则 ID>]`,
-   最多 3 项、余下计数;有清单计数时接在 `Checked …` 之后。清单为空且没有这种 artifact 时原句不变。扫描级 note 不在这里点名 ——
-   它们不是清单里的项,下面那行已经数了它们。这也是默认视图里**文件名**出现的地方。
-   **已决(2026-10-09)**:按建议(旧仓已决,移植沿用)。
-4. **默认终端视图要不要把 artifact 自带的 note 单独展开?**
-   **建议**:不。和扫描级 note 一起折进同一行(条数、最高严重度、规则 ID 都把它算进去);文件名已经在 Summary 里;全文是 `--verbose` 的事。
-   单列一块等于发明第二条通道。
-   **已决(2026-10-09)**:按建议(旧仓已决,移植沿用)。
-5. **HTML 的 "Not checked" 区块要不要显示文件?**
-   **建议**:要 —— 只有一条证据的 note 显示 `— <文件>`,和 markdown、`--verbose` 已有的规则相同(`len(Evidence)==1`)。否则 HTML 里
-   这条只剩标题 "Parse failed, artifact not fully covered",说不出是哪个文件。副作用:HTML 里单条证据的扫描级 note 也多出文件名,是补齐
-   三个渲染器,不是新规则。
-   **已决(2026-10-09)**:按建议(旧仓已决,移植沿用)。
-6. **退出码 / `--fail-on`?**
-   **建议**:不动。dim-0 永不 gate(不变量 #4,`score.Deterministic`);修完后报告显示 note,默认阈值下仍退出 0,写进「不能说什么」。
-   让坏配置挡住闸门要改 `--fail-on` 的契约,不在本条。
-   **已决(2026-10-09)**:按建议(旧仓已决,移植沿用)。
-7. **一条既有测试把缺陷钉成了合格,怎么处理?** `TestText_AggregatesAndLabels`(`internal/report/text_test.go`)的样例里有一条
-   artifact 自带的 `COV-000`,断言是"整个输出里没有 `COV-000`"—— 本意是"不作为风险行出现",写法却同时断言了"根本不显示"。
-   **建议**:改成"Findings 一节里没有、Not checked 那行里有",在 W1 里改并披露。
-   **已决(2026-10-09)**:按建议(旧仓已决,移植沿用)。
-8. **读不了的 `settings.json`(`IO-000`,扫描级)那一半?** 修完后它的头条也说 `coverage is incomplete`,但 Checked 那句仍是
-   "Nothing was found to check under this root." —— 它没有 artifact,不在"找到了、没检查全"的清单里。
-   **建议**:不在本条,和「不做什么」里 `check <单个脚本>` 那条一起另开:两者都是"Checked 那句只从采集器抽出的计数推",
-   修在同一处;本条的契约("artifact 自带的 note 有人渲染、头条不再说 looks safe")已满足。
-   **已决(2026-10-09,人)**:两个措辞缺陷(这一条,和 `check <单个脚本>` / `check <普通目录>` 报发现时仍说 "Nothing was found
-   to check")合成**一份**独立 proposal,本条合入后另开;本条不修。收窄后 `IO-000` 仍在头条的集合里,头条那半不变。
+1. **At which layer are an artifact's own notes merged in?**
+   **Recommendation**: give the three human-read renderers one shared accessor in `internal/report` (scan-level notes
+   first, then each artifact's own in artifact order), without moving the data. Moving the data (moving them into
+   `ScanResult.Notes` in `analyze`) would change the JSON bytes and the SARIF artifact attribution, and both of those are
+   already correct; the Downloads section already works this way (`checkCandidate` sorts dim-0 into the entry notes when
+   it builds an entry), the same approach.
+   **Decided (2026-10-09)**: as recommended (decided in the former repo, kept on port).
+2. **What does the headline say when coverage is incomplete?**
+   **Recommendation**: the Low band's `Your Claude Code setup looks safe.` becomes
+   `Low risk in what was read, but coverage is incomplete.` when **there is any coverage note**, with the count clause as
+   before. "Any coverage note" is **the same set** the "Not checked — N coverage note(s) … coverage is incomplete" line
+   counts (the coverage half of `splitNotes`); suppression notes do not count (they already have their own line in the
+   Summary). The other three bands are unchanged.
+   **Rejected alternative**: change it only when an artifact carries its own note — the same `settings.json` being
+   unreadable (`IO-000`, scan level) and unparseable (`PARSE-000`, artifact level) would get opposite headlines.
+   **Cost**: a real machine's `~/.claude` nearly always carries a "top-level directories not read" `COV-000`, so the
+   headline of a real-machine report in the Low band would always be this sentence; so would an empty root's.
+   **Decided (2026-10-09)**: as recommended (former repo).
+   **Decided (2026-10-09, by the maintainer)**: narrow it. Only when **something Claude Code actually loads was not
+   fully read** does the Low band's "looks safe" become the hedged sentence: `PARSE-000`, `IO-000` (scan-level ones
+   count too, for example an unreadable `settings.json`), and coverage notes attached to an artifact (`COV-000` /
+   `SCOPE-001` when attached to an artifact; `SCOPE-001` is today a scored dimension-9 finding, not a note, and would
+   trigger the same way if it were ever attached to an artifact as dimension 0). The scan-level "top-level entries not
+   read" `COV-000` (unowned non-config entries, not read by design) and `LLM-002` (privacy notice) **do not change the
+   headline**, and still appear as before in the "Not checked" line. Reason: on a real machine that `COV-000` is nearly
+   always present, and the wide rule would put the hedged sentence on nearly every Low-band report, at which point it no
+   longer means anything. Implementation: the set is defined only in `coverageVerdict`, selected by rule ID and
+   attachment point (artifact / scan), not by title matching; the `IO-000` / `PARSE-000` headline inconsistency feared in
+   the "Rejected alternative" above does not arise, because `IO-000` is in the set. W5–W7.
+3. **What about "Nothing was found to check under this root."?**
+   **Recommendation**: that sentence is derived from the inventory. An artifact carrying its own coverage note means
+   "found, but not fully checked", so name it in that sentence: `Not fully checked: <short-path> [<rule-ID>]`, at most 3
+   items with the rest counted; when there are inventory counts it follows `Checked …`. When the inventory is empty and
+   there is no such artifact the original sentence stays. Scan-level notes are not named here — they are not items in
+   the inventory, and the line below already counts them. This is also where the **file name** appears in the default
+   view.
+   **Decided (2026-10-09)**: as recommended (decided in the former repo, kept on port).
+4. **Should the default terminal view expand an artifact's own notes separately?**
+   **Recommendation**: no. Fold them into the same line as the scan-level notes (count, highest severity and rule IDs all
+   include them); the file name is already in the Summary; the full text is `--verbose`'s job. A separate block would
+   amount to inventing a second channel.
+   **Decided (2026-10-09)**: as recommended (decided in the former repo, kept on port).
+5. **Should HTML's "Not checked" block show the file?**
+   **Recommendation**: yes — a note with exactly one piece of evidence shows `— <file>`, the same rule markdown and
+   `--verbose` already have (`len(Evidence)==1`). Otherwise in HTML this note is left with only the title
+   "Parse failed, artifact not fully covered" and cannot say which file. Side effect: single-evidence scan-level notes in
+   HTML also gain the file name; that brings the three renderers into line, it is not a new rule.
+   **Decided (2026-10-09)**: as recommended (decided in the former repo, kept on port).
+6. **Exit code / `--fail-on`?**
+   **Recommendation**: leave them. dim-0 never gates (invariant #4, `score.Deterministic`); after the fix the report
+   shows the note and still exits 0 at the default threshold, written into "Must not claim". Making a broken config fail
+   the gate would change the `--fail-on` contract, not in this proposal.
+   **Decided (2026-10-09)**: as recommended (decided in the former repo, kept on port).
+7. **An existing test pinned the defect as passing; what to do?** The sample in `TestText_AggregatesAndLabels`
+   (`internal/report/text_test.go`) has a `COV-000` carried by an artifact, and the assertion is "no `COV-000` anywhere
+   in the output" — the intent was "does not appear as a risk line", but as written it also asserted "is not shown at
+   all".
+   **Recommendation**: change it to "absent from the Findings section, present in the Not checked line", changed and
+   disclosed in W1.
+   **Decided (2026-10-09)**: as recommended (decided in the former repo, kept on port).
+8. **What about the unreadable `settings.json` half (`IO-000`, scan level)?** After the fix its headline also says
+   `coverage is incomplete`, but the Checked sentence is still "Nothing was found to check under this root." — it has no
+   artifact, so it is not in the "found, but not fully checked" list.
+   **Recommendation**: not in this proposal; open it separately together with the `check <single-script>` item in "Out
+   of scope": both are "the Checked sentence is derived only from the counts the collectors extract", fixed in the same
+   place; this proposal's contract ("an artifact's own notes are rendered by someone, and the headline no longer says
+   looks safe") is met.
+   **Decided (2026-10-09, by the maintainer)**: the two wording defects (this one, and `check <single-script>` /
+   `check <plain-directory>` still saying "Nothing was found to check" while reporting findings) are combined into
+   **one** separate proposal, opened after this one merges; this proposal does not fix them. After the narrowing
+   `IO-000` is still in the headline's set, so the headline half is unchanged.
 
-## 完成
+## Done
 
 ```
-合入:PR #28(2026-10-09;sha 用 git log --grep P-013 找)
-发布:待发
-证据:TestBrokenSettingsIsNotReportedSafe(cmd/aguard/artifact_notes_test.go);W1 在本仓 main 的渲染器上红:scanEnv 与 checkTarget 两路,终端默认 / --verbose / markdown / HTML 四个都 "does not name the parse failure [PARSE-000]",且都说 "looks safe" 和 "Nothing was found to check"(24 处)→ W2 后 PARSE-000 进了四个渲染器 → W3 后四个全绿:Summary 是 "Low risk in what was read, but coverage is incomplete. No findings." + "Not fully checked: …/.claude/settings.json [PARSE-000]."
-证据:TestCheckBrokenSettingsCLI(同文件);W1 红在 stdout(没有 PARSE-000、有 looks safe)→ W3 后绿;退出码修前修后都是 0
-证据:TestArtifactNoteReachesEveryHumanRenderer(internal/report/artifact_notes_test.go);W1 红:四个渲染器都 "does not show the artifact's own note" → W2 后只剩终端默认红(文件名不在默认视图、没有 U+FFFD)→ W3 后绿;四个输出里 U+202E 与 ESC 都是 0 处,U+FFFD 在
-证据:TestSummaryDoesNotCallIncompleteCoverageSafe(同文件);W1 红 16 处(扫描级 IO-000 / artifact 级 PARSE-000 × 4 个渲染器 × 2 条断言)→ W3 后绿;"no note" 与 "trust decision only" 两行 W1 起就绿,之后不改一字仍绿
-证据:人定收窄 —— 同一测试新增三行;W5 红 8 处("unowned top-level entries only" 与 "judge privacy notice only" × 4 个渲染器,looks safe = false, want true)→ W6 后绿;"scan-level PARSE-000" 一行前后都绿;原有四行 W5 / W6 未改一字,仍绿。TestCoverageVerdict(W3 自己加的)随 coverageVerdict 改为接收整个结果而改了入参,每行期望的句子不变
-证据:TestUnownedEntriesKeepTheHeadline(cmd/aguard/artifact_notes_test.go);W5 红:四个渲染器都 "an unowned top-level entry changed the headline" → W6 后绿,四个都说 Your Claude Code setup looks safe.,且 Not checked 行 / Scan warnings / ## Not checked / notchecked 区块仍在
-证据:反向断言 TestUnreadableSettingsHedgesTheHeadline(同文件);W5 时就绿,W6 后不改一字仍绿;变异(coverageVerdict 的扫描级集合去掉 IO-000)→ 四个渲染器都红 "an unreadable settings.json must hedge the headline",还原后绿
-证据:反向断言 TestCleanSettingsReportIsUnchanged(同文件);golden 在 W1 上用本仓 main 的渲染器现录(临时 dump 测试,未提交),与旧仓 golden 只差 markdown 末尾 rules 链接 blob/main ← blob/dev;W1 起绿,W2–W7 后不改一字仍绿(终端默认 = --verbose,markdown 逐字节)
-证据:反向断言 TestBrokenSettingsMachineOutputUnchanged(同文件);W1 起绿,之后不改一字仍绿:JSON 里 PARSE-000 仍在 artifacts[0].findings、notes 为 [],SARIF 归属 hook:settings.json,overall 100,--fail-on high / low 都不触发
-证据:反向断言 —— TestVerdictSentence、TestCheckedLine(internal/report/plain_test.go)未改、仍绿;text_test.go 只改了 TestText_AggregatesAndLabels 的一条断言(未决问题 7),W1 红 "must fold into the Not checked line, not vanish" → W2 后绿
-证据:真机二进制 —— main(dec64ca)与本分支各编一个(同一 -ldflags version 串),7 个夹具(好、坏 settings.json、坏 ~/.claude.json、坏 installed_plugins.json、只带顶层条目的、空 root、chmod 000 的 settings.json)× check --json(去 scanned_at)/ check --sarif 共 14 个文件 0 字节差;好夹具的终端默认 / --verbose / --md(去时间行)/ scan --html(去 meta 行)0 字节差;只带顶层条目的夹具和空 root 的终端默认 / --verbose / --md / scan 输出 0 字节差,两者 HTML 只多出单条证据 note 的文件名(未决问题 5)
-证据:真机二进制 —— 坏 settings.json、坏 ~/.claude.json、坏 installed_plugins.json 三个 withParseError 调用点由 "looks safe … Nothing was found to check" 变为 "Low risk in what was read, but coverage is incomplete." + "Not fully checked: <短路径> [PARSE-000].",Not checked 行出现 [PARSE-000];markdown 多出 "## Not checked",HTML 多出 notchecked 区块并印出文件;chmod 000 的 settings.json 头条对冲,Checked 那句仍是 "Nothing was found to check"(不做什么 (b));7 个夹具退出码前后都是 0
-证据:真机 ~/.claude(scan --inbox off,175 项,Elevated,605 行):main 与本分支输出 0 字节差 —— 不在 Low 档,也没有 artifact 自带的 note
-证据:不做什么 —— git diff --stat origin/main -- internal/collect internal/detect internal/score internal/model internal/report/sarif.go internal/report/sanitize.go cmd/aguard/main.go cmd/aguard/inbox.go internal/gate go.mod go.sum 为空
-证据:移植 —— 7 个补丁在本仓 main 上 git am -3 全部无冲突;本仓 internal/report 与旧仓导出基点只差一处(markdown 里 rules 链接的分支名 blob/main ← blob/dev,已体现在重录的 golden 里),v0.16–v0.18 没有再动 internal/report(git log 2b4c2a7..origin/main -- internal/report 为空)
-证据:make verify: all gates passed;go version go1.23.5(无工具链切换),go.mod 第二行 go 1.23.5
+Merged: PR #28 (2026-10-09; find the sha with git log --grep P-013)
+Released: pending release
+Evidence: TestBrokenSettingsIsNotReportedSafe (cmd/aguard/artifact_notes_test.go); W1 red on this repository's main renderers: on both the scanEnv and checkTarget paths, all four of terminal default / --verbose / markdown / HTML "does not name the parse failure [PARSE-000]", and all say "looks safe" and "Nothing was found to check" (24 places) → after W2 PARSE-000 reaches the four renderers → after W3 all four green: the Summary is "Low risk in what was read, but coverage is incomplete. No findings." + "Not fully checked: …/.claude/settings.json [PARSE-000]."
+Evidence: TestCheckBrokenSettingsCLI (same file); W1 red on stdout (no PARSE-000, has looks safe) → green after W3; exit code 0 before and after the fix
+Evidence: TestArtifactNoteReachesEveryHumanRenderer (internal/report/artifact_notes_test.go); W1 red: all four renderers "does not show the artifact's own note" → after W2 only the terminal default red (file name not in the default view, no U+FFFD) → green after W3; U+202E and ESC occur 0 times in all four outputs, U+FFFD is present
+Evidence: TestSummaryDoesNotCallIncompleteCoverageSafe (same file); W1 red in 16 places (scan-level IO-000 / artifact-level PARSE-000 × 4 renderers × 2 assertions) → green after W3; the "no note" and "trust decision only" rows green from W1 on, and still green afterwards without a single change
+Evidence: narrowing decided by the maintainer — three new rows in the same test; W5 red in 8 places ("unowned top-level entries only" and "judge privacy notice only" × 4 renderers, looks safe = false, want true) → green after W6; the "scan-level PARSE-000" row green before and after; the original four rows not changed at all in W5 / W6, still green. TestCoverageVerdict (added by W3 itself) changed its arguments as coverageVerdict changed to take the whole result; the expected sentence on every row is unchanged
+Evidence: TestUnownedEntriesKeepTheHeadline (cmd/aguard/artifact_notes_test.go); W5 red: all four renderers "an unowned top-level entry changed the headline" → green after W6, all four say Your Claude Code setup looks safe., and the Not checked line / Scan warnings / ## Not checked / notchecked block are still present
+Evidence: reverse assertion TestUnreadableSettingsHedgesTheHeadline (same file); green already at W5, still green after W6 without a single change; mutation (IO-000 removed from coverageVerdict's scan-level set) → all four renderers red "an unreadable settings.json must hedge the headline", green after revert
+Evidence: reverse assertion TestCleanSettingsReportIsUnchanged (same file); goldens freshly recorded at W1 with this repository's main renderers (temporary dump test, not committed), differing from the former repository's goldens only in the rules link at the end of the markdown, blob/main ← blob/dev; green from W1, still green after W2–W7 without a single change (terminal default = --verbose, markdown byte for byte)
+Evidence: reverse assertion TestBrokenSettingsMachineOutputUnchanged (same file); green from W1, still green afterwards without a single change: in the JSON PARSE-000 is still in artifacts[0].findings, notes is [], SARIF attributes it to hook:settings.json, overall 100, neither --fail-on high nor low triggers
+Evidence: reverse assertion — TestVerdictSentence, TestCheckedLine (internal/report/plain_test.go) unchanged, still green; text_test.go changed only one assertion in TestText_AggregatesAndLabels (open question 7), W1 red "must fold into the Not checked line, not vanish" → green after W2
+Evidence: real-machine binaries — one built each from main (dec64ca) and this branch (same -ldflags version string), 7 fixtures (good settings.json, broken settings.json, broken ~/.claude.json, broken installed_plugins.json, top-level entries only, empty root, settings.json with chmod 000) × check --json (scanned_at removed) / check --sarif, 14 files in total, 0-byte difference; the good fixture's terminal default / --verbose / --md (time line removed) / scan --html (meta line removed) 0-byte difference; the top-level-entries-only fixture and the empty root: terminal default / --verbose / --md / scan output 0-byte difference, and their HTML only gains the file name of single-evidence notes (open question 5)
+Evidence: real-machine binaries — the three withParseError call sites, broken settings.json, broken ~/.claude.json and broken installed_plugins.json, change from "looks safe … Nothing was found to check" to "Low risk in what was read, but coverage is incomplete." + "Not fully checked: <short-path> [PARSE-000].", and [PARSE-000] appears in the Not checked line; markdown gains "## Not checked", HTML gains the notchecked block and prints the file; for the chmod 000 settings.json the headline hedges and the Checked sentence is still "Nothing was found to check" (Out of scope (b)); exit code 0 for all 7 fixtures before and after
+Evidence: real machine ~/.claude (scan --inbox off, 175 items, Elevated, 605 lines): 0-byte difference between main and this branch output — not in the Low band, and no note carried by an artifact
+Evidence: Out of scope — git diff --stat origin/main -- internal/collect internal/detect internal/score internal/model internal/report/sarif.go internal/report/sanitize.go cmd/aguard/main.go cmd/aguard/inbox.go internal/gate go.mod go.sum is empty
+Evidence: port — all 7 patches apply with git am -3 on this repository's main without conflict; this repository's internal/report differs from the former repository's export base in one place only (the branch name of the rules link in the markdown, blob/main ← blob/dev, already reflected in the re-recorded goldens), and v0.16–v0.18 did not touch internal/report again (git log 2b4c2a7..origin/main -- internal/report is empty)
+Evidence: make verify: all gates passed; go version go1.23.5 (no toolchain switch), go.mod line 2 go 1.23.5
 ```
