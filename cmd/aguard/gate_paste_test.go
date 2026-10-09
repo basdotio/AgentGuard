@@ -233,3 +233,27 @@ func TestGateDisplayStaysClipped(t *testing.T) {
 		t.Errorf("the recorded approval's Path is %q (found %v), want the display clip", a.Path, ok)
 	}
 }
+
+// TestApproveNoHashHintPastesAsPrinted: approve's refusal for content with no hash names the
+// `check --json` that shows why. It repeats the operator's own argument — not clipped — but it
+// quoted it with %q, so a shell still ran what the path held.
+func TestApproveNoHashHintPastesAsPrinted(t *testing.T) {
+	root := filepath.Join(rawTempDir(t), "a b'c$HOME$(touch pwned)`touch pwned2`", ".claude")
+	mustWriteFile(t, filepath.Join(root, "settings.json"), `{"hooks": {"PreToolUse": [ broken`)
+	cfg := filepath.Join(t.TempDir(), "no-config.yaml")
+	err := approvePath(&bytes.Buffer{}, t.TempDir(), cfg, root)
+	if err == nil {
+		t.Fatal("fixture: approve accepted a root whose settings.json does not parse")
+	}
+	words := after(t, err.Error(), "nothing was approved (aguard check ", " --json lists the notes")
+	args, created := shellWords(t, words)
+	if len(created) > 0 {
+		t.Errorf("pasting `aguard check %s --json` executed part of the path: it created %q", words, created)
+	}
+	if len(args) != 1 || args[0] != root {
+		t.Fatalf("`aguard check` as printed expands to %q, not the target %q", args, root)
+	}
+	if _, err := checkTarget(args[0], scanOpts{cfgPath: cfg, quiet: true}); err != nil {
+		t.Errorf("the pasted check failed: %v", err)
+	}
+}
