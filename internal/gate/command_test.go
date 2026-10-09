@@ -3,10 +3,14 @@ package gate
 
 import (
 	"encoding/json"
+	"fmt"
+	"os"
+	"os/exec"
 	"strings"
 	"testing"
 
 	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/report"
 )
 
 // ordinaryVerdict is a verdict for a path with nothing in it a shell would act on — the common
@@ -71,5 +75,126 @@ func TestCommandsCannotSizeTheMessage(t *testing.T) {
 	}
 	if n := len(ordinaryVerdict(p, model.SevMedium).UnrememberedLine()); n >= 4000 {
 		t.Errorf("UnrememberedLine is %d bytes for a 100 000-byte path", n)
+	}
+}
+
+// expand runs one quoted word through a real shell in an empty directory and returns the
+// arguments it became, failing the test if the shell created anything there.
+func expand(t *testing.T, shell, word string) []string {
+	t.Helper()
+	cwd := t.TempDir()
+	cmd := exec.Command(shell, "-c", `printf '%s\0' `+word)
+	cmd.Dir = cwd
+	cmd.Env = append(os.Environ(), "HOME=/nonexistent-home")
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("%s could not expand %q: %v", shell, word, err)
+	}
+	if ents, _ := os.ReadDir(cwd); len(ents) > 0 {
+		t.Errorf("%s executed part of %q: %d file(s) appeared", shell, word, len(ents))
+	}
+	return strings.Split(strings.TrimSuffix(string(out), "\x00"), "\x00")
+}
+
+// printableQuoted are paths a command must survive that need no escape form: plain text, and
+// every character POSIX double quotes do not protect.
+var printableQuoted = []string{
+	"/Users/someone/.claude/skills/pdf-export",
+	"/Users/someone/Library/Application Support/Claude/skills/x",
+	"/tmp/o'brien/it''s",
+	`/tmp/say "hi"`,
+	"/tmp/$HOME/${HOME}/$(touch pwned)/`touch pwned2`",
+	`/tmp/back\slash\\double\`,
+	"/tmp/bang!/!!/!$",
+	"/tmp/技能/naïve/emoji-🙂",
+	"/tmp/glob*?[a]/{a,b}/~user/semi;colon&amp|pipe>gt<lt#hash",
+	"-leading-dash", "",
+}
+
+// invisibleQuoted hold characters that may never be printed raw (invariant #7).
+var invisibleQuoted = []string{
+	"/tmp/esc\x1b[2J/bell\x07/tab\there/new\nline",
+	"/tmp/pay\u202egnp.sh",
+	"/tmp/zero\u200bwidth/soft\u00adhyphen/bom\ufeff",
+	"/tmp/bad\xffutf8/\xc3",
+	"/tmp/octal-boundary\x01" + "777/then\\'!quote",
+}
+
+// TestShellQuoteRoundTripsThroughAShell: what the shell makes of a quoted word is exactly the
+// path, as one word, with nothing executed. The printable forms are POSIX and go through /bin/sh;
+// the $'…' form goes through bash and zsh where they are installed.
+func TestShellQuoteRoundTripsThroughAShell(t *testing.T) {
+	for _, p := range printableQuoted {
+		q := shellQuote(p)
+		if strings.HasPrefix(q, "$'") {
+			t.Errorf("printable %q took the escape form %s", p, q)
+		}
+		if got := expand(t, "/bin/sh", q); len(got) != 1 || got[0] != p {
+			t.Errorf("/bin/sh read %s as %q, want %q", q, got, p)
+		}
+	}
+	shells := 0
+	for _, sh := range []string{"bash", "zsh"} {
+		path, err := exec.LookPath(sh)
+		if err != nil {
+			continue
+		}
+		shells++
+		for _, p := range append(append([]string{}, printableQuoted...), invisibleQuoted...) {
+			if got := expand(t, path, shellQuote(p)); len(got) != 1 || got[0] != p {
+				t.Errorf("%s read %s as %q, want %q", sh, shellQuote(p), got, p)
+			}
+		}
+	}
+	if shells == 0 {
+		t.Skip("neither bash nor zsh is installed: the $'…' form was not run through a shell")
+	}
+}
+
+// TestShellQuoteNeverPrintsAnInvisibleCharacter: the escape form spells control, bidi and
+// zero-width characters (and bytes that are not UTF-8) in printable ASCII, so a command is as
+// safe to render as the rest of the message.
+func TestShellQuoteNeverPrintsAnInvisibleCharacter(t *testing.T) {
+	for _, p := range invisibleQuoted {
+		q := shellQuote(p)
+		if !strings.HasPrefix(q, "$'") {
+			t.Errorf("%q did not take the escape form: %q", p, q)
+		}
+		for i := 0; i < len(q); i++ {
+			if q[i] < 0x20 || q[i] >= 0x7f {
+				t.Errorf("%q quoted to %q, which holds byte %#x", p, q, q[i])
+				break
+			}
+		}
+		if report.Sanitize(q) != q {
+			t.Errorf("Sanitize would change the quoted form %q", q)
+		}
+	}
+}
+
+// TestShellQuoteIsPercentQForOrdinaryText is the reverse assertion in general form: wherever
+// Go's %q was already exact for a shell, the gate prints the same bytes as before.
+func TestShellQuoteIsPercentQForOrdinaryText(t *testing.T) {
+	for _, p := range []string{
+		"/Users/someone/.claude/skills/pdf-export",
+		"/Users/someone/Library/Application Support/Claude/local-agent-mode-sessions/a/b/skills/x",
+		"/tmp/o'brien", "/tmp/技能/naïve", "relative/skills/plain", "./x", "",
+	} {
+		if got, want := shellQuote(p), fmt.Sprintf("%q", p); got != want {
+			t.Errorf("shellQuote(%q) = %s, want today's %s", p, got, want)
+		}
+	}
+}
+
+// TestCommandArgBound: the full path up to the bound, a placeholder past it — never a clip.
+func TestCommandArgBound(t *testing.T) {
+	at := "/" + strings.Repeat("a", maxCommandArgLen-3) // quoted: exactly maxCommandArgLen bytes
+	if got := CommandArg(at); got != `"`+at+`"` {
+		t.Errorf("a path whose quoted form is exactly %d bytes was not printed in full", maxCommandArgLen)
+	}
+	over := at + "a"
+	want := fmt.Sprintf("<path of %d bytes, too long to print>", len(over))
+	if got := CommandArg(over); got != want {
+		t.Errorf("past the bound got %.40q…, want %q", got, want)
 	}
 }
