@@ -51,28 +51,28 @@ snippet 是 `npm config set registry https://ci:<REDACTED>@npm.corp:${PORT}/`,`W
 
 fixture 都在 `t.TempDir()` 现搭;token 用 `ghp_` 加 36 位的明显假值(`redact_test.go` 已有同样写法),`Redact` 的已知前缀表能认出它。
 
-- [ ] `TestHookOutside_SecretInPathIsRedactedOnBothSides`(`internal/detect/snippet_redact_test.go`,新):hook `sh <HOME 外>/opt/<token>/hook.sh`
+- [x] `TestHookOutside_SecretInPathIsRedactedOnBothSides`(`internal/detect/snippet_redact_test.go`,新):hook `sh <HOME 外>/opt/<token>/hook.sh`
   走 `Engine.Run`,`HOOK-002` 和 `COV-000` 的 Title、Why、Evidence 的 File 与 Snippet 里都没有 token;`HOOK-002` 的 snippet 仍是
   `… → …` 的形状、两边都以 `/hook.sh` 结尾、箭头后面带 `<REDACTED>`。再直接调 `hookOutsideFinding` 钉两种字面值:绝对引用
   (`/opt/vault/<token>/hook.sh` 两边相同)和两边不同的引用(`$HOME/../vault/<token>/hook.sh → /home/vault/<token>/hook.sh`),
   修后分别是 `/opt/vault/<REDACTED>/hook.sh → /opt/vault/<REDACTED>/hook.sh` 和 `$HOME/../vault/<REDACTED>/hook.sh → /home/vault/<REDACTED>/hook.sh`。
   今天红:箭头后 token 原样
-- [ ] `TestRegistryRedirect_WhyRedactsWhatTheSnippetRedacts`(同文件,新):三种"目标读不出主机"的写法(`${PORT}` 端口、userinfo 后无主机、
+- [x] `TestRegistryRedirect_WhyRedactsWhatTheSnippetRedacts`(同文件,新):三种"目标读不出主机"的写法(`${PORT}` 端口、userinfo 后无主机、
   `${VAR:-…}` 默认值坏了)外加一个 token 形状的主机名,`SUP-006` 的 `Why` 里都没有 token,而且 snippet 本来就没有。今天红
-- [ ] `TestScan_PathSecretsNeverReachARendering`(`cmd/aguard/redact_render_test.go`,新):同一份 fixture(上面那条 hook,加一个 skill 脚本里
+- [x] `TestScan_PathSecretsNeverReachARendering`(`cmd/aguard/redact_render_test.go`,新):同一份 fixture(上面那条 hook,加一个 skill 脚本里
   `npm config set registry https://ci:<token>@npm.corp:${PORT}/`)走 `scanEnv`,JSON(与 CLI 同样的缩进编码)、终端(普通与 `--verbose`)、
   markdown、SARIF、HTML 六种渲染里都没有 token,`HOOK-002` 和 `SUP-006` 都在。今天红
-- [ ] 反向断言:普通路径的 `HOOK-002` snippet 与今天**逐字相同** —— `TestHookOutside_OrdinaryPathSnippetUnchanged`(同 detect 文件)用表钉住字面值
+- [x] 反向断言:普通路径的 `HOOK-002` snippet 与今天**逐字相同** —— `TestHookOutside_OrdinaryPathSnippetUnchanged`(同 detect 文件)用表钉住字面值
   (`/opt/acme/hooks/guard.sh`、带空格的 `/Applications/… 3.app/…/unibase-hook.js`(`hooks.go` 头注释里那种真实形状)、两边不同的 `~/…` 展开、
   一条超过 200 字节截断上限的),并且每行都等于在测试里按今天的公式 `clip(redactClip(ref) + " → " + resolved)` 算出的结果;修前修后都绿
-- [ ] 反向断言:`HOOK-002` 普通事件 dim 4 medium、`PermissionRequest` dim 4 high 不变(上一条的表两种事件各跑一遍);`SUP-006` dim 5 high 不变,
+- [x] 反向断言:`HOOK-002` 普通事件 dim 4 medium、`PermissionRequest` dim 4 high 不变(上一条的表两种事件各跑一遍);`SUP-006` dim 5 high 不变,
   普通 `${CORP_REGISTRY}` 和已知主机 `https://npm.evil.example/` 的 `Why` 逐字不变 —— `TestRegistryRedirect_OrdinaryWhyUnchanged`(同 detect 文件)
   字面值钉住;修前修后都绿
-- [ ] 反向断言:既有测试一字不改仍绿 —— `internal/detect/hooks_test.go`(含 `TestHookNotes_DoNotRedactTheScannerOwnPaths`,它钉着 `hookOwnedNote`
+- [x] 反向断言:既有测试一字不改仍绿 —— `internal/detect/hooks_test.go`(含 `TestHookNotes_DoNotRedactTheScannerOwnPaths`,它钉着 `hookOwnedNote`
   的解析路径**不**脱敏)、`shape_test.go`、`shape_severity_test.go`、`redact_test.go`;`git diff --stat origin/main` 对这四个文件为空
-- [ ] 真机 `scan --root ~/.claude`:修前修后 JSON 去掉 `scanned_at`、`tool_version` 后逐字节相同,或差异只落在本条改动的两处字段上
-- [ ] `.claude/rules/detect.md` 仍不超过 200 行(`cmd/aguard/claude_rules_test.go` 的 `maxRuleLines`)
-- [ ] `make verify` 绿;`go version` 不切换工具链
+- [x] 真机 `scan --root ~/.claude`:修前修后 JSON 去掉 `scanned_at`、`tool_version` 后逐字节相同,或差异只落在本条改动的两处字段上
+- [x] `.claude/rules/detect.md` 仍不超过 200 行(`cmd/aguard/claude_rules_test.go` 的 `maxRuleLines`)
+- [x] `make verify` 绿;`go version` 不切换工具链
 
 ## 不做什么
 
@@ -97,7 +97,7 @@ fixture 都在 `t.TempDir()` 现搭;token 用 `ghp_` 加 36 位的明显假值(`
   修前箭头后面还能看到路径,修后两边都是 `<REDACTED>.sh`。这是拿可读性换"不在另一半漏出来",未决 1
 - 不说 SARIF 指纹不变:`partialFingerprints` 含 snippet,解析路径会被脱敏改动的那些 `HOOK-002` 指纹会变(代码扫描里旧告警关闭、新告警打开);
   普通路径的不变
-- 不说真机上有 `HOOK-002` 被修了,除非真机上实测到
+- 不说真机上有 `HOOK-002` 被修了:本机 `~/.claude` 0 条 `HOOK-002`;唯一一条 `SUP-006` 的目标 `Redact` 不改它
 
 ## 工作项
 
@@ -141,3 +141,21 @@ fixture 都在 `t.TempDir()` 现搭;token 用 `ghp_` 加 36 位的明显假值(`
    **建议**:够。将来加一条能跨过空白的模式,整串形式只会脱得更多(安全方向);普通路径的逐字不变由 `TestHookOutside_OrdinaryPathSnippetUnchanged`
    按旧公式逐行比较兜底,哪天不成立会红。
    **已决(2026-10-09)**:按建议(旧仓实现中提出并已决,移植沿用)。
+
+## 完成
+
+```
+合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-014 找)
+发布:待发
+证据:TestHookOutside_SecretInPathIsRedactedOnBothSides(internal/detect/snippet_redact_test.go);W1 在本仓 main(dec64ca)上红:Engine.Run 下 HOOK-002 的 snippet 是 <REDACTED><REDACTED>/hook.sh → /var/folders/…/opt/ghp_<36 位>/hook.sh,两条字面值子测试箭头后 token 原样 → W2 后绿,箭头两边都是 …/<REDACTED>/hook.sh
+证据:TestRegistryRedirect_WhyRedactsWhatTheSnippetRedacts(同文件);W1 红,四个子测试(${PORT} 端口、userinfo 后无主机、${R:-…} 默认值坏了、token 形状的主机名)Why 里都是完整 token → W2 后仍红(不归它管)→ W3 后绿
+证据:TestScan_PathSecretsNeverReachARendering(cmd/aguard/redact_render_test.go);W1 红:JSON、终端、--verbose、markdown、HTML 各 2 处,SARIF 3 处 → W2 后各 1 处、SARIF 2 处(剩 SUP-006 的 Why)→ W3 后六种全 0;HOOK-002、SUP-006 都还在
+证据:反向断言 TestHookOutside_OrdinaryPathSnippetUnchanged(同 detect 文件):四条普通路径 × 两种事件共 8 个子测试,snippet 逐字等于旧公式算出的值、HOOK-002 dim 4 medium/high,W1 时就绿,修后不改一字仍绿;变异(临时把修法换成 redactClip(ref) + " → " + redactClip(resolved),跑完还原,未提交)→ 超过 200 字节那两行红(PreToolUse、PermissionRequest 各一)
+证据:反向断言 TestRegistryRedirect_OrdinaryWhyUnchanged(同文件):${CORP_REGISTRY} 与 npm.evil.example 的 Why 字面值、SUP-006 dim 5 high,W1 时就绿,修后仍绿
+证据:反向断言 TestHookNotes_DoNotRedactTheScannerOwnPaths(internal/detect/hooks_test.go,未改)W1–W4 每一步都绿
+证据:二进制前后(dec64ca vs 本分支,fixture 在 /tmp 下,三条 HOME 外 hook + 一个 npm registry 改写脚本,HOME 指向 fixture,--inbox off):scan --json 去掉 scanned_at、tool_version 后 178 行里只差 3 行 —— SUP-006 的 Why 里 ghp_<36 位> → <REDACTED>;带 token 的 HOOK-002 箭头后 ghp_<36 位> → <REDACTED>;路径整段被熵检测吃掉的那条 <REDACTED>.sh → /tmp/aguard-scratch/…/outside/guard.sh 变成 <REDACTED>.sh → <REDACTED>.sh(未决 1 接受的代价)。token 出现次数 2 → 0;普通短路径那条 /tmp/p014h/guard.sh → /tmp/p014h/guard.sh 逐字相同;overall 69 → 69
+证据:真机 ~/.claude,两个二进制背靠背跑:修前修后 overall 69 / artifact 175 / 发现 806 / note 10 / HOOK-002 0 条 / SUP-006 1 条,JSON 去掉 scanned_at、tool_version 后逐字节相同(15678 行)
+证据:不做什么 —— git diff --stat origin/main -- internal/detect/redact.go internal/detect/detect.go internal/collect internal/gate internal/permcheck docs/rules.md docs/spec go.mod go.sum internal/detect/hooks_test.go internal/detect/shape_test.go internal/detect/shape_severity_test.go internal/detect/redact_test.go 为空;hooks.go 的两个 hunk 都在 hookOutsideFinding(它上方的注释与函数体),hookOwnedNote 一字未动
+证据:.claude/rules/detect.md 198 → 198 行(一行内补句,不加行),TestClaudeRulesAreScopedToExistingPaths 绿
+证据:make verify: all gates passed;go version go1.23.5(无工具链切换),go.mod 第二行 go 1.23.5
+```
