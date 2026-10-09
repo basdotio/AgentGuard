@@ -17,7 +17,43 @@ rate copied into prose goes stale on the next rule. `git tag` and the Releases p
 - Invariants: never executes scanned content, no cross-root symlink reads, secret redaction before storage (+ high-entropy fallback).
 - Single static binary (`CGO_ENABLED=0`), MIT + SPDX, CI, bilingual README.
 
-## v0.2.0 – v0.19.0
+## v0.2.0 – v0.20.0
+
+**v0.20.0 (2026-10-10) — `--fail-on-llm` no longer passes when the judge could not answer, `aguard llm preview` shows what `--llm` would send before you turn it on, a report names the judge that produced its LLM findings, and a plugin's MCP servers are found without the `mcpServers` wrapper.**
+
+No rule's severity changed and the score formula is the same. One exit code is new: `4`, from `scan` and `check` when
+`--fail-on-llm` is set and the judge could not answer for every artifact, so a pipeline that went green while its judge
+was down now stops. A plugin whose MCP file lists its servers without the `mcpServers` wrapper now has those servers
+scanned, so its score can drop.
+
+- **The judge as a gate.** With `--fail-on-llm`, a run where the judge did not run, a call failed, or a call was never
+  made (`llm.max_calls`, `llm.total_timeout`) exits 4 and prints one stderr line,
+  `--fail-on-llm could not be evaluated (exit 4): <reason>`, also under `--quiet`. It used to exit 0, the code of a
+  judge that looked and found nothing.
+  `--fail-on-llm` without `--llm` is the same case. A gate that fired still exits 1, a refused gate or a run error 2,
+  and `--fail-on` alone never reads the judge's state (P-026).
+- **Seeing what is sent.** `aguard llm preview [path]` prints exactly what `check <path> --llm` would send, or without a
+  path what `scan --llm` would send for `--root` and the Downloads items under `--inbox`: per artifact its kind, name
+  and content hash; per call the pass, how often it is sent, the text inside the nonce fence, the file lines it came
+  from and what was shortened. It never connects, reads no key and works while the judge is off in the config; `--json`
+  keeps the exact bytes. It runs the same pipeline as a real run and builds each payload with the client's own functions
+  (P-027).
+- **Naming the judge.** The JSON `judge` block gains `prompt_version`, computed from every request body the client sends
+  with the content, model and nonce stood in, and `excerpt_version`, bumped by hand and pinned by a golden test; plus
+  `model` and `samples` when the judge is configured. Terminal, markdown and HTML print them on one line when the judge
+  ran, and the `aguard version` line appends ` · judge-prompt=<v> · judge-excerpt=<n>` (`$2` is still the version).
+  `rules_version` is unchanged and still covers deterministic detection only (P-031).
+- **Scanning.** A plugin's `.mcp.json` that lists servers at the top level, without the `mcpServers` wrapper, is read
+  the way Claude Code reads it (measured on Claude Code 2.1.107): those servers become MCP artifacts with the same
+  rules, content hash and judge pass as wrapped ones. The wrapper key is matched in exact case, so
+  `{"MCPSERVERS": {}, …}` no longer hides a server Claude Code starts. `~/.claude.json` and a project's `.mcp.json`
+  still need the wrapper, as in Claude Code (P-029).
+- **The gate.** Every command the gate prints for you to copy (`aguard check`, `aguard approve`) carries the full path,
+  quoted for a POSIX shell, instead of the 160-character display form. For a long path (desktop-app skills are 170–235
+  characters) the pasted command used to fail, and a path holding `$(…)` ran it when pasted. Ordinary paths print
+  exactly as before (P-030).
+- **Redaction.** The `clean --undo` preview redacts each quoted line before cutting it to 100 bytes, so a secret that
+  crosses the column limit no longer prints its head (P-028).
 
 **v0.19.0 (2026-10-09) — a plugin's own MCP servers are scanned, the judge can check a single target and sends less about you, the gate keeps the approvals you give it, and every spelling of a root gets the same answer.**
 

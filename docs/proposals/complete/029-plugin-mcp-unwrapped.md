@@ -230,7 +230,7 @@ wrapped plugin, user-level ~/.claude.json      —                              
 
 ```
 Merged: PR #48 (2026-10-10; find the sha with git log --grep P-029)
-Released: pending release
+Released: v0.20.0
 Evidence: measured Claude Code 2.1.107 (isolated CLAUDE_CONFIG_DIR and HOME, env -i, loopback capture server answering 400, probe stdio servers): a plugin .mcp.json without the wrapper starts its servers as plugin:<plugin>:<key>, through --plugin-dir and through a marketplace install alike; the table in "Problem" lists the 19 layouts and what each started
 Evidence: TestCollect_PluginMCPWithoutWrapper (internal/collect/pluginmcp_unwrapped_test.go); red on the W1 commit in 12 rows (flat, non-server members, mcpServers null / false / 0 / 0.0 / "", MCPSERVERS {}, McpServers holding servers, key "", bare mcp.json, repeated wrapper) → W2 green; the four wrapped rows green before and after
 Evidence: TestScan_UnwrappedPluginMCPServerGetsTheRulesAWrappedOneGets (cmd/aguard/plugin_mcp_test.go); red on W1 "0 MCP artifacts from the unwrapped file, want 4" in all three plugin channels → W2 green, every server's score, rules and non-empty hash equal to the wrapped file's
