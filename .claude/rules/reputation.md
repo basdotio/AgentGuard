@@ -1,9 +1,9 @@
-<!-- SPDX-License-Identifier: MIT -->
 ---
 paths:
   - "internal/reputation/**"
   - "hack/reputation-refresh/**"
 ---
+<!-- SPDX-License-Identifier: MIT -->
 ## 声誉白名单(`internal/reputation`)
 
 `good` 条目按 canonical 哈希命中后**压掉该 artifact 的全部计分发现**,只留一条 `REP-GOOD` note。

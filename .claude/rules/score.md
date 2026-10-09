@@ -1,8 +1,8 @@
-<!-- SPDX-License-Identifier: MIT -->
 ---
 paths:
   - "internal/score/**"
 ---
+<!-- SPDX-License-Identifier: MIT -->
 ## 评分(`internal/score`)
 
 ```

@@ -1,8 +1,8 @@
-<!-- SPDX-License-Identifier: MIT -->
 ---
 paths:
   - "internal/report/**"
 ---
+<!-- SPDX-License-Identifier: MIT -->
 ## 终端报告的两种模式(`internal/report/text.go`)
 
 `Text` 是默认档,`TextVerbose` 是完整档,两者都走 `writeText`。**它们只差两样东西,而且都不是发现:**

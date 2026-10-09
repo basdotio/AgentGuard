@@ -1,10 +1,10 @@
-<!-- SPDX-License-Identifier: MIT -->
 ---
 paths:
   - "internal/gate/**"
   - "cmd/aguard/gate*.go"
   - "hack/pre-commit"
 ---
+<!-- SPDX-License-Identifier: MIT -->
 ## 加载时闸门(`internal/gate`)
 
 `aguard hook` 注册成 Claude Code 的 hook,在 agent **加载**一个 skill 之前跑一遍 `check` 的静态路径。

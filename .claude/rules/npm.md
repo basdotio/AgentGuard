@@ -1,10 +1,10 @@
-<!-- SPDX-License-Identifier: MIT -->
 ---
 paths:
   - "npm/**"
   - "Makefile"
   - ".github/**"
 ---
+<!-- SPDX-License-Identifier: MIT -->
 ## npm 分发(`npm/`,`make npm-dist`)
 
 面向用户的说明在 [README.md](../../README.md#install);这里只写不要怎么改。
