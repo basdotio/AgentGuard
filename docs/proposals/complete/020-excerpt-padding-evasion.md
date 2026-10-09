@@ -57,40 +57,40 @@ malicious 共 2,246,717 个非空行,按上面那组字符量每行最长的一�
 
 ## 完成的判据
 
-- [ ] `TestRun_PaddedDirectiveReachesTheJudge`(`internal/judge/padding_test.go`,新):经 `NewHTTP` + `httptest` 端点跑 `Run`,
+- [x] `TestRun_PaddedDirectiveReachesTheJudge`(`internal/judge/padding_test.go`,新):经 `NewHTTP` + `httptest` 端点跑 `Run`,
   端点记下每个请求的 user 消息,**只在它收到的文本里有指令原文时**才回一条以指令为证据的 flagged 判决(模型只能引它看到的东西)。
   6 种垫料(7,000 空格、7,000 tab、2,400×U+3000、2,400×U+2003、3,600×NBSP、2,400×U+200B)× 5 种位置(指令行内、做它的缩进、
   正文唯一的一行、```` ```bash ```` 围栏里、垫在它上一行且后面还有约 2,400 字节正文),共 30 例,每例断言:至少一个请求带着指令原文;
   有一条 `LLM-003` 引到 `SKILL.md` 里指令**真实所在的那一行**;没有 `LLM-005`。今天红:30 例都没有请求带指令原文
-- [ ] `TestPlan_PaddingCostsWhatOneSpaceCosts`(同文件,新):同一份 fixture 垫料写成几千字节,与垫料写成"落地读它的样子"(一个空格;
+- [x] `TestPlan_PaddingCostsWhatOneSpaceCosts`(同文件,新):同一份 fixture 垫料写成几千字节,与垫料写成"落地读它的样子"(一个空格;
   只有不可见字符时什么都不写)相比,`planFor` 给出的**请求逐字节相同**(`Mode`、`Declared`、`Behavior`),**source unit 也相同**
   (`file`、`text`、`firstLine`、`lineMap`、`collapsed`),`shortened` 也相同。覆盖的面:SKILL.md 正文(injection)、skill 脚本(intent)、
   三个都在每文件上限之内的垫料脚本加一个 payload 脚本(合计上限)、description(声明用途)、CLAUDE.md、connector 工具说明、
   hook 命令、MCP `args` 里的一个值、解码后是垫料命令的 base64 blob。今天红:每个面上垫过的那份都和参照不同
   (省略标记 / 纯空白前缀 / payload 脚本只剩碎片 / `1 value(s) cut`)
-- [ ] 不变量 #3 的守卫 `TestEgress_PaddingIsFoldedBetweenRedactions`(`internal/judge/padding_test.go`,新):
+- [x] 不变量 #3 的守卫 `TestEgress_PaddingIsFoldedBetweenRedactions`(`internal/judge/padding_test.go`,新):
   ① 一个单独就会被熵规则抹掉的 24 字符 token,后面接一串不可见字符和 60 个 `a` —— 发出去的文本里没有这个 token
   (折叠挪到 `Redact` 之前就红:拼起来的长串熵掉到 3.6 以下,不再抹);② `AKIA` + 一串不可见字符 + 16 个字符 —— 发出去的文本里
   没有拼好的 `AKIA…` 原文(去掉折叠后的第二次 `Redact` 就红);③ 家目录被一串不可见字符从中间切开 —— 折叠后换成 `~`
   (scrub 挪到折叠之前就红)。①② 今天就绿(今天不折叠,token 照样被第一遍抹掉,`AKIA…` 照样是切开的),守的是实现;③ 今天红。
   三条都写明各自对应的变异,并在实现之后实际跑一次变异、记下红
-- [ ] `TestFoldPadding`(表驱动)+ `FuzzFoldPadding`(`internal/judge/fold_test.go`,新;种子语料随 `go test` 跑):
+- [x] `TestFoldPadding`(表驱动)+ `FuzzFoldPadding`(`internal/judge/fold_test.go`,新;种子语料随 `go test` 跑):
   128 字节的串原样、129 字节折叠;只有不可见字符的串折成空;混合的折成一个空格;`\n` 两侧各 100 字节的空白不折(不跨行);
   无效 UTF-8 字节原样。性质:输出不长于输入;`\n` 个数不变;`normalizeWithLines` 给出的规范化文本和逐字节行号与输入**完全相同**
   (落地读它和读原文没有区别);幂等;输出里没有超过 128 字节的垫料串
-- [ ] 反向断言 `TestPlan_RealTextIsSentAsWritten`(`internal/judge/padding_test.go`,新,今天就绿,修完不改一字仍绿):
+- [x] 反向断言 `TestPlan_RealTextIsSentAsWritten`(`internal/judge/padding_test.go`,新,今天就绿,修完不改一字仍绿):
   ① 正文里一行 7,000 字节、只有单个空格的普通长行,摘录与"按今天的流水线手算"(`condense` + `capHeadTail`,不折叠)逐字节相同,
   仍是头 + `# … 1 line(s) omitted …` + 尾;引这条省略标记的判决仍落不了地(`LLM-005`、没有判官发现);
   ② 一份 Python 脚本(8 层缩进、一处正好 128 字节的对齐空白)摘录逐字节等于手算;
   ③ 垫料每 128 字节被一个可见字符隔开(`.`)的那行**不折**,照旧被省略标记换掉 —— 这是可见内容,不是垫料(见不能说什么)
-- [ ] 反向断言 `TestRun_PaddingBelowTheFoldStillShowsTheDirective`(同文件,新,今天就绿):P-006 的 W12/W13 窗口路径在折叠之后
+- [x] 反向断言 `TestRun_PaddingBelowTheFoldStillShowsTheDirective`(同文件,新,今天就绿):P-006 的 W12/W13 窗口路径在折叠之后
   仍有端到端的测试 —— 指令中间是 5 段各 120 字节的空白(低于阈值,原样发出),每段之间一个 `-`,引文落地在 `SKILL.md:7`,
   snippet 含整句指令、≤ 515 字节。原因:P-006 的 `TestRun_WhitespacePaddedQuoteShowsTheDirective` /
   `TestRun_UnicodePaddedQuoteShowsTheDirective` 用的是 600 字节的单段垫料,折叠之后它们照样绿,但走的不再是 `collapsedWindow`
-- [ ] 反向断言:既有测试一字不改仍绿 —— `excerpt_test.go`、`plan_test.go`、`rendering_test.go`(含 `TestGround_OmissionMarkerIsNotEvidence`、
+- [x] 反向断言:既有测试一字不改仍绿 —— `excerpt_test.go`、`plan_test.go`、`rendering_test.go`(含 `TestGround_OmissionMarkerIsNotEvidence`、
   `TestRun_OmissionMarkerIsNotEvidence`、P-006 的两条垫料测试)、`ground_test.go`、`egress_test.go`、`cmd/aguard` 的 e2e;
   `git diff --numstat origin/main -- '*_test.go'` 删除列全为 0
-- [ ] `make verify` 绿;`go version` 不切换工具链;`internal/collect`、`internal/detect` 不动(所以不跑真机扫描对比,改为证明 diff 为空)
+- [x] `make verify` 绿;`go version` 不切换工具链;`internal/collect`、`internal/detect` 不动(所以不跑真机扫描对比,改为证明 diff 为空)
 
 ## 不做什么
 
@@ -156,3 +156,19 @@ malicious 共 2,246,717 个非空行,按上面那组字符量每行最长的一�
    正常文本不付代价。顺序 Redact → 折叠 → Redact → scrub:折叠不能在第一遍之前(熵规则按整串判,拼上低熵的尾巴会让原本会被抹掉的 token 漏出去),
    scrub 仍在最后一遍 Redact 之后(P-005 的放置规则)。
    **已决(2026-10-09)**:按建议
+
+## 完成
+
+```
+合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-020 找)
+发布:待发
+证据:TestRun_PaddedDirectiveReachesTheJudge(internal/judge/padding_test.go);W1 在 930e914 上红 30/30,全是 `none of 2 request(s) carried the directive` → W2 后绿,30 例的 LLM-003 都引到指令真实所在行(SKILL.md:9 / 9 / 5 / 11 / 10),没有 LLM-005
+证据:TestPlan_PaddingCostsWhatOneSpaceCosts(同文件);W1 红 50/50(9 个面 × 6 种垫料,解码 blob 只跑 ASCII 两种,Unicode 空白会让 blob 读成二进制):hook 两趟 Behavior 各 6,000 字节纯前缀;MCP 那例 shortened = "1 value(s) cut to 500 bytes",参照为空;三个垫料脚本那例 intent 5,995 字节、带省略标记 → W2 后绿
+证据:TestEgress_PaddingIsFoldedBetweenRedactions(同文件);W1 时 ③ 红(被零宽字符切开的家目录没换成 ~)、①② 绿 → W2 后三条绿;变异(均已还原):折叠挪到第一遍 Redact 之前 → ① 红;去掉第二遍 Redact → ② 红;scrub 挪到折叠之前 → ③ 红(同时只留一遍 Redact 时 ②③ 一起红)
+证据:TestFoldPadding、FuzzFoldPadding(internal/judge/fold_test.go);`go test -run '^$' -fuzz FuzzFoldPadding -fuzztime 20s` 935,369 次执行无失败(输出不变长、行数不变、幂等、无超过 128 字节的垫料串、normalizeWithLines 的文本与逐字节行号与原文相同)
+证据:反向断言 TestPlan_RealTextIsSentAsWritten、TestRun_PaddingBelowTheFoldStillShowsTheDirective 在 W1(实现未改)上就绿,W2 后不改一字仍绿;ground.go 里 collapsedWindow 换成 window(变异,已还原)后全包只有 TestRun_PaddingBelowTheFoldStillShowsTheDirective 红 —— P-006 的两条 600 字节垫料测试折叠后确实不再经过那条路,由它接着守
+证据:反向断言既有测试一字不改仍绿(make verify 的全量测试里,含 TestGround_OmissionMarkerIsNotEvidence、TestRun_OmissionMarkerIsNotEvidence、TestRun_WhitespacePaddedQuoteShowsTheDirective、TestRun_UnicodePaddedQuoteShowsTheDirective、excerpt_test.go、plan_test.go、egress_test.go、cmd/aguard 的 e2e);git diff --numstat origin/main -- '*_test.go' 只有两个新文件,删除列全为 0
+证据:不做什么 —— git diff --stat origin/main -- internal/detect internal/collect internal/score internal/report internal/gate internal/judge/ground.go internal/judge/judge.go internal/judge/openai.go internal/judge/prompt.go internal/judge/decode.go internal/judge/run.go internal/judge/triage.go go.mod go.sum 为空;excerpt.go 删除行为 0(封顶常量与 capHeadTail / capLine / boundedRedact / declaredPurpose 未动,只新增 foldPadding);collect / detect 没改,所以没有跑真机扫描对比
+证据:scratch 探针(不提交)在 W2 之后重跑:问题一节表里 22 种形状加反向例,23 例全部"含指令原文 ≥ 1、含省略标记 0";正文垫在行内的 5 种空白例 user 消息 292 字节,与不垫的反向例逐字节同长
+证据:make verify → verify: all gates passed;go version go1.23.5 未切换工具链,go.mod 第二行 go 1.23.5
+```
