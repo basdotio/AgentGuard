@@ -84,11 +84,20 @@ const bom = "\uFEFF"
 // no frontmatter, front is "" and body is the whole content. bodyLine is the 1-based line
 // of the ORIGINAL text that body begins on, so a position inside body can be reported as a
 // real SKILL.md line.
+//
+// The `---` must be the file's first bytes, because that is the only place Claude Code looks
+// (P-024, measured on 2.1.107): it matches /^---\s*\n/ against the text as read, BOM kept. Behind a
+// BOM, a blank line or a line of spaces it reads no frontmatter at all — a rule's paths are ignored
+// and it loads every session, a skill is listed with "---" as its description, a subagent is not
+// loaded. Skipping that lead here would describe a file the agent never sees: a path-scoped label on
+// an always-loaded rule, context bloat for a description nobody lists. Such a block is body text.
+// Leading bytes are still skipped before the body, as they were for a file with no frontmatter.
 func splitFrontmatter(s string) (front, body string, bodyLine int) {
 	orig := s
+	opens := strings.HasPrefix(s, "---")
 	s = strings.TrimPrefix(s, bom)
 	s = strings.TrimLeft(s, " \t\r\n")
-	if !strings.HasPrefix(s, "---") {
+	if !opens {
 		return "", s, lineOf(orig, len(orig)-len(s))
 	}
 	rest := strings.TrimPrefix(s, "---")
