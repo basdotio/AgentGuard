@@ -299,7 +299,8 @@ type roundTripFunc func(*http.Request) (*http.Response, error)
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
 // TestNewHTTP_TransportSeam: the seam cmd/aguard's zero-dial test counts through. Unset, a nil
-// client is exactly the &http.Client{} it always was (Transport nil = http.DefaultTransport); set,
+// client's transport is what the bare &http.Client{} always used (Transport nil =
+// http.DefaultTransport; P-023 added only a redirect policy, see redirect_test.go); set,
 // every request goes through it; and a client the caller built is used as given, seam or not —
 // every judge test here injects srv.Client() and must keep reaching its own server.
 func TestNewHTTP_TransportSeam(t *testing.T) {
