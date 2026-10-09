@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -55,13 +56,17 @@ var Transport http.RoundTripper
 // NewHTTP builds a client. httpClient may be nil; tests inject their own. baseURL is the
 // OpenAI-compatible root (…/v1); "/chat/completions" is appended.
 //
+// The default client follows a redirect only within the configured origin (sameOriginOnly): the
+// endpoint CheckEndpoint vetted is the only place the key and the excerpts may go, and a 30x is the
+// endpoint naming another one. Every hop it does follow crosses the same Transport.
+//
 // The default client carries NO timeout of its own on purpose: the deadline belongs to the
 // caller's context, one per call, so the configured llm.timeout is the real ceiling instead
 // of silently losing to a hard-coded one. judge.Run always sets that deadline — any other
 // caller MUST do the same, or a hung endpoint hangs the process.
 func NewHTTP(baseURL, apiKey, model string, httpClient *http.Client) *HTTPClient {
 	if httpClient == nil {
-		httpClient = &http.Client{Transport: Transport}
+		httpClient = &http.Client{Transport: Transport, CheckRedirect: sameOriginOnly}
 	}
 	if model == "" {
 		model = "llama3.1"
@@ -153,6 +158,12 @@ func (c *HTTPClient) chat(ctx context.Context, system, user string, temperature 
 	}
 	resp, err := c.http.Do(req)
 	if err != nil {
+		// A redirect out of the configured origin is the endpoint's answer, and a final one:
+		// retrying only sends the same excerpts to it again, to be refused again (P-023).
+		var refused *redirectRefused
+		if errors.As(err, &refused) {
+			return "", fmt.Errorf("call judge endpoint: %w", refused)
+		}
 		// A transport error is usually transient (connection reset, DNS blip, timeout on the
 		// endpoint's side). The context deadline is NOT: retrying a call we already ran out of
 		// time for just burns the rest of the run.
