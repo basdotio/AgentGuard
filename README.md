@@ -313,6 +313,10 @@ The key goes to `~/.config/aguard/llm.key` (mode 0600, refused if anyone else ca
 `api_key_env` variable still works and takes precedence, for CI. Inside Claude Code, `/aguard-llm`
 walks through the same three steps in conversation.
 
+To see what would leave the machine before you decide, `aguard llm preview ./some-skill` prints every
+call `check --llm` would make for it, with the exact text each would carry (with no path: every call
+`scan --llm` would make). It sends nothing and needs no key; see [the judge's privacy notes](docs/llm-judge.md#privacy).
+
 Hard constraints: **off by default** (needs both config and `--llm`), sends **only redacted** excerpts (raw secrets never leave the box), and the verdict is
 **advisory** — `Source=llm` findings **never move `overall` and never trip `--fail-on`**, so
 scoring stays reproducible.

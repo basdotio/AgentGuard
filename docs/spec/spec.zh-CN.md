@@ -54,6 +54,7 @@ aguard hook                                            # hook runner:从 stdin �
 aguard approve <path> · aguard approvals               # 闸门的批准(key 是 canonical 哈希,永不是名字)
 aguard hash <path>                                     # 打印 canonical 信誉哈希
 aguard llm setup|test|status                           # 可选 LLM 判官的配置三原语,见 §11
+aguard llm preview [path]                              # 不发送、不要密钥,列出 --llm 会发的每次调用和栅栏内原文(P-027)
 aguard version                                         # 版本 + 与已装插件版本的比对
 ```
 

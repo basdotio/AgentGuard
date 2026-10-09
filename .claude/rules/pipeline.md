@@ -44,6 +44,9 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
     目录里的 Makefile / package.json 定义,而那是 agent 自己选的目录。实测确认可达任意执行,
     记在 ROADMAP 的已知限制里,**故意没有做成规则**:那会把 `Bash(npm test *)` 这种极常见的写法
     一律报成 medium,而"被忽略的告警等于没有告警"是本仓库自己的判据。
+- **`llm preview` 挂在 `runJudge` 那一点**(`scanOpts.preview`,P-027):`analyze()` 在调用判官的地方把同一份 `arts` 交给
+  `previewSink.record`,所以它列出的是信誉和基线之后、hygiene 之前判官会拿到的东西。挪到别处它就列出一份判官收不到的计划;
+  预览的 opts **永远不带 `llm: true`**——那会真去连端点,零表里 `llm preview` 那两行会红。
 - **reputation 在 ignore 之前** —— 先用内嵌白名单压掉可信工具自身的噪声。
 - **judge 在抑制之后** —— 这样即使是 known-good 的 artifact,旁注仍能浮出来。
 - **抑制在评分之前** —— 基线会改变分数,所以下面那条"必须留 note"的规则是硬要求。

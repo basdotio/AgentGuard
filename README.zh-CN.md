@@ -275,6 +275,10 @@ aguard scan --llm        # 配置从此在 ~/.config/aguard/config.yaml 自动�
 密钥存到 `~/.config/aguard/llm.key`(0600,别人能读就拒用);`api_key_env` 环境变量仍然可用且优先,给 CI。
 在 Claude Code 里,`/aguard-llm` 用对话走同样三步。
 
+想在决定之前看清会发出去什么:`aguard llm preview ./some-skill` 列出 `check --llm` 对它会发的每一次调用,
+以及每次调用原样携带的文本(不带路径:`scan --llm` 会发的每一次调用)。它什么都不发,也不需要密钥;见
+[判官的隐私说明](docs/llm-judge.zh-CN.md#隐私)。
+
 硬约束:**默认关**(需 config **且** `--llm`)、**只发脱敏**摘录(原始密钥绝不出本机)、
 结果**只作旁注**——`Source=llm` 的发现**不进 `overall`、不触发 `--fail-on`**,评分保持可复现。
 

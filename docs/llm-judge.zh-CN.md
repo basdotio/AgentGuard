@@ -67,6 +67,7 @@ aguard llm setup --list                 # deepseek · openai · qwen · openai_c
 aguard llm setup --provider deepseek    # 提示输入密钥,隐藏输入(不进历史、不上屏)
 aguard llm test                         # 发一次调用;密钥/模型/地址错了在这里就报
 aguard llm status                       # 会用什么(永不显示密钥)
+aguard llm preview ./some-skill         # --llm 对它会发什么;什么都不发,不要密钥
 ```
 
 脚本里改用管道:`printf '%s\n' "$KEY" | aguard llm setup --provider deepseek --key-stdin`。
@@ -133,6 +134,14 @@ aguard scan --llm --config config.yaml
 
 ## 隐私
 
+- **发之前先看:`aguard llm preview`。** 带路径时列出 `check <path> --llm` 会发的调用;不带路径时列出
+  `scan --llm` 对 `--root` 以及 `--inbox` 下的下载项会发的调用。每个 artifact 给出种类、名字和内容哈希;
+  每次调用给出是哪一趟、发几次(`samples`,以及 `max_calls` 拒掉几次)、放进这次调用 nonce 栅栏里的原文、
+  它来自文件的哪几行、哪里被截短。它用的就是真跑时的那份调用计划和那段生成载荷的代码,测试里逐字节对比过
+  `scan --llm` 和 `check --llm` 让端点收到的内容。什么都不发,不读密钥,也不需要 `llm.enabled`。`--json`
+  给出原样的字节和每一趟的指令;终端视图清掉控制字符和双向/零宽字符。不显示的:`Authorization` 头,以及
+  点名每次调用 nonce 的那段栅栏规则(nonce 在真正发出时才生成)。真跑可能比预览列出的少发(总时限到了、
+  端点被拒、缺密钥),但不会发别的文本。
 - **只发脱敏摘录。** 每个字节——行为脚本、SKILL.md 正文、声明用途、解码 blob、triage 证据——都先过
   和报告 snippet 同一个 `detect.Redact`,才离开进程。
 - **脱敏是 best-effort,不是保证。** 它抓已知密钥形状(API key、token、PEM 头、`scheme://user:pw@host`、
