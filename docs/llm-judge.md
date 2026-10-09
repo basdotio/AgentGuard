@@ -188,7 +188,12 @@ everything on your machine. That trade-off is yours.
   attacker would address the reviewer), and files over the cap kept as head + tail with an
   "N line(s) omitted" marker rather than a prefix — payloads go at the end of files because
   that is where every casual read stops. Findings still cite real `file:line`: the excerpt
-  carries a line map back to the original.
+  carries a line map back to the original. Padding goes before any cap, on every kind: inside a
+  line, a run of more than 128 bytes of whitespace or invisible characters (Unicode spaces and the
+  zero-width characters `INJ-004` reports) is sent as one space — nothing, if it held only invisible
+  characters — which is how grounding already reads it. Without that, one line padded with a few
+  thousand blanks was sent as the omission marker or a prefix of blanks, and the judge never saw the
+  directive on it. Padding broken up by a visible character every 128 bytes still counts as content.
 - **Downloads items are judged too** when `--llm` is on: the agent-shaped candidates under
   `~/Downloads` (already read and scored by the static check) get the same passes; the rest of
   the folder is still never read. The Downloads section says whether the judge ran and carries
