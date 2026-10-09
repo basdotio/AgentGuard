@@ -1,9 +1,9 @@
-<!-- SPDX-License-Identifier: MIT -->
 ---
 paths:
   - "cmd/aguard/**"
   - "internal/**"
 ---
+<!-- SPDX-License-Identifier: MIT -->
 ## 流水线
 
 [cmd/aguard/main.go](../../cmd/aguard/main.go) 里的 `analyze()` 是 `scan`/`check`/`clean`

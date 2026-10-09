@@ -1,9 +1,9 @@
-<!-- SPDX-License-Identifier: MIT -->
 ---
 paths:
   - "plugin/**"
   - ".claude-plugin/**"
 ---
+<!-- SPDX-License-Identifier: MIT -->
 ## Claude Code 插件(`plugin/`)
 
 面向用户的入口在 [README.md](../../README.md#use-it-from-inside-claude-code-plugin);这里只写不要怎么改。

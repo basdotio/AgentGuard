@@ -1,8 +1,8 @@
-<!-- SPDX-License-Identifier: MIT -->
 ---
 paths:
   - "internal/judge/**"
 ---
+<!-- SPDX-License-Identifier: MIT -->
 ## LLM judge(`internal/judge`,可选)
 
 必须同时满足 config `llm.enabled: true` **和** `--llm` 才会启用;`scan` 和 `check` 都接受 `--llm`(`check` 自 P-004),

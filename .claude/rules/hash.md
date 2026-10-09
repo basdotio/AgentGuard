@@ -1,9 +1,9 @@
-<!-- SPDX-License-Identifier: MIT -->
 ---
 paths:
   - "internal/collect/**"
   - "internal/detect/contenthash*.go"
 ---
+<!-- SPDX-License-Identifier: MIT -->
 ## Canonical 哈希(`internal/collect/hash.go`、`internal/detect/contenthash.go`)
 
 skill 与 plugin 用树哈希(按相对路径排序 + 每个文件的 sha256);单文件用 sha256。它是信誉库的 key,所以必须

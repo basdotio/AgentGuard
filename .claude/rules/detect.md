@@ -1,9 +1,9 @@
-<!-- SPDX-License-Identifier: MIT -->
 ---
 paths:
   - "internal/detect/**"
   - "hack/gen-rules/**"
 ---
+<!-- SPDX-License-Identifier: MIT -->
 ## 检测引擎(`internal/detect`)
 
 - 规则集中在 [rules_data.go](../../internal/detect/rules_data.go) 的 `builtinRules()`:每条
