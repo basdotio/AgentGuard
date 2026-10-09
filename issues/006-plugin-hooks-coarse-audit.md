@@ -76,6 +76,6 @@ command) 产物，这样 `HOOK-001`、hook 脚本跟读、`LLM-008` hook 能力�
 
 ### 仍未做的（本条只覆盖 hooks）
 
-plugin 自带的 **skills / commands / MCP 配置**仍然只作为树里的文本被读，没有按自己的 kind
+plugin 自带的 **skills / MCP 配置**仍然只作为树里的文本被读，没有按自己的 kind（commands 自 2026-10-09 起在树里按指令角色跑全量规则，但仍不是独立产物；MCP 配置自 `collectPluginMCP` 起已是逐 server 产物）
 重新收集。spec §4 要求那个更细的归因。hooks 先做是因为它是最危险的表面（静默执行 shell），
 而且 per-command 构造器已经现成。

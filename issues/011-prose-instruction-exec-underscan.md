@@ -5,7 +5,7 @@
 |----|----|
 | 类别 | 检测精度 |
 | 严重程度 | 中 |
-| 状态 | 未修复（需规则精度，非覆盖问题） |
+| 状态 | 部分修复（slash command 已按 kind 跑全量规则，2026-10-09；subagent / rule / workflow / output style / memory 仍是散文，需规则精度） |
 
 ## 问题描述
 
@@ -58,3 +58,9 @@
 
 与 A.1（AST 检测）相关但不同：AST 提高的是"这段代码在干什么"的精度，这里需要的是"这段散文是在
 教你做还是在教你别做"的精度。
+
+**2026-10-09 追记（部分修复）**：slash command（`commands/*.md`，含 plugin 自带的 `commands/`）改为按 **kind** 取
+`roleInstruction`，跑全量规则；`aguard check ~/.claude/commands/x.md` 单文件也按同样规则。只提这一种 kind 的理由：
+command 的正文是"照这个步骤做"，和 SKILL.md 同一性质；上面列的三类误报（禁止、复述、笔记）在 command 里不是主流形态。
+真机（25 skill / 6 plugin / 11 memory）与语料 before/after 均无新增误报（数字见该 PR）。subagent / rule / workflow /
+output style / memory **没有一起提**，`TestScan_BenignProseIsNotFlagged` 继续钉住它们；修复方向不变。
