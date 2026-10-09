@@ -183,7 +183,10 @@ aguard version
 The terminal report shows every finding by default and folds the coverage notes into one
 line that still carries their count, their highest severity and their rule IDs. `--verbose`
 prints those notes in full — reach for it when the question is what the scan did *not* read.
-Findings are never folded in either mode, and `--json` / `--html` / `--md` always carry everything, so
+That includes a note attached to one item, such as a `settings.json` that does not parse: the
+summary then names the item as not fully checked, and while any coverage note is present it says
+coverage is incomplete instead of calling the setup safe. Coverage notes never change the score
+or the exit code. Findings are never folded in either mode, and `--json` / `--html` / `--md` always carry everything, so
 what a CI job sees never depends on which flag a human passed.
 
 **Exit codes**: `0` below threshold · `1` a finding at/above `--fail-on` · `2` runtime error

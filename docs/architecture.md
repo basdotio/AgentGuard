@@ -119,7 +119,11 @@ report.
 under-reports is the failure this split could easily become, and a reader cannot ask for
 detail on a finding they were never shown. Invariant 5 survives the collapse because the
 severity travels with the count: a baseline that suppressed a critical does not read as a
-low-severity footnote. `--json`, `--html` and `--md` are unaffected by the flag, so a CI job's output
+low-severity footnote. The notes live in two places — the scan's own, and those a collector attaches
+to an artifact (a config file that did not parse becomes an artifact carrying `PARSE-000`) — and
+the three human renderers read both through one function, `report.notesOf`; reading only the
+scan's own once rendered a broken `settings.json` as "looks safe". While any coverage note is
+present the summary says coverage is incomplete instead of "looks safe". `--json`, `--html` and `--md` are unaffected by the flag, so a CI job's output
 never depends on which mode a human chose. `--md` (P-008) is the third human-read renderer, for PR
 comments and issues: same derived data and order, and every string off the scanned tree in a code span.
 

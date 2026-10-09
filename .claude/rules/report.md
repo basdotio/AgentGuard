@@ -15,6 +15,12 @@ paths:
 - **折叠后的那一行必须带着最高严重度**,不是只带条数 —— 否则一条压掉了 critical 的
   `IGN-000` 会被读成低危脚注,那正是不变量 #5 要防的事。`TestText_CollapsedNoteCarriesHighestSeverity`
   盯着它。
+- **维度 0 的说明有两个住处,渲染器只认一个入口**(`notesOf`,`aggregate.go`):扫描级的在 `ScanResult.Notes`,
+  采集器挂在 artifact 上的在 `ArtifactReport.Findings`(`collect.withParseError`:解析不了的 `settings.json` /
+  MCP 配置 / `installed_plugins.json` 变成一个只带 `PARSE-000` 的 artifact)。三个人读渲染器以前只读 `r.Notes`,
+  而 `Aggregate` 跳过维度 0,于是坏掉的 `settings.json` 被印成 "looks safe … Nothing was found to check"、退出码 0,
+  只有 JSON/SARIF 里有那条说明(P-013)。**不要在渲染器里直接读 `r.Notes`**;数据也不要挪(JSON/SARIF 的归属是对的)。
+  `TestBrokenSettingsIsNotReportedSafe`(真实流水线)和 `TestArtifactNoteReachesEveryHumanRenderer`(含不变量 #7)盯着它。
 - **判定摘要(`writeVerdict`)只能从它下面那张表里推**:条数、严重度、最差那条的规则 ID,全部来自
   已经要打印的 `Group`。**不要在这里引入新的判断或新的阈值** —— 一行会和它下面的列表打架的摘要,
   比没有摘要更糟,因为它是大家真正会读的那半。
@@ -27,11 +33,20 @@ paths:
   - **白话层只做派生,不做判断。** `verdictSentence` 是等级档 + 计数的函数,`actions` 就是 medium
     以上的 group 按既有顺序取前三,`dimLabel` 是每个维度一句固定短语(10 句,不是 70 条规则各写一句)。
     没有任何一处能说出下面列表里没有的东西,也没有任何一处能把严重度说轻。
+    - **"looks safe" 要以覆盖完整为前提**(`coverageVerdict`):有任何覆盖 note 时 Low 档的结论换成
+      `Low risk in what was read, but coverage is incomplete.`。判据是 "Not checked" 那行数的**同一个集合**
+      (`splitNotes(notesOf(r))` 的覆盖那半),所以头条和那行在构造上不会打架;压制类 note 不算。其余三档不变。
+      不要改成"只看 artifact 自带的 note":同一个 `settings.json` 读不了(`IO-000`,扫描级)和解析不了
+      (`PARSE-000`,artifact 级)会得到相反的头条。
+    - **Checked 那句点名"找到了、没检查全"的项**(`checkedWithGaps` + `itemGaps`/`gapList`,数据与组句分开,
+      markdown 用代码跨度):artifact 自带覆盖 note 的那几项,最多 3 个、余下计数。清单计数来自采集器抽出来的东西,
+      解析不了的文件什么都抽不出,所以没有这半句时那行会说 "Nothing was found to check"。
   - **规则 ID 仍在每条发现上,但挪到行尾的方括号里**;行首是"谁 · 什么"(`friendlyArtifact` 把
     `plugin:figma@claude-plugins-official (2.2.107)` 写成 "figma plugin, from claude-plugins-official (2.2.107)")。
     改这里时注意几个测试钉住的锚点:`Risk score N/100 (Level)`、`→ … start with [ID]`、
     `Findings · STATIC` / `Findings · LLM JUDGE`、`✅ No risk findings`、`coverage note(s), highest X [ID]`、
-    `advisory: not confirmed`、`×N`。
+    `advisory: not confirmed`、`×N`、`coverage is incomplete`(Summary 里)、`Not fully checked:`。
+    干净配置的终端默认 / `--verbose` / markdown 整份输出由 `TestCleanSettingsReportIsUnchanged` 的 golden 逐字节钉住。
   - **默认视图缩短证据路径**(`shortPath`:插件缓存前缀折成 `figma › rest`,过长路径留末三段),
     `--verbose`、JSON、SARIF、HTML 的 `title` 悬停保留全路径。定位靠短路径,复制粘贴靠全路径。
   - **markdown(`markdown.go`,`--md`,P-008)是第三个人读渲染器**,同一套派生数据、同一顺序,没有 `--verbose`。
@@ -44,7 +59,8 @@ paths:
     拆成"数据 + 组句"两半**(`worstItem`/`trustName`/`escalations`/`where` 就是这么来的),不要在 markdown 里
     重写推导。
   - HTML 同一套数据:顶部 Summary 卡、"What to look at" 带锚点跳到发现卡、白名单压制单独一区、
-    没检查到的折进 `<details>`、清单放最后;跟随系统深浅色。JSON/SARIF 不受任何一条影响。
+    没检查到的折进 `<details>`(只有一条证据的 note 印出文件,与 markdown、`--verbose` 同一规则)、清单放最后;
+    跟随系统深浅色。JSON/SARIF 不受任何一条影响。
   - **Scan details 里有 "Where the scan looked"**(`ScanResult.Locations`,2026-09-07):配置目录、用户级 MCP 配置、
     桌面版仓库、下载目录,各标 read / absent / off。清单数字分不出"没装桌面版"和"桌面版仓库读了但是空的",只有
     这张表分得出;`--inbox off` 显示 off 而不是消失,用户关掉的东西也要留痕。`check` 不填它。
