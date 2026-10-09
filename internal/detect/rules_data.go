@@ -88,6 +88,15 @@ func builtinRules() []Rule {
 		// NODE_OPTIONS=--max-old-space-size is memory tuning — neither matches. Measured: zero hits
 		// on 353 real tool catalogues and 387 real configs.
 		rule("EXEC-010", 4, model.SevHigh, `\bNODE_OPTIONS=\S*(--require|--import|(^|\s)-r\s)|\b(LD_PRELOAD|DYLD_INSERT_LIBRARIES|PYTHONSTARTUP|PERL5OPT)=\S|\bRUBYOPT=\S*-r`, "Interpreter preload set through the environment", "The server's environment makes its runtime load a file before the program starts (NODE_OPTIONS --require, LD_PRELOAD, PYTHONSTARTUP and kin). Whatever that file does runs with the server's access, and nothing in the command line shows it.", owaspSup),
+		// EXEC-012 is the OTHER spelling of curl|bash. EXEC-001/002 match the pipe, and the pipe is
+		// one of five ways a shell runs what it just downloaded: `eval "$(curl …)"`, `bash -c "$(curl …)"`,
+		// `bash <(curl …)`, `source <(curl …)` and `python3 -c "$(curl …)"` fetch and run in one line
+		// just the same (the Homebrew installer is the -c form), and all five scored 100 while the
+		// pipe scored 75 — a rule that names one spelling of a shape teaches the attacker the
+		// other four. The executor must be a word that RUNS its argument: `VER=$(curl …)` and
+		// `echo "$(curl …)"` capture output and are not this. The two-step form (download to a
+		// file, run the file on the next line) is cross-line and stays a known limitation.
+		rule("EXEC-012", 4, model.SevHigh, `\b(?:eval|source|bash|sh|zsh|dash|ksh|python3?|node|perl|ruby|php)\s+(?:-[ce]\s+)?["']?\$\(\s*(?:curl|wget)\b|\b(?:bash|sh|zsh|dash|ksh|source)\s+<\(\s*(?:curl|wget)\b`, "Downloaded script executed via substitution", "The same shape as curl piped to a shell, spelled with command or process substitution: eval/sh -c/python -c of \"$(curl …)\", or bash <(curl …). What runs is whatever the URL serves at that moment — arbitrary remote code execution.", owaspSup),
 		// EXEC-011 is the decode-then-execute SHAPE at high: a base64 payload piped straight into a
 		// shell (`base64 -d | sh`, macOS `-D | bash`) or an eval/exec of a decode. The line rules saw
 		// only `base64 -d` (OBF-001, medium) while the curl-to-attacker sat inside the blob, so the

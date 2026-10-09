@@ -17,8 +17,8 @@ never scores. See [architecture.md](architecture.md#scoring) for the full formul
 **Advisory** means static analysis cannot confirm it — the report says so, and you should
 read the evidence before acting.
 
-**82 rule IDs** in this build — 45 engine rules + 13 structural + 6 permission + 7 LLM
-+ 9 scan notes + 2 gate messages. Of these, **71 score** and 11 never do (dimension 0).
+**83 rule IDs** in this build — 46 engine rules + 13 structural + 6 permission + 7 LLM
++ 9 scan notes + 2 gate messages. Of these, **72 score** and 11 never do (dimension 0).
 These counts are generated from the same tables the drift check reads, so if a count
 anywhere else in this repository disagrees with this line, that other count is stale.
 
@@ -27,7 +27,7 @@ anywhere else in this repository disagrees with this line, that other count is s
 - [1 — Prompt injection](#1--prompt-injection) (10)
 - [2 — Excessive permissions](#2--excessive-permissions) (7)
 - [3 — Data exfiltration](#3--data-exfiltration) (12)
-- [4 — Code execution](#4--code-execution) (14)
+- [4 — Code execution](#4--code-execution) (15)
 - [5 — Supply chain](#5--supply-chain) (7)
 - [6 — Obfuscation](#6--obfuscation) (8)
 - [7 — Backdoor](#7--backdoor) (4)
@@ -97,6 +97,7 @@ anywhere else in this repository disagrees with this line, that other count is s
 | `EXEC-009` | medium | PowerShell Invoke-Expression | IEX executes a string as PowerShell — an eval equivalent. (Bare 'iex' in prose, e.g. the Elixir REPL, is not matched.) |
 | `EXEC-010` | high | Interpreter preload set through the environment | The server's environment makes its runtime load a file before the program starts (NODE_OPTIONS --require, LD_PRELOAD, PYTHONSTARTUP and kin). Whatever that file does runs with the server's access, and nothing in the command line shows it. |
 | `EXEC-011` | high | Decoded payload executed | A base64 payload is decoded and run in the same step — piped into a shell, or eval/exec of a decode. What executes is hidden inside the blob, so the line rules see only the decode. Not confirmed malicious (decoding has uses), but decode-straight-into-execution is the obfuscated-execution shape. |
+| `EXEC-012` | high | Downloaded script executed via substitution | The same shape as curl piped to a shell, spelled with command or process substitution: eval/sh -c/python -c of "$(curl …)", or bash <(curl …). What runs is whatever the URL serves at that moment — arbitrary remote code execution. |
 | `HOOK-001` | medium | Hook command chains extra shell | This hook command uses shell chaining/substitution (; && \|\| \| ` $()), so what actually runs is not just the command registered for this event; hooks execute silently on every matching tool call, so keep them to a single command (a script file, if it needs logic). Runs on hook commands only: unremarkable in a script, telling in a hook. |
 | `HOOK-002` | medium | Hook second stage is outside HOME and was not read | A hook command names a script that resolves outside the scan home. Spec §16.2 still forbids reading it; this finding scores the refusal itself, because an unaudited payload at a silent intercept is a risk, not just a coverage gap. Raised to high on PermissionRequest, which takes the authorization decision. The matching COV-000 note is kept: coverage and scoring are different facts. |
 | `HOOK-003` | high | Hook forwards event payload over HTTP | type=http posts the full event (tool inputs, command lines, permission prompts) to a URL. Ordinary events to loopback are low (a local sidecar). PermissionRequest to loopback is high (it still takes allow/deny). Any non-loopback destination is high, because the operation stream is leaving the machine. |

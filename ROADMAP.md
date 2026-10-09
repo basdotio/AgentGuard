@@ -68,6 +68,10 @@ progress, what is recorded but not scheduled, and the limitations we state out l
 
 ## Known limitations (honest)
 
+- **Download-then-execute across two lines is not seen.** `EXEC-001/002/012` catch a fetch that is run in the
+  same command (`curl … | sh`, `eval "$(curl …)"`, `bash <(curl …)`); `curl … -o /tmp/i.sh` followed by `bash /tmp/i.sh`
+  on the next line is two unremarkable commands to a line-oriented matcher. Tracking a file name from a write to a later
+  execution is the cross-statement half of A.1 (AST), not a regex to add.
 - Static only: cannot prove malice, observe runtime behavior, decrypt obfuscated payload intent, inspect MCP endpoints or dependency internals, or catch zero-days.
 - A plugin is scanned as one tree. Its bundled **hooks now ARE audited per (event, matcher, command)** through the same builder `settings.json` hooks use, so `HOOK-001`, the followed script and the judge's hook pass all apply and a finding names `hook:PreToolUse[Bash]#1 (plugin acme@mk)`. Its bundled **MCP servers are now MCP artifacts too** (`collectPluginMCP`, one per server, counted in the inventory — the Figma plugin's server used to leave `mcp=0` and a summary saying nothing was exposed). Its bundled **skills and commands are still only read as text** — spec §4's finer attribution for those remains open.
 - **Claude Desktop's remote MCP connectors ARE now collected** (`collect/connectors.go`, 2026-09-08).

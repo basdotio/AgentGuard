@@ -89,7 +89,8 @@ var asiByRule = map[string][]string{
 	"EXEC-008": {"ASI-05"},
 	"EXEC-009": {"ASI-05"},
 	"EXEC-010": {"ASI-05"}, // interpreter preload via env: code runs before the program the config names
-	"EXEC-011": {"ASI-05"}, // a base64 payload decoded straight into a shell — unrestricted execution of hidden code
+	"EXEC-011": {"ASI-05"},
+	"EXEC-012": {"ASI-05"}, // curl|bash spelled with $(…) or <(…) — the same unrestricted execution of whatever a URL serves // a base64 payload decoded straight into a shell — unrestricted execution of hidden code
 
 	// Reverse shell: a shell handed to a remote party is unrestricted code execution. Unlike
 	// BD-001/002/003 (advisory heuristics, deliberately unmapped) this is a definite construct.
