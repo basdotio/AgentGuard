@@ -133,21 +133,42 @@ func verdictSentence(level string, act, total int) string {
 	return lead + countClause(act, total)
 }
 
-// incompleteLead replaces the Low band's "looks safe" when the report carries coverage notes. The
-// words are the ones the Not checked line already ends on, so the headline and that line say the
-// same thing about the same set.
+// incompleteLead replaces the Low band's "looks safe" when something Claude Code loads was not
+// fully read. The words are the ones the Not checked line ends on.
 const incompleteLead = "Low risk in what was read, but coverage is incomplete."
 
-// coverageVerdict is verdictSentence once the report also knows how many coverage notes it is
-// about to print (gaps: the coverage half of splitNotes over notesOf — exactly the set the Not
-// checked line counts). "Looks safe" is a claim about the whole setup, and a report that states two
-// sections further down that coverage is incomplete has not earned it: a settings.json that did not
-// parse was read as "looks safe … Nothing was found to check" over the file that holds the hooks,
-// permissions and env. Only the Low band's lead changes; the other three already report problems,
-// which an unread file can only add to. Trust decisions are not gaps — the summary has its own
-// line for them. Still a function of counts already printed below it, nothing else.
-func coverageVerdict(level string, act, total, gaps int) string {
-	if gaps == 0 || level != "Low" {
+// coverageVerdict is verdictSentence with one more question asked of the result: was something
+// Claude Code actually loads left not fully read? "Looks safe" is a claim about what the agent
+// loads, and a settings.json that did not parse was read as "looks safe … Nothing was found to
+// check" over the file that holds the hooks, permissions and env.
+//
+// The set that answers it is named here and nowhere else, selected by rule id and by where the
+// note is attached, never by title:
+//   - any coverage note attached to an artifact (itemGaps — the same items the Checked line names):
+//     the item is in the inventory and in the score, and was not fully read;
+//   - an IO-000 or PARSE-000 note at scan level: a file in a load path that could not be read
+//     (an unreadable settings.json is the twin of an unparsable one) or a config entry not understood.
+//
+// Every other scan-level note stays in the Not checked line and leaves the headline alone. Above all
+// the COV-000 for top-level entries no collector owns — the user's own sessions/ and file-history/,
+// skipped by design and present on nearly every real machine — and LLM-002, a privacy notice about
+// where excerpts went, not a gap: a hedge on almost every Low-band report would stop meaning
+// anything (decided by the maintainer, 2026-10-09). Trust decisions are not gaps either.
+//
+// Only the Low band's lead changes; the other three already report problems, which an unread file
+// can only add to. The counting half never changes.
+func coverageVerdict(level string, act, total int, r model.ScanResult) string {
+	if level != "Low" {
+		return verdictSentence(level, act, total)
+	}
+	unread := len(itemGaps(r)) > 0
+	for _, n := range r.Notes {
+		switch n.RuleID {
+		case "IO-000", "PARSE-000":
+			unread = true
+		}
+	}
+	if !unread {
 		return verdictSentence(level, act, total)
 	}
 	return incompleteLead + countClause(act, total)
