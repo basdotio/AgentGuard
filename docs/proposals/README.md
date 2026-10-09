@@ -55,3 +55,4 @@
 | [019](complete/019-raw-root-entry-points.md) | 同一个目录换一种写法就换一个答案:`clean --root .` 拒绝撤销,`check .` 不按 root 布局读,相对写法下闸门对插件 skill 不审就放行 | P-012 留下的同根因入口:`clean` 判 trash 越界、`check`/`hash` 按字符串路由、闸门和 `version` 从原样 root 取 home;人定(2026-10-09)合成一条 | PR #40;待发 |
 | [020](complete/020-excerpt-padding-evasion.md) | 一行指令垫满空白,判官摘录里就只剩一行省略标记:判官恰好看不见它存在要读的那句话 | P-005、P-006 记下的后续:摘录按字节封顶,行内垫几千字节空白(含 Unicode 空白、零宽字符)的指令行在发出去之前就被换成省略标记或截成纯空白前缀 | PR #38;待发 |
 | [021](complete/021-plugin-mcp-unscanned.md) | 插件自带的 MCP server 从不过规则:同一份配置手写进 ~/.claude.json 是 75 分,随插件装进来是 100 分 | P-009 未决 6 记下的已有缺口:detect 和判官按带 ` (plugin …)` 后缀的 artifact 名去 `mcpServers` 里找条目,找不到,零 unit,记成干净的 100 | PR #37;待发 |
+| [022](draft/022-bench-fold-reads-judge-usage.md) | 基准折叠判官运行时,triage 调用数和每题用量是推出来的:aguard 的 JSON 已经报了真数,rig 一个都不读 | P-001 记下的后续:`judge.jsonl` 的 `triage_calls` / `questions` 按文档推导,rig 不读 `--json` 判官摘要里的真数,raw/ 还把没报的字段写成 0 | `p/022-bench-fold-reads-judge-usage` |
