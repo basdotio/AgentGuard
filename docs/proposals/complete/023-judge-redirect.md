@@ -139,7 +139,7 @@ P-003 的源码检查 `TestZeroDial_NoClientOutsideTheJudge` 描述的是 `http.
 ## 完成
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-023 找)
+合入:PR #34(2026-10-09;sha 用 git log --grep P-023 找)
 发布:待发
 证据:TestNewHTTP_RefusesCrossOriginRedirects(internal/judge/redirect_test.go);W1 时在 origin/main 上 30/30 个子测试红,每行两条:"the redirect target received 1 request(s) (first: POST, API key true, excerpt true)…"(同主机降 http、子域、本机另一端口的 307/308;301–303 是 GET、key true)/ 换主机的 "API key false, excerpt true"(307/308),外加 "the call succeeded: a verdict was taken from <目标>";W2 后 30/30 绿
 证据:TestE2E_JudgeRedirectIsRefusedAndReported(cmd/aguard/judge_redirect_test.go);W1 时红:"the redirect target received 4 request(s)" + "no LLM-000 note … notes = []";W2 后绿 —— 目标 0 个请求,LLM-000 的 Why = "LLM judge failed on 4 call(s); those checks did not run (first error: call judge endpoint: the endpoint answered 307 with a redirect to "http://127.0.0.1:<端口>", outside the configured origin http://127.0.0.1:<端口>: not followed, and nothing was sent there (if that address is the real endpoint, set llm.base_url to it))",JudgeSummary Calls 4 / Failed 4 / Retries 0(max_retries 2),Overall 与不带 --llm 的扫描相同,静态发现逐条相同,没有 LLM 发现

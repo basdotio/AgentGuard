@@ -56,4 +56,4 @@
 | [020](complete/020-excerpt-padding-evasion.md) | 一行指令垫满空白,判官摘录里就只剩一行省略标记:判官恰好看不见它存在要读的那句话 | P-005、P-006 记下的后续:摘录按字节封顶,行内垫几千字节空白(含 Unicode 空白、零宽字符)的指令行在发出去之前就被换成省略标记或截成纯空白前缀 | PR #38;待发 |
 | [021](complete/021-plugin-mcp-unscanned.md) | 插件自带的 MCP server 从不过规则:同一份配置手写进 ~/.claude.json 是 75 分,随插件装进来是 100 分 | P-009 未决 6 记下的已有缺口:detect 和判官按带 ` (plugin …)` 后缀的 artifact 名去 `mcpServers` 里找条目,找不到,零 unit,记成干净的 100 | PR #37;待发 |
 | [022](complete/022-bench-fold-reads-judge-usage.md) | 基准折叠判官运行时,triage 调用数和每题用量是推出来的:aguard 的 JSON 已经报了真数,rig 一个都不读 | P-001 记下的后续:`judge.jsonl` 的 `triage_calls` / `questions` 按文档推导,rig 不读 `--json` 判官摘要里的真数,raw/ 还把没报的字段写成 0 | PR #35;待发 |
-| [023](complete/023-judge-redirect.md) | 判官端点回一个重定向,API key 就用明文发出去,或者被扫内容的摘录发给一台用户从没配置过的主机 | P-003 在「不做什么」里记下的后续:判官的 client 用 Go 默认的重定向策略,跟着 30x 走时不再过 `CheckEndpoint` | PR 待合入;待发 |
+| [023](complete/023-judge-redirect.md) | 判官端点回一个重定向,API key 就用明文发出去,或者被扫内容的摘录发给一台用户从没配置过的主机 | P-003 在「不做什么」里记下的后续:判官的 client 用 Go 默认的重定向策略,跟着 30x 走时不再过 `CheckEndpoint` | PR #34;待发 |
