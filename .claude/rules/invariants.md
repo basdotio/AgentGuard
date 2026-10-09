@@ -14,7 +14,7 @@
    一个只计数、拒绝请求的 RoundTripper,**先**断言上面两条路径确实被判官那个计数器看见(否则测试是瞎的),**再**断言
    零表里每个入口两个计数器都是 0:`scan`(含它追加的闸门存活探测;`clean` 用的是同一个 `scanEnv`)、不带 `--llm` 的下载项、`scan --llm` 但
    `llm.enabled: false`、`check`、`hook` 的 `PreToolUse`/`PostToolUse` 重扫/`SessionStart`、`approve`、`approvals`、
-   `llm setup`、`llm status`、`version`、`hash`。**加一条出网路径,就改这张清单,并把它从零表挪进正对照**;
+   `llm setup`、`llm status`、`version`(`pluginVersionLine`/`versionLine` 每个出口一行,外加一行从构建信息盖版本)、`hash`。**加一条出网路径,就改这张清单,并把它从零表挪进正对照**;
    零表里的入口一旦出网就红,但**新加的命令要自己进表**,测试不会替你发现它。`TestZeroDial_ClaimsNameTheTest` 让这里
    和 `baselines/tools.yaml` 都必须写那条测试的真名,并且**上面那张路径清单与正对照(`zeroDialControl`)是同一个集合**:
    正对照多一条路径而清单没写、清单写了而没有正对照看着它出网,两个方向都红;每条路径还必须出现在
@@ -36,7 +36,9 @@
      请求会报出来 —— 但报的是"在哪一行返回之后落地",不一定是发它的那一行;落在后面某一行运行期间的,记在那一行头上
      (照样红,只是行名不对);最后一行返回 50 ms 之后才发出的,看不见;
    - **只写在 cobra `RunE` 闭包里的代码**:表里每一行调的是命令调用的那个函数(`scanEnv`、`checkTarget`、`runHook`、
-     `runVersion`…),闭包里在那个函数之外多出的一行请求不在视野里。
+     `runVersion`…),闭包里在那个函数之外多出的一行请求不在视野里;
+   - **包级 `init()`**:测试装上计数器之前它就跑完了。`applyBuildInfo`(没被 `-ldflags` 盖章时从构建信息取版本,由
+     `init()` 调用)在 `version` 从构建信息盖版本的那一行里另跑一次;`init()` 里别的东西不在视野里。
 2. **符号链接边界收敛,出错即拒(fail-closed)。** `collect.withinDir` 与 `detect.inBoundary` 都会
    先解析符号链接再判断越界。skill *内部*文件不得指向 skill root 之外;skill 目录*本身*是符号链接
    属于合法的安装方式,但解析后必须落在 `$HOME` 之内(否则报 `SCOPE-001`)。解析失败一律拒绝。
