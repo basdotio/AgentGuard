@@ -128,6 +128,8 @@ func Apply(w io.Writer, root string, res model.ScanResult, dryRun bool) (Result,
 // operator reads are identical, so "which command did this" can never mean "which rules applied".
 func quarantine(w io.Writer, root string, res model.ScanResult, targets []moveTarget,
 	blocked map[string]string, dryRun bool, nothingMsg string) (Result, error) {
+	// Anchored before any decision, as in Undo: see anchored.
+	root = anchored(root)
 	// Checked before anything else, and in dry-run too: the operator reading a plan deserves to know
 	// the plan is void. If root sits inside a tree Claude Code recurses into, the trash directory
 	// lands in that same tree and quarantined content keeps loading — a report saying "quarantined"
@@ -315,6 +317,7 @@ func undoHandle(w io.Writer, out Result, trash string, err error) error {
 // place, complete with a permissive allowlist. Hence three independent checks, each of which alone
 // is enough to refuse.
 func Undo(w io.Writer, root, batch string, dryRun bool) (Result, error) {
+	root = anchored(root)
 	// The trash address is validated here too. A symlinked or escaped trash directory means the rows
 	// point at content this scan cannot see, and restoring from there is not a restore.
 	trash, terr := safeTrash(root, false)

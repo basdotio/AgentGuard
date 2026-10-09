@@ -65,7 +65,7 @@ func KeepBoth(w io.Writer, root string, item model.CleanItem, dryRun bool) error
 	if item.ID == "" {
 		return fmt.Errorf("this item addresses nothing and cannot be accepted into a baseline")
 	}
-	path := filepath.Join(root, ignoreFile)
+	path := filepath.Join(anchored(root), ignoreFile)
 	if isSymlink(path) {
 		return fmt.Errorf("refusing to write %s: it is a symlink, so the write would land somewhere "+
 			"other than the root you named", path)
