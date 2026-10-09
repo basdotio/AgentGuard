@@ -3,6 +3,7 @@
   "owner": {
     "name": "AgentGuard authors"
   },
+  "description": "AgentGuard: a local, read-only security check-up for Claude Code and Claude Desktop setups. One plugin (aguard) that audits what an agent auto-loads, vets a skill before you install it, and gates skill loads on a content hash.",
   "plugins": [
     {
       "name": "aguard",

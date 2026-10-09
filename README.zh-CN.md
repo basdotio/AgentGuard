@@ -216,7 +216,7 @@ Claude Code **没有**"安装"这个 hook 事件,而且就算有也覆盖不全 
 
 ## 检测对象
 
-skills(SKILL.md + 脚本 + 资源)· MCP 配置 · **hooks**(settings.json,可静默执行 shell,重点)· **权限白名单** · subagents · slash commands · 已安装的**插件** · CLAUDE.md · **Claude 桌面版自己的仓库**(在 Customize → Plugins 装的插件和 Customize → Skills 里的 skill 放在 `~/Library/Application Support/Claude/` 下而不是 `~/.claude`,由桌面版以 `--plugin-dir` 交给 CLI;会被采集并标注 "via Claude Desktop")。默认 root 会读 `$CLAUDE_CONFIG_DIR`。**下载目录**也查:`~/Downloads` 下长得像 agent 的东西(skill 文件夹、插件、MCP 配置、指令文件、装着这些的 `.zip`)逐个单独检查,列在单独的 Downloads 一节——它们没装进去,所以永不计入分数;目录里其余东西只计数,不读、不列名。`--inbox <目录>` 换位置,`--inbox off` 关闭。`aguard check foo.zip` 可以直接查一个下载的压缩包。安装型软链 skill(如 `~/.agents/skills/*`)会解析真身审计;越界指向系统路径的软链会被跳过并告警。
+skills(SKILL.md + 脚本 + 资源)· MCP 配置(静态只查注入文本和 `NODE_OPTIONS` 这类解释器预加载的 `env`;包没钉版本、`env` 里写死凭证这两种只有可选的 LLM 判官会报,`LLM-009`)· **hooks**(settings.json,可静默执行 shell,重点)· **权限白名单** · subagents · slash commands · 已安装的**插件** · CLAUDE.md · **Claude 桌面版自己的仓库**(在 Customize → Plugins 装的插件和 Customize → Skills 里的 skill 放在 `~/Library/Application Support/Claude/` 下而不是 `~/.claude`,由桌面版以 `--plugin-dir` 交给 CLI;会被采集并标注 "via Claude Desktop")。默认 root 会读 `$CLAUDE_CONFIG_DIR`。**下载目录**也查:`~/Downloads` 下长得像 agent 的东西(skill 文件夹、插件、MCP 配置、指令文件、装着这些的 `.zip`)逐个单独检查,列在单独的 Downloads 一节——它们没装进去,所以永不计入分数;目录里其余东西只计数,不读、不列名。`--inbox <目录>` 换位置,`--inbox off` 关闭。`aguard check foo.zip` 可以直接查一个下载的压缩包。安装型软链 skill(如 `~/.agents/skills/*`)会解析真身审计;越界指向系统路径的软链会被跳过并告警。
 
 其中两个面单独加强 —— 它们都是"看着很窄、实际交出执行权":
 
