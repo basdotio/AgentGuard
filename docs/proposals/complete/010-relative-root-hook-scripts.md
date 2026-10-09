@@ -63,33 +63,33 @@ fixture 都在 `t.TempDir()` 现搭,临时目录先 `EvalSymlinks`(免得 macOS 
 (工作目录 `<home>`)、`.`、`./`(工作目录 `<home>/.claude`)、`home/.claude`(工作目录是 `<home>` 的父目录)、`../home/.claude`
 (工作目录是它的兄弟目录)。
 
-- [ ] `TestScan_RootSpellingDoesNotChangeTheResult`(`cmd/aguard/rootspelling_test.go`,新):两份 fixture × 八种非绝对写法,每种走 `scanEnv`,
+- [x] `TestScan_RootSpellingDoesNotChangeTheResult`(`cmd/aguard/rootspelling_test.go`,新):两份 fixture × 八种非绝对写法,每种走 `scanEnv`,
   `overall`、`overall_effective`、库存计数、每个 artifact(kind、name、score、hash、全部发现连同证据 file:line:snippet)、scan 级 note、
   hygiene 全部等于绝对写法(只去掉本来就回显写法的 `root`、`locations`、artifact 的 `path`,以及 collect 自己 note 里拼在前面的 root 前缀)。
   今天红:"一个 hook、一个脚本"在 `<abs>/`、`<abs>/.`、`.claude/`、`.`、`./`、`home/.claude` 六行 overall 100(绝对写法 69);
   "各种第二阶段"八行视图全不同(`.claude`、`../home/.claude` 两行只差在 `HOOK-002` 证据里解析出的路径是相对的)
-- [ ] `TestRun_RootSpellingKeepsTheBoundary`(`internal/detect/rootspelling_test.go`,新):"各种第二阶段"fixture 经 `collect.CollectAll` +
+- [x] `TestRun_RootSpellingKeepsTheBoundary`(`internal/detect/rootspelling_test.go`,新):"各种第二阶段"fixture 经 `collect.CollectAll` +
   `Engine.Run`(不经 `cmd`,所以 `check`、闸门、`clean` 恢复预览这些 detect 调用方一并钉住),绝对写法加八种写法加"工作目录经符号链接"、
   再加三行"root 本身是符号链接"(`~/.claude → ~/dotfiles/claude` 的安装方式:绝对、绝对带斜杠、从 root 里面用 `.`),每行 pre.sh、rel.sh、
   deploy.sh、skill 脚本都**被读**、证据路径一致。今天红六行(pre.sh、deploy.sh 没读)
-- [ ] 反向断言(同一测试):**每种写法下** HOME 外的 `evil.sh`、`granted.sh` 和指向 HOME 外的 `link.sh` 都**不被读** —— 任何 artifact 上都没有
+- [x] 反向断言(同一测试):**每种写法下** HOME 外的 `evil.sh`、`granted.sh` 和指向 HOME 外的 `link.sh` 都**不被读** —— 任何 artifact 上都没有
   `EXFIL-001`、没有引用这三个文件的证据;两个 hook 各一条 `HOOK-002`,合并后的 hook coverage note 只列这两条,写的是
   "2 × it resolves outside HOME";授权的 coverage note 只列 `granted.sh`,写的是 "1 × it resolves outside HOME"。今天那六行里 `link.sh`
   只得到 "no such file"(没走到边界检查)、没有 `HOOK-002`
-- [ ] 反向断言:root 本身是符号链接的三行钉住"只 `Abs`、不解析符号链接" —— 把入口改成解析符号链接,home 被挪到 `~/dotfiles`,这三行变红
-- [ ] 反向断言:绝对写法的结果先用字面值钉住(两份 fixture 都是 overall 69;`EXEC-001@hooks/pre.sh`、`EXEC-002@hooks/rel.sh`、
+- [x] 反向断言:root 本身是符号链接的三行钉住"只 `Abs`、不解析符号链接" —— 把入口改成解析符号链接,home 被挪到 `~/dotfiles`,这三行变红
+- [x] 反向断言:绝对写法的结果先用字面值钉住(两份 fixture 都是 overall 69;`EXEC-001@hooks/pre.sh`、`EXEC-002@hooks/rel.sh`、
   `FS-003@scripts/deploy.sh`、`EXEC-001@skills/demo/scripts/run.sh`、两条 `HOOK-002`;没有 `EXFIL-001`),今天就绿,修后不改一字仍绿;
   `EXFIL-001` 的缺席对每一种写法单独断言,不只靠"与绝对写法相同"
-- [ ] `TestRelPath_RelativePathUnderAbsoluteRoot`(同 detect 测试文件,新):root 绝对、文件路径相对工作目录时证据给完整相对路径
+- [x] `TestRelPath_RelativePathUnderAbsoluteRoot`(同 detect 测试文件,新):root 绝对、文件路径相对工作目录时证据给完整相对路径
   (`skills/demo/scripts/run.sh`),**包括工作目录经过符号链接**(`PWD` 指向链接)。今天红:两种都退化成 `scripts/run.sh`
-- [ ] 反向断言:不变量 #2 的既有测试一字不改仍绿 —— `TestHookScriptOutsideHomeRefused`、`TestHookQuotedPathWithSpaceOutsideHome`、
+- [x] 反向断言:不变量 #2 的既有测试一字不改仍绿 —— `TestHookScriptOutsideHomeRefused`、`TestHookQuotedPathWithSpaceOutsideHome`、
   `TestHookPermissionRequestOutsideHomeIsHigh`、`TestPermissionUnits_Boundary`、`TestRegularFileStillReadThroughSymlink`、
   collect 的 `TestEscapingSymlinkSkillNoted` / `TestCrossRootSymlinkIgnored`;`git diff --stat origin/main -- internal/detect/hooks_test.go
   internal/detect/detect_test.go internal/detect/nonregular_test.go internal/collect` 为空
-- [ ] 反向断言:绝对写法的 `scan --json` 在 fixture 上修前修后**逐字节相同**(去掉 `scanned_at`、`tool_version` 两行后 `cmp` 无差);
+- [x] 反向断言:绝对写法的 `scan --json` 在 fixture 上修前修后**逐字节相同**(去掉 `scanned_at`、`tool_version` 两行后 `cmp` 无差);
   真机 `scan --root ~/.claude` 修前修后同样逐字节相同,`~/.claude/` 修后与 `~/.claude` 只差 `root` 一行
-- [ ] `.claude/rules/detect.md` 仍在 200 行以内(`TestClaudeRulesAreScopedToExistingPaths`)
-- [ ] `make verify` 绿;`go version` 不切换工具链
+- [x] `.claude/rules/detect.md` 仍在 200 行以内(`TestClaudeRulesAreScopedToExistingPaths`)
+- [x] `make verify` 绿;`go version` 不切换工具链
 
 ## 不做什么
 
@@ -157,3 +157,21 @@ fixture 都在 `t.TempDir()` 现搭,临时目录先 `EvalSymlinks`(免得 macOS 
    它今天同样 100 分 —— `~/…` 展开成相对路径后又被当"相对引用"再拼一次。根因和修法与另外两种相同,不需要额外代码。
    **建议**:扩,写进「问题」的表和判据;标题里的"用相对路径时"因此是准确的。
    **已决(2026-10-09)**:按建议(旧仓已决,移植沿用)。
+
+## 完成
+
+```
+合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-010 找)
+发布:待发
+证据:TestScan_RootSpellingDoesNotChangeTheResult(cmd/aguard/rootspelling_test.go);W1 红:「一个 hook、一个脚本」在 <abs>/、<abs>/.、.claude/、.、./、home/.claude 六种写法下 overall 100,绝对写法 69 → W2 后八种写法都是 69、报告视图逐字等于绝对写法;「各种第二阶段」W1 时八行视图全不同(.claude、../home/.claude 两行只差 HOOK-002 snippet 里 link.sh 解析出的路径是相对的)→ W2 后全同
+证据:TestRun_RootSpellingKeepsTheBoundary(internal/detect/rootspelling_test.go);W1 红六行(<abs>/、<abs>/.、.claude/、.、./、home/.claude:pre.sh、deploy.sh 没读,link.sh 只得 "no such file"、没有 HOOK-002)→ W2 后绿;W4、W5 后十三行全绿
+证据:反向断言 同一测试 —— 十三行里 evil.sh、link.sh、granted.sh 都不被读(无 EXFIL-001、无引用它们的证据),两个 hook 各一条 HOOK-002,hook note 为 "2 × it resolves outside HOME",授权 note 为 "1 × it resolves outside HOME"
+证据:TestRelPath_RelativePathUnderAbsoluteRoot(同文件);W1 红:普通工作目录与经符号链接的工作目录都退化成 scripts/run.sh → W2 后 skills/demo/scripts/run.sh
+证据:反向断言 绝对写法字面值(TestScan_RootSpellingDoesNotChangeTheResult 开头:overall 69、6 条钉住的发现、无 EXFIL-001)W1 时就绿,修后不改一字仍绿;既有边界测试 TestHookScriptOutsideHomeRefused、TestHookQuotedPathWithSpaceOutsideHome、TestHookPermissionRequestOutsideHomeIsHigh、TestPermissionUnits_Boundary、TestRegularFileStillReadThroughSymlink、TestEscapingSymlinkSkillNoted、TestCrossRootSymlinkIgnored 所在文件一字未改,全绿
+证据:变异检查(临时改、跑、还原,未提交):anchorRoot 只 Clean 不 Abs → detect 四行(dot、dot slash、relative through the parent、从软链 root 里用 .)与 cmd 九行红;anchorRoot 改为 EvalSymlinks(Abs(root)) → root 本身是软链的三行红;去掉 relPath 的相对分支 → detect 八行 + TestRelPath 两行 + cmd「各种第二阶段」六行红;relPath 只 Abs 不解析目录 → "工作目录经符号链接"两行(TestRun 一行、TestRelPath 一行)+ 从软链 root 里用 . 一行红;permission.go 的 inBoundary 检查改为 false → detect 十三行全红、cmd「各种第二阶段」红
+证据:二进制前后(main dec64ca vs 本分支,fixture 在 /tmp 下,--inbox off):绝对写法 scan --json 去掉 scanned_at、tool_version 两行后 cmp 无差(经符号链接的 /tmp/… 写法 9305 字节、解析后的 /private/tmp/… 写法 9401 字节);修后 <abs>/ 与 <abs> 只差 root 一行,修前 <abs>/ 少了 hook 的 EXEC-001、授权的 FS-003 和 link.sh 的 HOOK-002;复现表九种写法修后全部 69、都带 EXEC-001@hooks/pre.sh(加授权的那份也都带 FS-003@scripts/deploy.sh)
+证据:真机 ~/.claude:修前修后 overall 69 / artifact 175 / 发现 806 / note 10,JSON 去掉 scanned_at、tool_version 后逐字节相同(15684 行);~/.claude/ 修前 "Granted script not followed" 证据 2 条(绝对写法 1 条,多出的一条是 ~ 下、~/.claude 外的脚本被判成 "resolves outside HOME")→ 修后 1 条,与绝对写法只差 root 一行
+证据:不做什么 —— git diff --stat origin/main -- cmd/aguard/main.go cmd/aguard/gate.go internal/collect internal/detect/hooks.go internal/detect/permission.go docs/spec go.mod go.sum 为空;git diff --stat origin/main -- internal/detect/hooks_test.go internal/detect/detect_test.go internal/detect/nonregular_test.go 为空
+证据:.claude/rules/detect.md 198 → 200 行,TestClaudeRulesAreScopedToExistingPaths 绿(上限 200)
+证据:make verify: all gates passed;go version go1.23.5(无工具链切换),go.mod 第二行 go 1.23.5
+```
