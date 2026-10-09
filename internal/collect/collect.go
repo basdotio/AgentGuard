@@ -5,6 +5,12 @@
 // audits install-via-symlink skills (resolving to their real root) but refuses to
 // read a skill's INTERNAL files whose targets escape that skill root (spec §16.2).
 // Detection/scoring happen later; M1 only produces the artifact inventory.
+//
+// The notes it writes quote text copied out of a file or a config value — an @import line, a
+// plugin key, a hook event key — only through redact.Secrets, the one redactor (spec §16.3,
+// invariant #3). Names this package lists from disk, and the paths a note is located at, are not
+// redacted here: whether Evidence.File and the names beside it should be is one engine-wide
+// question, not one for each note to answer differently.
 package collect
 
 import (

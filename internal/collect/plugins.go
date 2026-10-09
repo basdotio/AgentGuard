@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/redact"
 	"github.com/basdotio/AgentGuard/internal/safeio"
 )
 
@@ -185,11 +186,13 @@ func collectPlugins(root, home string, env *model.EnvSummary) ([]model.ArtifactR
 				continue
 			}
 			if !withinDir(home, real) {
+				// The key is installed_plugins.json's text: config values reach a snippet only
+				// through the redactor (invariant #3).
 				notes = append(notes, model.Finding{
 					RuleID: "SCOPE-001", Dimension: 9, Severity: model.SevMedium, Source: model.SrcStatic,
 					Title:    "Plugin install path points outside HOME, skipped",
 					Why:      "An installed plugin resolves to a location outside the user home; that is not a normal install layout, and its contents were not collected.",
-					Evidence: []model.Evidence{{File: path, Line: 0, Snippet: "install path escapes HOME: " + name}},
+					Evidence: []model.Evidence{{File: path, Line: 0, Snippet: "install path escapes HOME: " + redact.Secrets(name)}},
 				})
 				continue
 			}
