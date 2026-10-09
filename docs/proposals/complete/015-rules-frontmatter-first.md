@@ -56,22 +56,23 @@
 
 fixture 都在 `t.TempDir()` 现搭,与现有测试同一写法。
 
-- [ ] `TestClaudeRulesProblemsAreCaught`(`cmd/aguard/claude_rules_test.go`,扩充)钉住:上表里实测会让 Claude Code 忽略
+- [x] `TestClaudeRulesProblemsAreCaught`(`cmd/aguard/claude_rules_test.go`,扩充)钉住:上表里实测会让 Claude Code 忽略
   `paths:` 的四种形状——`---` 之前有一行 HTML 注释、一个空行、一行 `# 标题`、一个 UTF-8 BOM——各报一条
   `frontmatter must start on line 1`,它们的 glob 都能匹配,所以这是各自唯一的问题;精确计数 3 → 7。只加 fixture、不改检查时红
-- [ ] 反向断言(同一测试):以下都**不**报 ——
+- [x] 反向断言(同一测试):以下都**不**报 ——
   常驻规则开头有 HTML 注释、没有 frontmatter(`invariants.md` 的形状);
   正文里有两条 `---` 分隔线、中间是一句 `Note: …` 这种能被 YAML 读成映射的散文;
   围栏代码块里的 `paths:` 示例(它的 glob 落空,也不能报成落空);
-  frontmatter 在第 1 行、许可证注释在闭合 `---` 的下一行(W2 之后十份文件的形状)。
+  frontmatter 在第 1 行、许可证注释在闭合 `---` 的下一行(W2 之后十份文件的形状);
+  CRLF 换行、在第 1 行开始的 frontmatter(Claude Code 认它,不能报成"不在第一行",未决 4)。
   原有三条(落空的 glob、空 `paths:`、超长)照报
-- [ ] `TestClaudeRulesAreScopedToExistingPaths`:W1 之后在本仓红,报的**恰好是这十份**,每份一条;W2 之后绿
-- [ ] glob 检查确实重新生效:W2 之后把 `score.md` 的 `internal/score/**` 临时改成 `internal/scorex/**` → 红,
+- [x] `TestClaudeRulesAreScopedToExistingPaths`:W1 之后在本仓红,报的**恰好是这十份**,每份一条;W2 之后绿
+- [x] glob 检查确实重新生效:W2 之后把 `score.md` 的 `internal/score/**` 临时改成 `internal/scorex/**` → 红,
   `matches no file`;同一改动在 dec64ca 上是绿的(「问题」一节)。变异跑完还原,不提交
-- [ ] 十份文件每份行数前后相同,每份的改动只是一行换了位置(`sort` 后与 `origin/main` 逐字节相同)
-- [ ] `CLAUDE.md`「何时加载」一列与每份文件的 `paths:` 逐条一致
-- [ ] Claude Code 2.1.107 同样的 `InstructionsLoaded` 测量:W2 之后以 `session_start` 加载的规则只剩 `conventions.md`、`invariants.md`
-- [ ] `make verify` 绿;`go version` 不切换工具链,`go.mod` 第二行仍是 `go 1.23.5`,不加依赖
+- [x] 十份文件每份行数前后相同,每份的改动只是一行换了位置(`sort` 后与 `origin/main` 逐字节相同)
+- [x] `CLAUDE.md`「何时加载」一列与每份文件的 `paths:` 逐条一致
+- [x] Claude Code 2.1.107 同样的 `InstructionsLoaded` 测量:W2 之后以 `session_start` 加载的规则只剩 `conventions.md`、`invariants.md`
+- [x] `make verify` 绿;`go version` 不切换工具链,`go.mod` 第二行仍是 `go 1.23.5`,不加依赖
 
 ## 不做什么
 
@@ -96,7 +97,7 @@ fixture 都在 `t.TempDir()` 现搭,与现有测试同一写法。
 
 | W | 一句话 | 提交信息(不写 sha,rebase 会改) |
 |---|---|---|
-| 1 | 范围测试报"frontmatter 不在第一行";四种错位形状、四条反向断言;跑红 | `cmd: test — the rules scope check reports a paths frontmatter that does not start on line 1, which Claude Code ignores (P-015)` |
+| 1 | 范围测试报"frontmatter 不在第一行";四种错位形状、五条反向断言;跑红 | `cmd: test — the rules scope check reports a paths frontmatter that does not start on line 1, which Claude Code ignores (P-015)` |
 | 2 | 十份规则文件的许可证注释挪到闭合 `---` 下一行 | `rules: the licence comment moves below the frontmatter in the ten path-scoped files, so their paths take effect and get checked (P-015)` |
 | 3 | 本文件、索引 | `proposals: P-015 (P-015)` |
 
@@ -116,7 +117,7 @@ fixture 都在 `t.TempDir()` 现搭,与现有测试同一写法。
    **已决(2026-10-09)**:按建议。
 4. **范围测试不认 CRLF 的 frontmatter(`frontmatterPaths` 只认 `---\n`),而 Claude Code 2.1.107 认(上表最后一行),要不要一起修?**
    **建议**:不修。这是另一种失明,本仓 `.claude/rules/` 里没有 CRLF 文件(`git ls-files .claude/rules | xargs grep -l $'\r'` 为空);
-   新检查对第 1 行开始的 CRLF frontmatter 也不报"不在第一行",不会给出错误的提示。
+   新检查对第 1 行开始的 CRLF frontmatter 也不报"不在第一行",不会给出错误的提示(反向断言 `crlf.md` 钉着)。
    **已决(2026-10-09)**:按建议。
 5. **产品里的 `parse.PathScoped` 有相近的出入,要不要一起改?**
    `internal/parse/frontmatter.go` 的 `splitFrontmatter` 在找 `---` 之前先去掉 BOM 和开头的空白,所以 `collectRules`
@@ -129,3 +130,19 @@ fixture 都在 `t.TempDir()` 现搭,与现有测试同一写法。
 6. **要不要在 `CLAUDE.md` 或某份规则里写一句"frontmatter 必须在第一行"?**
    **建议**:不写。测试的报错信息自己说明了原因;规则内容按「不做什么」不动,`CLAUDE.md` 的表也不需要改。
    **已决(2026-10-09)**:按建议。
+
+## 完成
+
+```
+合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-015 找)
+发布:待发
+证据:TestClaudeRulesProblemsAreCaught(cmd/aguard/claude_rules_test.go);只加 fixture、不改检查时红:四种错位形状各一条 missing problem "<name>: frontmatter must start on line 1",want exactly 7 problems, got 3 → 加上 misplacedFrontmatter 后绿
+证据:TestClaudeRulesAreScopedToExistingPaths(同文件);W1 后在本仓(dec64ca + W1)红:10 problem(s),恰好 detect gate hash judge npm pipeline plugin report reputation score 各一条 "frontmatter must start on line 1 (Claude Code ignores it anywhere else, so this rule loads every session)" → W2 后绿
+证据:反向断言五条(licensed.md、ruled.md、example.md、moved.md、crlf.md 都不报)逐条用变异确认会咬:去掉围栏跳过 → example.md 被报(got 8);任何一对 --- 都算 → ruled.md 被报(got 8);去掉 BOM 分支 → late-bom.md 漏报(got 6);第 1 行开始的也报 → crlf.md 被报(got 8)。变异跑完还原,未提交
+证据:glob 检查重新生效:score.md 的 internal/score/** 临时改成 internal/scorex/** —— dec64ca 上 PASS(失明)→ W2 后 FAIL,paths entry "internal/scorex/**" matches no file;还原,未提交。W2 后十份文件共 18 条 glob 全部匹配,没有落空的,未决 3 没有触发
+证据:十份文件行数 198 91 25 41 78 151 77 51 69 16 → 不变;每份 diff 1+/1−,sort 后与 origin/main 逐字节相同;detect.md 仍是 198 行
+证据:CLAUDE.md「何时加载」与十份文件的 paths: 逐条比对 10/10 一致,CLAUDE.md 未改
+证据:Claude Code 2.1.107,InstructionsLoaded hook 记 load_reason,在 git archive 解出的副本里跑 claude -p:dec64ca 上项目级 session_start 加载 13 份(CLAUDE.md + 全部 12 份规则)→ 本分支 3 份(CLAUDE.md、conventions.md、invariants.md)。按路径触发的加载没有量(「不能说什么」)
+证据:不做什么 —— git diff --stat origin/main -- '*.md' 去掉这十份规则和 docs/proposals 后为空;-- '*.go' 只有 cmd/aguard/claude_rules_test.go;-- go.mod go.sum CLAUDE.md .claude/rules/conventions.md .claude/rules/invariants.md 为空
+证据:make verify: all gates passed;go version go1.23.5(无工具链切换),go.mod 第二行 go 1.23.5,无新依赖
+```
