@@ -33,17 +33,22 @@ paths:
   - **白话层只做派生,不做判断。** `verdictSentence` 是等级档 + 计数的函数,`actions` 就是 medium
     以上的 group 按既有顺序取前三,`dimLabel` 是每个维度一句固定短语(10 句,不是 70 条规则各写一句)。
     没有任何一处能说出下面列表里没有的东西,也没有任何一处能把严重度说轻。
-    - **"looks safe" 以"Claude Code 加载的东西都读全了"为前提**(`coverageVerdict`,集合只在这一处定义):
-      挂在 artifact 上的覆盖 note(`itemGaps`),或任何位置的 `IO-000` / `PARSE-000` → Low 档换成
-      `Low risk in what was read, but coverage is incomplete.`。**按规则 ID 和挂载位置选,不按标题匹配。**
-      其余扫描级 note 只进 "Not checked" 那行、不动头条 —— 尤其是"顶层条目没读"的 `COV-000`(用户自己的
-      `sessions/`、`file-history/`,按设计不读,真机上几乎总在)和 `LLM-002`(隐私告知,不是缺口):人定(2026-10-09),
-      否则几乎每份 Low 档报告都带这句,它就不再有意义。所以头条和 "Not checked" 那行**不是**同一个集合。
-      `IO-000` 必须在集合里:同一个 `settings.json` 读不了(扫描级 `IO-000`)和解析不了(artifact 上的 `PARSE-000`)
-      要得到同一个头条。其余三档不变;压制类 note 不算。
-    - **Checked 那句点名"找到了、没检查全"的项**(`checkedWithGaps` + `itemGaps`/`gapList`,数据与组句分开,
-      markdown 用代码跨度):artifact 自带覆盖 note 的那几项,最多 3 个、余下计数。清单计数来自采集器抽出来的东西,
-      解析不了的文件什么都抽不出,所以没有这半句时那行会说 "Nothing was found to check"。
+    - **"looks safe" 以"Claude Code 加载的东西都读全了"为前提**(`coverageVerdict` → `unreadLoaded`,集合只在这一处定义):
+      挂在 artifact 上的覆盖 note(`itemGaps`)、扫描级的 `IO-000` / `PARSE-000`、扫描级的**每一条** `COV-000`
+      (detect 与 collect 关于已加载内容没读的说明几乎都在这里:读不了的子目录、超大文件、hook 第二段、解析到 root 外的
+      `rules/`……,P-017)、带 `SUP-004` 的 artifact → Low 档换成 `Low risk in what was read, but coverage is incomplete.`。
+      **例外只有 `deliberateSkip` 里四条按设计不读的**:无人认领的顶层条目(用户自己的 `sessions/`,真机上几乎总在,人定
+      2026-10-09)、空 root、第三方 / VCS 树(被指进去时 `SUP-004` 负责)、hook 脚本记在插件名下(内容读了)。**扫描级
+      `COV-000` 之间规则 ID、挂载位置、来源全相同,标题是唯一能区分的东西,所以只能经生产方导出的常量比较**
+      (`collect.UnownedNoteTitle` 等,与 detect 的 coalescer 同一做法),**渲染器里不写标题字面量**。新加的扫描级 `COV-000`
+      默认对冲;要它不对冲,就导出它的标题、加进 `deliberateSkip` 并写明理由。`LLM-*`、`GATE-*`、压制类 note 不对冲。
+      所以头条和 "Not checked" 那行**不是**同一个集合。其余三档不变。
+    - **Checked 那句**(`checkedSummary`,数据与组句分开,markdown 用代码跨度):计数取清单;**清单什么都没数到时改数扫过的
+      artifact**(`scannedParts`,每种一个固定名词、固定顺序,不算"没检查全"的项)—— `check <文件>` / `check <目录>` / 只有
+      `CLAUDE.md` 的 root 不在清单里,以前一边列 high 一边说 "Nothing was found to check"(P-017)。清单有数时那一行逐字节不变,
+      **别把 `CLAUDE.md` 补进有数的那一行**(会改掉每台真机的那句,而它没说错)。点名"找到了、没检查全":artifact 自带覆盖 note
+      的项,再加扫描级 `IO-000` / `PARSE-000`(读不了 / 解析不了的文件,`scanGaps`),最多 3 个、余下计数。扫描级 `COV-000`
+      不点名:说的是已计数项的一部分,证据路径相对 artifact(读不了的子目录那条是 `.`)。
   - **规则 ID 仍在每条发现上,但挪到行尾的方括号里**;行首是"谁 · 什么"(`friendlyArtifact` 把
     `plugin:figma@claude-plugins-official (2.2.107)` 写成 "figma plugin, from claude-plugins-official (2.2.107)")。
     改这里时注意几个测试钉住的锚点:`Risk score N/100 (Level)`、`→ … start with [ID]`、

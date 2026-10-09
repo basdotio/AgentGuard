@@ -184,11 +184,14 @@ The terminal report shows every finding by default and folds the coverage notes 
 line that still carries their count, their highest severity and their rule IDs. `--verbose`
 prints those notes in full — reach for it when the question is what the scan did *not* read.
 That includes a note attached to one item, such as a `settings.json` that does not parse: the
-summary then names the item as not fully checked. When something Claude Code loads was not fully
-read — a file that could not be read or parsed, or an item carrying its own coverage note — the
-summary says coverage is incomplete instead of calling the setup safe. Notes about entries the scan
-skips by design (your own session history at the top of the config directory) are listed but do
-not change that sentence. Coverage notes never change the score or the exit code. Findings are never folded in either mode, and `--json` / `--html` / `--md` always carry everything, so
+summary then names the item as not fully checked, and does the same for a file that could not be
+read. When something Claude Code loads was not fully read — a file that could not be read or parsed,
+an item carrying its own coverage note, a skill folder the scan could not open, a file over the size
+cap, a hook script it could not follow — the summary says coverage is incomplete instead of calling
+the setup safe. Notes about things the scan skips by design (your own session history at the top of
+the config directory, a plugin's `node_modules/`) are listed but do not change that sentence. When
+the inventory has nothing to count — `aguard check` on a single file or a plain folder — the summary
+says what it checked ("Checked 1 file.") rather than that nothing was found. Coverage notes never change the score or the exit code. Findings are never folded in either mode, and `--json` / `--html` / `--md` always carry everything, so
 what a CI job sees never depends on which flag a human passed.
 
 **Exit codes**: `0` below threshold · `1` a finding at/above `--fail-on` · `2` runtime error

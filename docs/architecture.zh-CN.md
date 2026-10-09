@@ -106,8 +106,11 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
 因为严重度跟着条数一起走:一条压掉了 critical 的基线不会被读成低危脚注。这些说明有两个住处 —— 扫描自己的,
 和采集器挂在某个 artifact 上的(解析不了的配置文件会变成一个带 `PARSE-000` 的 artifact)—— 三个人读渲染器
 一律经同一个函数 `report.notesOf` 取两者;只读扫描自己的那份,曾把一个坏掉的 `settings.json` 印成 "looks safe"。
-Claude Code 加载的东西没读全时(挂在 artifact 上的说明,或任何位置的 `IO-000` / `PARSE-000`),摘要说
-coverage is incomplete,不说 "looks safe";其余扫描级说明,如按设计不读的顶层条目和判官的隐私告知,只进 "Not checked"。`--json`、`--html` 和 `--md`
+Claude Code 加载的东西没读全时(挂在 artifact 上的说明、任何位置的 `IO-000` / `PARSE-000`、扫描级的 `COV-000` ——
+detect 和 collect 把没读的东西记在这里 —— 或带 `SUP-004` 的 artifact),摘要说 coverage is incomplete,不说 "looks safe"。
+四条扫描级说明是按设计不读的披露,不动这句:无人认领的顶层条目、空 root、第三方 / VCS 树、随插件一起读过的 hook 脚本 ——
+数据里只有标题能把它们和缺口分开,所以经生产方导出的标题常量比较;判官的说明(含隐私告知)同样只进 "Not checked"。
+Checked 那句数清单,清单什么都没数到时改数扫过的 artifact(`check` 单个文件或普通目录、只有 `CLAUDE.md` 的 root)。`--json`、`--html` 和 `--md`
 不受这个开关影响,所以 CI 的输出不会取决于某个人选了哪种模式。`--md`(P-008)是第三个人读渲染器,给 PR 评论
 和 issue:同一份派生数据、同一顺序,被扫目录来的字符串全在代码跨度里。
 
