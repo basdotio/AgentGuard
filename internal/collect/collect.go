@@ -193,6 +193,10 @@ func ValidateRoot(root string) error {
 	return nil
 }
 
+// EmptyRootNoteTitle is emptyRootNote's title, exported so the report can tell "nothing was
+// collected" from a gap in loaded content without matching prose of its own (report.coverageVerdict).
+const EmptyRootNoteTitle = "Nothing to audit under this root"
+
 // emptyRootNote is raised when a VALID root yielded no artifacts at all. 100/100 is honest
 // for a fresh install with nothing configured, and indistinguishable from a root pointed one
 // directory too high — so the report says which one it is looking at rather than letting the
@@ -200,7 +204,7 @@ func ValidateRoot(root string) error {
 func emptyRootNote(root string) model.Finding {
 	return model.Finding{
 		RuleID: "COV-000", Dimension: 0, Severity: model.SevLow, Source: model.SrcStatic,
-		Title:    "Nothing to audit under this root",
+		Title:    EmptyRootNoteTitle,
 		Why:      "The root exists but no skill, MCP server, hook, permission list, subagent, command, plugin or instruction file was found, so the score below reflects an empty inventory rather than a clean one. Expected for an unconfigured environment; otherwise check --root (a project's .claude and the user-level ~/.claude are different roots).",
 		Evidence: []model.Evidence{{File: root, Line: 0, Snippet: "0 artifacts collected"}},
 	}

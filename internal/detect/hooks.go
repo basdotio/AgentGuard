@@ -304,10 +304,11 @@ func hookRefNote(artifact, ref, why string) model.Finding {
 	}
 }
 
-// hookOwnedNoteTitle is a DIFFERENT statement from hookRefNoteTitle, and the separate title is
+// HookOwnedNoteTitle is a DIFFERENT statement from hookRefNoteTitle, and the separate title is
 // the point: it keeps the two counts apart in the coalescer, so "we could not find this at all"
-// never gets averaged together with "we read this, just under another name".
-const hookOwnedNoteTitle = "Hook script attributed to its plugin, not to the hook (partial)"
+// never gets averaged together with "we read this, just under another name". Exported for the
+// report for the same reason: the script was read, so this note does not hedge "looks safe".
+const HookOwnedNoteTitle = "Hook script attributed to its plugin, not to the hook (partial)"
 
 // hookOwnedNote reports a second stage that WAS read — as part of the plugin tree the hook ships
 // in — but whose findings are filed under the plugin rather than under the hook that runs it.
@@ -325,7 +326,7 @@ const hookOwnedNoteTitle = "Hook script attributed to its plugin, not to the hoo
 func hookOwnedNote(artifact, ref, resolved string) model.Finding {
 	return model.Finding{
 		RuleID: "COV-000", Dimension: 0, Severity: model.SevLow, Source: model.SrcStatic,
-		Title: hookOwnedNoteTitle,
+		Title: HookOwnedNoteTitle,
 		Why: "A hook command names its script through the plugin root, which cannot be expanded " +
 			"without interpreting shell. The path was instead LOCATED inside the plugin's own tree, " +
 			"which is scanned whole as one artifact — so the content was read and any findings in it " +

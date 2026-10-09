@@ -301,7 +301,7 @@ func TestHookUnits_PluginScriptLocatedInItsOwnTree(t *testing.T) {
 	var snippet string
 	for _, n := range notes {
 		switch n.Title {
-		case hookOwnedNoteTitle:
+		case HookOwnedNoteTitle:
 			owned++
 			if len(n.Evidence) > 0 {
 				snippet = n.Evidence[0].Snippet
@@ -347,7 +347,7 @@ func TestHookUnits_PluginScriptGenuinelyAbsentStaysAGap(t *testing.T) {
 		switch n.Title {
 		case hookRefNoteTitle:
 			unread++
-		case hookOwnedNoteTitle:
+		case HookOwnedNoteTitle:
 			owned++
 		}
 	}

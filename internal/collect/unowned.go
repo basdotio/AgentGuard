@@ -114,6 +114,11 @@ func hasShebang(path string) bool {
 	return head[0] == '#' && head[1] == '!'
 }
 
+// UnownedNoteTitle is the title of the note naming what collectUnowned left unread. Exported so the
+// report can tell this deliberate skip (the user's own sessions/, file-history/ — nothing Claude Code
+// loads) from a gap in loaded content without matching prose of its own (report.coverageVerdict).
+const UnownedNoteTitle = "Unowned entries under the root were not read"
+
 // collectUnowned collects the top-level FILES of root that no other collector owns and that look
 // like code or instructions, and returns one COV-000 naming everything left unread.
 // aguardApprovalsFile mirrors gate.ApprovalsFile. It is a literal rather than an import
@@ -180,7 +185,7 @@ func collectUnowned(root string) ([]model.ArtifactReport, []model.Finding) {
 	}
 	return out, []model.Finding{{
 		RuleID: "COV-000", Dimension: 0, Severity: model.SevLow, Source: model.SrcStatic,
-		Title: "Unowned entries under the root were not read",
+		Title: UnownedNoteTitle,
 		// The names go in Why, not only in Evidence: the terminal renderer prints ONE evidence
 		// line per note, so a list that lives only in Evidence is a list the reader never sees.
 		// Same convention as the unknown-extension COV-000.
