@@ -177,4 +177,16 @@ func quarantinable(root, src string) (blocker, why string) {
 // and was then refused at apply time with "not an installed skill". Blockers exist so that "this
 // cannot be acted on" is visible while the operator is still reading, and that only holds if the
 // plan asks the same question the move will.
-func QuarantineRefusal(root, src string) (blocker, why string) { return quarantinable(root, src) }
+func QuarantineRefusal(root, src string) (blocker, why string) {
+	return quarantinable(anchored(root), src)
+}
+
+// anchored is the root every entry point of this package works from: collect.AnchorRoot, the same
+// absolute spelling collect and detect use. withinDir resolves its base with EvalSymlinks and never
+// made it absolute, EvalSymlinks(".") is ".", and "." cannot be related to a resolved path — so
+// `cd ~/.claude && aguard clean --root . --undo last` refused the root's own .aguard-trash as
+// "outside the scanned root", and every relative spelling refused every move. Anchoring at the entry
+// rather than inside withinDir also makes what the operator reads — the trash path, the baseline
+// path — the same under every spelling. Abs, not EvalSymlinks: each check below still resolves
+// symlinks itself (rule 1 above), so a symlinked trash or an escaping source is refused as before.
+func anchored(root string) string { return collect.AnchorRoot(root) }

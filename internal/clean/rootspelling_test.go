@@ -128,12 +128,15 @@ func TestClean_RootSpellingIsTheAbsoluteRun(t *testing.T) {
 			}
 
 			spelledChdir(t, sp.dir)
+			// The row typed through a symlinked working directory names the same files in the link's
+			// frame (P-012 未决 5); it is compared after mapping the link back onto home.
+			inFrame := func(s string) string { return strings.ReplaceAll(s, filepath.Join(e.base, "via"), e.home) }
 			var gotPlan bytes.Buffer
 			gotA, err := Apply(&gotPlan, sp.root, res, true)
 			if err != nil {
 				t.Fatalf("--root %q: the preview was refused: %v", sp.root, err)
 			}
-			if gotPlan.String() != wantPlan.String() || !reflect.DeepEqual(gotA, wantA) {
+			if inFrame(gotPlan.String()) != wantPlan.String() || !reflect.DeepEqual(gotA, wantA) {
 				t.Errorf("--root %q: the preview differs from the absolute spelling\n got: %s\nwant: %s", sp.root, gotPlan.String(), wantPlan.String())
 			}
 			if b, w := QuarantineRefusal(sp.root, src); b != wantBlocker || w != wantWhy || b != "" {
@@ -143,7 +146,7 @@ func TestClean_RootSpellingIsTheAbsoluteRun(t *testing.T) {
 			if err := KeepBoth(&gotKeep, sp.root, item, true); err != nil {
 				t.Fatalf("--root %q: keep-both preview: %v", sp.root, err)
 			}
-			if gotKeep.String() != wantKeep.String() {
+			if inFrame(gotKeep.String()) != wantKeep.String() {
 				t.Errorf("--root %q: keep-both preview %q, the absolute spelling says %q", sp.root, gotKeep.String(), wantKeep.String())
 			}
 
@@ -163,7 +166,7 @@ func TestClean_RootSpellingIsTheAbsoluteRun(t *testing.T) {
 			if err != nil {
 				t.Fatalf("--root %q: the undo preview was refused: %v", sp.root, err)
 			}
-			if gotUndo.String() != wantUndo.String() || !reflect.DeepEqual(gotU, wantU) {
+			if inFrame(gotUndo.String()) != wantUndo.String() || !reflect.DeepEqual(gotU, wantU) {
 				t.Errorf("--root %q: the undo preview differs from the absolute spelling\n got: %s\nwant: %s", sp.root, gotUndo.String(), wantUndo.String())
 			}
 			if _, err := Undo(io.Discard, sp.root, "last", false); err != nil {
