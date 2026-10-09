@@ -18,7 +18,8 @@ import (
 // that matches nothing turns that file into one that is never read, silently. Nothing else
 // checks this: Claude Code does not report an unmatched glob. This test does, and it also
 // holds each file to the documented ~200-line guidance so the split does not grow back into
-// one 800-line file under a different name.
+// one 800-line file under a different name. A `paths:` block that does not open on line 1 is
+// reported too: Claude Code ignores it, and so, until it was reported, did this check.
 
 const maxRuleLines = 200
 
@@ -77,9 +78,14 @@ func ruleFileProblems(root string) ([]string, error) {
 }
 
 // frontmatterPaths returns the `paths:` list from a leading `---` block, or nil when the file
-// has no frontmatter (an always-loaded rule).
+// has no frontmatter (an always-loaded rule). A `paths:` block that does not open on line 1 is an
+// error rather than "no frontmatter": Claude Code reads frontmatter only when the opening `---` is
+// the file's first line, so such a rule loads every session — and here its globs would go unchecked.
 func frontmatterPaths(s string) ([]string, error) {
 	if !strings.HasPrefix(s, "---\n") {
+		if misplacedFrontmatter(s) {
+			return nil, fmt.Errorf("frontmatter must start on line 1 (Claude Code ignores it anywhere else, so this rule loads every session)")
+		}
 		return nil, nil
 	}
 	end := strings.Index(s[4:], "\n---")
@@ -96,6 +102,41 @@ func frontmatterPaths(s string) ([]string, error) {
 		return nil, fmt.Errorf("frontmatter present but paths: is empty — drop the block to load always, or list globs")
 	}
 	return fm.Paths, nil
+}
+
+// misplacedFrontmatter reports whether a file that does not start with `---` still carries a
+// `---`-delimited block with a `paths` key: below a comment, a blank line or a heading, or behind a
+// byte-order mark. Requiring the key keeps `---` rules in a body from counting; blocks inside code
+// fences are examples, not frontmatter. A block opening on line 1 counts only behind a BOM: a CRLF
+// one there is honoured by Claude Code.
+func misplacedFrontmatter(s string) bool {
+	const bom = "\uFEFF"
+	lines := strings.Split(strings.TrimPrefix(s, bom), "\n")
+	open, fenced := -1, false
+	for i, raw := range lines {
+		l := strings.TrimRight(raw, "\r")
+		if strings.HasPrefix(l, "```") || strings.HasPrefix(l, "~~~") {
+			fenced = !fenced
+			continue
+		}
+		if fenced || l != "---" {
+			continue
+		}
+		if open >= 0 && hasPathsKey(strings.Join(lines[open+1:i], "\n")) {
+			return open > 0 || strings.HasPrefix(s, bom)
+		}
+		open = i
+	}
+	return false
+}
+
+func hasPathsKey(block string) bool {
+	var m map[string]any
+	if yaml.Unmarshal([]byte(block), &m) != nil {
+		return false
+	}
+	_, ok := m["paths"]
+	return ok
 }
 
 // globToRegexp supports the subset Claude Code documents for paths: `**` (any depth), `*`
@@ -172,8 +213,9 @@ func TestClaudeRulesAreScopedToExistingPaths(t *testing.T) {
 	}
 }
 
-// The check is only worth having if it fires: an unmatched glob, an over-long file and a
-// frontmatter with no paths must each be reported, and a correct file must not be.
+// The check is only worth having if it fires: an unmatched glob, an over-long file, a
+// frontmatter with no paths and one that does not start on line 1 must each be reported, and a
+// correct file must not be.
 func TestClaudeRulesProblemsAreCaught(t *testing.T) {
 	root := t.TempDir()
 	must := func(err error) {
@@ -194,23 +236,61 @@ func TestClaudeRulesProblemsAreCaught(t *testing.T) {
 	long := strings.Repeat("line\n", maxRuleLines+1)
 	must(os.WriteFile(filepath.Join(rules, "long.md"), []byte(long), 0o644))
 
+	// Anything above the opening `---` turns the frontmatter into body text, and the rule then
+	// loads every session. Each glob here matches, so placement is the only problem.
+	const scoped = "---\npaths:\n  - \"internal/detect/**\"\n---\n"
+	misplaced := map[string]string{
+		"late-comment.md": "<!-- SPDX-License-Identifier: MIT -->\n" + scoped + "# x\n",
+		"late-blank.md":   "\n" + scoped + "# x\n",
+		"late-heading.md": "# Title\n" + scoped + "# x\n",
+		"late-bom.md":     "\uFEFF" + scoped + "# x\n",
+	}
+	for name, body := range misplaced {
+		must(os.WriteFile(filepath.Join(rules, name), []byte(body), 0o644))
+	}
+	// None of these may be reported: an always-loaded rule that opens with comments, a body whose
+	// `---` rules enclose prose YAML would read as a mapping, a scoping example inside a code fence
+	// (its glob matches nothing, and that must not be reported either), frontmatter on line 1
+	// with the licence comment right after it, and CRLF frontmatter on line 1, which Claude Code
+	// honours and so must not be called misplaced.
+	correct := map[string]string{
+		"licensed.md": "<!-- SPDX-License-Identifier: MIT -->\n<!-- always loaded: no paths -->\n# x\n",
+		"ruled.md":    "# x\n\nintro\n\n---\n\nNote: prose with a colon.\n\n---\n\nend\n",
+		"example.md":  "# Scoping\n\n```markdown\n---\npaths:\n  - \"src/**\"\n---\n```\n",
+		"moved.md":    scoped + "<!-- SPDX-License-Identifier: MIT -->\n# x\n",
+		"crlf.md":     strings.ReplaceAll(scoped, "\n", "\r\n") + "# x\r\n",
+	}
+	for name, body := range correct {
+		must(os.WriteFile(filepath.Join(rules, name), []byte(body), 0o644))
+	}
+
 	problems, err := ruleFileProblems(root)
 	must(err)
 	got := strings.Join(problems, "\n")
-	for _, want := range []string{
+	wants := []string{
 		`dead.md: paths entry "internal/nowhere/**" matches no file`,
 		`empty.md: frontmatter present but paths: is empty`,
 		fmt.Sprintf("long.md: %d lines", maxRuleLines+1),
-	} {
+	}
+	for name := range misplaced {
+		wants = append(wants, name+": frontmatter must start on line 1")
+	}
+	for _, want := range wants {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing problem %q in:\n%s", want, got)
 		}
 	}
-	if strings.Contains(got, "good.md") || strings.Contains(got, "always.md") {
-		t.Errorf("a correct file was reported:\n%s", got)
+	clean := []string{"good.md", "always.md"}
+	for name := range correct {
+		clean = append(clean, name)
 	}
-	if len(problems) != 3 {
-		t.Errorf("want exactly 3 problems, got %d:\n%s", len(problems), got)
+	for _, name := range clean {
+		if strings.Contains(got, name) {
+			t.Errorf("a correct file (%s) was reported:\n%s", name, got)
+		}
+	}
+	if len(problems) != len(wants) {
+		t.Errorf("want exactly %d problems, got %d:\n%s", len(wants), len(problems), got)
 	}
 
 	// Reading a line-oriented file the same way the checker does keeps the count definition honest.
