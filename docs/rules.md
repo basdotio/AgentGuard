@@ -33,8 +33,8 @@ carry falls in exactly one class:
   an integer folded into the hash, which the maintainers bump when deterministic detection
   code outside the engine rule table changes; nothing checks that they did.
 - **Outside `rules_version` entirely:** every `LLM-` ID — the 7 judge findings and the 3
-  `LLM-` scan notes. The judge moves only `overall_effective`, and today a report identifies
-  the judge's code only through `tool_version`.
+  `LLM-` scan notes. The judge moves only `overall_effective`; a `--llm` report names it in
+  its own `judge` block — `prompt_version`, `excerpt_version`, `model` and `samples`.
 
 Two reports whose rules versions differ were produced by different rules; two whose versions
 agree were produced by the same engine rule table.

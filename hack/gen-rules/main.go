@@ -315,8 +315,8 @@ func hookOnlyNote(r detect.Rule) string {
 // hashed; the rest of deterministic detection is built inline and rides on the epoch alone; every
 // LLM- ID is outside, since the version is for recomputing overall, which the judge cannot move
 // (spec §5.1). The notes are split by prefix because "scan notes" on the epoch and "LLM- notes"
-// outside it, in two sentences, read as a contradiction. Nothing else is offered for the judge:
-// only tool_version pins its code today. GATE-000 is left out on purpose — no report carries it.
+// outside it, in two sentences, read as a contradiction. For the judge the header points at the
+// block that names it in a --llm report (P-031). GATE-000 is left out on purpose — no report carries it.
 // TestRulesDocHeaderSaysWhatTheHashCovers checks that the classes partition the page.
 func writeRulesVersion(p func(string, ...any), rules []detect.Rule) {
 	epochNotes, llmNotes := 0, 0
@@ -342,8 +342,8 @@ func writeRulesVersion(p func(string, ...any), rules []detect.Rule) {
 	p("  code outside the engine rule table changes; nothing checks that they did.\n")
 	p("- **Outside `rules_version` entirely:** every `LLM-` ID — the %d judge findings and the %d\n",
 		len(llm), llmNotes)
-	p("  `LLM-` scan notes. The judge moves only `overall_effective`, and today a report identifies\n")
-	p("  the judge's code only through `tool_version`.\n\n")
+	p("  `LLM-` scan notes. The judge moves only `overall_effective`; a `--llm` report names it in\n")
+	p("  its own `judge` block — `prompt_version`, `excerpt_version`, `model` and `samples`.\n\n")
 	p("Two reports whose rules versions differ were produced by different rules; two whose versions\n")
 	p("agree were produced by the same engine rule table.\n\n")
 }

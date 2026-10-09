@@ -237,8 +237,8 @@ func constDoc(t *testing.T, file, name string) string {
 
 // TestRulesEpoch_ScopeIsDeterministicOnly pins where the epoch's duty stops (spec §5.1). The
 // rules version exists so the deterministic score, overall, can be matched to the rules that
-// produced it; the judge moves only overall_effective, and nothing in a report but tool_version
-// identifies its code. A doc comment that lists judge internals as epoch-covered code obliges
+// produced it; the judge moves only overall_effective, and a --llm report names it in its own
+// judge block (P-031). A doc comment that lists judge internals as epoch-covered code obliges
 // every judge change to bump the epoch — a coupling nobody editing internal/judge can see — and a
 // judge change that skipped the bump would leave the version vouching for detection it does not
 // track.
