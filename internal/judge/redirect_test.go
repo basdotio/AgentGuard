@@ -11,8 +11,6 @@ package judge
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"io"
 	"net"
@@ -74,30 +72,30 @@ func (s *redirectServer) got() []redirectHit {
 	return append([]redirectHit(nil), s.hits...)
 }
 
-// httptestRoots trusts the certificate every httptest TLS server shares; its SANs include
-// example.com, so verifying every routed host under that name keeps real TLS without real DNS.
-func httptestRoots(t *testing.T) *x509.CertPool {
+// httptestTLS returns the transport of an httptest TLS client: it trusts the certificate every
+// httptest TLS server shares, whose SANs include example.com.
+func httptestTLS(t *testing.T) *http.Transport {
 	t.Helper()
 	srv := httptest.NewTLSServer(http.NotFoundHandler())
 	defer srv.Close()
-	return srv.Client().Transport.(*http.Transport).TLSClientConfig.RootCAs
+	return srv.Client().Transport.(*http.Transport)
 }
 
-// routeSeam points judge.Transport at a transport that dials each host:port in routes to the
-// listener registered for it (anything else is refused, so nothing leaves the machine), and
-// counts every round trip that crosses the seam.
-func routeSeam(t *testing.T, roots *x509.CertPool, routes map[string]*httptest.Server) *atomic.Int32 {
+// routeSeam points judge.Transport at a copy of base that dials each host:port in routes to the
+// listener registered for it (anything else is refused, so nothing leaves the machine) and
+// verifies every TLS host under the name example.com, so real TLS runs without real DNS. It counts
+// every round trip that crosses the seam.
+func routeSeam(t *testing.T, base *http.Transport, routes map[string]*httptest.Server) *atomic.Int32 {
 	t.Helper()
-	tr := &http.Transport{
-		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			srv, ok := routes[addr]
-			if !ok {
-				return nil, fmt.Errorf("test transport: no route for %s", addr)
-			}
-			return (&net.Dialer{}).DialContext(ctx, network, srv.Listener.Addr().String())
-		},
-		TLSClientConfig: &tls.Config{RootCAs: roots, ServerName: "example.com"},
+	tr := base.Clone()
+	tr.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+		srv, ok := routes[addr]
+		if !ok {
+			return nil, fmt.Errorf("test transport: no route for %s", addr)
+		}
+		return (&net.Dialer{}).DialContext(ctx, network, srv.Listener.Addr().String())
 	}
+	tr.TLSClientConfig.ServerName = "example.com"
 	var trips atomic.Int32
 	prev := Transport
 	Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
@@ -146,7 +144,7 @@ var redirectStatuses = []int{
 // the call fails with an error that names where it was sent and not the path or query, and the
 // failure is final rather than retryable.
 func TestNewHTTP_RefusesCrossOriginRedirects(t *testing.T) {
-	roots := httptestRoots(t)
+	tlsBase := httptestTLS(t)
 	type endpoint struct {
 		base, hostPort string
 		tls            bool
@@ -175,7 +173,7 @@ func TestNewHTTP_RefusesCrossOriginRedirects(t *testing.T) {
 				location := row.target + "/landing/chat?" + redirectQuery
 				epSrv := newRedirectTestServer(t, row.ep.tls, ep.serve(status, func(int) string { return location }))
 				tgSrv := newRedirectTestServer(t, row.tls, tg.serve(0, nil))
-				trips := routeSeam(t, roots, map[string]*httptest.Server{row.ep.hostPort: epSrv, row.hostPort: tgSrv})
+				trips := routeSeam(t, tlsBase, map[string]*httptest.Server{row.ep.hostPort: epSrv, row.hostPort: tgSrv})
 
 				err := judgeOnce(t, row.ep.base)
 
@@ -214,13 +212,13 @@ func TestNewHTTP_RefusesCrossOriginRedirects(t *testing.T) {
 // followed through the same seam, and a same-origin loop still stops at Go's ten hops instead of
 // running until the call times out.
 func TestNewHTTP_SameOriginRedirectsAndPlainCallsUnchanged(t *testing.T) {
-	roots := httptestRoots(t)
+	tlsBase := httptestTLS(t)
 	const base, hostPort = "https://example.com/v1", "example.com:443"
 
 	t.Run("no redirect", func(t *testing.T) {
 		ep := &redirectServer{}
 		srv := newRedirectTestServer(t, true, ep.serve(0, nil))
-		trips := routeSeam(t, roots, map[string]*httptest.Server{hostPort: srv})
+		trips := routeSeam(t, tlsBase, map[string]*httptest.Server{hostPort: srv})
 		if err := judgeOnce(t, base); err != nil {
 			t.Fatalf("a plain https endpoint must answer as it always did: %v", err)
 		}
@@ -242,7 +240,7 @@ func TestNewHTTP_SameOriginRedirectsAndPlainCallsUnchanged(t *testing.T) {
 				}
 				return ""
 			}))
-			trips := routeSeam(t, roots, map[string]*httptest.Server{hostPort: srv})
+			trips := routeSeam(t, tlsBase, map[string]*httptest.Server{hostPort: srv})
 			if err := judgeOnce(t, base); err != nil {
 				t.Fatalf("a redirect within the configured origin must still be followed: %v", err)
 			}
@@ -267,7 +265,7 @@ func TestNewHTTP_SameOriginRedirectsAndPlainCallsUnchanged(t *testing.T) {
 		srv := newRedirectTestServer(t, true, ep.serve(http.StatusTemporaryRedirect, func(int) string {
 			return "https://example.com/v1/chat/completions"
 		}))
-		routeSeam(t, roots, map[string]*httptest.Server{hostPort: srv})
+		routeSeam(t, tlsBase, map[string]*httptest.Server{hostPort: srv})
 		err := judgeOnce(t, base)
 		if err == nil || !strings.Contains(err.Error(), "stopped after 10 redirects") {
 			t.Fatalf("err = %v, want the ten-hop limit", err)
