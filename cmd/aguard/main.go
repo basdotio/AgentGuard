@@ -550,6 +550,9 @@ func writeHTML(path string, out model.ScanResult) error {
 	return report.HTML(f, out)
 }
 
+// failOnLLMFlagHelp is shared by scan and check for the same reason as mdFlagHelp.
+const failOnLLMFlagHelp = "exit 1 when a finding INCLUDING qualified LLM ones is at/above this level, exit 4 when the judge could not answer for every artifact (did not run, a call failed or was never made); needs config llm.authority: escalate (default: off)"
+
 // mdFlagHelp is shared by scan and check: the two must describe the same flag the same way.
 const mdFlagHelp = "also write the report as GitHub-flavoured markdown to this path, for a pull request comment or an issue (\"-\" = stdout, replacing the terminal report); same content as the terminal, --verbose does not change it"
 
@@ -689,7 +692,7 @@ func main() {
 	scanCmd.Flags().BoolVar(&useLLM, "llm", false, "enable the LLM intent judge — advisory only; set it up once with `aguard llm setup` (redacted excerpts are sent to the configured endpoint; never moves the deterministic score)")
 	scanCmd.Flags().BoolVar(&zombie, "zombie", false, "also flag never-used skills via the usage log (weak signal, opt-in)")
 	scanCmd.Flags().StringVar(&scanFailOn, "fail-on", "", "exit 1 when a DETERMINISTIC finding is at/above this level (low|medium|high|critical) — for CI/gates")
-	scanCmd.Flags().StringVar(&scanFailOnLLM, "fail-on-llm", "", "exit 1 when a finding INCLUDING qualified LLM ones is at/above this level; needs config llm.authority: escalate (default: off)")
+	scanCmd.Flags().StringVar(&scanFailOnLLM, "fail-on-llm", "", failOnLLMFlagHelp)
 
 	checkCmd := &cobra.Command{
 		Use:   "check <path>",
@@ -741,7 +744,7 @@ func main() {
 	checkCmd.Flags().BoolVar(&asJSON, "json", false, "output JSON")
 	checkCmd.Flags().StringVar(&checkFailOn, "fail-on", "high", "exit 1 when a DETERMINISTIC finding is at/above this level (low|medium|high|critical)")
 	checkCmd.Flags().BoolVar(&useLLM, "llm", false, "also run the LLM intent judge on this target — advisory only, same opt-in as scan --llm (redacted excerpts are sent to the configured endpoint; never moves the deterministic score or --fail-on)")
-	checkCmd.Flags().StringVar(&checkFailOnLLM, "fail-on-llm", "", "exit 1 when a finding INCLUDING qualified LLM ones is at/above this level; needs config llm.authority: escalate (default: off)")
+	checkCmd.Flags().StringVar(&checkFailOnLLM, "fail-on-llm", "", failOnLLMFlagHelp)
 
 	var apply, dryRun, keepBoth, ask bool
 	var undoBatch, resolveID, keepSide string
@@ -885,6 +888,11 @@ func main() {
 	rootCmd.AddCommand(newLLMCommand(&cfgPath))
 	if err := rootCmd.Execute(); err != nil {
 		if ee, ok := err.(*failExit); ok {
+			// Only a code no report line explains carries a message (exit 4): under --json or
+			// --quiet a bare non-zero code is the silence that code exists to end.
+			if ee.msg != "" {
+				fmt.Fprintln(os.Stderr, ee.msg)
+			}
 			os.Exit(ee.code)
 		}
 		fmt.Fprintln(os.Stderr, "error:", err)
@@ -902,10 +910,21 @@ func partialGate(res clean.Result) error {
 	return nil
 }
 
-type failExit struct{ code int }
+// exitNotEvaluable is --fail-on-llm's "no answer": the judge did not run, or some of its calls
+// failed or were never made, so the gate cannot say nothing reached the threshold (P-026). It is
+// not 3, which is clean's "acted partially": one number, one meaning, across commands.
+const exitNotEvaluable = 4
+
+type failExit struct {
+	code int
+	msg  string // main prints it on stderr; set only where no report line explains the code
+}
 
 func (e *failExit) Error() string {
-	if e.code == 3 {
+	switch {
+	case e.msg != "":
+		return e.msg
+	case e.code == 3:
 		return "some items were skipped (exit 3)"
 	}
 	return fmt.Sprintf("findings at/above threshold (exit %d)", e.code)
@@ -923,6 +942,12 @@ func (e *failExit) Error() string {
 // first used to mean a typo or a missing grant on --fail-on-llm was never looked at — under
 // check's default --fail-on high that was the common case — so the pipeline read a findings
 // failure where it had a broken gate.
+//
+// --fail-on-llm also has a third answer, exit 4: no gate fired, but the judge could not answer for
+// every artifact (judgeGap). It used to be 0 — the code a judge that looked and found nothing gets
+// — so a pipeline that asked the judge to gate it went green exactly when the judge was blind
+// (P-026). Order is 2 (refused, above) > 1 (a gate fired: an answer, however much the judge
+// managed) > 4 > 0, and --fail-on alone never reads the judge's state.
 func failGate(out model.ScanResult, failOn, failOnLLM string, mayEscalate bool) error {
 	sev, llmSev, err := validateFailGates(failOn, failOnLLM, mayEscalate)
 	if err != nil {
@@ -931,10 +956,44 @@ func failGate(out model.ScanResult, failOn, failOnLLM string, mayEscalate bool) 
 	if sev != "" && report.HasAtLeast(out, sev) {
 		return &failExit{code: 1}
 	}
-	if llmSev != "" && report.HasAtLeastEffective(out, llmSev) {
+	if llmSev == "" {
+		return nil
+	}
+	if report.HasAtLeastEffective(out, llmSev) {
 		return &failExit{code: 1}
 	}
+	if gap := judgeGap(out.Judge); gap != "" {
+		return &failExit{code: exitNotEvaluable,
+			msg: fmt.Sprintf("--fail-on-llm could not be evaluated (exit %d): %s", exitNotEvaluable, gap)}
+	}
 	return nil
+}
+
+// judgeGap says why the judge's half of the --fail-on-llm answer is missing, or "" when the judge
+// was asked every question it planned and answered each one. Only the summary's own counts decide:
+// a shortened excerpt or a discarded verdict is still an answer, and counting those would make
+// exit 4 fire on any large artifact until nobody reads it. Downloads items never gate, so the
+// inbox's own summary is not consulted.
+func judgeGap(j *model.JudgeSummary) string {
+	switch {
+	case j == nil:
+		return "the judge did not run: --llm was not passed, so no artifact was judged"
+	case !j.Ran && j.Reason == "":
+		return "the judge did not run"
+	case !j.Ran:
+		return "the judge did not run: " + report.Sanitize(j.Reason)
+	case j.Failed == 0 && j.Skipped == 0:
+		return ""
+	}
+	var short []string
+	if j.Failed > 0 {
+		short = append(short, fmt.Sprintf("%d of %d call(s) failed", j.Failed, j.Calls))
+	}
+	if j.Skipped > 0 {
+		short = append(short, fmt.Sprintf("%d planned call(s) were not made", j.Skipped))
+	}
+	return "the judge ran short: " + strings.Join(short, " and ") +
+		", so part of what it was asked went unanswered (the report's LLM-000 note has the detail)"
 }
 
 // validateFailGates parses both thresholds and checks the --fail-on-llm grant, returning the
