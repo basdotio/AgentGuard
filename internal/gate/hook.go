@@ -267,6 +267,11 @@ func handlePre(ev Event, o Options) (Output, bool) {
 			// again. See Verdict.Remembered for why a medium finding is the line.
 			return Output{SystemMessage: v.UnrememberedLine()}, false
 		}
+		if v.Hash == "" {
+			// Clean but with no identity: an approval is keyed by the bytes' hash, so there is
+			// nothing to record, nothing to save, and no trust to announce.
+			return Output{SystemMessage: v.UnhashedLine()}, false
+		}
 		// Clean and new: record it now. There is no prompt to answer, so there is no later
 		// event that could carry the decision, and re-scanning identical bytes on every load
 		// of every skill is the cost that would make people turn the gate off.

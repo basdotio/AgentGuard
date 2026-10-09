@@ -151,7 +151,14 @@ func Summarize(res model.ScanResult, threshold model.Severity) (Verdict, bool) {
 func unhashedReason(a model.ArtifactReport) string {
 	for _, f := range a.Findings {
 		if f.Source == model.SrcParseError {
-			return "it did not parse, so it was not fully read"
+			// Name the file and the note: the refusal has to stand on its own, because the
+			// terminal report does not show an artifact's own coverage notes.
+			file := a.Path
+			if len(f.Evidence) > 0 && f.Evidence[0].File != "" {
+				file = f.Evidence[0].File
+			}
+			return fmt.Sprintf("%q did not parse, so it was not fully read [%s: %s]",
+				clip(report.Sanitize(file), maxPathLen), f.RuleID, clip(report.Sanitize(f.Title), maxNameLen))
 		}
 	}
 	return "the scanner could not compute one"
@@ -190,6 +197,14 @@ func (v Verdict) UnrememberedLine() string {
 	}
 	return fmt.Sprintf("AgentGuard: %s %q %d/100 (%s) · below the threshold, but %s found · not recorded as trusted: it is re-audited on every load until the content is clean, or you accept it with: aguard approve %q",
 		v.Kind, v.Name, v.Score, v.Level, strings.Join(ids, ", "), v.Path)
+}
+
+// UnhashedLine is the notice for a target that clears the gate but has no content hash. An
+// approval is keyed by the hash, so there is nothing to remember it by: saying "trusted" would
+// be false (the store drops an empty key), and the next load audits these bytes again.
+func (v Verdict) UnhashedLine() string {
+	return fmt.Sprintf("AgentGuard: %s %q %d/100 (%s) · no finding at or above the threshold · not remembered, it has no content hash: %s · it is audited again on every load",
+		v.Kind, v.Name, v.Score, v.Level, v.Unhashed)
 }
 
 // Line is the one-line notice shown when a target clears the gate AND is remembered. It is
