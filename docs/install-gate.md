@@ -74,8 +74,8 @@ tune, no cache to invalidate, nothing to remember to re-run.
 
 Content with no hash cannot be approved. A config file that did not parse, or a file the scanner
 could not open, has no hash for an approval to be keyed on, so `aguard approve` refuses it — it
-names the artifact and the reason, exits 2, and leaves the store untouched. `aguard check <path>`
-shows what could not be read.
+names the artifact and the reason, exits 2, and leaves the store untouched.
+`aguard check <path> --json` lists the notes that say what could not be read.
 
 The store is `~/.claude/.aguard-approvals.json`, mode 0600, written atomically. Besides the
 approvals it holds, for at most an hour, the verdict behind each prompt still waiting for your
