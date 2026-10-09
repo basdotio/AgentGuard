@@ -71,6 +71,8 @@ aguard llm status                       # 会用什么(永不显示密钥)
 
 脚本里改用管道:`printf '%s\n' "$KEY" | aguard llm setup --provider deepseek --key-stdin`。
 远程端点必须是 https;明文 http 只对本机上的模型放行。
+判官只跟同一个源(scheme、主机、端口都和配置的一样)里的重定向。指向别处的重定向不跟,那边什么都收不到:这次调用失败,
+`aguard llm test` 会说端点想把请求转到哪里,扫描时则是一条 `LLM-000` note。
 
 `setup` 写 `~/.config/aguard/config.yaml`(或 `$XDG_CONFIG_HOME/aguard/…`),不传 `--config` 时所有命令都读它;
 密钥存在旁边的 `llm.key`,权限 0600。在 Claude Code 里,`/aguard-llm` 用对话走同样几步。

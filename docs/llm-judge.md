@@ -82,6 +82,9 @@ aguard llm status                       # what would be used (never the key)
 
 For scripts, pipe the key instead: `printf '%s\n' "$KEY" | aguard llm setup --provider deepseek --key-stdin`.
 A remote endpoint must be https; plain http is accepted only for a model on this machine.
+The judge follows a redirect only within the configured origin (same scheme, host and port). A
+redirect anywhere else is not followed and nothing is sent there: the call fails, `aguard llm test`
+says where the endpoint tried to send it, and a scan reports it as an `LLM-000` note.
 
 `setup` writes `~/.config/aguard/config.yaml` (or `$XDG_CONFIG_HOME/aguard/…`), which every
 command reads when `--config` is not given, and stores the key in `llm.key` next to it with
