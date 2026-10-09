@@ -37,4 +37,4 @@
 | [001](complete/001-judge-usage-in-json.md) | 判官的 token、triage 调用、重试数从不进报告,成本只能从 stderr 抄 | 判官用量只打到 stderr,`--quiet` 时(Downloads 每一项)哪里都没有;移植自旧仓 P-042 | PR 待合入;待发 |
 | [002](complete/002-rules-version.md) | 报告不说自己是哪一版规则跑出来的,两份报告分不清是规则变了还是输入变了 | 新发现(2026-10-09):两次扫描得分不同时,报告说不出规则表变没变;移植自旧仓 P-043 | PR 待合入;待发 |
 | [003](complete/003-zero-dial-test.md) | "绝不外连"没有一条测试钉住,baselines 的模板却说有 | 新发现(2026-10-09);移植自旧仓 agent-guard 的 P-044 | PR 待合入;待发 |
-| [004](draft/004-check-llm.md) | 装前检查不能用判官,CI 用户只能走 scan --root 的绕路 | `check` 恒静态,装前检查用不上判官;`scan` 已对同样不可信的 Downloads 内容提供 `--llm`;移植自旧仓 P-047 | 分支上 |
+| [004](design/004-check-llm.md) | 装前检查不能用判官,CI 用户只能走 scan --root 的绕路 | `check` 恒静态,装前检查用不上判官;`scan` 已对同样不可信的 Downloads 内容提供 `--llm`;移植自旧仓 P-047 | 分支上 |
