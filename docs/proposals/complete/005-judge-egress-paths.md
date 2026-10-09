@@ -203,18 +203,18 @@ W1–W8 是旧仓的首轮实现,W9–W15 是评审 1–7 的修复,W16–W20 �
    时后者是前者的子目录,两个都按"最长优先"换,`~/.config/claude/x` 就成了 `~/claude/x`——判官会把它读成另一个位置。
    **建议**:按顺序处理(OS 用户的在前),后一个家目录的某种写法落在前一个之内就丢掉那种写法,外层的替换已经覆盖它;**只在这个方向**:
    被扫环境的家目录**包含**用户家目录时(`--root /Users/.claude`)两个都留,否则 `/Users/alice/x` 会成 `~/alice/x`。
-   `TestEgress_LaterHomeInsideAnEarlierIsDropped` 钉住两个方向。**按建议实现;移植时按"未决按建议"处理,待人在本 PR 上确认。**
+   `TestEgress_LaterHomeInsideAnEarlierIsDropped` 钉住两个方向。**按建议实现。已决(2026-10-09,人):接受(人在旧仓评审时确认过这四处)。**
 10. **(评审修复中追加)评审 6 的字面修法和评审 3 冲突。** 评审 6 说"`repairHalves` 只用于静态 snippet,原始内容的构造器不做";
     但评审 3 把原始内容改成先 `Redact` 再替换之后,原始内容也会出现熵规则吃头/吃尾的形态(e2e fixture 的临时家目录 `<REDACTED>.d/alicemarker`),
     不补就把用户名发出去——e2e 会红,而且红得对。**建议**:把 `repairHalves` 拆成两半,熵规则那两种切法(凡是先过 `Redact` 的文本都会有)
     所有路径都补;200 字节截断那一种(只有 detect 的 `clip` 会产生)只给 `egress.snippet`,即 triage 与串通摘要。这是评审 6 的意图
-    (不在没被截过的文本上按截断去猜)在评审 3 之后的正确形态。**按建议实现;移植时按"未决按建议"处理,待人在本 PR 上确认。**
+    (不在没被截过的文本上按截断去猜)在评审 3 之后的正确形态。**按建议实现。已决(2026-10-09,人):接受(人在旧仓评审时确认过这四处)。**
 11. **(评审修复中追加)MCP 的 500 字节上限按值还是按行?** 评审 4 写的是"每个值"。键名同样是配置作者可控的,一个 6 KB 的键名照样能占满预算。
-    **建议**:按行(`key=value` 整行)截,值和键一起管住;rune 边界,标记 ` … (N bytes omitted)`。**按建议实现;移植时按"未决按建议"处理,待人在本 PR 上确认。**
+    **建议**:按行(`key=value` 整行)截,值和键一起管住;rune 边界,标记 ` … (N bytes omitted)`。**按建议实现。已决(2026-10-09,人):接受(人在旧仓评审时确认过这四处)。**
 12. **(评审修复中追加)lead 键怎么认?** `ConfigLines` 用 `.` 拼路径,顶层键 `command.x` 和 `command` 下的嵌套键分不开;按前缀认的话,
     一串 `command.a…` 顶层填充键会排进 command 组、把 env 挤出去。**建议**:`command`、`args`、`url` 是字符串或字符串数组,只认键名**恰好**相等;
     `env`、`headers` 是对象,认 `env.` / `headers.` 前缀——而 `ConfigLines` 的排序让真正的 `env` 对象的行总排在 `env.<任何>` 顶层键之前。
-    不改 `detect.ConfigLines`(那样要动 `detect`、要跑真机)。**按建议实现;移植时按"未决按建议"处理,待人在本 PR 上确认。**
+    不改 `detect.ConfigLines`(那样要动 `detect`、要跑真机)。**按建议实现。已决(2026-10-09,人):接受(人在旧仓评审时确认过这四处)。**
     复审 2 起由 `TestPlan_MCPLeadKeysMatchExactly` 钉住:command、args、url 改成按前缀认,它就红。
 13. **(移植时追加,记录,不是问题)与并行的 P-001 / P-003 的交叠。** P-001(`p/001-judge-usage-in-json`)也改 `cmd/aguard/main.go` 的 `runJudge` 函数体、`internal/judge/run.go` 和 llm-judge 对子,
     本条给它加了一个 `home` 参数;P-003(`p/003-zero-dial-test`)给 `openai.go` 的 `NewHTTP` 加了一个测试接缝,并用 `scanOpts{…}` 具名字段调
