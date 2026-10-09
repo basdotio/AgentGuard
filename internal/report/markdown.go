@@ -79,7 +79,11 @@ func Markdown(w io.Writer, r0 model.ScanResult) error {
 	trust, coverage := splitNotes(notesOf(r))
 
 	// SUMMARY — derived sentences only.
-	p("\n## Summary\n\n%s  \n%s  \n", verdictSentence(score.Level(r.Overall), actionable(det), len(det)), checkedLine(r.Env))
+	// The gaps are paths off the scanned tree, so each goes into a code span; the sentence around
+	// them is the report's own (see checkedWithGaps).
+	mdGap := func(g gap) string { return code(g.Where) + " (" + code(g.RuleID) + ")" }
+	p("\n## Summary\n\n%s  \n%s  \n", coverageVerdict(score.Level(r.Overall), actionable(det), len(det), len(coverage)),
+		checkedWithGaps(r.Env, gapList(itemGaps(r), mdGap)))
 	if jl := judgeSummaryLine(r); jl != "" {
 		p("%s  \n", text(jl))
 	}

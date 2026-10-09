@@ -128,3 +128,57 @@ func TestSummaryDoesNotCallIncompleteCoverageSafe(t *testing.T) {
 		}
 	}
 }
+
+// TestCoverageVerdict: only the Low band's lead depends on the gaps, and the counting half never
+// does — a verdict that changed its counts with coverage would say something the list does not.
+func TestCoverageVerdict(t *testing.T) {
+	for _, c := range []struct {
+		level            string
+		act, total, gaps int
+		want             string
+	}{
+		{"Low", 0, 0, 0, "Your Claude Code setup looks safe. No findings."},
+		{"Low", 0, 0, 1, "Low risk in what was read, but coverage is incomplete. No findings."},
+		{"Low", 1, 3, 2, "Low risk in what was read, but coverage is incomplete. 1 finding needs a look (medium or above); 2 more are informational."},
+		{"Watch", 1, 1, 4, "Mostly fine, with a few things to review. 1 finding needs a look (medium or above)."},
+		{"Elevated", 2, 2, 1, "There are problems you should fix before relying on this setup. 2 findings need a look (medium or above)."},
+	} {
+		if got := coverageVerdict(c.level, c.act, c.total, c.gaps); got != c.want {
+			t.Errorf("coverageVerdict(%s,%d,%d,%d) =\n  %q\nwant\n  %q", c.level, c.act, c.total, c.gaps, got, c.want)
+		}
+	}
+}
+
+// TestCheckedWithGaps: the inventory line names what was found but not fully checked — after the
+// counts when there are counts, on its own when there are none — and never says "Nothing was found"
+// once something was. The list is capped and names its remainder; a gap whose note names no file
+// falls back to the artifact's name; a trust note is not a gap.
+func TestCheckedWithGaps(t *testing.T) {
+	one := []gap{{"…/u/.claude/settings.json", "PARSE-000"}}
+	five := append(one, gap{"…/u/.mcp.json", "PARSE-000"}, gap{"x", "PARSE-000"}, gap{"y", "PARSE-000"}, gap{"z", "PARSE-000"})
+	for _, c := range []struct {
+		name string
+		env  model.EnvSummary
+		gs   []gap
+		want string
+	}{
+		{"nothing at all", model.EnvSummary{}, nil, "Nothing was found to check under this root."},
+		{"only a gap", model.EnvSummary{}, one, "Not fully checked: …/u/.claude/settings.json [PARSE-000]."},
+		{"counts and a gap", model.EnvSummary{Hooks: 1}, one, "Checked 1 hook. Not fully checked: …/u/.claude/settings.json [PARSE-000]."},
+		{"counts only", model.EnvSummary{Hooks: 1}, nil, "Checked 1 hook."},
+		{"capped", model.EnvSummary{}, five, "Not fully checked: …/u/.claude/settings.json [PARSE-000], …/u/.mcp.json [PARSE-000], x [PARSE-000], and 2 more."},
+	} {
+		if got := checkedWithGaps(c.env, gapList(c.gs, plainGap)); got != c.want {
+			t.Errorf("%s: got\n  %q\nwant\n  %q", c.name, got, c.want)
+		}
+	}
+
+	r := model.ScanResult{Artifacts: []model.ArtifactReport{{Kind: model.KindSkill, Name: "s", Findings: []model.Finding{
+		{RuleID: "COV-000", Dimension: 0, Severity: model.SevLow, Title: "no evidence"},
+		{RuleID: "REP-GOOD", Dimension: 0, Severity: model.SevHigh, Title: "trusted"},
+		{RuleID: "EXEC-001", Dimension: 4, Severity: model.SevHigh, Title: "a finding, not a gap"},
+	}}}}
+	if got := itemGaps(r); len(got) != 1 || got[0] != (gap{"skill s", "COV-000"}) {
+		t.Errorf("itemGaps = %+v, want exactly the coverage note, named by its artifact", got)
+	}
+}

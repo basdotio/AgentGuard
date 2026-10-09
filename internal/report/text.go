@@ -116,11 +116,11 @@ func writeText(w io.Writer, r model.ScanResult, verbose bool) {
 		}
 	}
 	notes := notesOf(r) // the scan's notes and each artifact's own — see notesOf
-	trust, _ := splitNotes(notes)
+	trust, coverage := splitNotes(notes)
 
 	// SUMMARY — the part a non-specialist reads. Every sentence is derived from what follows.
-	fmt.Fprintf(w, "\nSummary\n  %s\n", verdictSentence(score.Level(r.Overall), actionable(det), len(det)))
-	fmt.Fprintf(w, "  %s\n", checkedLine(r.Env))
+	fmt.Fprintf(w, "\nSummary\n  %s\n", coverageVerdict(score.Level(r.Overall), actionable(det), len(det), len(coverage)))
+	fmt.Fprintf(w, "  %s\n", Sanitize(checkedWithGaps(r.Env, gapList(itemGaps(r), plainGap))))
 	if jl := judgeSummaryLine(r); jl != "" {
 		fmt.Fprintf(w, "  %s\n", Sanitize(jl))
 	}
