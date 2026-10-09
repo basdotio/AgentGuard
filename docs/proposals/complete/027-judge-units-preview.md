@@ -173,7 +173,7 @@ preview [path]` next to `setup`/`test`/`status`, or `check --llm --dry-run`.
 ## Done
 
 ```
-Merged: PR to be opened (2026-10-10; find the sha with git log --grep P-027 after the merge)
+Merged: PR #47 (2026-10-10; find the sha with git log --grep P-027)
 Released: pending release
 Evidence: TestPlan_PayloadsAreWhatTheClientSends, TestPlan_BudgetAndSamplesMatchRun, TestPlan_TriageCapIsShown, TestPlan_SourcesNameTheLinesSent, TestRequestModel (internal/judge/preview_test.go); red at compile at W1 (undefined: PlannedCall, Plan, RequestModel) → green at W2; a Plan that shows the bare Behavior instead of judgePayload → red (12 previewed, 12 sent, 3 "planned but not sent"); a Plan that drops the triage cap note → red
 Evidence: TestLLMPreview_MatchesWhatScanAndCheckSend, TestLLMPreview_Deterministic, TestLLMPreview_TerminalViewIsSanitized (cmd/aguard/preview_test.go, built binary); red at W3 (undefined: previewOpts, runLLMPreview, previewGutter; with stubs for them the binary has no llm preview: "unknown flag: --inbox") → green at W4; planning with an empty home instead of the scan's → red (scan --llm: the hook's injection and capability calls differ on both sides)
