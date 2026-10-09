@@ -8,7 +8,8 @@ file, take the largest number in the index on `origin/main` and add one. Numberi
 
 Which changes need a proposal first: a change to a rule, an invariant, the data model or the collection surface, or
 anything where "how far it has to go to count as done" is not obvious. A typo, a CI line or a one-line comment does not.
-An English summary of these rules is in [../../CONTRIBUTING.md](../../CONTRIBUTING.md).
+Proposals are written in English, like their commits and pull requests. [../../CONTRIBUTING.md](../../CONTRIBUTING.md) carries a
+short summary of these rules.
 
 ## The directory is the state
 

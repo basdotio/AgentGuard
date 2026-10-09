@@ -33,7 +33,7 @@ conventions in `.claude/rules/conventions.md` explain the one dependency that tr
 
 A change to a rule, an invariant, the data model or the collection surface — anything whose
 "done" is not obvious — starts as a proposal under `docs/proposals/` (template and rules in
-[docs/proposals/README.md](docs/proposals/README.md), in Chinese). The directory a proposal sits
+[docs/proposals/README.md](docs/proposals/README.md)). The directory a proposal sits
 in is its state: `draft/` and `design/` live on the `p/NNN-slug` branch, `complete/` and
 `rejected/` land on `main` with the PR. Commits on such a branch end with `(P-NNN)`. Typos, CI
 lines and comment fixes need none of this.
