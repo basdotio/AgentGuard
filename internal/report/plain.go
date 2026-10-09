@@ -130,20 +130,70 @@ func verdictSentence(level string, act, total int) string {
 	default:
 		lead = "Serious problems were found. Stop and review before using this setup."
 	}
+	return lead + countClause(act, total)
+}
+
+// incompleteLead replaces the Low band's "looks safe" when the report carries coverage notes. The
+// words are the ones the Not checked line already ends on, so the headline and that line say the
+// same thing about the same set.
+const incompleteLead = "Low risk in what was read, but coverage is incomplete."
+
+// coverageVerdict is verdictSentence once the report also knows how many coverage notes it is
+// about to print (gaps: the coverage half of splitNotes over notesOf — exactly the set the Not
+// checked line counts). "Looks safe" is a claim about the whole setup, and a report that states two
+// sections further down that coverage is incomplete has not earned it: a settings.json that did not
+// parse was read as "looks safe … Nothing was found to check" over the file that holds the hooks,
+// permissions and env. Only the Low band's lead changes; the other three already report problems,
+// which an unread file can only add to. Trust decisions are not gaps — the summary has its own
+// line for them. Still a function of counts already printed below it, nothing else.
+func coverageVerdict(level string, act, total, gaps int) string {
+	if gaps == 0 || level != "Low" {
+		return verdictSentence(level, act, total)
+	}
+	return incompleteLead + countClause(act, total)
+}
+
+// countClause is the counting half of the verdict, with its leading space.
+func countClause(act, total int) string {
 	switch {
 	case act > 0 && total > act:
-		return fmt.Sprintf("%s %d finding%s need%s a look (medium or above); %d more %s informational.",
-			lead, act, plural(act), singularVerb(act), total-act, isAre(total-act))
+		return fmt.Sprintf(" %d finding%s need%s a look (medium or above); %d more %s informational.",
+			act, plural(act), singularVerb(act), total-act, isAre(total-act))
 	case act > 0:
-		return fmt.Sprintf("%s %d finding%s need%s a look (medium or above).", lead, act, plural(act), singularVerb(act))
+		return fmt.Sprintf(" %d finding%s need%s a look (medium or above).", act, plural(act), singularVerb(act))
 	case total > 0:
-		return fmt.Sprintf("%s %d informational finding%s, nothing needs action.", lead, total, plural(total))
+		return fmt.Sprintf(" %d informational finding%s, nothing needs action.", total, plural(total))
 	}
-	return lead + " No findings."
+	return " No findings."
 }
 
 // checkedLine names what the scan looked at, in words, non-zero counts only.
-func checkedLine(e model.EnvSummary) string {
+func checkedLine(e model.EnvSummary) string { return checkedWithGaps(e, "") }
+
+// checkedWithGaps is checkedLine plus the inventory items that were found but not fully checked,
+// already rendered by the caller (gapList) because only the caller knows how its surface quotes a
+// path. Without them the line said "Nothing was found to check under this root." over a root whose
+// one settings.json was found and could not be parsed — the inventory counts come from what the
+// collectors extracted, and a file that did not parse yields nothing to count.
+func checkedWithGaps(e model.EnvSummary, gaps string) string {
+	parts := checkedParts(e)
+	notFully := ""
+	if gaps != "" {
+		notFully = "Not fully checked: " + gaps + "."
+	}
+	switch {
+	case len(parts) == 0 && notFully == "":
+		return "Nothing was found to check under this root."
+	case len(parts) == 0:
+		return notFully
+	case notFully == "":
+		return "Checked " + strings.Join(parts, ", ") + "."
+	}
+	return "Checked " + strings.Join(parts, ", ") + ". " + notFully
+}
+
+// checkedParts lists the non-zero inventory counts in words.
+func checkedParts(e model.EnvSummary) []string {
 	var parts []string
 	add := func(n int, one, many string) {
 		if n == 1 {
@@ -167,11 +217,54 @@ func checkedLine(e model.EnvSummary) string {
 	if e.BundledSkills > 0 {
 		parts = append(parts, fmt.Sprintf("%d skill(s) inside those plugins", e.BundledSkills))
 	}
-	if len(parts) == 0 {
-		return "Nothing was found to check under this root."
-	}
-	return "Checked " + strings.Join(parts, ", ") + "."
+	return parts
 }
+
+// gap is an inventory item that was found but not fully checked: an artifact carrying its own
+// coverage note (today that is collect's withParseError — a settings.json, an MCP config or
+// installed_plugins.json that did not parse). Where is the note's file in short form, or the
+// artifact's name when the note names no file. Scan-level notes are not gaps here: they are not
+// items of the inventory, and the Not checked line already counts them.
+type gap struct{ Where, RuleID string }
+
+// itemGaps lists the gaps in artifact order — the data half; each renderer quotes it (gapList).
+func itemGaps(r model.ScanResult) []gap {
+	var out []gap
+	for _, a := range r.Artifacts {
+		for _, f := range a.Findings {
+			if f.Dimension != 0 || isSuppression(f.RuleID) {
+				continue
+			}
+			where := friendlyArtifact(string(a.Kind) + ":" + a.Name)
+			if len(f.Evidence) > 0 && f.Evidence[0].File != "" {
+				where = shortPath(f.Evidence[0].File)
+			}
+			out = append(out, gap{Where: where, RuleID: f.RuleID})
+		}
+	}
+	return out
+}
+
+// gapBudget is how many gaps the summary names before counting the rest; the full list is in the
+// Not checked section, so the summary only has to make the first ones impossible to miss.
+const gapBudget = 3
+
+// gapList renders gaps with item, at most gapBudget of them, and says how many it left out.
+func gapList(gs []gap, item func(gap) string) string {
+	parts := make([]string, 0, gapBudget+1)
+	for i, g := range gs {
+		if i == gapBudget {
+			parts = append(parts, fmt.Sprintf("and %d more", len(gs)-gapBudget))
+			break
+		}
+		parts = append(parts, item(g))
+	}
+	return strings.Join(parts, ", ")
+}
+
+// plainGap is a gap as plain text — "path [RULE-ID]", the rule id in brackets as everywhere else
+// in the terminal report. The terminal sanitizes the whole line; HTML renders from sanitizeResult.
+func plainGap(g gap) string { return g.Where + " [" + g.RuleID + "]" }
 
 // action is one line of "what to look at": the worst groups, in the order they are printed.
 type action struct {
