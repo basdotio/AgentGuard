@@ -88,7 +88,7 @@ paths:
   推 home;别换成 `EvalSymlinks`(软链过的 `~/.claude` 的 home 会被挪走,`TestRun_RootSpellingKeepsTheBoundary` 里 root 本身是软链的三行钉着;符号链接只在 `inBoundary` 里解析)。
   越界**不读**(§16.2),出 `COV-000` **同时**出 `HOOK-002`(计分:普通事件 medium,`PermissionRequest` high)——覆盖和风险是两句话。`type=http` 采成 artifact,目标走
   `HOOK-003`(本机 ordinary=low,本机 PermissionRequest / 非回环一律 high)。读不到的仍只出
-  `COV-000`。
+  `COV-000`。**`HOOK-002` 的 snippet 是 `ref → resolved` 整串过 `redactClip`**:`resolved` 就是 `ref` 展开后的同一串字节,只脱前半段等于把被抹掉的东西在箭头后原样印出来(P-014,`TestHookOutside_SecretInPathIsRedactedOnBothSides`);别照 `hookOwnedNote` 改回"后半段只截断"——那条的解析路径是插件树内、整棵被扫的文件,`TestHookNotes_DoNotRedactTheScannerOwnPaths` 钉着它**不**脱敏,两者看着一样、理由不同。拼进 `Why` 的文件内容同理(`SUP-006` 的目标)。
 - **规则匹配的是"解释器会跑的那一行",证据引的是"文件里写的那一行"**
   ([logical.go](../../internal/detect/logical.go),A.1 的词法半边)。逐条物理行匹配时,凡是解释器
   在执行前会先折叠掉的东西都能绕过规则而不改变 payload:行连接符(`curl … \` 换行 `| bash`)、命令名里
