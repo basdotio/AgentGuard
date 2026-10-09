@@ -249,15 +249,20 @@ func TestScan_HookScriptPayloadIsStatic(t *testing.T) {
 }
 
 // llmResult builds a scan whose only finding is a QUALIFIED LLM one — grounded and agreed on,
-// so it weighs on the effective score.
+// so it weighs on the effective score. It carries the summary of a judge that ran over
+// everything, because a real run with an LLM finding always has one — and --fail-on-llm reads
+// it to tell "found nothing" from "could not look" (P-026).
 func llmResult(escalates bool) model.ScanResult {
-	return model.ScanResult{Artifacts: []model.ArtifactReport{{
-		Kind: model.KindSkill, Name: "s",
-		Findings: []model.Finding{{
-			RuleID: "LLM-003", Dimension: 1, Severity: model.SevHigh,
-			Source: model.SrcLLM, Advisory: true, Escalates: escalates,
+	return model.ScanResult{
+		Artifacts: []model.ArtifactReport{{
+			Kind: model.KindSkill, Name: "s",
+			Findings: []model.Finding{{
+				RuleID: "LLM-003", Dimension: 1, Severity: model.SevHigh,
+				Source: model.SrcLLM, Advisory: true, Escalates: escalates,
+			}},
 		}},
-	}}}
+		Judge: &model.JudgeSummary{Ran: true, Artifacts: 1, Calls: 1, Findings: 1},
+	}
 }
 
 // TestFailGate_DeterministicGateIgnoresTheJudge is the contract a CI pipeline relies on:
