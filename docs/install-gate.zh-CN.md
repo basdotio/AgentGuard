@@ -70,7 +70,7 @@ key 是 artifact 的 **canonical 哈希** —— 就是信誉库用的那个树�
 
 没有哈希的内容批准不了。解析失败的配置文件、扫描器打不开的文件，都没有可以拿来做批准 key 的哈希，
 所以 `aguard approve` 会拒绝它 —— 说明是哪个 artifact、为什么，退出码 2，状态文件不动。
-`aguard check <path>` 会告诉你哪里没读到。
+`aguard check <path> --json` 会列出说明哪里没读到的 note。
 
 状态文件是 `~/.claude/.aguard-approvals.json`，权限 0600，原子写入。除了批准，它还存着每个仍在等你
 回答的弹窗背后的判决（最多一小时）：你的回答是在另一次 hook 调用里到达的，而这个文件是两次调用之间
