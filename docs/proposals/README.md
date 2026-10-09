@@ -48,4 +48,4 @@
 | [012](complete/012-collect-anchors-root.md) | --root 用相对写法时,符号链接安装的 skill 整个不被收集,`--root .` 还漏掉 home 下的配置;CI 模板的 `.mcp.json` 只是碰巧被读到 | collect 只 `Clean` 不 `Abs`:相对写法丢掉符号链接安装的 skill,`--root .` 把 home 取错;CI 模板读到仓库顶层 `.mcp.json` 只因 home 碰巧等于 root;移植自 agent-guard 的 P-055 | PR 待合入;待发 |
 | [013](complete/013-artifact-notes-rendered.md) | settings.json 解析失败时,终端和 markdown 报告说 "looks safe":artifact 自己的 dim-0 note 从不渲染 | collect 把 `PARSE-000` 挂在 artifact 上,三个人读渲染器只渲染扫描级 note,解析不了的 `settings.json` 被报成 "looks safe … Nothing was found to check"(不变量 #5);移植自 agent-guard 的 P-054 | PR 待合入;待发 |
 | [014](complete/014-hook-outside-snippet-redacted.md) | hook 越界提示的证据里,箭头后面的解析路径没经过脱敏 | `HOOK-002` 箭头后的解析路径、`SUP-006` 的 `Why` 里的注册表地址没经过脱敏;移植自 agent-guard 的 P-056 | PR 待合入;待发 |
-| [015](draft/015-rules-frontmatter-first.md) | 许可证注释把十份规则的 frontmatter 挤下第一行:按路径加载失效,范围测试不再查 glob | 新发现:首个公开提交在十份按路径加载的规则文件的 frontmatter 上方加了一行许可证注释,范围测试从此不查 glob,Claude Code 也不再按路径加载它们 | 进行中 |
+| [015](design/015-rules-frontmatter-first.md) | 许可证注释把十份规则的 frontmatter 挤下第一行:按路径加载失效,范围测试不再查 glob | 新发现:首个公开提交在十份按路径加载的规则文件的 frontmatter 上方加了一行许可证注释,范围测试从此不查 glob,Claude Code 也不再按路径加载它们 | 进行中 |
