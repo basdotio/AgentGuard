@@ -232,7 +232,7 @@ fixture 都在 `t.TempDir()` 现搭,临时目录先 `EvalSymlinks`(macOS 的 `/v
 ## 完成
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-012 找)
+合入:PR #30(2026-10-09;sha 用 git log --grep P-012 找)
 发布:待发
 证据:TestCollectAll_RootSpellingKeepsTheInventory(internal/collect/rootspelling_test.go);W1 在本仓 main(dec64ca)上红七行(.claude、.claude/、home/.claude、../home/.claude 和经符号链接那行 env Skills 2 vs 3、SCOPE-001 两条 [skills/escaper, skills/linked];.、./ 两行 Skills 1、MCPServers 0、SCOPE-001 三条 [escaper, linked, rel-linked])→ W2 后十行全绿;<abs>/、<abs>/. 两行 W1 时就绿
 证据:反向断言 同一测试 —— 十行里 escaper 都被拒且只有它(恰好一条 SCOPE-001,没有 artifact 落在 outside 下);三个 skill 的树哈希每行等于直接对解析后目录算的 TreeHash;TestHashGolden 未改仍绿

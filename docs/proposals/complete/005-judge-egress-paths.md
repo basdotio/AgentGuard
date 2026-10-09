@@ -228,7 +228,7 @@ W1–W8 是旧仓的首轮实现,W9–W15 是评审 1–7 的修复,W16–W20 �
 ## 完成
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-005 找)
+合入:PR #24(2026-10-09;sha 用 git log --grep P-005 找)
 发布:待发
 证据:TestE2E_JudgeBodiesCarryNoHomeOrKeylessSecret(cmd/aguard/e2e_test.go);W1 在 origin/main(dec64ca)上红:13 个请求体 11 个带 alicemarker、1 个带 hunter2、0 个带 DB_PASS=<REDACTED>、0 个带 ~/notes 等四个 ~/ 路径 → W3 后只剩 MCP 两条红(request 4 带 hunter2、没有 DB_PASS=<REDACTED>)→ W5 后绿:0 个带家目录 / EvalSymlinks 形态 / 编码形态 / alicemarker / hunter2 / 任何 kind:name 标签,四个 ~/ 路径都在
 证据:TestScanInbox_JudgeBodiesCarryNoHome(cmd/aguard/e2e_test.go);W1 红(request 0 带 bobmarker,没有 ~/notes)→ W3 后绿

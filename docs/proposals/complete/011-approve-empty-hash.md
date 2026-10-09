@@ -148,7 +148,7 @@ chmod 000 的单文件 notes.md          → approved instruction "notes.md" (10
 ## 完成
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-011 找)
+合入:PR #20(2026-10-09;sha 用 git log --grep P-011 找)
 发布:待发
 证据:TestApproveRefusesWhatHasNoContentHash(cmd/aguard/gate_approve_test.go);W1 在本仓 main 上红,两行都是 "approve reported success for a target with no content hash" 后跟 approved hook "settings.json" (100/100, clean) / approved instruction "notes.md" (100/100, clean) 和一个空的 hash 行 → W2 后绿;W6 后错误里带 --json 提示,仍绿
 证据:TestApproveRefusalLeavesTheStoreAlone(同文件);W1 红 "approve reported success …" + "a refused approve rewrote the approvals store" → W2 后绿:os.SameFile 为真、字节不变、原有 1 条批准仍在

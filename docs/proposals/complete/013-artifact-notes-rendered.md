@@ -207,7 +207,7 @@ W2–W4 是旧仓第一轮的宽集合,W5–W7 是人定的收窄;两段按原�
 ## 完成
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-013 找)
+合入:PR #28(2026-10-09;sha 用 git log --grep P-013 找)
 发布:待发
 证据:TestBrokenSettingsIsNotReportedSafe(cmd/aguard/artifact_notes_test.go);W1 在本仓 main 的渲染器上红:scanEnv 与 checkTarget 两路,终端默认 / --verbose / markdown / HTML 四个都 "does not name the parse failure [PARSE-000]",且都说 "looks safe" 和 "Nothing was found to check"(24 处)→ W2 后 PARSE-000 进了四个渲染器 → W3 后四个全绿:Summary 是 "Low risk in what was read, but coverage is incomplete. No findings." + "Not fully checked: …/.claude/settings.json [PARSE-000]."
 证据:TestCheckBrokenSettingsCLI(同文件);W1 红在 stdout(没有 PARSE-000、有 looks safe)→ W3 后绿;退出码修前修后都是 0

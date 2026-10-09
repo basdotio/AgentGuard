@@ -171,7 +171,7 @@ uri 跟着相对于包根,于是 `check x.zip` 与 `check x/`(同一棵树,路�
 没有哪一部分已经被修过。
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-016 找)
+合入:PR #31(2026-10-09;sha 用 git log --grep P-016 找)
 发布:待发
 证据:W1 打在 main(dec64ca)上红 6 条、反向断言绿 5 条:TestCheckZip_TwiceIsByteIdentical(flat:uri aguard-inbox-<随机>/install.sh、artifact skill:aguard-inbox-<随机>,四种输出都含 aguard-inbox;nested:artifact directory:aguard-inbox-<随机>)、TestCheckZip_SameFindingsAsItsFolder(zip uri aguard-inbox-<随机>/install.sh 对目录 install.sh)、TestCheckZip_DoesNotReadTheSharedTempDir(收进 $TMPDIR/.claude.json 里的 mcp:planted,四条位置指向临时目录)、TestApprove_ZipRecordsTheArchive(name aguard-inbox-<随机>、path 已删除的临时目录)、TestScanInbox_ZipEvidenceIsArchiveRelative(证据 aguard-inbox-<随机>/install.sh)、TestExtractZip_FolderNamedAfterTheArchive(目录名随机、未解析软链、直接在共享临时目录里)
 证据:W2 后 SARIF 已两次相同、TestCheckZip_SameFindingsAsItsFolder / DoesNotReadTheSharedTempDir / ScanInbox_ZipEvidenceIsArchiveRelative / ExtractZip_FolderNamedAfterTheArchive 转绿;TestCheckZip_TwiceIsByteIdentical 仍因 text / markdown / JSON 红,TestApprove_ZipRecordsTheArchive 仍因 path 是 <临时根>/flat.zip 红;W3 后全绿

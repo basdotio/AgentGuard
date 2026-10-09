@@ -145,7 +145,7 @@ fixture 都在 `t.TempDir()` 现搭;token 用 `ghp_` 加 36 位的明显假值(`
 ## 完成
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-014 找)
+合入:PR #25(2026-10-09;sha 用 git log --grep P-014 找)
 发布:待发
 证据:TestHookOutside_SecretInPathIsRedactedOnBothSides(internal/detect/snippet_redact_test.go);W1 在本仓 main(dec64ca)上红:Engine.Run 下 HOOK-002 的 snippet 是 <REDACTED><REDACTED>/hook.sh → /var/folders/…/opt/ghp_<36 位>/hook.sh,两条字面值子测试箭头后 token 原样 → W2 后绿,箭头两边都是 …/<REDACTED>/hook.sh
 证据:TestRegistryRedirect_WhyRedactsWhatTheSnippetRedacts(同文件);W1 红,四个子测试(${PORT} 端口、userinfo 后无主机、${R:-…} 默认值坏了、token 形状的主机名)Why 里都是完整 token → W2 后仍红(不归它管)→ W3 后绿

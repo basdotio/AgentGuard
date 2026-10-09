@@ -164,7 +164,7 @@
 ```
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-007 找)
+合入:PR #18(2026-10-09;sha 用 git log --grep P-007 找)
 发布:待发
 证据:TestGateRemembersAnApprovalAcrossHookProcesses(cmd/aguard/gate_pending_test.go);W1 红(两次 runHook 之后 approvals 为空,PostToolUse 输出 "")→ W2 后绿:approvals 1 条 accepted-risk、hash 等于 checkTarget 算出的、pending 已消费、第三次 PreToolUse 0 字节
 证据:TestPendingSurvivesSaveAndLoad、TestPostPromotesAcrossProcesses、TestPendingHygieneOnLoad(fresh / near-ttl 两行读回为 0)、TestPostForAnotherCallPromotesNothing、TestExpiredPendingIsNotPromoted/answered_within_the_hour(internal/gate/pending_test.go);W1 红(从文件读回的 pending 恒为 0 条)→ W2 后绿

@@ -92,7 +92,7 @@ Downloads 的逐项汇总跟着加。人类可读报告不加任何一行。`jud
 ## 完成
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-001 找)
+合入:PR #19(2026-10-09;sha 用 git log --grep P-001 找)
 发布:待发
 证据:TestRun_StatsCountTriageApart(internal/judge/consensus_test.go);W1 编译红(consensus_test.go:290: s1.TriageCalls undefined (type Stats has no field or method TriageCalls)),W2 后绿;实测 samples=1 时 3 次调用 = 2 题 + 1 triage,samples=3 时 7 = 3 × 2 + 1,triage_calls 两次都是 1
 证据:TestE2E_JudgeSummaryCarriesCost(cmd/aguard/e2e_test.go);W1 编译红(e2e_test.go:315: j.PromptTokens undefined);字段已加、runJudge 不填时(临时探针,已还原)运行红:tokens = 0 in / 0 out over 4 call(s); want 400 / 28,triage_calls = 0, want 1;W3 后绿,quiet: true 下 tokens = 100 × calls / 7 × calls,triage_calls = 有静态发现的 artifact 数,retries = 0

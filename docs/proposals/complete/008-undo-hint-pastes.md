@@ -89,7 +89,7 @@ P-007 合入后它才第一次会被人看到,所以至今没人照抄过它。
 ## 完成
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-008 找)
+合入:PR #17(2026-10-09;sha 用 git log --grep P-008 找)
 发布:待发
 证据:TestUndoHintPastesAsIs(cmd/aguard/gate_undo_test.go);W1 红:the undo command as printed failed: no approval matches "a1e9cd5dbc1a…" → W2 后绿,照抄的命令删掉了批准,展示用的 content a1e9cd5dbc1a… 不变
 证据:TestForgetAcceptsTheShortHashAsPrinted(同文件);W1 红(… 与 ... 两种都 no approval matches)→ W2 后仍红(W2 只改提示)→ W3 后绿
