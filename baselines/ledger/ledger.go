@@ -104,6 +104,36 @@ type Row struct {
 	// acts on: "EXFIL-001 fired on 144 benign samples" is a work item, while "false positives
 	// are 5.5%" is only a status. Check does not inspect it.
 	Rules []string `json:"rules,omitempty"` // Scored only
+	// JudgeUsage is what the tool's model-backed pass cost on this sample (aguard's --llm judge),
+	// folded from the tool's own output. Nil when that output carried no judge summary — every
+	// static run, and any sample routed where the judge does not run — so a static ledger is
+	// byte-for-byte what it was. Check does not inspect it: it is the run's cost, not the partition.
+	JudgeUsage *JudgeUsage `json:"judge_usage,omitempty"`
+}
+
+// The two bases a JudgeUsage's TriageCalls can rest on.
+const (
+	// UsageReported: the tool counted its triage calls and retries itself and printed them.
+	UsageReported = "reported"
+	// UsageDerived: the tool printed neither (a binary older than its judge summary's cost
+	// fields), so TriageCalls is the documented derivation — one per artifact with a
+	// deterministic finding, exact only when no call was skipped — and Retries is unknown.
+	UsageDerived = "derived"
+)
+
+// JudgeUsage is one sample's judge cost. Every count is the tool's own except TriageCalls, which
+// is derived when the tool did not print it, and Basis says which. Retries and the two token
+// counts are pointers because "the tool did not say" is not 0: a derived sample has no retry
+// count, and an endpoint that reports no usage leaves the tokens out.
+type JudgeUsage struct {
+	Basis            string `json:"basis"`
+	Calls            int    `json:"calls"`
+	Failed           int    `json:"failed"`
+	Skipped          int    `json:"skipped"`
+	TriageCalls      int    `json:"triage_calls"`
+	Retries          *int   `json:"retries,omitempty"`
+	PromptTokens     *int   `json:"prompt_tokens,omitempty"`
+	CompletionTokens *int   `json:"completion_tokens,omitempty"`
 }
 
 // KnownReasons returns the closed set, sorted so callers and error messages are stable.
