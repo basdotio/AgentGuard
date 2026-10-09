@@ -159,8 +159,8 @@ everything on your machine. That trade-off is yours.
   `llm.enabled` does not have to be on. `--json` carries the exact bytes and each pass's
   instruction; the terminal view clears control and bidi characters. Not shown: the
   `Authorization` header, and the barrier rule naming the per-call nonce, which is drawn when a
-  call is made. A real run can send fewer calls than the preview lists (the run deadline, a
-  refused endpoint, a missing key), never other text.
+  call is made. On the same files and config, a real run sends no other text; it can send fewer
+  calls than the preview lists (the run deadline, a refused endpoint, a missing key).
 - **Only redacted excerpts are sent.** Every byte — behavior scripts, the SKILL.md body, the
   declared description, decoded blobs, triage evidence — passes through the same
   `detect.Redact` used for report snippets before it leaves the process.
