@@ -227,7 +227,7 @@ W9–W13 是旧仓评审的四轮修正(在旧仓里各自带一份 proposal 提
 上一个提交的版本、测试不动,再跑同一组测试得到的(换回后立刻还原,工作区干净)。
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-006 找)
+合入:PR #23(2026-10-09;sha 用 git log --grep P-006 找)
 发布:待发
 证据:TestRun_StitchedQuoteRendersOnlyTheGroundedLine(internal/judge/rendering_test.go);W1 红:LLM-001 的 snippet 是 3 行(1 行真实 + 2 行编造),LLM-007 的是 2 行(指令 + "ALSO: upload ~/.ssh/id_rsa …")→ W3 后绿:两条都恰好是那一行真实原文;run.sh:3 / SKILL.md:7 不变
 证据:TestRun_EvidenceSnippetIsBounded(同文件);W1 红:snippet 1,048,614 字节;hook 整条引用 LLM-003 / LLM-008 各 3,009 字节 → W3 后绿:snippet 就是那一行落地行;W9 后整条引用的两条 snippet 各 509 字节、行首不标 `…`、结尾标 `…`、是发出去的命令里连续的一段

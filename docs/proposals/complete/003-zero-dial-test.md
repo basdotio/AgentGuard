@@ -210,7 +210,7 @@ RoundTripper,逐个跑命令入口,断言零次 round trip;同一个计数器在
 ## 完成
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-003 找)
+合入:PR #22(2026-10-09;sha 用 git log --grep P-003 找)
 发布:待发
 证据:TestZeroDial_OnlyTheJudgeConnects(cmd/aguard/zero_dial_test.go);W1 时编译红(cmd/aguard/zero_dial_test.go:85: undefined: judge.Transport),W2 后绿:正对照三行 scan --llm / Downloads 项 / llm test 都被判官计数器看见、默认计数器 0;零表 23 行(14 个入口 + version 9 行)两个计数器都是 0,且每个入口成功跑完(Pre 回 ask、Post 重扫回 risk accepted、SessionStart 有审计结果、闸门存活探测报 GATE-001、approvals 列出自己写入的那条)
 证据:TestNewHTTP_TransportSeam(internal/judge/run_test.go);W1 时编译红(run_test.go:306: undefined: Transport),W2 后绿;反向断言:调用方给的 srv.Client() 照样打到自己的 server,接缝计数不变

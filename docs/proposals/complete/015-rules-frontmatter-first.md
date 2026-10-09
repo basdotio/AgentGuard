@@ -134,7 +134,7 @@ fixture 都在 `t.TempDir()` 现搭,与现有测试同一写法。
 ## 完成
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-015 找)
+合入:PR #32(2026-10-09;sha 用 git log --grep P-015 找)
 发布:待发
 证据:TestClaudeRulesProblemsAreCaught(cmd/aguard/claude_rules_test.go);只加 fixture、不改检查时红:四种错位形状各一条 missing problem "<name>: frontmatter must start on line 1",want exactly 7 problems, got 3 → 加上 misplacedFrontmatter 后绿
 证据:TestClaudeRulesAreScopedToExistingPaths(同文件);W1 后在本仓(dec64ca + W1)红:10 problem(s),恰好 detect gate hash judge npm pipeline plugin report reputation score 各一条 "frontmatter must start on line 1 (Claude Code ignores it anywhere else, so this rule loads every session)" → W2 后绿

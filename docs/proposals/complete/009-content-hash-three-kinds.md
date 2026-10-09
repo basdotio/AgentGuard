@@ -272,7 +272,7 @@ SessionStart             列出 hook PreToolUse[Bash]#1 75/100        "no unappr
 root 的采集 —— 这是 `collect.looksLikeRoot` 本来的行为,与本条无关;装过插件的 `~/.claude` 都有这个文件。
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-009 找)
+合入:PR #29(2026-10-09;sha 用 git log --grep P-009 找)
 发布:待发
 证据:TestContentHashGolden(internal/detect/contenthash_test.go);W1 编译红(undefined: ContentHashes / contentHashInput / configDoc / scriptUnresolved…,unknown field MCPServer)→ W4 绿;W7 之后五个常量与两个脚本摘要在本仓库按 printf … | shasum -a 256 重新手算,七个值全部一致
 证据:TestReputation_RecognisesAHook(cmd/aguard/contenthash_test.go);W1 红 "the hook has no hash, so no reputation entry can ever match it" → W5 绿:按 hook 哈希造的 malicious 条目命中,hook 上出 REP-BAD

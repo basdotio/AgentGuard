@@ -215,7 +215,7 @@ JSON 除 scanned_at / tool_version / rules_version 三个键外逐键相同;逐 
 ## 完成
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-002 找)
+合入:PR #21(2026-10-09;sha 用 git log --grep P-002 找)
 发布:待发
 证据:W1 在本仓 origin/main dec64ca 上编译红,原因与判据一致:internal/detect 无 RulesVersion / rulesVersion / rulesEpoch;cmd/aguard 无 detect.RulesVersion、model.ScanResult 无 RulesVersion 字段、无 binaryVersionLine;hack/gen-rules 无 detect.RulesVersion
 证据:TestRulesVersion_MovesWithWhatDecidesAFinding(internal/detect/rules_version_test.go);W2 后绿:14 种变异(正则、加 except、去 except、严重度、维度、ID、Advisory、四个 *Only、交换两条顺序、删一条、epoch + 1)各自让版本号变且两两不同;手工负向:临时从哈希里删掉 except 字段 → "except added / removed" 两条红,已还原

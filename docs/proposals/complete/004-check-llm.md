@@ -143,7 +143,7 @@
 换回 W6 的版本、测试不动,再跑同一组测试得到的(换回后立刻还原,工作区干净)。
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-004 找)
+合入:PR #26(2026-10-09;sha 用 git log --grep P-004 找)
 发布:待发
 证据:TestCheckCmd_LLMRunsTheJudge(cmd/aguard/check_llm_test.go);W1 红(exit 2,error: unknown flag: --llm)→ W2 后绿:目录与 zip 各自 judge.ran = true、4 次调用、有 LLM-003,overall 83 = 静态 check 的 83,overall_effective 58;--quiet 时 stderr 无 "LLM judge"
 证据:TestCheckCmd_FailOnLLMNeedsAuthority(同文件);W1 红(三条都是 exit 2,unknown flag: --llm)→ W2 后绿:escalate + --fail-on-llm high → exit 1;advisory + --fail-on-llm high → exit 2,stderr 点名 llm.authority: escalate;反向断言 --llm + 默认 --fail-on high → exit 0(判官的 high 够不着 --fail-on)

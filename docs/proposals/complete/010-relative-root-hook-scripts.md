@@ -161,7 +161,7 @@ fixture 都在 `t.TempDir()` 现搭,临时目录先 `EvalSymlinks`(免得 macOS 
 ## 完成
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-010 找)
+合入:PR #27(2026-10-09;sha 用 git log --grep P-010 找)
 发布:待发
 证据:TestScan_RootSpellingDoesNotChangeTheResult(cmd/aguard/rootspelling_test.go);W1 红:「一个 hook、一个脚本」在 <abs>/、<abs>/.、.claude/、.、./、home/.claude 六种写法下 overall 100,绝对写法 69 → W2 后八种写法都是 69、报告视图逐字等于绝对写法;「各种第二阶段」W1 时八行视图全不同(.claude、../home/.claude 两行只差 HOOK-002 snippet 里 link.sh 解析出的路径是相对的)→ W2 后全同
 证据:TestRun_RootSpellingKeepsTheBoundary(internal/detect/rootspelling_test.go);W1 红六行(<abs>/、<abs>/.、.claude/、.、./、home/.claude:pre.sh、deploy.sh 没读,link.sh 只得 "no such file"、没有 HOOK-002)→ W2 后绿;W4、W5 后十三行全绿
