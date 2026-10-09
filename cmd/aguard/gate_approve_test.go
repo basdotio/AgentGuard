@@ -80,7 +80,7 @@ func TestApproveRefusesWhatHasNoContentHash(t *testing.T) {
 			if err == nil {
 				t.Fatalf("approve reported success for a target with no content hash; it printed:\n%s", out.String())
 			}
-			for _, w := range append(tc.want, "nothing was approved") {
+			for _, w := range append(tc.want, "nothing was approved", "--json") {
 				if !strings.Contains(err.Error(), w) {
 					t.Errorf("refusal does not say %q:\n%v", w, err)
 				}
@@ -193,5 +193,22 @@ func TestApproveStillRecordsWhatHasAHash(t *testing.T) {
 				t.Errorf("recorded verdict %q, want %q", a.Verdict, tc.verdict)
 			}
 		})
+	}
+}
+
+// TestApproveNeverFallsBackToAnotherArtifact: the refusal is about the artifact the verdict is
+// for. A root that holds a broken settings.json AND content that does hash (a subagent, a
+// command) must still be refused, with nothing approved — approving whichever artifact happens
+// to have a hash would record trust for bytes the operator did not point at.
+func TestApproveNeverFallsBackToAnotherArtifact(t *testing.T) {
+	root := brokenSettingsRoot(t)
+	mustWriteFile(t, filepath.Join(root, "agents", "rev.md"), "---\nname: rev\ndescription: reviews\n---\nReview the diff.\n")
+	mustWriteFile(t, filepath.Join(root, "commands", "ship.md"), "Ship it.\n")
+	storeRoot := t.TempDir()
+	if err := approvePath(io.Discard, storeRoot, noConfig(t), root); err == nil {
+		t.Fatal("approve reported success for a root whose worst artifact has no content hash")
+	}
+	if _, err := os.Stat(gate.ApprovalsPath(storeRoot)); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("an approvals store was written (stat err %v); a fallback approved another artifact", err)
 	}
 }

@@ -369,7 +369,10 @@ func approvePath(w io.Writer, root, cfgPath, target string) error {
 	// named. %q escapes control and bidi characters in the borrowed name (invariant #7); the
 	// check hint repeats the operator's own argument, which v.Path may have clipped.
 	if v.Hash == "" {
-		return fmt.Errorf("%s %q has no content hash: %s; nothing was approved (aguard check %q shows what was not read)",
+		// The hint names --json on purpose: the terminal and markdown reports do not show an
+		// artifact's own coverage notes, so a plain `check` of a config that did not parse
+		// reads as clean. The JSON carries the note (PARSE-000 on the artifact, or COV-000/IO-000).
+		return fmt.Errorf("%s %q has no content hash: %s; nothing was approved (aguard check %q --json lists the notes that say what was not read)",
 			v.Kind, v.Name, v.Unhashed, target)
 	}
 	store := gate.LoadStore(gate.ApprovalsPath(root))
