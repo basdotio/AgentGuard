@@ -80,47 +80,50 @@ fixture 都在 `t.TempDir()` 现搭,临时目录先 `EvalSymlinks`(macOS 的 `/v
 `home/.claude`(工作目录 `<base>`)、`../home/.claude`(工作目录 `<base>/sibling`),外加"工作目录经符号链接"(`<base>/via → home`,
 写 `.claude`)。
 
-- [ ] `TestClean_RootSpellingIsTheAbsoluteRun`(`internal/clean/rootspelling_test.go`,新):root 下一个 zombie skill、artifact 路径是
+- [x] `TestClean_RootSpellingIsTheAbsoluteRun`(`internal/clean/rootspelling_test.go`,新):root 下一个 zombie skill、artifact 路径是
   collect 给的绝对路径。每种写法依次:`Apply` 预演的输出与 `Result` 等于绝对写法;真 `Apply` 成功;随后 `Undo(…, "last")` 预演的输出
   等于绝对写法对同一批次的预演;真 `Undo` 把 skill 放回原处;`KeepBoth` 预演的输出等于绝对写法;`QuarantineRefusal` 的答案等于绝对写法
-  (空,即可以移动)。预期 W1 红:除 `<abs>`、`<abs>/`、`<abs>/.` 以外的九行在第一步就报 "outside the scanned root"(`Apply` 预演返回错误),
-  `QuarantineRefusal` 在这九行答 `target-outside-root`
-- [ ] 反向断言(同一文件):`.aguard-trash` 是指向 root 外的符号链接时,**每种写法**都拒绝(错误里说 "it is a symlink"),root 外的
+  (空,即可以移动)。"经符号链接"那行的路径在链接的坐标系里,把链接映射回 home 之后比。预期 W1 红:除 `<abs>`、`<abs>/`、`<abs>/.`
+  以外的九行在第一步就报 "outside the scanned root"(`Apply` 预演返回错误,测试停在这一步)
+- [x] 反向断言(同一文件):`.aguard-trash` 是指向 root 外的符号链接时,**每种写法**都拒绝(错误里说 "it is a symlink"),root 外的
   目录里什么都没多出来;`--root` 落在 `rules/` 里面(工作目录 `<root>/rules`,写 `.`)仍以 "inside a \"rules\" directory" 拒绝。
   W1 时就绿,修后仍绿
-- [ ] `TestCollectTarget_RootSpellingRoutesLikeTheAbsoluteTarget`(`internal/collect/targetspelling_test.go`,新):P-012 的"安装形状"
+- [x] `TestCollectTarget_RootSpellingRoutesLikeTheAbsoluteTarget`(`internal/collect/targetspelling_test.go`,新):P-012 的"安装形状"
   fixture(没有 `plugins/installed_plugins.json`),每种写法 `CollectTarget` 都走 root 布局 —— `Result.Root` 等于绝对 root,清单
   (kind、name、hash、path)和 note 等于绝对写法("经符号链接"那行只比 kind、name、hash 和 note 规则,P-012 未决 5)。预期 W1 红五行:
   `<abs>/.`、`.claude/.`、`.`、`./`、`..` 的 `Root` 为空、清单只有一个 `directory`
-- [ ] 反向断言(同一文件):单目标原样 —— 工作目录 root 下 `CollectTarget("skills/plain")`、`CollectTarget("./skills/plain")` 的
+- [x] 反向断言(同一文件):单目标原样 —— 工作目录 root 下 `CollectTarget("skills/plain")`、`CollectTarget("./skills/plain")` 的
   `Root` 为空、一个 `skill`、`Path` 就是敲进来的字符串;一个**不叫** `.claude`、带 `skills/` 和 `settings.json` 的目录,工作目录在它里面
   写 `.`、在外面写绝对路径,都仍是一个 `directory` artifact(`looksLikeRoot` 没被放宽)。W1 时就绿,修后仍绿
-- [ ] `TestCheck_RootSpellingInsideAConfigRootIsTheAbsoluteReport`(`cmd/aguard/rawroot_test.go`,新):同一 fixture 走 `checkTarget`,
+- [x] `TestCheck_RootSpellingInsideAConfigRootIsTheAbsoluteReport`(`cmd/aguard/rawroot_test.go`,新):同一 fixture 走 `checkTarget`,
   JSON(去掉 `scanned_at`)与绝对目标**逐字节相同**("经符号链接"那行用 P-012 的去路径视图)。预期 W1 红五行(同上)
-- [ ] `TestHashCommand_RootSpellingPrintsTheAbsoluteHashes`(同文件):真二进制在各工作目录跑 `aguard hash <写法>`,stdout 与
+- [x] `TestHashCommand_RootSpellingPrintsTheAbsoluteHashes`(同文件):真二进制在各工作目录跑 `aguard hash <写法>`,stdout 与
   `aguard hash <abs>` 相同。预期 W1 红五行(打印 `directory:.` 一行)
-- [ ] `TestGate_RootSpellingResolvesTheSamePlugins`(同文件):fixture B 形状 —— CLI 装的 `myplug@mk`(skill `hello`,`curl … | bash`)、
+- [x] `TestGate_RootSpellingResolvesTheSamePlugins`(同文件):fixture B 形状 —— CLI 装的 `myplug@mk`(skill `hello`,`curl … | bash`)、
   桌面版仓库里的 `dplug`(skill `dhello`,同上)、root 里的 skill `plain`。每种写法:`gateOptions` 的 `Root` 等于绝对 root、`Home` 等于它的
   上一级;`runHook` 对 `myplug:hello`、`dplug:dhello`、`plain` 三个 `PreToolUse[Skill]` 的回复与绝对写法**逐字节相同**,且都是 `ask`。
   预期 W1 红:九行相对写法 `Root`/`Home` 不同、`myplug:hello` 是 `GATE-000`;`<abs>/`、`<abs>/.` 两行 `Home` 等于 root、`dplug:dhello`
-  是 `GATE-000`;`plain` 在相对写法下理由里的路径是相对的
-- [ ] 反向断言(同一测试):一个 `installPath` 解析到 HOME 外的插件 `outplug`,**每种写法**都不被解析(`outplug:x` 是 `GATE-000`,
+  是 `GATE-000`;`plain` 在相对写法下理由里的路径是相对的。fixture 放在短的临时目录里:闸门把超过 160 个字符的路径截断后再写进理由,
+  `t.TempDir()` 带着子测试名,长到"经符号链接"那行的 `via` 和 `home` 会被截在不同的字符上
+- [x] 反向断言(同一测试):一个 `installPath` 解析到 HOME 外的插件 `outplug`,**每种写法**都不被解析(`outplug:x` 是 `GATE-000`,
   `collect.PluginInstalls` 不含它)—— 不变量 #2 的插件边界不因锚定放宽。W1 时就绿,修后仍绿
-- [ ] `TestPluginVersionLine_RootSpelling`(同文件):`pluginVersionLine(<写法>, "v0.18.0")` 每行都等于绝对写法的
+- [x] `TestPluginVersionLine_RootSpelling`(同文件):`pluginVersionLine(<写法>, "v0.18.0")` 每行都等于绝对写法的
   "plugin aguard 0.18.0 matches this binary"。预期 W1 红九行(相对写法返回空串)
-- [ ] 反向断言:绝对写法的结果先用字面值钉住(clean 预演那行的目标路径、`check` 的 artifact 清单、闸门两条 `ask` 带 `EXEC-001`、
+- [x] 反向断言:绝对写法的结果先用字面值钉住(clean 预演那行的目标路径、`check` 的 artifact 清单、闸门两条 `ask` 带 `EXEC-001`、
   version 那一行),W1 时就绿,修后不改一字仍绿
-- [ ] 反向断言:绝对写法的二进制输出修前修后逐字节相同(去掉 `scanned_at`、`tool_version`):fixture A 的 `scan --json`、`check --json`、
+- [x] 反向断言:绝对写法的二进制输出修前修后逐字节相同(去掉 `scanned_at`、`tool_version`):fixture A 的 `scan --json`、`check --json`、
   `hash`、`clean --undo last --dry-run`、`clean --zombie --apply --dry-run`,fixture B 的 `version` 第二行和两条闸门回复;
   `check ./skills/plain`、`check skills/plain`(单目标)修前修后逐字节相同;真机 `scan --root ~/.claude` 修前修后 JSON 逐字节相同
   (review 包只贴 overall、artifact/发现/note 数)
-- [ ] W5(detect 去重)之后:`git grep -n 'func anchorRoot\|func absRoot'` 为空;变异(临时改、跑、还原,不提交)`collect.AnchorRoot`
-  只 `Clean` 不 `Abs` → collect、detect、clean、cmd 四个包的写法矩阵都红,证明一个函数钉住了全部入口
-- [ ] 既有测试一字不改仍绿:`git diff --stat origin/main -- internal/clean/clean_test.go internal/collect/collect_test.go
+- [x] W5(detect 去重)之后:`func absRoot` 不存在,detect 的 `anchorRoot` 只剩一行转调 `collect.AnchorRoot`(名字留着,P-010 的测试注释和
+  `detect.md` 引用它),仓库里 `filepath.Abs(root)` 只剩 `AnchorRoot` 自己那一处;变异(临时改、跑、还原,不提交)`collect.AnchorRoot`
+  只 `Clean` 不 `Abs` → collect、detect、clean、cmd 四个包的写法矩阵都红,改成 `EvalSymlinks(Abs(root))` → root 本身是符号链接的那几行红,
+  证明一个函数钉住了全部入口
+- [x] 既有测试一字不改仍绿:`git diff --stat origin/main -- internal/clean/clean_test.go internal/collect/collect_test.go
   internal/collect/rootspelling_test.go internal/collect/hash_test.go internal/detect/rootspelling_test.go cmd/aguard/rootspelling_test.go
   cmd/aguard/collectroot_test.go cmd/aguard/main_test.go cmd/aguard/gate_e2e_test.go` 为空(`TestHashGolden`、P-009/P-010/P-012 的写法矩阵、
   不变量 #2 的边界测试都在里面)
-- [ ] `make verify` 绿;`go version` 不切换工具链
+- [x] `make verify` 绿;`go version` 不切换工具链
 
 ## 不做什么
 
@@ -197,3 +200,24 @@ fixture 都在 `t.TempDir()` 现搭,临时目录先 `EvalSymlinks`(macOS 的 `/v
 8. **`check .` 在一个 skill 目录里把 artifact 叫 `.`,算不算本条?**
    **建议**:不算,另开。它是单目标的命名,改了会改 `check ./skill` 这一类输出;本条钉住单目标不变。
    **已决(2026-10-09)**:按建议。
+
+## 完成
+
+```
+合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-019 找)
+发布:待发
+证据:TestClean_RootSpellingIsTheAbsoluteRun(internal/clean/rootspelling_test.go);W1 在本仓 main(fd28344)上红九行(.claude、.claude/.、.、./、../.claude、..、home/.claude、../home/.claude、经符号链接的 .claude,都在 Apply 预演就报 "refusing to use <写法>/.aguard-trash: it resolves to …/.aguard-trash, outside the scanned root")→ W3 后十二行全绿;<abs>、<abs>/、<abs>/. 三行 W1 时就绿
+证据:反向断言 TestClean_RootSpellingKeepsTheRefusals(同文件)—— 十二行符号链接的 .aguard-trash 都以 "it is a symlink" 拒绝、root 外目录为空、skill 未动,工作目录在 rules/ 里写 . 仍以 inside a "rules" directory 拒绝;W1 时就绿,修后仍绿
+证据:TestCollectTarget_RootSpellingRoutesLikeTheAbsoluteTarget(internal/collect/targetspelling_test.go);W1 红五行(<abs>/.、.、./、.claude/.、..:Root 为空、清单只有一个 directory)→ W2 后十三行全绿;反向断言 TestCollectTarget_SingleTargetsKeepTheirSpelling(同文件,skills/plain 与 ./skills/plain 仍是 Path 原样的单个 skill;不叫 .claude 的目录五种写法仍是一个 directory)W1 时就绿,修后仍绿
+证据:TestCheck_RootSpellingInsideAConfigRootIsTheAbsoluteReport、TestHashCommand_RootSpellingPrintsTheAbsoluteHashes(cmd/aguard/rawroot_test.go);W1 各红五行(同上五种写法)→ W2 后全绿,check 的 JSON 与绝对目标逐字节相同,hash 的 stdout 相同
+证据:TestGate_RootSpellingResolvesTheSamePlugins(同文件);W1 红十一行(九行相对写法 gateOptions 的 Root/Home 是相对的、myplug:hello 回 GATE-000;<abs>/、<abs>/. 两行 Home 等于 root、dplug:dhello 回 GATE-000)→ W4 后十二行全绿,三条回复与绝对写法逐字节相同、都是 ask 带 EXEC-001;fixture 换成短临时目录后,把 gate.go、version.go 临时退回 W3 再跑一次,仍红(两条测试共 20 个子测试)
+证据:反向断言 同一测试 —— installPath 在 HOME 外的 outplug 在十二行都不被 PluginInstalls 解析、outplug:x 都回 GATE-000;绝对写法三条 ask 的字面断言 W1 时就绿
+证据:TestPluginVersionLine_RootSpelling(同文件);W1 红九行(相对写法返回空串)→ W4 后十二行都是 "plugin aguard 0.18.0 matches this binary"
+证据:变异(临时改、跑、还原,未提交):collect.AnchorRoot 只 Clean 不 Abs → collect 4 条(含 P-012 的三条)、detect 2 条(TestContentHash_SameConfigTwoMachines、TestRun_RootSpellingKeepsTheBoundary)、clean 1 条、cmd 7 条(按 RootSpelling|CITemplate|RelativeRootShaped 过滤跑;含 P-010、P-012 的写法测试)红;改成 EvalSymlinks(Abs(root)) → TestCollectAll_LinkedRootKeepsItsHome、TestImports_DoNotDuplicateCollectedFiles、TestRun_RootSpellingKeepsTheBoundary 红;每次还原后 git status 只剩当时未提交的改动
+证据:二进制前后(main fd28344 vs 本分支,fixture 在 /private/tmp 下,HOME 指向 fixture):「问题」表的十三种写法修后在 clean --undo last --dry-run、clean --zombie --apply --dry-run、check --json、hash、version 第二行、两条闸门回复、clean --json 上与绝对写法逐字节相同(经符号链接那两行的 check/clean --json 与经符号链接的绝对写法相同);<abs> 与经符号链接的绝对写法这八种输出修前修后逐字节相同;fixture A 绝对写法 scan --json(去掉 scanned_at、tool_version)修前修后逐字节相同(4587 字节);单目标 check ./skills/plain、check skills/plain、skill 目录里的 check . 修前修后逐字节相同
+证据:真机 ~/.claude(--inbox off):main 与本分支绝对写法都是 overall 69 / artifact 180 / 发现 806 / note 10,JSON(去掉 scanned_at、tool_version)逐字节相同(15724 行)
+证据:不做什么 —— git diff --stat origin/main -- internal/collect/hash.go internal/collect/pathsafe.go internal/collect/plugins.go internal/collect/desktop.go internal/gate internal/detect/detect.go internal/report hack docs/spec docs/rules.md go.mod go.sum 为空;既有测试 git diff --stat origin/main -- internal/clean/clean_test.go internal/collect/collect_test.go internal/collect/rootspelling_test.go internal/collect/hash_test.go internal/detect/rootspelling_test.go cmd/aguard/rootspelling_test.go cmd/aguard/collectroot_test.go cmd/aguard/main_test.go cmd/aguard/gate_e2e_test.go 为空
+证据:未决 7 实测(工作目录经符号链接,fixture 加一条内联 curl … | bash 的 hook 和 hooks/deep/x/pre.sh):main 上 --root .claude 与 --root <base>/via/.claude 的证据都是 .claude/settings.json、x/pre.sh,不经符号链接时两种写法都是 settings.json、hooks/deep/x/pre.sh —— 不是写法依赖,未改
+证据:.claude/rules/pipeline.md 159 → 162 行,detect.md 仍 200 行;TestClaudeRulesAreScopedToExistingPaths 绿
+证据:make verify: all gates passed;go version go1.23.5(无工具链切换),go.mod 第二行 go 1.23.5,module 行 github.com/basdotio/AgentGuard,无新依赖
+```
