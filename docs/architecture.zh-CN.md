@@ -103,7 +103,10 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
 
 **两种模式下发现都不折叠**,被折的只有维度 0 的元信息。这个拆分最容易滑向的失败正是"默认视图
 少报" —— 而一条从没被展示过的发现,读者不可能想到去追问它的细节。不变量 #5 在折叠后依然成立,
-因为严重度跟着条数一起走:一条压掉了 critical 的基线不会被读成低危脚注。`--json`、`--html` 和 `--md`
+因为严重度跟着条数一起走:一条压掉了 critical 的基线不会被读成低危脚注。这些说明有两个住处 —— 扫描自己的,
+和采集器挂在某个 artifact 上的(解析不了的配置文件会变成一个带 `PARSE-000` 的 artifact)—— 三个人读渲染器
+一律经同一个函数 `report.notesOf` 取两者;只读扫描自己的那份,曾把一个坏掉的 `settings.json` 印成 "looks safe"。
+只要有任何覆盖度说明,摘要就说 coverage is incomplete,不说 "looks safe"。`--json`、`--html` 和 `--md`
 不受这个开关影响,所以 CI 的输出不会取决于某个人选了哪种模式。`--md`(P-008)是第三个人读渲染器,给 PR 评论
 和 issue:同一份派生数据、同一顺序,被扫目录来的字符串全在代码跨度里。
 
