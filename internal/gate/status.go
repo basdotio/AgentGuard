@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/basdotio/AgentGuard/internal/detect"
 	"github.com/basdotio/AgentGuard/internal/model"
 )
 
@@ -206,6 +207,12 @@ func (s Status) anyBroken() bool {
 // dangerous; it makes the REPORT less trustworthy, and that is a different claim. Inflating it
 // into a scored finding would move a number that has to mean "what the scan found in your
 // artifacts", and would put an environment into the High band for a broken symlink.
+//
+// The command it quotes is settings.json's text, and this note lands in every rendering of a scan
+// — JSON, markdown, SARIF, HTML — so it goes through the redactor like every other snippet
+// (invariant #3). Describe does NOT: `hook status` is the operator asking their own terminal which
+// command is registered, the path is the answer on that line, and the redactor masks real install
+// paths (an npx cache path, the one an ephemeral install leaves behind when it goes dead).
 func DeadRegistrationNote(st Status) *model.Finding {
 	var dead []string
 	for _, e := range st.Events {
@@ -231,6 +238,6 @@ func DeadRegistrationNote(st Status) *model.Finding {
 			"and the resulting silence is indistinguishable from a clean result. "+
 			"Re-point it at this binary with: aguard hook install",
 			st.SettingsPath, strings.Join(dead, ", ")),
-		Evidence: []model.Evidence{{File: st.SettingsPath, Line: 0, Snippet: "missing hook command: " + cmd}},
+		Evidence: []model.Evidence{{File: st.SettingsPath, Line: 0, Snippet: "missing hook command: " + detect.Redact(cmd)}},
 	}
 }
