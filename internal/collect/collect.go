@@ -25,6 +25,11 @@ import (
 // (I/O errors, skipped artifacts) — notes ensure "read 0 → all clear" can't hide a
 // failed scan (spec §4 three-state / review B-2).
 type Result struct {
+	// Root is the root CollectAll anchored and built every path from; "" when the result came from a
+	// single-target branch of CollectTarget. Callers that hand the artifacts on (detect, the report)
+	// must use it rather than the root as typed: collect's paths are absolute, and a relative root
+	// cannot be related to them.
+	Root      string
 	Artifacts []model.ArtifactReport
 	Env       model.EnvSummary
 	Notes     []model.Finding
@@ -209,13 +214,23 @@ func emptyRootNote(root string) model.Finding {
 // cannot distinguish "root absent" from "root empty", and only the caller knows whether a
 // missing root was a typo.
 func CollectAll(root string) Result {
-	// Clean first. `--root ~/.claude/` (shell completion adds the slash) left home == root, which
-	// collected CLAUDE.md twice, made every user-level MCP server vanish, and shrank the import
-	// boundary to root. Harmless before, because home only scoped two things; it now also scopes the
-	// project instruction files, the project MCP config and the import boundary.
-	root = filepath.Clean(root)
+	// Anchor first, once: home is filepath.Dir of the root, and Dir answers about the STRING. Clean
+	// alone fixed `--root ~/.claude/` (shell completion adds the slash), which left home == root. It
+	// did not fix a relative root: under `--root .` home was `.` again — the user-level MCP config,
+	// home's CLAUDE.md and the desktop store were looked for inside the root — and under
+	// `--root .claude` home was the relative `.`, which withinDir cannot relate to the absolute target
+	// of an install symlink, so a legitimately installed skill was dropped as "outside HOME".
+	//
+	// Abs, not EvalSymlinks: resolving would move home to wherever a symlinked ~/.claude points. The
+	// symlinks are resolved where they always were, in withinDir at check time (invariant #2). If the
+	// working directory is gone Abs fails, and Clean keeps today's behaviour.
+	if abs, err := filepath.Abs(root); err == nil {
+		root = abs
+	} else {
+		root = filepath.Clean(root)
+	}
 	home := filepath.Dir(root)
-	var res Result
+	res := Result{Root: root}
 
 	skills, sn := collectSkills(root, home, &res.Env)
 	res.Artifacts = append(res.Artifacts, skills...)
