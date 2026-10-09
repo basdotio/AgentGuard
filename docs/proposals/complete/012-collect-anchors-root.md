@@ -74,41 +74,41 @@ fixture 都在 `t.TempDir()` 现搭,临时目录先 `EvalSymlinks`(macOS 的 `/v
 这两个包里没有 `t.Parallel`)。"仓库当 root"那份:root 是 `<base>/work/repo`(`skills/demo`、顶层 `.mcp.json` 里一条
 `sh -c "curl … | bash"` 的 server、顶层 `.claude.json` 里一条 server),它的 home `<base>/work` 也有自己的 `.mcp.json`、`.claude.json`。
 
-- [ ] `TestCollectAll_RootSpellingKeepsTheInventory`(`internal/collect/rootspelling_test.go`,新):"安装形状"每行 `CollectAll` 的
+- [x] `TestCollectAll_RootSpellingKeepsTheInventory`(`internal/collect/rootspelling_test.go`,新):"安装形状"每行 `CollectAll` 的
   (kind, name, hash, path) 清单、`Env`、notes 的 (rule, 证据文件)都等于绝对写法;"经符号链接"那行路径在符号链接的坐标系里,
   只比 kind/name/hash、`Env` 和 note 的规则。预期 W1 红七行:`.claude`、`.claude/`、`home/.claude`、`../home/.claude`、
   经符号链接那行少 `linked`、多一条 `SCOPE-001`;`.`、`./` 两行只剩 `plain`(「问题」里的二进制实测与此一致)。
   `<abs>/`、`<abs>/.` 两行 W1 时就绿(`CollectAll` 已经 `Clean`)
-- [ ] 反向断言(同一测试):每行 `escaper` 都被拒 —— 有一条证据指向 `skills/escaper` 的 `SCOPE-001`,没有任何 artifact 的
+- [x] 反向断言(同一测试):每行 `escaper` 都被拒 —— 有一条证据指向 `skills/escaper` 的 `SCOPE-001`,没有任何 artifact 的
   path 落在 `<base>/outside` 下。"被拒"W1 时就绿,修后仍绿;"`SCOPE-001` 恰好一条"W1 时在同样那七行红(多出来的是误报)
-- [ ] 反向断言(同一测试):三个 skill 的树哈希每行相同,且等于直接对解析后的目录算的 `TreeHash` —— 哈希的是内容,不是
+- [x] 反向断言(同一测试):三个 skill 的树哈希每行相同,且等于直接对解析后的目录算的 `TreeHash` —— 哈希的是内容,不是
   root 怎么写;`TestHashGolden` 不改一字仍绿
-- [ ] `TestScan_RootSpellingIsTheAbsoluteReport`(`cmd/aguard/collectroot_test.go`,新):"安装形状"每种写法走 `scanEnv`,
+- [x] `TestScan_RootSpellingIsTheAbsoluteReport`(`cmd/aguard/collectroot_test.go`,新):"安装形状"每种写法走 `scanEnv`,
   JSON(去掉 `scanned_at`)与绝对写法**逐字节相同** —— 包括 `root`、`locations`、artifact 的 `path`、全部发现与证据
   ("经符号链接"那行只比去掉路径字段的视图)。预期 W1 红九行:七行清单就不同(同上),`<abs>/`、`<abs>/.` 两行只差
   `root` 回显
-- [ ] `TestCollectAll_RootLevelMCPConfigIsRead`(`internal/collect/rootspelling_test.go`,新):"仓库当 root"在 `<abs>` 与 `.`
+- [x] `TestCollectAll_RootLevelMCPConfigIsRead`(`internal/collect/rootspelling_test.go`,新):"仓库当 root"在 `<abs>` 与 `.`
   两种写法下都收到顶层 `.mcp.json`、`.claude.json` 里的 server **和** home 那两个文件里的 server,两行清单相同。
   预期 W1 红两行:绝对写法缺 root 顶层的两个(从来不读),`.` 缺 home 的两个(home == root)。反向断言(同一测试):
   root 顶层的 `.mcp.json` 是指向 `<home>/.mcp.json` 的符号链接时,那个文件的 server 只出现一次(同一个文件不读两遍)
-- [ ] `TestScan_CITemplateShapeBlocksUnderEverySpelling`(`cmd/aguard/collectroot_test.go`,新):CI 模板的形状
+- [x] `TestScan_CITemplateShapeBlocksUnderEverySpelling`(`cmd/aguard/collectroot_test.go`,新):CI 模板的形状
   (`hack/github-action.yml` 在本仓 `main` 上仍是 `aguard scan --root . --fail-on high --sarif aguard.sarif`):仓库顶层
   `.mcp.json` 里一条 `curl | bash` 的 server,`--root .` 与 `--root "$PWD"` **都**带 `EXEC-001`、`--fail-on high` **都**拦
   (`failGate(out, "high", "", false)` 返回退出 1)。预期 W1 红在 `"$PWD"` 一行(修前 overall 100、零发现、零 note);
   `.` 一行 W1 时就绿,修后仍绿 —— 原本拦得住的仍然拦得住
-- [ ] 反向断言(实现时补,W6):`TestCollectAll_LinkedRootKeepsItsHome`(`internal/collect/rootspelling_test.go`):root 本身是符号链接
+- [x] 反向断言(实现时补,W6):`TestCollectAll_LinkedRootKeepsItsHome`(`internal/collect/rootspelling_test.go`):root 本身是符号链接
   (`~/.claude → ~/dotfiles/claude`)时,`<abs>`、`<abs>/`、`.`(工作目录在链接里)、`.claude` 四行的清单等于同样内容的普通 root,
   `Result.Root` 是链接本身而不是它指向的地方 —— 钉住"只 `Abs` 不 `EvalSymlinks`";`TestCheck_RelativeRootShapedTargetIsTheAbsoluteReport`
   (`cmd/aguard/collectroot_test.go`):`check .claude`、`check ./.claude`、`check ../home/.claude` 的 JSON 与绝对目标逐字节相同 ——
   钉住 `checkTarget` 用 `Result.Root`
-- [ ] 反向断言:root 顶层**没有**这两个文件时,绝对写法的 `scan --json` 修前修后逐字节相同(去掉 `scanned_at`、`tool_version`):
+- [x] 反向断言:root 顶层**没有**这两个文件时,绝对写法的 `scan --json` 修前修后逐字节相同(去掉 `scanned_at`、`tool_version`):
   "安装形状" fixture 上(二进制前后),以及真机 `scan --root ~/.claude`(真机 `~/.claude` 下两个文件都不存在,已确认);
   review 包只贴 overall、artifact/发现/note 数
-- [ ] 反向断言:不变量 #2 的既有测试一字不改仍绿 —— `TestEscapingSymlinkSkillNoted`、`TestCrossRootSymlinkIgnored`、
+- [x] 反向断言:不变量 #2 的既有测试一字不改仍绿 —— `TestEscapingSymlinkSkillNoted`、`TestCrossRootSymlinkIgnored`、
   `TestInstalledSymlinkSkillFound`、`TestWithinRoot`、`TestCollect_UnresolvableSkillEntryIsDisclosed`、
   `TestCollect_DanglingSkillSymlinkIsNotReportedAsAGap`;`git diff --stat origin/main -- internal/collect/collect_test.go
   internal/collect/hash_test.go internal/collect/pathsafe.go internal/collect/hash.go internal/detect` 为空
-- [ ] `make verify` 绿;`go version` 不切换工具链
+- [x] `make verify` 绿;`go version` 不切换工具链
 
 ## 不做什么
 
@@ -212,8 +212,9 @@ fixture 都在 `t.TempDir()` 现搭,临时目录先 `EvalSymlinks`(macOS 的 `/v
 8. **与 P-010 都合入后,P-010 的 `TestScan_RootSpellingDoesNotChangeTheResult` 会红,谁来改?**
    两种写法的报告逐字节相同,红的原因在 P-010 测试的 `spellingView`:它按**敲进来的** root(`filepath.Clean(root)`)去掉 collect note
    证据的前缀;本条之后那些路径是锚定后的绝对路径,绝对写法那份去得掉前缀,相对写法那份去不掉。改成按报告自己的 root 去前缀
-   (`filepath.Clean(out.Root)`)一行就绿;这一行在 P-010 自己的分支上行为不变(那里 `out.Root` 就是敲进来的 root)。
-   **建议**:后合的那个 PR 在 rebase 时带上这一行:P-010 先合,本条 rebase 时改;本条先合,P-010 rebase 时改。PR 描述里写明。
+   就绿:本仓实测要改 `spellingView` 开头**两行**里的 `filepath.Clean(root)`(算前缀的那行和判 `"."` 的那行)为 `filepath.Clean(out.Root)`,
+   只改第一行时 `dot`、`dot slash` 两行仍红;这两行在 P-010 自己的分支上行为不变(那里 `out.Root` 就是敲进来的 root)。
+   **建议**:后合的那个 PR 在 rebase 时带上这两行:P-010 先合,本条 rebase 时改;本条先合,P-010 rebase 时改。PR 描述里写明。
    本仓的组合实测见「完成」。
    **已决(2026-10-09)**:按建议(旧仓已决,移植沿用)。
 9. **工作目录经符号链接、`--root` 用相对写法时,root 内一部分文件的证据路径变短,算不算越界?**
@@ -224,3 +225,26 @@ fixture 都在 `t.TempDir()` 现搭,临时目录先 `EvalSymlinks`(macOS 的 `/v
    (collect 给的是解析后的路径)。修法在 detect 的 `relPath`(绝对路径也解析目录),会改经符号链接的绝对写法的输出,不在本条范围。
    **建议**:接受,写进不能说什么;`relPath` 这一处交给 lead 决定是否并入那条合并 proposal。本仓实测见「完成」。
    **已决(2026-10-09)**:按建议(旧仓已决,移植沿用)。
+
+## 完成
+
+```
+合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-012 找)
+发布:待发
+证据:TestCollectAll_RootSpellingKeepsTheInventory(internal/collect/rootspelling_test.go);W1 在本仓 main(dec64ca)上红七行(.claude、.claude/、home/.claude、../home/.claude 和经符号链接那行 env Skills 2 vs 3、SCOPE-001 两条 [skills/escaper, skills/linked];.、./ 两行 Skills 1、MCPServers 0、SCOPE-001 三条 [escaper, linked, rel-linked])→ W2 后十行全绿;<abs>/、<abs>/. 两行 W1 时就绿
+证据:反向断言 同一测试 —— 十行里 escaper 都被拒且只有它(恰好一条 SCOPE-001,没有 artifact 落在 outside 下);三个 skill 的树哈希每行等于直接对解析后目录算的 TreeHash;TestHashGolden 未改仍绿
+证据:TestScan_RootSpellingIsTheAbsoluteReport(cmd/aguard/collectroot_test.go);W1 红九行(<abs>/、<abs>/. 在 JSON 第 2 行即 root 回显处分叉,七行清单不同)→ W3 后九行全绿,JSON 与绝对写法逐字节相同
+证据:TestCollectAll_RootLevelMCPConfigIsRead(internal/collect/rootspelling_test.go);W1 红两行(绝对写法只有 home-proj、home-user,缺 repo-pwn、repo-user;. 只有 repo-pwn、repo-user 且路径是相对的,缺 home 的两个)→ W4 后绿;"同一个文件只读一次"子测试 W1 时就绿,修后仍绿
+证据:TestScan_CITemplateShapeBlocksUnderEverySpelling(cmd/aguard/collectroot_test.go);W1:. 绿、"$PWD" 红(overall 100、无 EXEC-001、failGate 返回 nil)→ W3 后(只锚定). 也红(overall 100)—— 正是未决 6 预言的后果 → W4 后两行都带 EXEC-001、failGate 退出 1
+证据:W6 TestCollectAll_LinkedRootKeepsItsHome、TestCheck_RelativeRootShapedTargetIsTheAbsoluteReport;变异(临时改、跑、还原,未提交):CollectAll 改成 EvalSymlinks(Abs(root)) → 前者四行红;checkTarget 不用 Result.Root → 后者三行红
+证据:变异 去掉 SameFile 去重 → "只读一次"子测试红;CollectAll 不读 RootMCPConfigs → TestCollectAll_RootLevelMCPConfigIsRead 两行红、CI 模板测试两行红;scanEnv 用敲进来的 root 调 analyze → TestScan_RootSpellingIsTheAbsoluteReport 八行红;只 Clean 不 Abs → 清单矩阵七行红;每次还原后 git status 为空
+证据:二进制前后(main dec64ca vs 本分支,fixture 在 /private/tmp 下,HOME 指向 fixture,--inbox off):绝对写法 scan --json 去掉 scanned_at、tool_version 后 cmp 无差(5494 字节);修后八种写法与绝对写法逐字节相同,修前分别差 2/2/68/68/66/66/140/140 行(<abs>/、<abs>/.、.claude、.claude/、home/.claude、../home/.claude、.、./);CI 仓库形状修后 . 与 "$PWD" 逐字节相同、都是 overall 69、EXEC-001、--fail-on high 退出 1(修前 "$PWD" 100 分、零发现、零 note、退出 0)
+证据:未决 9 实测(fixture root 加一个 hook 为 curl … | bash 的 settings.json):工作目录经符号链接、--root .claude 时 EXEC-001/HOOK-001 的证据 main 为 settings.json、本分支为 .claude/settings.json,与 main 和本分支对同一条经符号链接的绝对路径的输出相同;工作目录不经符号链接时两边都是 settings.json
+证据:真机 ~/.claude(--inbox off):main 绝对写法 overall 69 / artifact 175 / 发现 806 / note 10,本分支绝对写法相同;main 绝对写法重跑一次与本分支绝对写法的 JSON(去掉 scanned_at、tool_version)逐字节相同(15678 行)
+证据:真机相对写法(本分支):cd ~ 后 --root .claude、cd ~/.claude 后 --root . 两份 JSON 与上面的绝对写法逐字节相同;main 上同两种写法 .claude 为 artifact 137 / 发现 643 / note 15,. 为 artifact 83 / 发现 574 / note 15
+证据:不做什么 —— git diff --stat origin/main -- internal/detect internal/clean cmd/aguard/gate.go cmd/aguard/version.go internal/collect/pathsafe.go internal/collect/hash.go internal/collect/unowned.go internal/collect/plugins.go internal/collect/collect_test.go internal/collect/hash_test.go docs/spec go.mod go.sum hack 为空;hack/github-action.yml 仍是 aguard scan --root . --fail-on high --sarif aguard.sarif
+证据:不做什么(另开那条的现状,main 上实测):root 下有 .aguard-trash/ 时 cd <root> && clean --root . --undo last --dry-run 退出 2(refusing to use .aguard-trash … outside the scanned root),绝对写法 Nothing to undo、退出 0;check . 在一个没有 plugins/installed_plugins.json 的 .claude 里出 1 个 directory artifact,check ../.claude 出 5 个
+证据:与 P-010 的组合(临时 worktree 合并 origin/p/010-relative-root-hook-scripts,未提交,已删除):代码不冲突(只有索引行);detect、collect 全绿;cmd 只有 P-010 的 TestScan_RootSpellingDoesNotChangeTheResult 六行红(every kind of second stage 的 relative、relative trailing slash、dot、dot slash、relative through the parent、relative from a sibling),spellingView 两处 filepath.Clean(root) 改成 filepath.Clean(out.Root) 后全绿(只改算前缀那行时 dot、dot slash 仍红);同样两行改动单独放在 P-010 分支上该测试仍绿(未决 8)
+证据:与 P-005 的组合(同上,临时合并):唯一冲突在 scanEnv 的 return 处,保留两边(P-005 的 o.home 计算在前,本条的 res := collect.CollectAll(root); return analyze(res.Root, res, o) 在后)后 go test -race ./cmd/aguard/ ./internal/judge/ 全绿;与 P-001、P-002、P-003、P-004、P-009 的 git merge-tree 只在索引行冲突
+证据:make verify: all gates passed;go version go1.23.5(无工具链切换),go.mod 第二行 go 1.23.5,module 行 github.com/basdotio/AgentGuard,无新依赖
+```
