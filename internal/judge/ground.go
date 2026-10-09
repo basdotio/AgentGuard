@@ -9,6 +9,25 @@ import (
 	"github.com/basdotio/AgentGuard/internal/detect"
 )
 
+// ExcerptVersion names how an artifact becomes what the judge is shown, and how an answer's quote is
+// checked against it (P-031): which passes an artifact gets (planFor), the text each pass carries —
+// condensing, comment stripping, the head/tail caps and their line maps, the declared-purpose, hook,
+// MCP and connector renderings, the decode limits, padding folds, the home scrub and redaction order
+// — and grounding: whether a quote lands, which file and line it cites and what its snippet shows.
+// A --llm report carries it as judge.excerpt_version; `aguard version` prints it as judge-excerpt=.
+// The prompts wrapped around the excerpt are PromptVersion's, which is computed.
+//
+// BUMP IT, in the same commit, whenever a change alters — for some artifact — what any pass sends
+// or how any quote grounds. Do NOT bump it for comments, report wording or anything that only
+// shapes what happens after a verdict is grounded (consensus, severity clamping, rule mapping).
+//
+// It is a number because none of that can be hashed without hashing code. What makes forgetting it
+// visible is TestExcerptVersion_IsPinnedWithItsGolden: a fixture's planned excerpts and grounding
+// results are pinned to a digest TOGETHER with this value, so changing either alone is red. A change
+// the fixture does not exercise still relies on the editor; a forgotten bump lets two reports claim
+// the same excerpts while the judge was shown different text.
+const ExcerptVersion = 1
+
 // A model can produce a fluent, plausible, entirely invented finding. Nothing downstream can
 // tell that apart from a real one — same shape, same severity, same confident sentence. So a
 // verdict only survives if the text it quotes can be FOUND in what we actually sent it.
