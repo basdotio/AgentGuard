@@ -46,6 +46,8 @@ installed through a local marketplace (`claude plugin marketplace add` + `claude
 | `.mcp.json` `{"": …}` | the server keyed `""` (`plugin:pemptykey:`) | — (connection seen in the debug log) |
 | `.mcp.json` `{"mcpServers": [ … ], "arrayouter": …}` | a server named `0` (the array element); `arrayouter` not | — (connection seen in the debug log) |
 | `mcp.json` (no dot) `{"mcpServers": {"bare": …}}`, not named in the manifest | none | — |
+| manifest `plugin.json` `"mcpServers": {"inline": …}` | `inline` | — (probe log) |
+| manifest `plugin.json` `"mcpServers": "./servers.json"`, that file flat `{"pathflat": …}` | `pathflat` | — (probe log) |
 | project `.mcp.json` `{"projflat": …}` (no wrapper), `enableAllProjectMcpServers: true` | none: `Does not adhere to MCP server configuration schema` | — |
 | project `.mcp.json` `{"mcpServers": {"projwrap": …}}` (control) | `projwrap` | `mcp__projwrap__probe_projwrap` |
 
@@ -118,33 +120,34 @@ collected unless they themselves look like a server, which matches what Claude C
 
 ## Done criteria
 
-- [ ] `TestCollect_PluginMCPWithoutWrapper` (`internal/collect`, new), table-driven over the shapes measured above, each
+- [x] `TestCollect_PluginMCPWithoutWrapper` (`internal/collect`, new), table-driven over the shapes measured above, each
   asserting the set of (Name, `MCPServer`, `MCPUnwrapped`) and `mcp_servers`: flat → its servers, suffixed like wrapped
   ones; flat with `$schema` / `version` / a description object → only the server-shaped entries; `mcpServers` `null`,
   `false`, `0`, `""` beside a server → that server; `MCPSERVERS: {}` beside a server → that server; `McpServers` holding
   servers → none; flat key `""` → a server with `MCPServer` `""`; wrapped + a top-level sibling → only the wrapped one;
-  `mcpServers: {}` + a sibling → none. Red on main for every row that should yield an unwrapped server
-- [ ] `TestScan_UnwrappedPluginMCPServerGetsTheRulesAWrappedOneGets` (`cmd/aguard/plugin_mcp_test.go`): P-021's four
+  `mcpServers: {}` + a sibling → none; a repeated `mcpServers` key → the last one (as `JSON.parse`; added in W2). Red on main
+  for every row that should yield an unwrapped server, for the case-variant row and for the repeated-key row
+- [x] `TestScan_UnwrappedPluginMCPServerGetsTheRulesAWrappedOneGets` (`cmd/aguard/plugin_mcp_test.go`): P-021's four
   servers written flat, in each of the three plugin channels (CLI, Claude Desktop, Cowork synced) → per server, score,
   scoring rule IDs and `hash` equal the same servers wrapped in the same channel, and the hashes are non-empty. Red on
   main: zero MCP artifacts
-- [ ] `TestScan_UnwrappedPluginPreloadIsNotAClean100` (same file): a flat plugin file with only `preload` → overall 69,
+- [x] `TestScan_UnwrappedPluginPreloadIsNotAClean100` (same file): a flat plugin file with only `preload` → overall 69,
   `failGate(…, "high")` returns `failExit`. Red on main: 100, `nil`
-- [ ] `TestDetect_UnwrappedPluginMCPServerIsFoundByItsKey` (`internal/detect/detect_test.go`): an artifact with
+- [x] `TestDetect_UnwrappedPluginMCPServerIsFoundByItsKey` (`internal/detect/detect_test.go`): an artifact with
   `MCPUnwrapped` over a flat file and the same entry wrapped have equal findings one by one (rule, severity, line,
   snippet), including a server keyed `""` beside a benign decoy keyed by its Name
-- [ ] `TestPlan_UnwrappedPluginMCPServerGetsTheConfigPass` (`internal/judge/plan_test.go`): a flat plugin server gets a
+- [x] `TestPlan_UnwrappedPluginMCPServerGetsTheConfigPass` (`internal/judge/plan_test.go`): a flat plugin server gets a
   planned `ModeMCPConfig` whose Behavior is byte-identical to the wrapped one's
-- [ ] Reverse assertion: a benign server written flat (`TestScan_BenignPluginMCPServersStayClean`'s four shapes, also in
+- [x] Reverse assertion: a benign server written flat (`TestScan_BenignPluginMCPServersStayClean`'s four shapes, also in
   the unwrapped form) scores 100 with zero scoring findings in every plugin channel
-- [ ] Reverse assertion: wrapped plugin files and user-level / project-level configs are byte-identical to today — every
+- [x] Reverse assertion: wrapped plugin files and user-level / project-level configs are byte-identical to today — every
   existing P-021 test, `TestContentHashGolden`, `TestContentHash_SameConfigTwoMachines`, `TestHashGolden`,
   `TestPlan_PerKindDispatch`, `TestScan_ProjectMCPIsActuallyScanned` stay green without a character changed; the main and
   branch binaries give byte-identical `scan --json` (after removing `scanned_at` / `tool_version`) on the wrapped fixtures
   and on a user-level `~/.claude.json` with no `mcpServers` member, and on a project `.mcp.json` written flat
-- [ ] Real machine: `scan --root ~/.claude --json` before and after; the one flat plugin server appears as an MCP artifact
+- [x] Real machine: `scan --root ~/.claude --json` before and after; the one flat plugin server appears as an MCP artifact
   with a hash and units; record the changes in artifacts, MCP count, findings, scores and notes as numbers, no names
-- [ ] `make verify` green; `go version` with no toolchain switch, `go.mod` second line `go 1.23.5`
+- [x] `make verify` green; `go version` with no toolchain switch, `go.mod` second line `go 1.23.5`
 
 ## Out of scope
 
@@ -207,3 +210,37 @@ collected unless they themselves look like a server, which matches what Claude C
    **Recommendation**: a field (`MCPUnwrapped`, not serialized), set where the form is decided, as `MCPServer` is. Three
    readers re-deriving it would be three copies of the rule; the zero value keeps every existing artifact as it is.
    **Decided (2026-10-10)**: as recommended.
+
+## Done
+
+Run by hand (the fixtures of "Problem", one binary built each from `origin/main` `155865b` and from this branch, one
+process per step, 2026-10-10):
+
+```
+                                               Before (main 155865b)                        After (this branch)
+flat, four servers (CLI plugin)                mcp_servers 0, no MCP artifact, overall 25   mcp_servers 4: evil 75 EXEC-001, fs 100, leak 50 EXFIL-001 FS-001,
+                                                                                            preload 75 EXEC-010 — equal to the wrapped file, hashes included; overall 65
+flat, preload only                             100, "looks safe", --fail-on high exit 0     69, --fail-on high exit 1
+{"MCPSERVERS": {}, "preload": …}               0 servers, 100                               preload 75 EXEC-010, overall 69
+{"McpServers": {"preload": …}}                 1 server, 100, no units, no hash             0 servers (Claude Code starts none)
+probe plugins installed for Claude Code        mcp_servers 1                                mcp_servers 2 — the two servers `claude mcp list` shows
+wrapped plugin, user-level ~/.claude.json      —                                            JSON byte-identical to before after removing scanned_at / tool_version
+(with and without mcpServers), project .mcp.json (flat and wrapped)
+```
+
+```
+Merged: PR to be opened (2026-10-10; find the sha with git log --grep P-029 after the merge)
+Released: pending release
+Evidence: measured Claude Code 2.1.107 (isolated CLAUDE_CONFIG_DIR and HOME, env -i, loopback capture server answering 400, probe stdio servers): a plugin .mcp.json without the wrapper starts its servers as plugin:<plugin>:<key>, through --plugin-dir and through a marketplace install alike; the table in "Problem" lists the 19 layouts and what each started
+Evidence: TestCollect_PluginMCPWithoutWrapper (internal/collect/pluginmcp_unwrapped_test.go); red on the W1 commit in 12 rows (flat, non-server members, mcpServers null / false / 0 / 0.0 / "", MCPSERVERS {}, McpServers holding servers, key "", bare mcp.json, repeated wrapper) → W2 green; the four wrapped rows green before and after
+Evidence: TestScan_UnwrappedPluginMCPServerGetsTheRulesAWrappedOneGets (cmd/aguard/plugin_mcp_test.go); red on W1 "0 MCP artifacts from the unwrapped file, want 4" in all three plugin channels → W2 green, every server's score, rules and non-empty hash equal to the wrapped file's
+Evidence: TestScan_UnwrappedPluginPreloadIsNotAClean100 (same file); red "overall = 100, want 69" and "--fail-on high passed …" → W2 green
+Evidence: TestDetect_UnwrappedPluginMCPServerIsFoundByItsKey (internal/detect/unwrapped_mcp_test.go); red in 4 rows, got: null and hash "" → W2 green
+Evidence: TestPlan_UnwrappedPluginMCPServerGetsTheConfigPass (internal/judge/plan_test.go); red "no config pass planned" for "weather (plugin p@mkt)" and " (plugin p@mkt)" → W3 green
+Evidence: mutation check (changed temporarily, run, reverted, not committed): mcpServerShaped always true → 3 collect rows red; jsTruthy treating null and numbers as truthy → the null / 0 / 0.0 rows red; MCPServerKey's "" check on the wrapped map → the detect "" row and the judge "" row red; mcpHashInput on the wrapped map → all 4 detect hash checks red
+Evidence: reverse assertion TestScan_BenignUnwrappedPluginMCPServersStayClean (cmd/aguard/plugin_mcp_test.go): the four benign shapes listed without the wrapper are 100 with no scoring finding in all three plugin channels (red on W1 only because nothing was collected); TestCollect_UserAndProjectMCPAreNeverReadUnwrapped green before and after; green without a character changed: every P-021 test, TestContentHashGolden, TestContentHash_SameConfigTwoMachines, TestHashGolden, TestPlan_PerKindDispatch, TestScan_ProjectMCPIsActuallyScanned, TestDetect_MCPEnvInjectsCode, TestDetect_MCPConfigURLIsNotEgress; the only edited test line is the egress test's mcpExcerpt call, whose signature now takes the artifact
+Evidence: main vs branch binary, scan --json --inbox off, after removing scanned_at / tool_version: byte-identical on the wrapped plugin fixtures (four servers, preload only), a user-level ~/.claude.json with and without mcpServers, and project .mcp.json files flat and wrapped
+Evidence: on a real machine ~/.claude (the main and branch binaries back to back, scan --json): artifacts 181 → 182, MCP 27 → 28, the added one is the flat plugin's server, 100, no finding, with a hash; temporary probe (not committed) counting units: 28/28 MCP artifacts have units, the unwrapped one included; every other artifact, the notes and the overall (69 → 69) unchanged; --quiet prints nothing and exits 0 both times (a first pair an hour apart differed also in 3 memory hashes: those files changed between the runs, the back-to-back pair shows 0)
+Evidence: Out of scope — git diff --stat origin/main -- internal/collect/hash.go internal/collect/hash_test.go internal/detect/rules_data.go internal/score internal/gate internal/reputation internal/report docs/rules.md go.mod go.sum is empty; collect's user-level and project-level reading (collectMCP, RootMCPConfigs, mcpServersFrom's decoder) is unchanged
+Evidence: make verify: all gates passed; go version go1.23.5 (no toolchain switch); go.mod second line go 1.23.5
+```
