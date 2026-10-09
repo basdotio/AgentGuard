@@ -160,6 +160,9 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
   `---` 一律不算——规则每次会话都加载,skill 的描述被列成 `---`,子 agent 不加载。**别为了"宽容"把前导字节跳过去**:报告会把每次都读的
   规则标成 `(path-scoped)`,给没人看得到的描述算 context_bloat。`(path-scoped)` 还要 `paths` 里剩一条 Claude Code 会用的 glob
   (`parse.honoursPaths`:`[]`、`""`、`**`、数字都等于没写;花括号展开有上限,超限按"每次都加载"答)。`TestPathScoped_MatchesClaudeCode` 按实测逐行钉住。
+- **`--fail-on-llm` 有第三个答案:退出码 4**(`failGate` + `judgeGap`,P-026)。没有闸门命中、但判官没跑或跑短了(`Judge` 为 nil、`!Ran`、`Failed>0`、`Skipped>0`)是 4 不是 0 —— 以前是 0,靠判官卡门的 CI 恰在判官看不见时变绿。
+  **别让它碰 `--fail-on`**(只设 `--fail-on` 时永不读判官状态,那是可复现契约);**别把截短的摘录、`LLM-005`、下载目录的判官摘要算进来**
+  (都是回答过了,算进来 4 会在任何大文件上响,然后没人再看);**1 先于 4**(命中的闸门就是答案)。`TestFailGate_LLMGateNotEvaluable` 两向都钉。
 
 每个包都是围绕 [internal/model/model.go](../../internal/model/model.go) 中不可变类型的一个
 (近似)纯函数阶段。
