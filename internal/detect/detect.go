@@ -871,6 +871,12 @@ func readTextTree(boundary, dir string) ([]unit, []model.Finding) {
 // the highest severity among the notes, so at low this would hide behind "coverage note(s),
 // highest low" on any machine that also has an oversized file. The score is untouched: what
 // was not read cannot be scored, and this note is the record that it was not read.
+//
+// The list is redacted once and printed twice, the way nonRegularNote and skippedDirNote list the
+// same kind of names: the entries are named by the artifact's author, and this note used to quote
+// them raw into Why and the snippet — `check --md`, written to be pasted into a pull request, then
+// carried a token sitting in a directory name. Not clipped: it never was, and a clip would shorten
+// an ordinary long list; with nothing truncated there is no order to get wrong.
 func unreadableNote(dir string, names []string) model.Finding {
 	sort.Strings(names)
 	const maxList = 10
@@ -882,6 +888,7 @@ func unreadableNote(dir string, names []string) model.Finding {
 	if len(names) > maxList {
 		list += fmt.Sprintf(", … (%d more)", len(names)-maxList)
 	}
+	list = Redact(list)
 	return model.Finding{
 		RuleID: "COV-000", Dimension: 0, Severity: model.SevMedium, Source: model.SrcStatic,
 		Title: "Entries in this artifact could not be read (incomplete coverage)",
