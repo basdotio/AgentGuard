@@ -163,3 +163,7 @@
 两条都合入后要补的(后合入的那一条负责,见「不做什么」):不变量 #1 的出网路径列表、规格 §16.4 的"出网的路径只有两条"、
 `baselines/tools.yaml` 的 `uploads_samples_basis`、`TestZeroDial_OnlyTheJudgeConnects` 正对照里的一行 `check --llm`(P-003);
 一条 `check --llm`(目录与 `.zip`)发出去的内容已擦 home 的出网断言(P-005,它让判官总是擦 `os.UserHomeDir()`,所以 `check --llm` 被它覆盖)。
+**已补前四处**(2026-10-09,P-003 先合入,本条后合入,所以由本条负责):不变量 #1 的列表与零表、规格 §16.4 与 §13 ④、
+`baselines/tools.yaml` 的 `uploads_samples_basis` 都改成三条路径;`TestZeroDial_OnlyTheJudgeConnects` 正对照加 `check --llm`,
+零表加 `check --llm` 但 `llm.enabled: false`。先加两行测试,`TestZeroDial_ClaimsNameTheTest` 当场点名三处文档没写(红),补完转绿。
+最后那条擦 home 的出网断言留给 P-005:它在本条之后合入。

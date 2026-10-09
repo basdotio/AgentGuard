@@ -32,8 +32,8 @@ tools:
     uploads_samples: false
     uploads_samples_basis: >-
       invariant #1, enforced by TestZeroDial_OnlyTheJudgeConnects (cmd/aguard/zero_dial_test.go):
-      aguard sends no request except from the explicitly opted-in LLM judge (scan --llm, llm
-      test), which a baseline run does not enable unless -aguard-extra-args passes --llm — and
+      aguard sends no request except from the explicitly opted-in LLM judge (scan --llm, check
+      --llm, llm test), which a baseline run does not enable unless -aguard-extra-args passes --llm — and
       then run.yaml replaces this line with one written for that run.
     executes_scanned_content: false
     # Our own tool. There is no vendor to wait for, so its figures are not provisional — and a
