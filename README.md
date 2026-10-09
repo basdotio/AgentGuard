@@ -191,11 +191,13 @@ cap, a hook script it could not follow — the summary says coverage is incomple
 the setup safe. Notes about things the scan skips by design (your own session history at the top of
 the config directory, a plugin's `node_modules/`) are listed but do not change that sentence. When
 the inventory has nothing to count — `aguard check` on a single file or a plain folder — the summary
-says what it checked ("Checked 1 file.") rather than that nothing was found. Coverage notes never change the score or the exit code. Findings are never folded in either mode, and `--json` / `--html` / `--md` always carry everything, so
+says what it checked ("Checked 1 file.") rather than that nothing was found. Coverage notes never change the score, and change the exit code in one case only: with `--fail-on-llm`, a judge that could not answer for every artifact exits `4` (below). Findings are never folded in either mode, and `--json` / `--html` / `--md` always carry everything, so
 what a CI job sees never depends on which flag a human passed.
 
 **Exit codes**: `0` below threshold · `1` a finding at/above `--fail-on` · `2` runtime error
-(and, for `clean` only, `3` = acted partially, with every refusal named). A run stopped by a
+(and, for `clean` only, `3` = acted partially, with every refusal named; with `--fail-on-llm` only, `4` = the gate could not be
+evaluated — the judge did not run, or a call failed or was never made — with the reason on stderr; `4` is not a pass, and a
+finding at either threshold still exits `1`). A run stopped by a
 signal ends as `128 + signal` — `130` for Ctrl-C, `141` for a closed output pipe — through the
 npm launcher exactly as for the bare binary.
 `scan` does not exit non-zero on findings by default (informational mode); `check` defaults to `--fail-on high` (gate mode).

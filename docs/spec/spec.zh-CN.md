@@ -59,8 +59,8 @@ aguard version                                         # 版本 + 与已装插�
 
 - **全局 flags**:`--root`(默认 `~/.claude`)、`--config`(判定模型配置)、`--quiet`。
 - **LLM 判定默认关**:`scan` 与 `check` 都需显式 `--llm` 才启用意图判定(B1),两边是同一个开关、发同一份脱敏摘录、走同一个 `analyze()`。`check` 的输入是装前的不可信内容,这**不构成**拒绝 `--llm` 的理由:`scan --llm` 本来就对 `~/Downloads` 里还没装的候选逐个走 `check` 的路径去判(§4.1);注入想要的降分方向由 §5.2.1 的单向性封死(只能让攻击者自己的 artifact 更可疑);`--fail-on` 照旧只看确定性发现。**加载时闸门(§17)和 `aguard approve` 恒静态**,不读这个开关。(2026-10-08 P-004;此前 `check` 拒绝 `--llm`,唯一的绕路 `scan --root <目标>` 会自动读目标自带的 `.aguardignore`。)
-- **两个闸门开关是分开的**:`--fail-on` 只看确定性发现(`overall` 侧,§5.3),**任何 LLM 输出都动不了它**;`--fail-on-llm` 看含升级的一侧,**默认空=关**,要自愿承担 LLM 误报风险才打开。**已实现**;需**两次**主动选择(传 flag **且** `llm.authority: escalate`),只传 flag 而未授权是**报错拒绝**而非静默忽略 —— 永不触发的闸门比没有闸门更糟。`check` 有同一个 flag、同一套语义(P-004)。**两个阈值连同授权在采集之前校验**:打错的级别或缺授权是退出码 2,判官一个请求都不发、报告不印;不会因为确定性发现先命中 `--fail-on` 而被一个退出码 1 盖住(`check` 默认 `--fail-on high`,以前这是常态)。
-- **退出码**:`0` 无高危;`1` 有 ≥ `--fail-on`(或 `--fail-on-llm`)级别发现;`2` 运行错误(**2 不是通过,扫描没有发生**,例如 `--root` 打错);`3` 仅 `clean`:部分执行,每条被拒的都点名。被信号中断以 `128 + 信号号` 结束。经 npm launcher 运行时逐位透传。
+- **两个闸门开关是分开的**:`--fail-on` 只看确定性发现(`overall` 侧,§5.3),**任何 LLM 输出都动不了它**;`--fail-on-llm` 看含升级的一侧,**默认空=关**,要自愿承担 LLM 误报风险才打开。**已实现**;需**两次**主动选择(传 flag **且** `llm.authority: escalate`),只传 flag 而未授权是**报错拒绝**而非静默忽略 —— 永不触发的闸门比没有闸门更糟。`check` 有同一个 flag、同一套语义(P-004)。**两个阈值连同授权在采集之前校验**:打错的级别或缺授权是退出码 2,判官一个请求都不发、报告不印;不会因为确定性发现先命中 `--fail-on` 而被一个退出码 1 盖住(`check` 默认 `--fail-on high`,以前这是常态)。**判官没能回答不是通过**(P-026):设了 `--fail-on-llm`、没有闸门命中,但判官没跑(没传 `--llm`、`llm.enabled: false`、端点被拒、key 拿不到)或跑短了(`JudgeSummary.Failed > 0` 或 `Skipped > 0`)→ 退出码 `4`,stderr 一行写原因(`--quiet` 下也印),报告内容不变。只看判官摘要自己的计数:摘录被截短、`LLM-005` 丢弃的判决都算回答了。优先级 `2` > `1` > `4` > `0`;只设 `--fail-on` 时永远不看判官状态;下载目录不卡门,它的判官摘要也不参与。
+- **退出码**:`0` 无高危;`1` 有 ≥ `--fail-on`(或 `--fail-on-llm`)级别发现;`2` 运行错误(**2 不是通过,扫描没有发生**,例如 `--root` 打错);`3` 仅 `clean`:部分执行,每条被拒的都点名;`4` 仅 `--fail-on-llm`:闸门无法评估(判官没跑或跑短了),**4 不是通过**。被信号中断以 `128 + 信号号` 结束。经 npm launcher 运行时逐位透传。
 - **隐私**:脱敏发生在 **detect 阶段**(见 §16),判定器与报告消费的是**同一份已脱敏视图**——secret 值全程 `<REDACTED>`,只报 key 名 + 位置(§8 Evidence)。
 
 ---
@@ -504,7 +504,7 @@ v1 写的 `internal/rules/` 从未存在:规则表就在 `detect/rules_data.go`,
 - **judge 测试**:mock LLM,验 nonce barrier 生效(注入 artifact 内的"忽略指令"不改变判定)、schema 解析、无 key 时跳过。
 - **隐私测试**:含假 secret 的 fixture,断言输出中值被 REDACTED、绝不出现明文。
 - **端到端**:对 `testdata/fake-claude-home/` 跑 `scan --json`,快照比对;真实机冒烟(只读)。
-- **退出码**:`--fail-on` 各级别验证(闸门/CI 契约)。
+- **退出码**:`--fail-on` 各级别验证(闸门/CI 契约);`--fail-on-llm` 在判官没跑/跑短时为 `4`、命中时仍为 `1`、只设 `--fail-on` 时与判官状态无关(`TestFailGate_LLMGateNotEvaluable`、`TestFailOnLLM_ExitCodesWhenTheJudgeIsBlind`)。
 - **不变量测试(B2,§16)**:①"若被执行会落地标记文件"的 fixture,断言标记始终不存在(证明不执行);②越界 symlink fixture(skill 内软链到 `/etc/passwd`),断言其内容绝不出现在任何输出;③含假 secret 的会话日志 fixture,断言 zombie 检查读取后仍脱敏。④配置里**开着**判官,把判官的 transport(测试接缝 `judge.Transport`)和 `http.DefaultTransport` 换成计数器:先断言 §16.4 的三条出网路径确实被看见(正对照),再断言其余每个命令入口零次请求(`TestZeroDial_OnlyTheJudgeConnects`);计数器看不见自带 transport 的 client,本模块产品代码的这一块(判官包在内,只许 `NewHTTP` 那一个 client)由源码检查 `TestZeroDial_NoClientOutsideTheJudge` 补上;依赖在自己代码里造的不在内(§16.4)。⑤判官的 client 对端点回的跨源重定向(https 降成 http、换主机、换端口、子域)一跳都不发,调用失败、不重试,经 `LLM-000` 进报告,静态结果不变;同源的照跟,10 跳上限保留(`TestNewHTTP_RefusesCrossOriginRedirects`、`TestNewHTTP_SameOriginRedirectsAndPlainCallsUnchanged`,端到端 `TestE2E_JudgeRedirectIsRefusedAndReported`、`TestLLMTest_RedirectIsRefused`)。
 - **评分测试**:确定性输入→固定分(可复现);critical 触发木桶封顶;floor=0 不为负;**开不开 `--llm`,`overall` 逐位相同**(§16.7 的可复现性契约)。
 - **单向升级测试(§16.7)**(已实现):①任意 finding 组合下 `overall_effective ≤ overall` 恒成立(属性测试);②证据落地不通过的 LLM finding 被丢弃且计入 `LLM-005`;③`authority: advisory` 下即使有 flagged 发现,升级也是 no-op;④k-of-n:3 次采样中 1 次 flagged **不**升级、2 次 flagged 升级;⑤`--fail-on` 不受任何 LLM 发现影响,`--fail-on-llm` 默认关;⑥铁律 #2 回归:LLM 仍无法删除/降级静态发现。

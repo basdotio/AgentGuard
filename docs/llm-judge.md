@@ -326,6 +326,17 @@ checked before anything is scanned: a refusal (or a misspelt level) exits 2 with
 single request or printing a report, and a deterministic finding tripping `--fail-on` cannot
 hide it behind exit 1.
 
+**A judge that could not answer is not a pass.** When `--fail-on-llm` is set and no gate fired, but
+the judge did not run (`--llm` not passed, `llm.enabled: false`, the endpoint refused, the API key
+unavailable) or ran short (a call failed, or the `max_calls` budget or the `total_timeout` deadline
+left calls unmade), the run exits **4**, with one line on stderr naming the reason — also under
+`--quiet`. It used to exit 0, the code a judge that looked and found nothing gets, so a pipeline
+gated on the judge went green exactly when the judge was blind. A finding at either threshold still
+exits 1, a refused gate still exits 2, and `--fail-on` on its own never looks at the judge's state.
+A shortened excerpt or a discarded (ungrounded) verdict is still an answer and does not give 4: exit
+0 under `--fail-on-llm` means the judge was asked every question it planned and answered each one,
+not that it read every byte.
+
 Both flags mean the same thing on `scan` and on `check`. A pull-request job that wants the
 judge's say runs `aguard check ./skill --llm --fail-on-llm high`: a deterministic high still
 fails it through `--fail-on` (`high` by default on `check`), and a qualified LLM high fails it

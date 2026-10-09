@@ -57,7 +57,8 @@ echo '{"hook_event_name":"PreToolUse","tool_name":"Skill","tool_input":{"skill":
   | ./bin/aguard hook                       # 手动喂一个 hook 事件(调闸门时最快的回路)
 ```
 
-退出码:`0` 低于阈值 · `1` 有 ≥ `--fail-on` 的发现 · `2` 运行错误。`scan` 默认不设
+退出码:`0` 低于阈值 · `1` 有 ≥ `--fail-on` 的发现 · `2` 运行错误 · `3` 仅 `clean`:部分执行 ·
+`4` 仅 `--fail-on-llm`:判官没跑或跑短了(有调用失败/没发出),闸门无法评估(P-026)。`scan` 默认不设
 `--fail-on`(仅告知);`check` 默认 `high`(闸门)。
 
 
