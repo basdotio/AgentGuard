@@ -179,7 +179,7 @@ W6 是 W4、W5 之后自审时补的:`IO-000` / `PARSE-000` 两个字面量在 `
 ## 完成
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-017 找)
+合入:PR #39(2026-10-09;sha 用 git log --grep P-017 找)
 发布:待发
 证据:TestCheckedLineCountsWhatWasScanned(cmd/aguard/checked_line_test.go);W1 在本仓 main 的渲染器上红:6 个子测试 × 终端默认 / --verbose / markdown / HTML 共 24 处都是 "Nothing was found to check"(check install.sh、check hello.sh、check commands/deploy.md、check 普通目录、只有 CLAUDE.md 的 root、只有 env 块的 settings.json)→ W2 后绿:Checked 1 file. / 1 file. / 1 command. / 1 directory. / 1 file. / 1 settings block.
 证据:TestUnreadableSettingsIsNamedNotFullyChecked(同文件);W1 红:四个渲染器都缺 "Not fully checked:"、"settings.json"、"IO-000" 且说 "Nothing was found to check"(16 处)→ W2 后绿:"Not fully checked: …/.claude/settings.json [IO-000]."(markdown 是代码跨度)
