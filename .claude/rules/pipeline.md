@@ -156,6 +156,10 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
   合理;`check` 的 root 就是被审对象,目标里的 `.aguardignore` 是攻击者可控的,一个 skill 随包捎
   一份列着自己规则 ID 的基线就能把自己判成 100/100。`check` 只认显式 `--ignore`
   (`main.resolveIgnorePath` 的 `auto` 参数)。
+- **frontmatter 只认从第一个字节开始的那份**(`parse.splitFrontmatter`,P-024)。Claude Code 2.1.107 实测:BOM、空行、一行空格之后的
+  `---` 一律不算——规则每次会话都加载,skill 的描述被列成 `---`,子 agent 不加载。**别为了"宽容"把前导字节跳过去**:报告会把每次都读的
+  规则标成 `(path-scoped)`,给没人看得到的描述算 context_bloat。`(path-scoped)` 还要 `paths` 里剩一条 Claude Code 会用的 glob
+  (`parse.honoursPaths`:`[]`、`""`、`**`、数字都等于没写;花括号展开有上限,超限按"每次都加载"答)。`TestPathScoped_MatchesClaudeCode` 按实测逐行钉住。
 
 每个包都是围绕 [internal/model/model.go](../../internal/model/model.go) 中不可变类型的一个
 (近似)纯函数阶段。

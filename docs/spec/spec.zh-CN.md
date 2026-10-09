@@ -71,7 +71,7 @@ aguard version                                         # 版本 + 与已装插�
 
 | 类型 `ArtifactKind` | 来源路径 | 采集内容 |
 |---|---|---|
-| `skill` | `<root>/skills/*/SKILL.md` + 同目录脚本/资源 | frontmatter(name/description/allowed-tools/version)、脚本文件列表、bin/、node_modules 存在性 |
+| `skill` | `<root>/skills/*/SKILL.md` + 同目录脚本/资源 | frontmatter(name/description/allowed-tools/version)、脚本文件列表、bin/、node_modules 存在性。frontmatter 只认从文件第一个字节开始的那份,BOM 或空行之后的 `---` 是正文——Claude Code 就是这么读的(2.1.107 实测,P-024;子 agent、斜杠命令同一个解析器) |
 | `mcp` | `~/.claude.json` → `mcpServers` | 每个 server 的 command/args/env(env 值脱敏)。哈希 = 该条目的内容哈希(§8),不含 server 名与文件路径 |
 | `hook` | `<root>/settings.json` → `hooks` | 每条 hook 的 matcher + command(type=command),或 type=http 时的 matcher + url。HTTP hook 把完整事件 payload(工具输入、命令行、授权提示)POST 到该 url,仍是一等审计对象。哈希 = 内容哈希(§8):event + matcher + 整个条目 + 它跟进的脚本内容 |
 | `permission` | `<root>/settings.json` → `permissions.allow/deny`;另有一个同 kind、名为 `settings env` 的 artifact 承载 `env` 块(P-016,2026-09-23) | 规则条目原文;`env` 块渲染为 `KEY=VALUE` 行进全部规则,permcheck 不在它上面重跑。哈希 = 内容哈希(§8):整个 `permissions` 对象 + allow 引用的脚本内容;`env` 块单独一个域 |
@@ -79,7 +79,7 @@ aguard version                                         # 版本 + 与已装插�
 | `command` | `<root>/commands/*` | 定义文件全文 |
 | `plugin` | `<root>/plugins/installed_plugins.json` → 各条 `installPath` | 插件打包的 skills/commands/hooks/MCP —— 展开后按对应 kind 再扫(B4,不可整块漏)。**只采「已安装」的那份**:marketplace 镜像不进任何会话,扫了只是噪声。`installPath` 出自配置文件、可被影响,须过 §16.2 边界收敛 |
 | `instruction` | `<root>/CLAUDE.md`、`skills/*/SKILL.md` 正文 | 指令文本(injection 扫描面) |
-| `rule` / `workflow` / `output_style` / `memory` | `<root>/rules/*`、`workflows/*`、`output-styles/*`、`memory/*` | 自动加载的指令面,各自单文件;清单里单列(「你有 14 条 rule 每次会话都进上下文」和「你有一个 CLAUDE.md」是不同的事实) |
+| `rule` / `workflow` / `output_style` / `memory` | `<root>/rules/*`、`workflows/*`、`output-styles/*`、`memory/*` | 自动加载的指令面,各自单文件;清单里单列(「你有 14 条 rule 每次会话都进上下文」和「你有一个 CLAUDE.md」是不同的事实)。rule 的名字带 ` (path-scoped)` 当且仅当 Claude Code 会遵守它的 `paths:`:frontmatter 从第一个字节开始,且 `paths` 按逗号切分、花括号展开、去掉结尾的 `/**` 之后至少剩一条非空、不是 `**` 的 glob;否则它每次会话都加载(2.1.107 实测,P-024) |
 | `directory` | `skills/` 下缺 `SKILL.md` 的目录、`check <dir>` 未识别布局 | 整树读:它在加载命名空间里,跳过等于静默漏报 |
 | `connector` | 桌面版会话缓存 `~/Library/Application Support/Claude/claude-code-sessions/*/*/local_*.json` → `remoteMcpServersConfig` | 远程 MCP connector(Figma/Notion/Slack…)向模型**通告的工具清单**:每个工具的 name/description/参数 description。**从不联网连它们**,读的是桌面版已缓存的那份;这是 tool-poisoning 面,也是不联网能拿到工具说明的唯一地方。每个 connector 一个 artifact,哈希覆盖工具清单。只解码 connector 段(会话文件还装着用户会话状态);覆盖=本机会话见过的,报告不说「所有 connector」 |
 | `quarantined` | `<root>/.aguard-trash/` | `clean --apply` 隔离过的东西,仍扫、单列,不计入清单主数 |
