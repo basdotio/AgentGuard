@@ -54,35 +54,35 @@
 
 ## 完成的判据
 
-- [ ] `TestGateRemembersAnApprovalAcrossHookProcesses`(`cmd/aguard/gate_pending_test.go`,新):真实 `runHook` 跑两次 ——
+- [x] `TestGateRemembersAnApprovalAcrossHookProcesses`(`cmd/aguard/gate_pending_test.go`,新):真实 `runHook` 跑两次 ——
   `PreToolUse` 判 `ask`、文件里有这条 pending(前置条件,今天就成立)→ 同一个 `tool_use_id` 的 `PostToolUse` →
   文件里的 approvals 含 `checkTarget` 对同一目录算出的哈希,判决 `accepted-risk`,Post 的输出说 "risk accepted";
   第三次 `PreToolUse`(新 id)输出 0 字节。**今天红**:Post 之后 approvals 是空的
-- [ ] `TestPendingSurvivesSaveAndLoad`(`internal/gate/pending_test.go`,新):`pend` → `Save` → `LoadStore` → `pendingFor` 找得到,
+- [x] `TestPendingSurvivesSaveAndLoad`(`internal/gate/pending_test.go`,新):`pend` → `Save` → `LoadStore` → `pendingFor` 找得到,
   六个字段一个不差。今天红
-- [ ] `TestPostPromotesAcrossProcesses`(`internal/gate/pending_test.go`,新):Pre 和 Post 各用一个**从磁盘新读**的 Store 调 `Handle`,
+- [x] `TestPostPromotesAcrossProcesses`(`internal/gate/pending_test.go`,新):Pre 和 Post 各用一个**从磁盘新读**的 Store 调 `Handle`,
   中间 `Save` → Post 之后已批准,pending 已消费。今天红
-- [ ] `TestPendingHygieneOnLoad`(同上,新):一份文件里放好行与坏行 —— 空 id、空 hash、无日期、未来日期、过期(`pendingTTL + 60` 秒前)
+- [x] `TestPendingHygieneOnLoad`(同上,新):一份文件里放好行与坏行 —— 空 id、空 hash、无日期、未来日期、过期(`pendingTTL + 60` 秒前)
   的丢掉;`pendingTTL − 60` 秒前的、新鲜的留下;同一文件里 approvals 的卫生规则照旧(key 与 hash 不符的丢)。
   **为什么是 ±60 秒而不是正好 `pendingTTL`**:跨进程测试跑在墙钟上(`LoadStore` 用进程自己的钟,见未决 1),
   写文件和读文件之间跨一秒就会让"正好 TTL"变成 TTL + 1;精确边界由共用的 `expired()` 和 `TestPendingExpires`(TTL + 1 被修剪)保证
-- [ ] 反向断言 (a)/(f) —— 字节变了不提升,而且 Post 是**重算**哈希去比,不是信文件里的哈希:
+- [x] 反向断言 (a)/(f) —— 字节变了不提升,而且 Post 是**重算**哈希去比,不是信文件里的哈希:
   `TestChangedBytesAreNotPromotedAcrossHookProcesses`(`cmd/aguard`,新):Pre 之后改 skill 里一个文件 → Post → approvals 为空,
   输出含 "changed between the prompt and the load"。**这句输出是判据的一半**:今天 Post 找不到 pending 就直接返回,"没提升"是白给的;
   有这句话才证明 pending 被找到了、比较真的发生了。
   `TestPendingHashIsComparedNotTrusted`(`internal/gate`,新):手写一份 pending 哈希与扫描结果不同的文件 → Post → 两个哈希都不在 approvals 里
-- [ ] 反向断言 (b):`TestExpiredPendingIsNotPromoted`(`internal/gate`,新):扫描器给出与 pending **相同**的哈希,
+- [x] 反向断言 (b):`TestExpiredPendingIsNotPromoted`(`internal/gate`,新):扫描器给出与 pending **相同**的哈希,
   pending 停在 `pendingTTL + 60` 秒前 → 跨进程 Post 后不批准;停在 `pendingTTL − 60` 秒前 → 批准(同一条测试里的对照,防止"不批准"是因为别的原因)
-- [ ] 反向断言 (c):`TestPostForAnotherCallPromotesNothing`(`internal/gate`,新):Pre `c1` → 新读 → Post `c2` → 不批准;
+- [x] 反向断言 (c):`TestPostForAnotherCallPromotesNothing`(`internal/gate`,新):Pre `c1` → 新读 → Post `c2` → 不批准;
   再新读,`c1` 的 pending 还在(别人的回答不消费这条)
-- [ ] 反向断言 (d):`TestMediumPassIsNotRememberedAcrossProcesses`(`internal/gate`,新):只有 medium 的放行,跨进程 Pre → Post 之后
+- [x] 反向断言 (d):`TestMediumPassIsNotRememberedAcrossProcesses`(`internal/gate`,新):只有 medium 的放行,跨进程 Pre → Post 之后
   approvals 仍为空;`TestPassWithMediumFindingIsNotRemembered` 及旁边三条不改一字仍绿
-- [ ] 反向断言 (e):`TestCorruptStoreAsksRatherThanAllows`、`TestKeyMustMatchItsOwnHash`、`TestLoadStore_FIFOReadsAsCorruptNotHang`
+- [x] 反向断言 (e):`TestCorruptStoreAsksRatherThanAllows`、`TestKeyMustMatchItsOwnHash`、`TestLoadStore_FIFOReadsAsCorruptNotHang`
   不改一字仍绿;`TestPendingHygieneOnLoad` 另加一例:`pending` 一节类型不对 → 整份 `Corrupt`、approvals 为空
-- [ ] 不改一字仍绿:`TestGateAsksThenRemembers`、`TestApprovalOnlyCoversWhatWasShown`、`TestPendingExpires`、`TestDenyParksNothing`、
+- [x] 不改一字仍绿:`TestGateAsksThenRemembers`、`TestApprovalOnlyCoversWhatWasShown`、`TestPendingExpires`、`TestDenyParksNothing`、
   `TestFailedToolCallRecordsNothing`、`TestAskEscalatesWhenNobodyWillSeeIt`、`TestGateEndToEnd`、`TestHookRunnerNeverFails`
-- [ ] 手跑:`make build` 后两个 `aguard hook` 进程喂同一 `tool_use_id`,修前修后各记一次(本文「问题」一节是修前)
-- [ ] `make verify` 绿;`go version` 不切换工具链
+- [x] 手跑:`make build` 后两个 `aguard hook` 进程喂同一 `tool_use_id`,修前修后各记一次(本文「问题」一节是修前)
+- [x] `make verify` 绿;`go version` 不切换工具链
 
 ## 不做什么
 
@@ -145,7 +145,34 @@
    查证(2026-10-08,Claude Code 官方 hooks 文档 `code.claude.com/docs/en/hooks.md`):`tool_use_id` 在 Pre 与 Post 里都有、同一次调用相同;
    每个事件是一次独立的进程调用;在权限弹窗里被拒的调用不触发 `PostToolUse`。**Skill 工具的 `tool_response` 形状文档没写**,仍未证实。
 5. **Post 那行提示里的撤销命令原样粘贴用不了。** "risk accepted … · undo with: aguard approvals forget a1e9cd5dbc1a…"
-   里的哈希是 `shortHash` 的输出,带着 `…`;`resolveHashPrefix` 拿 `a1e9cd5dbc1a…` 当前缀,报 `no approval matches`。
+   里的哈希是 `shortHash` 的输出,带着 `…`;`resolveHashPrefix` 拿 `a1e9cd5dbc1a…` 当前缀,报 `no approval matches`(修后的二进制手跑实测,exit 2)。
    这句话以前从没在生产上出现过(Post 永远找不到 pending),本条修好之后它会第一次出现在用户面前。
    **建议**:本条不改(「不做什么」:弹窗与提示文字不变),由另一份小 proposal 处理(P-008)。本条在「不能说什么」里先披露。
    **已决(2026-10-08)**:按建议(沿用人对本条未决问题"按建议"的预答;它不扩大本条范围,人可在 PR 上推翻)。
+
+## 完成
+
+手跑对照(`make build`,`/tmp` 下的临时 root,每步一个 `aguard hook` 进程,事件同「问题」一节):
+
+```
+                      修前(main dec64ca)                  修后(本分支)
+1. PreToolUse  r1     ask;pending.toolu_repro1 写入        ask;pending.toolu_repro1 写入
+2. PostToolUse r1     stdout 0 字节;approvals {}           "risk accepted for skill "pdf-export" (51/100) · content a1e9cd5dbc1a…"
+                      pending 原样留着                      approvals 1 条 accepted-risk(hash a1e9cd5d…);pending 清空
+   aguard approvals   no approvals recorded                 1 approval(s) · a1e9cd5dbc1a401b accepted-risk 51/100
+3. PreToolUse  r2     ask(同一份字节又问一遍)               0 字节(已批准的内容静默加载)
+```
+
+```
+合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-007 找)
+发布:待发
+证据:TestGateRemembersAnApprovalAcrossHookProcesses(cmd/aguard/gate_pending_test.go);W1 红(两次 runHook 之后 approvals 为空,PostToolUse 输出 "")→ W2 后绿:approvals 1 条 accepted-risk、hash 等于 checkTarget 算出的、pending 已消费、第三次 PreToolUse 0 字节
+证据:TestPendingSurvivesSaveAndLoad、TestPostPromotesAcrossProcesses、TestPendingHygieneOnLoad(fresh / near-ttl 两行读回为 0)、TestPostForAnotherCallPromotesNothing、TestExpiredPendingIsNotPromoted/answered_within_the_hour(internal/gate/pending_test.go);W1 红(从文件读回的 pending 恒为 0 条)→ W2 后绿
+证据:反向断言 (a)/(f) TestChangedBytesAreNotPromotedAcrossHookProcesses(cmd/aguard)、TestChangedBytesAreNotPromotedAcrossProcesses、TestPendingHashIsComparedNotTrusted(internal/gate):W1 时"没批准"已成立但 "changed between the prompt and the load" 缺席(红,证明修前那半是白给的)→ W2 后两半都成立;变异:handlePost 的 v.Hash != pending.Hash 短路掉 → 这三条连同 TestApprovalOnlyCoversWhatWasShown 共 4 条变红
+证据:反向断言 (b) TestExpiredPendingIsNotPromoted/answered_after_the_hour 与 TestPendingHygieneOnLoad 的 expired 行;变异:pendingRowOK 不判过期 → 两条变红(3660 秒前的 prompt 被批准;expired 行被读回)。变异:去掉"未来日期""空哈希"两条卫生 → TestPendingHygieneOnLoad 分别在 from-2099 / no-hash 行变红
+证据:反向断言 (c) TestPostForAnotherCallPromotesNothing(W1 红:toolu_1 的 pending 在新进程里已不存在;W2 后别的 tool_use_id 不批准、不消费);(d) TestMediumPassIsNotRememberedAcrossProcesses(修前修后都绿:medium 放行不 pend),TestPassWithMediumFindingIsNotRemembered / TestCleanPassIsStillRemembered / TestLowOnlyPassIsRemembered / TestLLMFindingDoesNotDecideMemory 不改一字仍绿;(e) TestCorruptStoreAsksRatherThanAllows、TestKeyMustMatchItsOwnHash、TestLoadStore_FIFOReadsAsCorruptNotHang 不改一字仍绿,TestPendingHygieneOnLoad 末例"pending 一节类型不对 → 整份 Corrupt、approvals 0、pending 0"
+证据:不改一字仍绿 —— TestGateAsksThenRemembers、TestApprovalOnlyCoversWhatWasShown、TestPendingExpires、TestDenyParksNothing、TestFailedToolCallRecordsNothing、TestAskEscalatesWhenNobodyWillSeeIt、TestGateEndToEnd、TestHookRunnerNeverFails
+证据:手跑见上表:修前 Post 0 字节、approvals 0 条、第三次 Pre 仍 ask → 修后 Post 一行 "risk accepted"、approvals 1 条、第三次 Pre 0 字节;Post 那行的撤销命令原样粘贴 → no approval matches,exit 2(未决 5,留给 P-008)
+证据:不做什么 —— git diff --stat origin/main -- internal/gate/hook.go internal/gate/gate.go internal/gate/status.go cmd/aguard/gate.go internal/gate/gate_test.go internal/gate/approvals_test.go internal/gate/memory_test.go cmd/aguard/gate_e2e_test.go go.mod go.sum internal/collect internal/detect internal/report 为空;代码改动只在 internal/gate/approvals.go(+62 −2)
+证据:make verify: all gates passed;go version go1.23.5(无工具链切换);internal/gate 覆盖率 83.1%
+```
