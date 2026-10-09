@@ -162,10 +162,7 @@ func hookHashInput(root string, h model.Hook) (string, []byte, bool) {
 
 // mcpHashInput: the server's whole entry under mcpServers.
 func mcpHashInput(a model.ArtifactReport, docs map[string]configDoc) (string, []byte, bool) {
-	key := a.MCPServer
-	if key == "" {
-		key = a.Name
-	}
+	key := MCPServerKey(a) // the entry the rules scanned, a plugin's server and the "" key included
 	top, ok := readConfigDoc(a.Path, docs)
 	if !ok {
 		return "", nil, false
