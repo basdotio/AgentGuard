@@ -62,6 +62,12 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
   退出码 0 —— 跟 `check <typo>` 当年是同一个 bug 的另一半。root 不存在/不是目录 → 退出码 2;root
   存在但一个 artifact 都没采到 → 一条 `COV-000` 说明"清单是空的,不是干净的"(不变量 #5)。
   **`CollectAll` 自己分不出"root 不存在"和"root 是空的"**,所以校验必须留在知道那是不是笔误的调用方。
+- **root 只在 `CollectAll` 入口锚定一次**(`filepath.Abs`,**不** `EvalSymlinks`),home 从锚定后的 root 取,`collect.Result.Root`
+  把它交出去,`scanEnv`/`checkTarget` 用它调 `analyze`。**不要从敲进来的 root 取 home**:`filepath.Dir` 只看字符串,`--root .` 下
+  home == root(用户级 MCP、home 的 CLAUDE.md、桌面版全在 root 里找),`--root .claude` 下 home 是相对的 `.`,以绝对路径链接安装的
+  skill 被 `withinDir` 当成"指到 HOME 外"丢掉。也不要解析 root:`~/.claude → ~/dotfiles/claude` 的 home 会被挪走。**root 顶层的
+  `.mcp.json`/`.claude.json` 照读**(`collect.RootMCPConfigs`,与 home 那份是同一个文件时不读两遍):CI 模板 `scan --root .` 把仓库
+  当 root,项目 MCP 配置就在那里;以前只有 `.` 因为 home == root 碰巧读到,绝对写法不读,而 `rootOwned` 声称读了(P-012)。
 - **root 采集器是布局白名单,所以必须有人认领"剩下那一半"**
   ([collect/unowned.go](../../internal/collect/unowned.go))。`~/.claude/install.sh` 里写
   `curl | bash` + `rm -rf /`,以前扫出来是 **100/100 + "✅ No risk findings" + 退出码 0** ——
