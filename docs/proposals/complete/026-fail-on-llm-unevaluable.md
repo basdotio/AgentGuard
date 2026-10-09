@@ -50,29 +50,29 @@ exit codes.
 
 ## Done criteria
 
-- [ ] `TestFailGate_LLMGateNotEvaluable` (`cmd/aguard/fail_on_llm_test.go`, new, unit, table): with `--fail-on-llm high` granted and
+- [x] `TestFailGate_LLMGateNotEvaluable` (`cmd/aguard/fail_on_llm_test.go`, new, unit, table): with `--fail-on-llm high` granted and
   no threshold met, `failGate` returns a `failExit` with code **4** when `Judge` is nil (no `--llm`), when `Judge.Ran` is false, when
   `Judge.Failed > 0`, and when `Judge.Skipped > 0`; the error text names which of the four it was (`--llm`, the summary's `Reason`,
   the failed count, the skipped count). Red on the base: every row returns nil (exit 0)
-- [ ] Precedence rows in the same table: a deterministic hit on `--fail-on` with a judge that did not run → code **1**; a qualified LLM
+- [x] Precedence rows in the same table: a deterministic hit on `--fail-on` with a judge that did not run → code **1**; a qualified LLM
   finding at the threshold from a run where other calls failed → code **1** (a gate that fired is an answer, partial or not); a typo or
   a missing grant → still a plain error (exit 2), unchanged (`TestFailGate_DeterministicHitDoesNotMaskARefusal` stays green as is)
-- [ ] `TestFailOnLLM_ExitCodesWhenTheJudgeIsBlind` (same file, drives the built binary, `scan` and `check`): closed local port, an
+- [x] `TestFailOnLLM_ExitCodesWhenTheJudgeIsBlind` (same file, drives the built binary, `scan` and `check`): closed local port, an
   `http://` remote endpoint (refused by `CheckEndpoint`, nothing dialled), a missing `api_key_file`, `llm.enabled: false`,
   `llm.max_calls: 1`, and `--fail-on-llm` without `--llm` all exit **4**, with one stderr line carrying `(exit 4)` and the reason, also
   under `--quiet`. Red on the base: every row exits 0 with an empty stderr
-- [ ] **Reverse assertions** (same test): a judge that ran over everything and found nothing exits **0** with an empty stderr; the
+- [x] **Reverse assertions** (same test): a judge that ran over everything and found nothing exits **0** with an empty stderr; the
   same broken configurations with `--fail-on` and **no** `--fail-on-llm` exit exactly what the base exits (0 below the threshold, 1
   at it) — the deterministic gate never sees the judge's state; a deterministic high with a closed port and `--fail-on-llm high`
   still exits 1
-- [ ] The load-time gate never runs the judge: `TestGateScannerNeverEnablesLLM`, `TestHookRunnerNeverFails` and the existing
+- [x] The load-time gate never runs the judge: `TestGateScannerNeverEnablesLLM`, `TestHookRunnerNeverFails` and the existing
   `TestFailGate*` / `TestE2E_*` stay green, the latter with one fixture change only (`llmResult` gains the judge summary a real run
   with LLM findings always has)
-- [ ] Every place that lists exit codes lists `4`: README pair, CLAUDE.md command section, `docs/llm-judge*.md` gating section,
+- [x] Every place that lists exit codes lists `4`: README pair, CLAUDE.md command section, `docs/llm-judge*.md` gating section,
   spec §3, the two plugin skills that list exit codes (paraphrased), the npm launcher's comment, and the `--fail-on-llm` flag help.
   README's "coverage notes never change … the exit code" sentence, which this makes wrong, is corrected. `./bin/aguard check plugin
   --fail-on low` still exits 0
-- [ ] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no toolchain switch; no new dependency
+- [x] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no toolchain switch; no new dependency
 
 ## Out of scope
 
@@ -138,3 +138,25 @@ exit codes.
    **Recommendation**: one stderr line, also under `--quiet` (which means "errors only", and this is the reason for a failing exit),
    naming the reason; nothing on stdout, so `--json` stays parseable and the report content is unchanged.
    **Decided (2026-10-09)**: as recommended.
+
+## Done
+
+```
+Merged: PR to be opened (2026-10-10; find the sha with git log --grep P-026 after the merge)
+Released: pending release
+Evidence: TestFailGate_LLMGateNotEvaluable and TestFailOnLLM_ExitCodesWhenTheJudgeIsBlind (cmd/aguard/fail_on_llm_test.go): red on the base
+  (re-run on origin/main 0cc9391 after the rebase) on exactly the 16 not-evaluable rows — 4 unit rows return nil, 12 binary rows
+  (scan and check × closed port, http remote refused, missing api_key_file, llm.enabled false, max_calls 1, no --llm) exit 0 with an
+  empty stderr — and green after
+Evidence: the measured table, re-run with the fixed binary: every bold row 0 → 4 on scan and on check (also llm.total_timeout 1s against
+  a slow endpoint, 0 → 4), with one stderr line "--fail-on-llm could not be evaluated (exit 4): …" naming the reason; working endpoint
+  0 → 0; --fail-on high / low only with a closed port 0 → 0; deterministic high with --fail-on-llm 1 → 1
+Evidence (reverse assertion): the 18 reverse and precedence rows pass on the base and after — "ran fully, found nothing" exits 0 with an
+  empty stderr, "--fail-on high only, closed port" 0 and "--fail-on medium only, closed port" 1 on both commands, a fired gate exits 1
+  over a blind judge, a typo still exits 2; TestFailGate_DeterministicHitDoesNotMaskARefusal, TestFailGateFlags_RefusedBeforeTheJudge,
+  TestGateScannerNeverEnablesLLM and TestHookRunnerNeverFails green unchanged; the only edit to an existing test is the llmResult
+  fixture gaining its judge summary
+Evidence (not done): git diff --stat origin/main...HEAD -- internal/ hack/ baselines/ CHANGELOG.md cmd/aguard/gate.go cmd/aguard/inbox.go
+  go.mod go.sum → empty; ./bin/aguard check plugin --fail-on low → exit 0, 100/100
+Verify: make verify → "verify: all gates passed"; go.mod line 2 go 1.23.5; go version go1.23.5, no toolchain switch
+```
