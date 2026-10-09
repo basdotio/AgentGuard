@@ -197,7 +197,31 @@ func checkedLine(e model.EnvSummary) string { return checkedWithGaps(e, "") }
 // one settings.json was found and could not be parsed — the inventory counts come from what the
 // collectors extracted, and a file that did not parse yields nothing to count.
 func checkedWithGaps(e model.EnvSummary, gaps string) string {
-	parts := checkedParts(e)
+	return composeChecked(checkedParts(e), gaps)
+}
+
+// checkedSummary is the Checked line the three human renderers print, derived from the whole result.
+//
+// The counts are the inventory's. The inventory counts the collectors' surfaces, and some scanned
+// things are not among them — the file `check <file>` reads, the tree `check <dir>` reads, a root's
+// CLAUDE.md, a settings env block — so a report used to say "Nothing was found to check" above a high
+// finding on the very file it had checked. When the inventory counts nothing, the line counts the
+// scanned artifacts instead (scannedParts). A report whose inventory counts something keeps the line
+// it always had.
+//
+// The gaps are the items found and not fully checked: an artifact's own coverage note (itemGaps), then
+// a scan-level IO-000 or PARSE-000 (scanGaps). item quotes one gap the way the caller's surface quotes
+// a path.
+func checkedSummary(r model.ScanResult, item func(gap) string) string {
+	parts := checkedParts(r.Env)
+	if len(parts) == 0 {
+		parts = scannedParts(r)
+	}
+	return composeChecked(parts, gapList(append(itemGaps(r), scanGaps(r)...), item))
+}
+
+// composeChecked joins the counts and the rendered gaps into the sentence.
+func composeChecked(parts []string, gaps string) string {
 	notFully := ""
 	if gaps != "" {
 		notFully = "Not fully checked: " + gaps + "."
@@ -211,6 +235,65 @@ func checkedWithGaps(e model.EnvSummary, gaps string) string {
 		return "Checked " + strings.Join(parts, ", ") + "."
 	}
 	return "Checked " + strings.Join(parts, ", ") + ". " + notFully
+}
+
+// kindNoun is how the Checked line counts a scanned artifact of each kind when the inventory counted
+// nothing. Fixed order — the inventory's own order for the kinds it shares, then the three it never
+// counts — so the line does not depend on the order the artifacts were collected in. One noun per
+// kind, not per artifact: naming files is the findings list's job. A permission artifact is a block
+// of a settings file (its allow/deny list, or its env), so it is counted as one.
+var kindNoun = []struct {
+	kind      model.ArtifactKind
+	one, many string
+}{
+	{model.KindPlugin, "plugin", "plugins"},
+	{model.KindSkill, "skill", "skills"},
+	{model.KindMCP, "MCP server", "MCP servers"},
+	{model.KindHook, "hook", "hooks"},
+	{model.KindPermission, "settings block", "settings blocks"},
+	{model.KindSubagent, "subagent", "subagents"},
+	{model.KindCommand, "command", "commands"},
+	{model.KindRule, "rule file", "rule files"},
+	{model.KindOutputStyle, "output style", "output styles"},
+	{model.KindMemory, "memory file", "memory files"},
+	{model.KindWorkflow, "workflow", "workflows"},
+	{model.KindConnector, "remote connector", "remote connectors"},
+	{model.KindInstruction, "file", "files"},
+	{model.KindDirectory, "directory", "directories"},
+	{model.KindQuarantined, "quarantined item", "quarantined items"},
+}
+
+// scannedParts counts the scanned artifacts by kind, leaving out the ones that are themselves a gap
+// (an artifact carrying its own coverage note was found, not checked — the gap list names it).
+// A kind missing from kindNoun is counted as an item rather than dropped.
+func scannedParts(r model.ScanResult) []string {
+	counts := map[model.ArtifactKind]int{}
+	for _, a := range r.Artifacts {
+		if !isGapArtifact(a) {
+			counts[a.Kind]++
+		}
+	}
+	var parts []string
+	add := func(n int, one, many string) {
+		if n == 1 {
+			parts = append(parts, "1 "+one)
+		} else if n > 1 {
+			parts = append(parts, fmt.Sprintf("%d %s", n, many))
+		}
+	}
+	other := 0
+	known := map[model.ArtifactKind]bool{}
+	for _, k := range kindNoun {
+		known[k.kind] = true
+		add(counts[k.kind], k.one, k.many)
+	}
+	for k, n := range counts {
+		if !known[k] {
+			other += n
+		}
+	}
+	add(other, "item", "items")
+	return parts
 }
 
 // checkedParts lists the non-zero inventory counts in words.
@@ -241,19 +324,22 @@ func checkedParts(e model.EnvSummary) []string {
 	return parts
 }
 
-// gap is an inventory item that was found but not fully checked: an artifact carrying its own
-// coverage note (today that is collect's withParseError — a settings.json, an MCP config or
-// installed_plugins.json that did not parse). Where is the note's file in short form, or the
-// artifact's name when the note names no file. Scan-level notes are not gaps here: they are not
-// items of the inventory, and the Not checked line already counts them.
+// gap is an item that was found but not fully checked: an artifact carrying its own coverage note
+// (today that is collect's withParseError — a settings.json, an MCP config or installed_plugins.json
+// that did not parse), or a scan-level IO-000 / PARSE-000 — a file a collector found and could not
+// read or parse, which yields no artifact at all (an unreadable settings.json is the twin of an
+// unparsable one). Where is the note's file in short form, or the artifact's name (or, at scan level,
+// the note's title) when the note names no file. Other scan-level notes are not gaps here: they are
+// about parts of items the counts already include — a subdirectory of a skill, one file of a plugin —
+// with evidence relative to that item, and the Not checked line names them.
 type gap struct{ Where, RuleID string }
 
-// itemGaps lists the gaps in artifact order — the data half; each renderer quotes it (gapList).
+// itemGaps lists the artifact gaps in artifact order — the data half; each renderer quotes it (gapList).
 func itemGaps(r model.ScanResult) []gap {
 	var out []gap
 	for _, a := range r.Artifacts {
 		for _, f := range a.Findings {
-			if f.Dimension != 0 || isSuppression(f.RuleID) {
+			if !isCoverageNote(f) {
 				continue
 			}
 			where := friendlyArtifact(string(a.Kind) + ":" + a.Name)
@@ -264,6 +350,35 @@ func itemGaps(r model.ScanResult) []gap {
 		}
 	}
 	return out
+}
+
+// scanGaps lists the scan-level IO-000 and PARSE-000 notes, in note order.
+func scanGaps(r model.ScanResult) []gap {
+	var out []gap
+	for _, n := range r.Notes {
+		if n.RuleID != "IO-000" && n.RuleID != "PARSE-000" {
+			continue
+		}
+		where := n.Title
+		if len(n.Evidence) > 0 && n.Evidence[0].File != "" {
+			where = shortPath(n.Evidence[0].File)
+		}
+		out = append(out, gap{Where: where, RuleID: n.RuleID})
+	}
+	return out
+}
+
+// isCoverageNote is a dimension-0 note that is not a trust decision.
+func isCoverageNote(f model.Finding) bool { return f.Dimension == 0 && !isSuppression(f.RuleID) }
+
+// isGapArtifact reports whether an artifact carries its own coverage note.
+func isGapArtifact(a model.ArtifactReport) bool {
+	for _, f := range a.Findings {
+		if isCoverageNote(f) {
+			return true
+		}
+	}
+	return false
 }
 
 // gapBudget is how many gaps the summary names before counting the rest; the full list is in the

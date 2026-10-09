@@ -120,7 +120,7 @@ func writeText(w io.Writer, r model.ScanResult, verbose bool) {
 
 	// SUMMARY — the part a non-specialist reads. Every sentence is derived from what follows.
 	fmt.Fprintf(w, "\nSummary\n  %s\n", coverageVerdict(score.Level(r.Overall), actionable(det), len(det), r))
-	fmt.Fprintf(w, "  %s\n", Sanitize(checkedWithGaps(r.Env, gapList(itemGaps(r), plainGap))))
+	fmt.Fprintf(w, "  %s\n", Sanitize(checkedSummary(r, plainGap)))
 	if jl := judgeSummaryLine(r); jl != "" {
 		fmt.Fprintf(w, "  %s\n", Sanitize(jl))
 	}
