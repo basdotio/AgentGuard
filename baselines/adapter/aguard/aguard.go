@@ -145,7 +145,9 @@ func (a *Adapter) Scan(ctx context.Context, s corpus.Sample, tree string) ledger
 		return row
 	}
 	a.keepRaw(s.Sample, out)
-	return fill(row, res, a.Threshold)
+	row = fill(row, res, a.Threshold)
+	row.JudgeUsage = judgeUsage(out, res)
+	return row
 }
 
 // checkBare is invocation 2: aguard pointed straight at the sample tree.
@@ -166,6 +168,7 @@ func (a *Adapter) checkBare(ctx context.Context, row ledger.Row, tree, placement
 	}
 	a.keepRaw(row.Sample, out)
 	row = fill(row, res, a.Threshold)
+	row.JudgeUsage = judgeUsage(out, res) // nil today: the judge never runs on `check`'s path here
 	// Disclosed, not hidden. This verdict came from `check` on the bare tree rather than from
 	// the `scan --root` placement this sample's surface implies, and the difference is not
 	// cosmetic: `direction` §4 says aguard does not scan agent application source code, while
