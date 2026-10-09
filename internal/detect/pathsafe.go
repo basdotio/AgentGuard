@@ -4,6 +4,8 @@ package detect
 import (
 	"path/filepath"
 	"strings"
+
+	"github.com/basdotio/AgentGuard/internal/collect"
 )
 
 // anchorRoot is the one spelling of the scan root every path check in this package sees. The
@@ -14,17 +16,12 @@ import (
 // reference" candidates then join a second time. Each way the script was looked for in the wrong
 // place, was not read, and the hook scored a clean 100 behind a note blaming a missing file.
 //
-// Abs, not EvalSymlinks: resolving would move home to wherever a symlinked ~/.claude points, which
-// is not the anchor collect uses, and `~/.claude/hooks/x.sh` would miss again. Symlinks are resolved
-// where they always were — inBoundary, at check time (invariant #2: resolve, then check). If the
-// working directory is gone and Abs fails, Clean still fixes the slash, and `.` stays home == root:
-// a narrower boundary, which refuses more rather than less.
-func anchorRoot(root string) string {
-	if abs, err := filepath.Abs(root); err == nil {
-		return abs
-	}
-	return filepath.Clean(root)
-}
+// It is collect.AnchorRoot — the anchor collect itself uses, so the two packages cannot disagree
+// about where home is (Abs, not EvalSymlinks: resolving would move home to wherever a symlinked
+// ~/.claude points, and `~/.claude/hooks/x.sh` would miss again). Symlinks are resolved where they
+// always were — inBoundary, at check time (invariant #2: resolve, then check). This used to be a
+// private copy of that function, and ContentHashes kept a second one.
+func anchorRoot(root string) string { return collect.AnchorRoot(root) }
 
 // inBoundary reports whether path, after resolving symlinks, stays under base — the
 // same §16.2 containment used by collect, applied here so the engine never reads a

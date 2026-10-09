@@ -98,7 +98,10 @@ const redacted = "<REDACTED>"
 //
 // cmd/aguard.analyze calls this immediately after Run, before anything reads Hash.
 func ContentHashes(root string, arts []model.ArtifactReport) []model.ArtifactReport {
-	root = absRoot(root)
+	// The scripts' anchor must not depend on how the root was typed: `--root ~/.claude/` made
+	// home == root and `aguard hash .` made home ".", so `~/…` scripts resolved somewhere else and
+	// one configuration got a second identity. The same anchor Run uses.
+	root = anchorRoot(root)
 	out := make([]model.ArtifactReport, len(arts))
 	docs := map[string]configDoc{}
 	for i, a := range arts {
@@ -111,17 +114,6 @@ func ContentHashes(root string, arts []model.ArtifactReport) []model.ArtifactRep
 		}
 	}
 	return out
-}
-
-// absRoot makes the scripts' anchor independent of how the root was typed. `--root ~/.claude/`
-// (shell completion adds the slash) made home == root, and `aguard hash .` made home ".", so `~/…`
-// scripts resolved somewhere else and one configuration got a second identity. An Abs that fails
-// still cleans.
-func absRoot(root string) string {
-	if abs, err := filepath.Abs(root); err == nil {
-		return abs
-	}
-	return filepath.Clean(root)
 }
 
 // contentDigest is the one place the domain separator is applied.
