@@ -56,7 +56,7 @@ paths:
   现在 `approvePath` 在**打开批准库之前**看 `Verdict.Hash`,空就返回运行错误(退出码 2),原因取 `Verdict.Unhashed`
   —— 由 `Summarize` 填,因为只有它知道选的是哪个 artifact。**不要按 kind 猜原因**:kind 会获得哈希,猜的那句当天变假话。
   **不要改成退到下一个有哈希的 artifact**:那是批准一份判决没描述的内容。`TestApproveRefusesWhatHasNoContentHash`、
-  `TestApproveRefusalLeavesTheStoreAlone` 钉拒绝,`TestApproveStillRecordsWhatHasAHash` 钉反方向。
+  `TestApproveRefusalLeavesTheStoreAlone` 钉拒绝,`TestApproveStillRecordsWhatHasAHash` 钉反方向,`TestApproveNeverFallsBackToAnotherArtifact` 钉不退。**闸门自己的 PreToolUse「干净就记住」那一支同理**:哈希为空时不说 trusted、不报 store 变更,说没记住和原因(`Verdict.UnhashedLine`;`TestCleanLoadWithNoHashIsNotClaimedTrusted`,反向 `TestCleanLoadWithAHashIsStillRemembered`)。
 - **`ask` 在会自动答应的权限模式下等于放行,所以要升级成 `deny`。** `auto`/`acceptEdits`/
   `bypassPermissions`/`dontAsk` 会自动答应弹窗;闸门读事件里的 `permission_mode`,命中就改判拒绝,
   并在理由里点名是哪个模式。**这是真机上找出来的**:一个 51/100、带完整凭证外泄链的 skill 返回了
