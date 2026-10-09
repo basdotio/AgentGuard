@@ -160,7 +160,7 @@ malicious 共 2,246,717 个非空行,按上面那组字符量每行最长的一�
 ## 完成
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-020 找)
+合入:PR #38(2026-10-09;sha 用 git log --grep P-020 找)
 发布:待发
 证据:TestRun_PaddedDirectiveReachesTheJudge(internal/judge/padding_test.go);W1 在 930e914 上红 30/30,全是 `none of 2 request(s) carried the directive` → W2 后绿,30 例的 LLM-003 都引到指令真实所在行(SKILL.md:9 / 9 / 5 / 11 / 10),没有 LLM-005
 证据:TestPlan_PaddingCostsWhatOneSpaceCosts(同文件);W1 红 50/50(9 个面 × 6 种垫料,解码 blob 只跑 ASCII 两种,Unicode 空白会让 blob 读成二进制):hook 两趟 Behavior 各 6,000 字节纯前缀;MCP 那例 shortened = "1 value(s) cut to 500 bytes",参照为空;三个垫料脚本那例 intent 5,995 字节、带省略标记 → W2 后绿
