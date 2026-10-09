@@ -83,7 +83,7 @@ paths:
   `PreToolUse[Bash]#1`,`(event, matcher, command|url)` 挂在 `ArtifactReport.Hook`(不序列化,是扫描
   内部输入)。`detect.hookUnits` 会把 command 引用的本地脚本读进来一起扫 —— 否则一个文件名就把
   payload 藏住了;路径解析用**扫描自己的 home**(`filepath.Dir(root)`,与 collect 同一约定),
-  绝不读进程环境变量。**这个 root 是 `Engine.Run` 入口 `anchorRoot`(`filepath.Abs`)过的**:`Dir` 只看字符串,`~/.claude/`、`.`、
+  绝不读进程环境变量。**这个 root 是 `Engine.Run` 入口 `anchorRoot`(即 `collect.AnchorRoot`)过的**:`Dir` 只看字符串,`~/.claude/`、`.`、
   `home/.claude` 都曾让 `~/…` 的脚本没读、hook 拿 100 分(`TestScan_RootSpellingDoesNotChangeTheResult`)。别在 helper 里从原样 root
   推 home;别换成 `EvalSymlinks`(软链过的 `~/.claude` 的 home 会被挪走,`TestRun_RootSpellingKeepsTheBoundary` 里 root 本身是软链的三行钉着;符号链接只在 `inBoundary` 里解析)。
   越界**不读**(§16.2),出 `COV-000` **同时**出 `HOOK-002`(计分:普通事件 medium,`PermissionRequest` high)——覆盖和风险是两句话。`type=http` 采成 artifact,目标走
