@@ -133,7 +133,7 @@ func TestHashCommand_RootSpellingPrintsTheAbsoluteHashes(t *testing.T) {
 // store (dplug, skill dhello). Every skill script pipes curl into a shell.
 func rawPluginShape(t *testing.T) (base, home, root string) {
 	t.Helper()
-	base = anchoredTempDir(t)
+	base = rawTempDir(t)
 	home = filepath.Join(base, "home")
 	root = filepath.Join(home, ".claude")
 	skill := func(dir, name string) {
@@ -167,6 +167,23 @@ func rawPluginShape(t *testing.T) (base, home, root string) {
 	}
 	anchoredLink(t, home, filepath.Join(base, "via"))
 	return base, home, root
+}
+
+// rawTempDir is a short temporary directory with its symlinks resolved. Not t.TempDir: that name
+// carries the subtest's, and the gate clips a path longer than 160 runes in its reply — the same
+// files typed through <base>/via and <base>/home would then be cut at different characters.
+func rawTempDir(t *testing.T) string {
+	t.Helper()
+	d, err := os.MkdirTemp("", "p019-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(d) })
+	r, err := filepath.EvalSymlinks(d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return r
 }
 
 // rawHookReply feeds one PreToolUse[Skill] event to the real runner and returns the reply as written.

@@ -81,7 +81,10 @@ func runVersion(w io.Writer, root string) {
 // told to switch whatever the versions say: it can never again report "newer than this binary",
 // which is how a user learns the binary fell behind.
 func pluginVersionLine(root, binaryVersion string) string {
-	home := filepath.Dir(filepath.Clean(root))
+	// The parent of the anchored root, as the gate takes it: from a relative root, Dir gave a relative
+	// home that no install path could be related to, and the line silently disappeared.
+	root = collect.AnchorRoot(root)
+	home := filepath.Dir(root)
 	installs := collect.PluginInstalls(root, home)
 	cur, hasCur := installs[pluginBundleName]
 	old, hasOld := installs[legacyBundleName]
