@@ -474,7 +474,8 @@ llm:
 cmd/aguard/          # main + cobra 命令;analyze() 是 scan/check/clean 唯一编排入口;inbox.go 是下载目录那条线
 internal/collect/    # 每类 artifact 的 collector(含 desktop.go 桌面版仓库、connectors.go、environment.go 沙箱识别、unowned.go)
 internal/parse/      # frontmatter/yaml/json 解析
-internal/detect/     # 静态引擎:rules_data.go 规则表、logical.go 词法归一、shape.go 形状检查、comments.go、redact.go、owasp.go
+internal/detect/     # 静态引擎:rules_data.go 规则表、logical.go 词法归一、shape.go 形状检查、comments.go、redact.go(委托)、owasp.go
+internal/redact/     # 唯一的脱敏实现(§16.3);叶子包,collect 与 detect 都 import 它
 internal/permcheck/  # 权限 allow 条目的文本形状体检(§7)+ 可逃逸二进制表
 internal/reputation/ # 内嵌信誉名单(data/reputation.json)+ 匹配
 internal/ignore/     # .aguardignore 基线
@@ -550,6 +551,11 @@ v1 写的 `internal/rules/` 从未存在:规则表就在 `detect/rules_data.go`,
    (`curl -u user:pass`、`--password=`),这一形态与 `scheme://user:pw@host` 同等对待。
    与 §5.1「只报位置 + key 名」对应:**替换只作用于值那一半,key 名必须存活** —— 运维要行动,靠的是"哪一项
    泄了",把整行连名字一起抹掉是保护了值、废掉了发现。
+   **实现只有一份**,在叶子包 `internal/redact`(`redact.Secrets` 两遍;内容哈希只取凭据那一遍 `redact.Credentials`),
+   `detect.Redact` 是它的委托。collect 在 detect 之下,它写的笔记里从文件正文或配置值抄来的那段 —— `@import` 引用、
+   插件键、hook 事件键 —— 在 collect 阶段就过它(比 detect 阶段更早);闸门的 `GATE-001` 引用注册命令同样过它。
+   扫描器自己从磁盘列出的名字、就是该发现 `Evidence.File` 的路径不在此列(是否脱敏是全引擎的一个问题,未定);
+   `aguard hook status` 的终端输出不是报告,注册命令按原样印(2026-10-09,P-018)。
 4. **LLM 默认关 + 一次性同意 + 默认本地**:见 §3/§5.2/§11;`check` 与 `scan` 共用同一个显式 `--llm`,加载时闸门恒静态(§17)。**托管端点必须是用户显式选择,不得成为默认** —— 整套隐私论证(`Redact` 只做到"尽力而为"却可接受)唯一的支点就是"内容默认不出本机"。
    **出网的路径只有三条**,都要 `llm.enabled: true` 加一条显式命令:`scan --llm`(环境,以及它覆盖的下载目录候选项)、`check --llm`(单个目标:目录、文件或 `.zip`)和 `llm test`(一次不带被扫内容的连通检查)。其余命令即使配置里开着判官也一个请求都不发。这一条由 `TestZeroDial_OnlyTheJudgeConnects` 钉住(§13 不变量测试 ④)。它只看得见经过判官的 transport(测试接缝 `judge.Transport`)或 `http.DefaultTransport` 的请求;看不见的是:自带 `http.Transport` 的 client(本模块的产品代码由 `TestZeroDial_NoClientOutsideTheJudge` 从源码上堵住:`internal/judge` 之外不许出现 `net/http` 的 `Client`/`Transport` 类型;`internal/judge` 之内只许 `NewHTTP` 造唯一一个 client,它的 transport 就是接缝 —— 正对照只看着它自己那几条路径用的 client,判官包不能豁免;接缝只许测试赋值)、依赖在它自己代码里造的这种 client(源码检查只读本模块;今天别的模块都不 import `net/http`,加第四个直接依赖前要先读它)、裸 `net.Dial`、子进程、表跑完再等 50 ms 仍未落地的异步请求(更早落地的会报出来,但不保证记在发出它的那一行),只写在 cobra `RunE` 闭包里、不在被测函数之内的代码,以及包级 `init()`(计数器装上之前它就跑完了;其中的 `applyBuildInfo` 在 `version` 那几行里另跑一次)。加一条出网路径必须同时改这里、不变量 #1 的清单和那条测试的正对照。
 5. **会话日志脱敏**:`zombie` 读 `history.jsonl`/`sessions/`(常含用户粘贴的明文 secret)同样走脱敏,截片入报告前 REDACTED。

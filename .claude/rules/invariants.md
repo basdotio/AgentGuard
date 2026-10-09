@@ -48,6 +48,12 @@
 3. **脱敏只有一个收口。** `detect.Redact` 是产出 snippet 的唯一途径,并且在所有地方都**先脱敏再截断**
    (`boundedRedact`、`behaviorExcerpt`)—— 否则跨越字节上限的 secret 会以残片形式漏出去。报告与
    LLM judge 消费的是同一份已脱敏视图。
+   - **实现只有一份,在叶子包 `internal/redact`**(`redact.Secrets`;内容哈希只取凭据那一遍 `redact.Credentials`)。
+     `detect.Redact` 是它的一行委托,detect 及其上游(judge、permcheck、hygiene、clean、gate)都经它;collect 在 detect 之下、
+     import 不到 detect,直接调 `redact.Secrets`。**不要在别处再写一套模式** —— collect 的笔记以前就因为够不着 detect,
+     把 `@import` 行、插件键、hook 事件键原样印进报告(P-018)。
+   - 笔记的划线:进 snippet 的、从文件正文或配置值抄来的那段过它,同一段也进 `Why` 的印同一份;扫描器自己从磁盘列出的名字、
+     就是该发现 `Evidence.File` 的路径不归它(全引擎问题,未定)。**不要逐条笔记各自另划一条线**。
 4. **两个分数:`Overall` 纯确定性,`OverallEffective` 含 LLM 单向升级**(spec v1.1 §5.2.1/§5.3,
    已实现)。铁律 #1 曾是"永不改分",那是个**双向**禁令 —— 而注入攻击想要的只有**降分**那一个方向,
    禁死升分等于自缚。现在放松为**单向**:LLM 只能把风险往上推,于是一次成功的注入只能让攻击者自己的
