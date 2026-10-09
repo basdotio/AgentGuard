@@ -586,6 +586,17 @@ type JudgeSummary struct {
 	Retries          int `json:"retries"`
 	PromptTokens     int `json:"prompt_tokens,omitempty"`
 	CompletionTokens int `json:"completion_tokens,omitempty"`
+	// Which judge produced the LLM findings (P-031). tool_version names a commit, which moves when
+	// the judge did not and stays one suffix apart when the excerpts changed. PromptVersion
+	// (judge.PromptVersion, computed) and ExcerptVersion (judge.ExcerptVersion, bumped by hand) name
+	// this build's judge and are set on every judge block, so a missing key means an older report.
+	// Model and Samples are what the run used — the model every request named and how many times
+	// each question was asked — and are set when the judge was configured to run. Nothing else from
+	// the llm config is recorded: no key, no headers, no authority.
+	PromptVersion  string `json:"prompt_version,omitempty"`
+	ExcerptVersion int    `json:"excerpt_version,omitempty"`
+	Model          string `json:"model,omitempty"`
+	Samples        int    `json:"samples,omitempty"`
 }
 
 // Connector is the tool list a remote MCP server advertised, as cached by Claude Desktop.

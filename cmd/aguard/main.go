@@ -266,7 +266,7 @@ func entryLabel(e reputation.Entry) string {
 // that is neither answering nor failing. The budget — not the clock — is what bounds cost, and
 // whatever either one cuts short is reported, never silently dropped.
 func runJudge(cfg config.Config, arts []model.ArtifactReport, home string, quiet bool) ([]model.Finding, *model.JudgeSummary) {
-	summary := &model.JudgeSummary{Artifacts: len(arts), Endpoint: cfg.LLM.BaseURL}
+	summary := judgeConfigured(cfg.LLM, len(arts))
 	notRun := func(title string, err error) ([]model.Finding, *model.JudgeSummary) {
 		summary.Reason = err.Error()
 		return []model.Finding{{
@@ -478,7 +478,7 @@ func analyze(root string, res collect.Result, o scanOpts) (model.ScanResult, err
 				Title: "LLM intent judge requested but not enabled",
 				Why:   why,
 			})
-			judgeSummary = &model.JudgeSummary{Artifacts: len(arts), Reason: why}
+			judgeSummary = judgeNotConfigured(len(arts), why)
 		}
 	}
 	hyg := hygiene.Analyze(root, arts, hygiene.Options{Zombie: o.zombie})

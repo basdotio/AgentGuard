@@ -62,15 +62,16 @@ func binaryVersionLine(version, commit, date string, reputationEntries int, rule
 }
 
 // runVersion is the whole body of `aguard version`, a function so the zero-dial test runs what
-// the command runs rather than one helper of it: the build line, then — when the plugin is
-// installed, under its current name or the old one — one line comparing it with this binary.
+// the command runs rather than one helper of it: the build line (binaryVersionLine, then the two
+// versions of this build's judge, P-031), then — when the plugin is installed, under its current
+// name or the old one — one line comparing it with this binary.
 // version, commit and date are printed as they stand: the -ldflags stamps, or what
 // applyBuildInfo filled in from the build info at init when the stamps were absent.
 //
 // Offline by construction: compares against the plugin already on disk, never a release feed.
 // The plugin auto-updates through Claude Code; the binary does not.
 func runVersion(w io.Writer, root string) {
-	fmt.Fprintln(w, binaryVersionLine(version, commit, date, reputation.Load().Len(), detect.RulesVersion()))
+	fmt.Fprintln(w, binaryVersionLine(version, commit, date, reputation.Load().Len(), detect.RulesVersion())+judgeVersionFields())
 	if line := pluginVersionLine(root, version); line != "" {
 		fmt.Fprintln(w, line)
 	}
