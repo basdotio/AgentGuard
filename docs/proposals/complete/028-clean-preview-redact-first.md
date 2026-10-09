@@ -57,22 +57,22 @@ was redacted whole before detect clipped it (a defensive second pass, not the pr
 
 ## Done criteria
 
-- [ ] `TestPreview_SecretAcrossTheColumnLimitIsRedacted` (`internal/clean/preview_redact_test.go`, new): four subtests —
+- [x] `TestPreview_SecretAcrossTheColumnLimitIsRedacted` (`internal/clean/preview_redact_test.go`, new): four subtests —
   a file line with a GitHub-shaped token, a file line with a Google-shaped key in a URL query, a directory entry, a
   symlink target — each with the secret straddling byte 100; the output contains no 8-byte head of the secret and does
   contain `<REDACTED>`. Each subtest first checks the fixture is the straddling case (`Redact` recognises the whole value
   and not the head a cut leaves). Red on `origin/main`, green after the fix
-- [ ] `TestUndoDryRun_PreviewDoesNotPrintASecretHead` (same file, new): the same property through `Undo(…, "last", true)`
+- [x] `TestUndoDryRun_PreviewDoesNotPrintASecretHead` (same file, new): the same property through `Undo(…, "last", true)`
   on a quarantined skill whose entry name carries the token past the limit. Red on `origin/main`, green after
-- [ ] Reverse assertion: `TestPreview_OrdinaryTextIsUnchanged` (same file) — ordinary lines, entry names and a symlink
+- [x] Reverse assertion: `TestPreview_OrdinaryTextIsUnchanged` (same file) — ordinary lines, entry names and a symlink
   target longer than 100 bytes render byte for byte as `line[:100] + "…"`, short lines unchanged, and the worst-finding
   line still reads `⚠   EXEC-001 <title>` for a `curl … | bash` payload. Green before and after, unchanged
-- [ ] Reverse assertion: `TestPreview_ShortSecretIsStillRedacted` (same file) — a token that ends inside the width is
+- [x] Reverse assertion: `TestPreview_ShortSecretIsStillRedacted` (same file) — a token that ends inside the width is
   fully `<REDACTED>` on the file line, the directory entry and the symlink target. Green before and after, unchanged
-- [ ] `TestPreview_WorstFindingLineQuotesOnlyToolText` (same file): every rule's `ID + " " + Title` fits in the width and
+- [x] `TestPreview_WorstFindingLineQuotesOnlyToolText` (same file): every rule's `ID + " " + Title` fits in the width and
   `Redact` leaves it unchanged — the reason that line moves to the same helper for consistency, not because it leaked.
   Green before and after
-- [ ] Existing `internal/clean` tests (among them `TestUndo_CoordinatedRewriteSucceedsButIsAnnounced`) green without a
+- [x] Existing `internal/clean` tests (among them `TestUndo_CoordinatedRewriteSucceedsButIsAnnounced`) green without a
   change; `make verify` green; `go version` does not switch toolchains, `go.mod` line 2 still `go 1.23.5`, no dependency
 
 ## Out of scope
@@ -116,3 +116,14 @@ was redacted whole before detect clipped it (a defensive second pass, not the pr
    in the Done criteria fails first) gets the right order without anyone having to remember it. The output is unchanged
    for every current title (measured).
    **Decided (2026-10-09)**: as recommended.
+
+## Done
+
+```
+Merged: PR to be opened (2026-10-09; find the sha with git log --grep P-028 after the merge)
+Released: pending release
+Evidence: red → green — TestPreview_SecretAcrossTheColumnLimitIsRedacted (internal/clean/preview_redact_test.go), all four subtests FAIL on origin/main 155865b with the head printed before the cut mark (`… ghp_abcdefghij…` for the file line, the directory entry and the symlink target, `…&key=AIzaFAKE0F…` for the URL query), PASS on this branch; TestUndoDryRun_PreviewDoesNotPrintASecretHead FAIL → PASS the same way (`ddd…/ghp_abcdefghij…` under `would restore deadskill`)
+Evidence: reverse assertions — TestPreview_OrdinaryTextIsUnchanged (four subtests: lines, entry names and a symlink target over 100 bytes render as `x[:100] + "…"`, the `⚠   EXEC-001 <title>` line unchanged), TestPreview_ShortSecretIsStillRedacted (three subtests) and TestPreview_WorstFindingLineQuotesOnlyToolText (46 rules, longest 83 bytes with its ID, none changed by Redact) PASS on origin/main and on this branch without a change; the existing internal/clean tests, TestUndo_CoordinatedRewriteSucceedsButIsAnnounced among them, PASS unchanged
+Evidence: not doing — git diff --stat origin/main -- internal/detect internal/redact internal/judge internal/collect internal/clean/clean.go internal/clean/clean_test.go go.mod go.sum docs/rules.md is empty; internal/clean/preview.go is the only production file changed (the four call sites, the helper, one doc-comment sentence)
+Evidence: make verify: all gates passed; go version go1.23.5 (no toolchain switch), go.mod line 2 go 1.23.5, no new dependency
+```
