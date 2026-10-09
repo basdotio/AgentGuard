@@ -88,10 +88,13 @@ func summaryOf(name, body string) string {
 }
 
 // TestSummaryDoesNotCallIncompleteCoverageSafe pins what the headline says when the scan says,
-// further down, that coverage is incomplete. The set that decides it is the one the "Not checked"
-// line counts — a scan-level note and an artifact's own note alike — so the two can never disagree.
-// Trust decisions are not coverage gaps (the summary has its own line for them), and a result with
-// no note at all keeps the sentence it always had.
+// further down, that coverage is incomplete. It hedges only when something Claude Code loads was
+// not fully read: an IO-000 or PARSE-000 note wherever it sits, or any coverage note attached to an
+// artifact. The other scan-level notes — the top-level entries no collector owns (present on
+// nearly every real machine), the judge's privacy notice — stay in the Not checked line and leave
+// "looks safe" alone; a hedge on almost every report would stop meaning anything. Trust decisions
+// are not coverage gaps (the summary has its own line for them), and a result with no note at all
+// keeps the sentence it always had.
 func TestSummaryDoesNotCallIncompleteCoverageSafe(t *testing.T) {
 	clean := model.ScanResult{Root: "/x/.claude", ToolVersion: "test", Overall: 100, OverallEffective: 100,
 		Env: model.EnvSummary{Skills: 1}, Artifacts: []model.ArtifactReport{{Kind: model.KindSkill, Name: "s", Score: 100, ScoreEffective: 100}},
@@ -102,6 +105,15 @@ func TestSummaryDoesNotCallIncompleteCoverageSafe(t *testing.T) {
 	trusted := clean
 	trusted.Notes = []model.Finding{{RuleID: "REP-GOOD", Dimension: 0, Severity: model.SevHigh, Title: "Findings suppressed: known-trusted artifact",
 		Evidence: []model.Evidence{{File: "superpowers (6.3.0)"}}}}
+	unowned := clean
+	unowned.Notes = []model.Finding{{RuleID: "COV-000", Dimension: 0, Severity: model.SevLow, Title: "Unowned entries under the root were not read",
+		Why: "Not read: sessions, file-history. No collector owns these.", Evidence: []model.Evidence{{File: "/x/.claude", Snippet: "not read"}}}}
+	privacy := clean
+	privacy.Notes = []model.Finding{{RuleID: "LLM-002", Dimension: 0, Severity: model.SevMedium, Source: model.SrcLLM,
+		Title: "LLM judge endpoint is not local", Why: `base_url "https://api.example" is not loopback`}}
+	hookShape := clean
+	hookShape.Notes = []model.Finding{{RuleID: "PARSE-000", Dimension: 0, Severity: model.SevLow, Source: model.SrcParseError,
+		Title: "Hook entry not understood, command not scanned (partial)", Evidence: []model.Evidence{{File: "settings.json", Snippet: "hooks.PreToolUse"}}}}
 
 	for _, c := range []struct {
 		name     string
@@ -112,6 +124,9 @@ func TestSummaryDoesNotCallIncompleteCoverageSafe(t *testing.T) {
 		{"trust decision only", trusted, true},
 		{"scan-level coverage note", scanGap, false},
 		{"artifact's own coverage note", parseFailure("/x/.claude/settings.json"), false},
+		{"unowned top-level entries only", unowned, true},
+		{"judge privacy notice only", privacy, true},
+		{"scan-level PARSE-000 (hook entry not understood)", hookShape, false},
 	} {
 		for _, h := range humanReports(t, c.r) {
 			s := summaryOf(h.name, h.body)

@@ -4,12 +4,14 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/basdotio/AgentGuard/internal/model"
 	"github.com/basdotio/AgentGuard/internal/report"
+	"github.com/basdotio/AgentGuard/internal/score"
 )
 
 // brokenSettings and goodSettings are the same .claude/settings.json, cut short and written out.
@@ -95,6 +97,74 @@ func TestCheckBrokenSettingsCLI(t *testing.T) {
 	}
 	if !strings.Contains(stdout, "PARSE-000") || strings.Contains(stdout, "looks safe") {
 		t.Errorf("aguard check on a settings.json that does not parse:\n%s", stdout)
+	}
+}
+
+// hedge is the Low-band headline once something Claude Code loads was not fully read.
+const hedge = "Low risk in what was read, but coverage is incomplete."
+
+// notCheckedMarker is where each human report states that coverage notes exist at all — the
+// folded line, the verbose block, the markdown section, the HTML section.
+var notCheckedMarker = map[string]string{
+	"terminal": "\nNot checked — ",
+	"verbose":  "⚠ Scan warnings (",
+	"markdown": "## Not checked",
+	"html":     `id="notchecked"`,
+}
+
+// TestUnownedEntriesKeepTheHeadline: a real root's top-level entries that no collector owns
+// (sessions/, file-history/ — the user's own transcripts, skipped by design) produce one scan-level
+// COV-000 on nearly every real machine. It is still disclosed exactly where it was, but it is not
+// something Claude Code loads, so it does not take "looks safe" away; if it did, the hedge would sit
+// on almost every Low-band report and stop meaning anything.
+func TestUnownedEntriesKeepTheHeadline(t *testing.T) {
+	root := settingsRoot(t, goodSettings)
+	mustWriteFile(t, filepath.Join(root, "sessions", "a.jsonl"), `{"x":1}`+"\n")
+	out, err := checkTarget(root, scanOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out.Notes) != 1 || out.Notes[0].RuleID != "COV-000" || score.Level(out.Overall) != "Low" {
+		t.Fatalf("fixture drifted: want one scan-level COV-000 in the Low band, got overall=%d notes=%+v", out.Overall, out.Notes)
+	}
+	for _, r := range humanReports(t, out) {
+		if !strings.Contains(r.body, "Your Claude Code setup looks safe.") || strings.Contains(r.body, hedge) {
+			t.Errorf("%s report: an unowned top-level entry changed the headline:\n%s", r.name, r.body)
+		}
+		if !strings.Contains(r.body, notCheckedMarker[r.name]) {
+			t.Errorf("%s report: the unowned-entries note is no longer disclosed (%q missing)", r.name, notCheckedMarker[r.name])
+		}
+	}
+}
+
+// TestUnreadableSettingsHedgesTheHeadline is the twin of the broken settings.json: the same file,
+// unreadable rather than unparsable. Collect reports it as a scan-level IO-000 with no artifact, and
+// it is exactly as unread as the broken one, so it gets the same headline.
+func TestUnreadableSettingsHedgesTheHeadline(t *testing.T) {
+	root := settingsRoot(t, goodSettings)
+	file := filepath.Join(root, "settings.json")
+	if err := os.Chmod(file, 0); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(file, 0o644) })
+	if _, err := os.ReadFile(file); err == nil {
+		t.Skip("settings.json is still readable at mode 000 (running as root?)")
+	}
+	out, err := checkTarget(root, scanOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sawIO := false
+	for _, n := range out.Notes {
+		sawIO = sawIO || n.RuleID == "IO-000"
+	}
+	if !sawIO || score.Level(out.Overall) != "Low" {
+		t.Fatalf("fixture drifted: want a scan-level IO-000 in the Low band, got overall=%d notes=%+v", out.Overall, out.Notes)
+	}
+	for _, r := range humanReports(t, out) {
+		if strings.Contains(r.body, "looks safe") || !strings.Contains(r.body, hedge) {
+			t.Errorf("%s report: an unreadable settings.json must hedge the headline:\n%s", r.name, r.body)
+		}
 	}
 }
 
