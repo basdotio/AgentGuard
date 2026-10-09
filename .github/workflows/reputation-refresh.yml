@@ -28,7 +28,15 @@ jobs:
           go-version: '1.23'
       - name: build
         run: CGO_ENABLED=0 go build -o bin/aguard ./cmd/aguard
+      # continue-on-error, so the pull request below still opens with the entries that DID renew.
+      # Exit 1 means "some entry needs a human" — and until this was split, it also meant the
+      # eleven entries that renewed cleanly in the same run were never proposed: the job stopped
+      # here, create-pull-request never ran, and superpowers users saw its allowlisted findings
+      # come back for a week while a human review of three unrelated plugins was pending. The red
+      # is re-asserted as the last step, so the signal is unchanged; only the hostage is released.
       - name: renew entries whose finding set is unchanged
+        id: refresh
+        continue-on-error: true
         run: go run ./hack/reputation-refresh -aguard bin/aguard -write
       - name: the renewed list still passes its own tests
         run: go test ./internal/reputation/ ./hack/reputation-refresh/
@@ -47,3 +55,9 @@ jobs:
             If this job went red instead, the fingerprint changed: read the diff in the job
             log, review the new version, and update `reason`/`reviewed`/`findings` by hand.
           delete-branch: true
+      # The review request, now that the mechanical renewals are on their way.
+      - name: fail if an entry needs a human review
+        if: steps.refresh.outcome == 'failure'
+        run: |
+          echo "::error::reputation-refresh exited non-zero — some allowlist entry's finding set changed; read the step log, review the new version, update reason/reviewed/findings by hand"
+          exit 1
