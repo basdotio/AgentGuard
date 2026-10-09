@@ -283,8 +283,8 @@ func hookExcerpt(file string, h model.Hook, eg egress) (declared, behavior strin
 //
 // shortened says what was left out, empty when nothing was: the caller discloses it (LLM-000),
 // since a real configuration fits and one that does not has been shaped.
-func mcpExcerpt(path, name string, eg egress) (text string, units []sourceUnit, shortened string) {
-	lines := detect.ConfigLines(path, "mcpServers", name)
+func mcpExcerpt(path, key string, eg egress) (text string, units []sourceUnit, shortened string) {
+	lines := detect.ConfigLines(path, "mcpServers", key)
 	if len(lines) == 0 {
 		return "", nil, ""
 	}

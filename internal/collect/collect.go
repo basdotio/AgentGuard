@@ -541,8 +541,9 @@ func RootMCPConfigs(root, home string) []string {
 // into `overall` as perfect. The two scopes stay distinguishable by Path.
 //
 // A plugin's servers are the exception the rule above describes: they arrive with nameSuffix
-// " (plugin …)", so a lookup by Name misses them. MCPServer always holds the bare key; the content
-// hash looks the entry up by it, and the rule engine's lookup by Name is still the gap.
+// " (plugin …)", so a lookup by Name misses them. MCPServer always holds the bare key, and every
+// lookup goes through detect.MCPServerKey, which uses it: the rules, the judge and the content hash.
+// Until P-021 the rules and the judge looked up by Name, and every plugin server scored a clean 100.
 func mcpServersFrom(path, nameSuffix string, env *model.EnvSummary) ([]model.ArtifactReport, []model.Finding) {
 	b, err := safeio.ReadFile(path, safeio.MaxConfigBytes)
 	if err != nil {
