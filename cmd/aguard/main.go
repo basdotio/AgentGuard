@@ -1011,6 +1011,11 @@ func scanLocations(root string) []model.Location {
 	if p := filepath.Join(home, ".mcp.json"); present(p) == model.LocRead {
 		locs = append(locs, model.Location{Name: "Project MCP config", Path: p, Status: model.LocRead})
 	}
+	// The root's own MCP configs, listed only when collect reads them (a repository scanned as its
+	// own root keeps its project .mcp.json there), so a root without them lists exactly what it did.
+	for _, p := range collect.RootMCPConfigs(root, home) {
+		locs = append(locs, model.Location{Name: "MCP config in the root", Path: p, Status: present(p)})
+	}
 	store, ok := collect.DesktopStore(home)
 	st := model.LocAbsent
 	if ok {

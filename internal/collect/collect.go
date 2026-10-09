@@ -248,6 +248,13 @@ func CollectAll(root string) Result {
 	res.Artifacts = append(res.Artifacts, pmcp...)
 	res.Notes = append(res.Notes, pmn...)
 
+	// The root's own MCP configs, under every spelling of the root; see RootMCPConfigs.
+	for _, p := range RootMCPConfigs(root, home) {
+		rm, rmn := mcpServersFrom(p, "", &res.Env)
+		res.Artifacts = append(res.Artifacts, rm...)
+		res.Notes = append(res.Notes, rmn...)
+	}
+
 	// agents/ and commands/ are walked RECURSIVELY. The flat read they replaced skipped every
 	// subdirectory outright, which quietly dropped namespaced commands (`commands/foo/bar.md`,
 	// invoked as `/foo:bar`) — files that load and run like any other.
@@ -460,6 +467,36 @@ func collectNestedSkills(dir, home, group string, extraDepth int, env *model.Env
 
 func collectMCP(home string, env *model.EnvSummary) ([]model.ArtifactReport, []model.Finding) {
 	return mcpServersFrom(filepath.Join(home, ".claude.json"), "", env)
+}
+
+// rootMCPFiles are the MCP configs read at the top of the ROOT as well as in home, in home's order.
+var rootMCPFiles = []string{".claude.json", ".mcp.json"}
+
+// RootMCPConfigs returns the MCP configs at the top of root that CollectAll reads besides home's: each
+// of rootMCPFiles that is there and is not the very file home's copy is (a symlink to it, or a root
+// with no parent). One that exists but cannot be stat'ed is returned too, so mcpServersFrom says so.
+//
+// A repository scanned as its own root — the CI template's `aguard scan --root .` — keeps its project
+// .mcp.json exactly there. Before the root was anchored, `.` read it only because home WAS the root;
+// the absolute spelling never read it, and unowned.go counts both names as owned, so not even a note
+// said so: a curl-into-shell server in a repository's own .mcp.json failed the gate under `.` and
+// passed it, silently, under "$PWD". Reading it under every spelling is what makes that claim true.
+func RootMCPConfigs(root, home string) []string {
+	var out []string
+	for _, name := range rootMCPFiles {
+		p := filepath.Join(root, name)
+		fi, err := os.Stat(p)
+		if errors.Is(err, fs.ErrNotExist) {
+			continue
+		}
+		if err == nil {
+			if hfi, herr := os.Stat(filepath.Join(home, name)); herr == nil && os.SameFile(fi, hfi) {
+				continue // home's own copy, already read
+			}
+		}
+		out = append(out, p)
+	}
+	return out
 }
 
 // mcpServersFrom reads one MCP config file and yields an artifact per declared server. Shared by
