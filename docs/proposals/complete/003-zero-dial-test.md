@@ -43,7 +43,7 @@ RoundTripper,逐个跑命令入口,断言零次 round trip;同一个计数器在
 
 ## 完成的判据
 
-- [ ] `TestZeroDial_OnlyTheJudgeConnects`(`cmd/aguard/zero_dial_test.go`,新):配置**开着**判官
+- [x] `TestZeroDial_OnlyTheJudgeConnects`(`cmd/aguard/zero_dial_test.go`,新):配置**开着**判官
   (`writeJudgeConfig` 指向 `http://127.0.0.1:9`,`max_retries: 0`),`judge.Transport` 和 `http.DefaultTransport`
   各换成一个只计数、返回错误的 RoundTripper,下面每个入口跑完**两个计数器都是 0**,且入口本身没有出错
   (出错就早退的入口零次是空话):
@@ -55,28 +55,28 @@ RoundTripper,逐个跑命令入口,断言零次 round trip;同一个计数器在
   为什么不经 `runHook` 见未决 6)、`approvePath`、`listApprovals`(这一行自己先往 store 里写一条批准,输出必须列出它
   —— 不靠前一行 `approve` 先跑,`-run` 单选这一行也成立)、`runLLMSetup`、`runLLMStatus`、
   `runVersion`(见下一条)、`collect.CollectTarget`(`hash`)。今天 `judge.Transport` 不存在,编译即红
-- [ ] **`version` 跑的是整段命令体,每个分支一行**:`version` 命令的函数体原样搬进 `runVersion(w, root)`,零表按
+- [x] **`version` 跑的是整段命令体,每个分支一行**:`version` 命令的函数体原样搬进 `runVersion(w, root)`,零表按
   `pluginVersionLine` 和它委托的 `versionLine` 的**每个出口**各跑一行 —— 对装了 `aguard` 9.9.9 的 root,以发布版
   `v1.0.0` / `v9.9.9` / `v10.0.0` 跑出 newer / matches / older 三种比较行,以 `dev` 跑出"dev build; not compared";
   没装插件、`plugin.json` 不带版本两个 root 走两个返回空的出口;只装了旧名 `agentguard` 的 root 走改名提示,
   新旧两个名字都装了的 root 走"旧插件还在"的后缀(这两个出口是 v0.17 改名时加的)。另有一行**不经 `-ldflags`**,
   从构建信息盖版本(`applyBuildInfo`,`go install` 装出来的二进制走的那条路,v0.18 起):构建行必须印出构建信息里的
   版本和 commit,插件行照样比较。每行都断言构建行在、插件那行是这个分支该印的那句(或没有)
-- [ ] **反向断言(正对照,防止测试是瞎的)**:同一个测试里、零表**之前**,同一对计数器在三条允许路径上必须看到
+- [x] **反向断言(正对照,防止测试是瞎的)**:同一个测试里、零表**之前**,同一对计数器在三条允许路径上必须看到
   判官计数器 ≥ 1、默认计数器 = 0:`scanEnv(llm: true)`、`scanInbox(llm: true)`、`runLLMTest`。
   前者证明接缝真的接在判官的 client 上,后者证明判官的请求没有绕开接缝
-- [ ] **每一行开始时两个计数器必须已经是空的**,零表跑完等 50 ms(`lateRequestSettle`)再收一次:
+- [x] **每一行开始时两个计数器必须已经是空的**,零表跑完等 50 ms(`lateRequestSettle`)再收一次:
   入口返回之后才落地的请求报成"在某一行返回之后落地",不被下一行开头的清零吞掉,也不会在计数器还原后无人看见。
   只保证"报出来",**不保证记在发它的那一行**(见不能说什么)
-- [ ] `TestNewHTTP_TransportSeam`(`internal/judge/run_test.go`,新):不设接缝时 `NewHTTP(…, nil)` 建出的 client
+- [x] `TestNewHTTP_TransportSeam`(`internal/judge/run_test.go`,新):不设接缝时 `NewHTTP(…, nil)` 建出的 client
   `Transport == nil`(即 `http.DefaultTransport`,和今天的 `&http.Client{}` 一样);设了接缝,请求走它;
   **反向断言**:调用方自己给的 client(现有测试都给 `srv.Client()`)原样使用,接缝不覆盖它
-- [ ] `TestZeroDial_ClaimsNameTheTest`(`cmd/aguard/zero_dial_test.go`,新):用 `runtime.FuncForPC` 取上面那条测试的
+- [x] `TestZeroDial_ClaimsNameTheTest`(`cmd/aguard/zero_dial_test.go`,新):用 `runtime.FuncForPC` 取上面那条测试的
   **真名**,断言 `baselines/tools.yaml` 里 aguard 的 `uploads_samples_basis` 和 `.claude/rules/invariants.md` 都含它。
   改测试名而不改这两处 → 红;今天 tools.yaml 只写"enforced by tests in this repository" → 红。
   外加**集合相等**:正对照(`zeroDialControl`)里每条路径必须是不变量 #1 清单里的一条 `` - `路径`: ``,清单里每条必须有
   正对照看着它出网(两个方向);每条路径还必须出现在 `baselines/tools.yaml` 那句和 spec §16.4 的出网清单那一行里
-- [ ] `TestZeroDial_NoClientOutsideTheJudge`(`cmd/aguard/zero_dial_source_test.go`,新):`go/parser` 读 `cmd/`、`internal/`
+- [x] `TestZeroDial_NoClientOutsideTheJudge`(`cmd/aguard/zero_dial_source_test.go`,新):`go/parser` 读 `cmd/`、`internal/`
   全部非测试 `.go`,`internal/judge` 之外不许出现 `net/http` 的 `Client`/`Transport` 类型(字面量、`new()`、变量声明、
   对默认 transport 的类型断言 + `Clone` 都会经过这个名字),`judge.Transport` 不许在非测试文件里被赋值、取地址或带初值;
   import 了 `cmd/`、`internal/` 以外的本模块包也红(遍历范围不够了)。`internal/judge` **不整包豁免**:包内不许出现
@@ -84,11 +84,11 @@ RoundTripper,逐个跑命令入口,断言零次 round trip;同一个计数器在
   `Transport` 的值就是接缝这个标识符),或 `*http.Client` 字段/参数/返回值的类型(声明,不造 client)。
   **反向断言**:读到的文件数 > 0,必须在 `internal/judge` 找到 `var Transport` 的声明,且 `NewHTTP` 里那种字面量
   **恰好一个** —— 否则这条检查什么都没守
-- [ ] 反向断言:`TestHTTPClient_RoundTripAndRedaction`、`TestHTTPClient_CountsTokens`、`TestRun_RetriesOnlyRetryableErrors`、
-  `TestLLMCommands_SetupTestStatus`、`TestE2E_*`(七条,全部经 `NewHTTP(…, nil)` 打 `httptest`)、
+- [x] 反向断言:`TestHTTPClient_RoundTripAndRedaction`、`TestHTTPClient_CountsTokens`、`TestRun_RetriesOnlyRetryableErrors`、
+  `TestLLMCommands_SetupTestStatus`、`TestE2E_*`(七条;开判官的那几条经 `NewHTTP(…, nil)` 打 `httptest`)、
   `TestAJudgeRunDisclosesTheUpload`、`TestPluginVersionLine`、`TestPluginVersionLine_LegacyName`、`TestApplyBuildInfo`
   **不改一字**仍绿 —— 判官的行为、`uploadsFor` 的行为、`version` 的比较与盖版本都没变
-- [ ] `make verify` 绿;`go.mod` 第二行仍是 `go 1.23.5`,`go version` 无工具链切换
+- [x] `make verify` 绿;`go.mod` 第二行仍是 `go 1.23.5`,`go version` 无工具链切换
 
 ## 不做什么
 
@@ -126,7 +126,7 @@ RoundTripper,逐个跑命令入口,断言零次 round trip;同一个计数器在
   `Transport`,不追它解析到哪:在 `NewHTTP` 里用 `var Transport = …` 或同名参数遮住包级接缝,源码检查看不出来
   (`Transport := …` 会被当成给接缝赋值而红)。遮住之后的值要么写出 `http.Transport`(源码检查红),要么是
   `http.DefaultTransport`(正对照红),要么来自依赖或一个自己拨号的 RoundTripper —— 即上面两条盲区
-- **不说 `-run` 单选的一行"证明了零"**:每一行单独选中都能跑过,但单选时正对照不跑,那一行的零不证明计数器接在了
+- **不说 `-run` 单选的一行"证明了零"**:26 行(正对照 3 + 零表 23)每一行单独选中都能跑过,但单选时正对照不跑,那一行的零不证明计数器接在了
   判官的 client 上。证据以整张表一起跑为准
 - **不说零表跑的是"命令"**:每一行调的是命令调用的那个函数(`scanEnv`、`checkTarget`、`runHook`、`runVersion`…),
   不是 cobra 的 `RunE` 闭包;闭包里在那个函数之外加一行请求,这条测试看不见。`version` 是唯一一个把整段闭包体搬进
@@ -157,7 +157,7 @@ RoundTripper,逐个跑命令入口,断言零次 round trip;同一个计数器在
 | 10 | 闸门存活探测那行要找到 fixture 里的死注册,`approvals` 那行要列出被批准的 skill | `cmd: the gate-liveness row must find the fixture's dead registration and the approvals row must list the approved skill, so neither zero is about nothing (P-003)` |
 | 11 | 源码检查不再整包豁免 `internal/judge`:包内只许 `NewHTTP` 那一个接缝 client;文件头、不变量 #1、spec §16.4/§13 同步,并把"依赖自己造的 client"列成盲区 | `cmd, rules, spec: inside internal/judge only NewHTTP's seam client may be built, so a second judge client with a transport of its own is red instead of dialling unseen (P-003)` |
 | 12 | `approvals` 那行自己写入要列出的批准,不靠 `approve` 那行先跑 | `cmd: the approvals row seeds the approval it lists, so it passes when -run selects it alone instead of depending on the approve row having run (P-003)` |
-| 13 | `version` 按 `pluginVersionLine` / `versionLine` 的每个出口各跑一行(含 v0.17 加的改名两出口),外加一行从构建信息盖版本;不变量 #1、spec 的盲区里加上 `init()` | `cmd: the version command runs once per return of pluginVersionLine, so a request added to the dev-build, matches, older or no-plugin branch is seen, not only the newer one (P-003)` |
+| 13 | `version` 按 `pluginVersionLine` / `versionLine` 的每个出口各跑一行(含 v0.17 加的改名两出口),外加一行从构建信息盖版本;不变量 #1、spec 的盲区里加上 `init()` | `cmd, rules, spec: the version command runs once per return of pluginVersionLine and versionLine and once stamped from build info, so a request added to any branch is seen, not only the newer one (P-003)` |
 | 14 | 本文件「完成」、索引 | `proposals: P-003 (P-003)` |
 
 ## 未决问题
@@ -206,3 +206,24 @@ RoundTripper,逐个跑命令入口,断言零次 round trip;同一个计数器在
    `agentguard@AgentGuard`),每个 root 用现成的 `writePluginInstalls` 搭;再加一行从构建信息盖版本,让 `applyBuildInfo`
    在计数器下跑一次;`init()` 本身记进盲区。`runVersion` 只是搬家,不碰盖版本的逻辑 —— 它读的还是那三个包级变量。
    **已决(2026-10-09)**:按建议。
+
+## 完成
+
+```
+合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-003 找)
+发布:待发
+证据:TestZeroDial_OnlyTheJudgeConnects(cmd/aguard/zero_dial_test.go);W1 时编译红(cmd/aguard/zero_dial_test.go:85: undefined: judge.Transport),W2 后绿:正对照三行 scan --llm / Downloads 项 / llm test 都被判官计数器看见、默认计数器 0;零表 23 行(14 个入口 + version 9 行)两个计数器都是 0,且每个入口成功跑完(Pre 回 ask、Post 重扫回 risk accepted、SessionStart 有审计结果、闸门存活探测报 GATE-001、approvals 列出自己写入的那条)
+证据:TestNewHTTP_TransportSeam(internal/judge/run_test.go);W1 时编译红(run_test.go:306: undefined: Transport),W2 后绿;反向断言:调用方给的 srv.Client() 照样打到自己的 server,接缝计数不变
+证据:TestZeroDial_ClaimsNameTheTest;W2 后两处都红("baselines/tools.yaml says aguard's no-upload claim is enforced by tests, but does not name TestZeroDial_OnlyTheJudgeConnects" + "invariant #1 does not name the test that pins it")→ W3、W4 后绿;集合相等(W9):正对照加一行 check --llm、文档不动 → 红 3 条(不变量 #1 没列、tools.yaml 没写、spec §16.4 没写);不变量 #1 加一条 check --llm、无正对照 → 红 1 条;不变量 #1 删掉 llm test → 红 1 条
+证据:变异(未提交,跑完即还原,工作区 git status 为空)—— checkTarget 里强开 o.llm → Downloads 项(不带 --llm)/ check / hook Pre / Post 重扫 / approve 五行红(判官计数器 3 / 4 / 3 / 6 / 4);NewHTTP 改回 &http.Client{} → 正对照三行红(判官计数器 0,默认计数器 13 / 3 / 1)且源码检查红 2 条(那个字面量不是接缝形状;接缝字面量 0 个),TestNewHTTP_TransportSeam 同时红
+证据:(W6)version 一行跑整段命令体;W5 时在 version 的 cobra 闭包里加 http.Get(127.0.0.1:9) → 全绿(只调 pluginVersionLine,看不见);W6 后同一个请求放进 runVersion → 红:"version sent 1 request(s) through http.DefaultTransport to [127.0.0.1:9]";放在 runVersion 外、闭包里 → 照绿(记进不能说什么)
+证据:(W6)输出逐字节不变 —— W5 与 W6 各用同一组 -ldflags(-X main.version=v1.0.0 -X main.commit=abc1234 -X main.date=2026-10-09)和不带 -ldflags(-buildvcs=false,走构建信息、落回 dev)各构建一次,version --root 四个 root 上 cmp 全部相同:装了 aguard 9.9.9 的临时 root(237 B / 2 行,含 "plugin aguard 9.9.9 is newer than this binary (1.0.0)")、只装了旧名 agentguard 0.16.0 的临时 root(312 B / 2 行,改名提示)、本机 ~/.claude(312 B / 2 行)、不存在的 root(74 B / 1 行);不盖章的构建 226 / 303 / 303 / 65 B,同样逐字节相同
+证据:(W7、W11)TestZeroDial_NoClientOutsideTheJudge(cmd/aguard/zero_dial_source_test.go);runLLMStatus 里 (&http.Client{Transport: &http.Transport{}}).Get(127.0.0.1:9) → TestZeroDial_OnlyTheJudgeConnects 照绿(盲区实测),源码检查红 2 条(llm.go:233 的 http.Client、http.Transport);internal/judge 里另造一个自带 transport 的 client、从 checkTarget 调用:W10(判官包整包豁免)三条 TestZeroDial_* 全绿 → W11 后源码检查红 2 条(zz_isolated.go:8 的 http.Client、http.Transport);NewHTTP 里 var Transport = http.DefaultTransport 遮住接缝 → 源码检查绿、正对照三行红(判官计数器 0,默认计数器 13 / 3 / 1),记进不能说什么
+证据:(W8)runLLMStatus 起一个 goroutine,20 ms 后 http.Get:W7 时单次运行 3/3 绿(漏掉),-count=5 时记在下一轮的 "scan --llm" 头上(记错行);W8 后 -count=5 次次红:"a request landed after "hash" returned, before the counters are put back"
+证据:(W10、W12)闸门存活探测那行:fixture 不注册闸门 → 红("want the fixture's dead registration reported as GATE-001, got []");gateLivenessNote 直接返回 nil → 红;approvals 那行:listApprovals 有记录时什么都不印 → 红;W11 时 -run 单选 approvals 一行红("approvals did not list the skill approved in the row above, so it read nothing: \"\"")→ W12 后绿
+证据:(W13)version 九行;pluginVersionLine / versionLine 的八个出口前各插一个 http.Get(127.0.0.1:9),外加 applyBuildInfo 里一个,一次一处:W12(一行 version)只有 newer 那处红,matches / older / dev / 没装插件 / 无版本 / 只装旧名 / 新旧都装 / applyBuildInfo 八处全绿;W13 后九处全红,每处都让自己那一行红(newer 那处同时让"新旧都装"和"构建信息"两行红 —— 它们本来就走 newer 比较),其余八处只红自己那一行
+证据:26 行逐行单独 -run:26/26 绿,每次恰好跑 1 行;go test -race -count=5 -run TestZeroDial 绿
+证据:反向断言不改一字 —— git diff origin/main -- cmd/aguard/e2e_test.go cmd/aguard/main_test.go cmd/aguard/buildinfo_test.go internal/judge/judge_test.go baselines/cmd/baseline/passthrough_test.go 为空;internal/judge/run_test.go 只有新增行(+47 −0);TestHTTPClient_RoundTripAndRedaction、TestHTTPClient_CountsTokens、TestRun_RetriesOnlyRetryableErrors、TestLLMCommands_SetupTestStatus、TestE2E_* 七条、TestPluginVersionLine、TestPluginVersionLine_LegacyName、TestApplyBuildInfo、TestAJudgeRunDisclosesTheUpload 照绿
+证据:不做什么 —— git diff --stat origin/main -- baselines/results baselines/cmd internal/gate internal/collect internal/detect cmd/aguard/buildinfo.go README.md README.zh-CN.md docs/architecture.md docs/architecture.zh-CN.md go.mod go.sum 为空;产品代码的改动是 internal/judge/openai.go(+11 −1:一个包级变量和它的注释,NewHTTP 里一个字段)、cmd/aguard/main.go(+1 −9)与 version.go(+18 −0):version 命令体原样搬进 runVersion
+证据:make verify: all gates passed;go version go1.23.5(无工具链切换),go.mod 第二行 go 1.23.5;collect / detect 未改,不需要真机扫描
+```
