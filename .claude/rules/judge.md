@@ -36,6 +36,11 @@ Bearer 头,明文 http 等于把它送上网),setup/test/judge 三处都过它,j
 `TestRun_PaddingBelowTheFoldStillShowsTheDirective` 替它守着那条路。intent 提示词多了一类**"披露了也要报"**(改包源、写 git hook / shell 启动文件 /
 定时任务):dev-env-setup 那个样本的描述老老实实写着"配置企业 npm 镜像",按"目的已披露不报"的老规则判官放行了它。LLM-005
 的 `Why` 现在带最多三条没落地的引文(截 120 字符,再过一次 Redact),用来区分"模型在转述"和"摘录切掉了它要引的那行"。
+**判官的两个版本号**(P-031):`ExcerptVersion`(`ground.go`)是**手动**的 —— 改了 `planFor` 给哪些 artifact 跑哪几趟、摘录怎么切
+(condense / capHeadTail / lineMap / 解码上限 / 声明用途和 hook、MCP、connector 的渲染 / 家目录替换与脱敏顺序)或引文怎么落地,**同一个提交里加一**,
+并把 `excerpt_version_test.go` 钉的 {版本, 摘要} 一起换掉;只换摘要不加版本,两份报告就会自称同样的摘录。`PromptVersion` 是**算出来的**,不要手改,
+也不要让 nonce、被扫内容或模型名进它(那三样是占位);`prompt_version.go` 里 triage 的两条消息是 `Triage` 内联拼法的复述,改 `triage.go` 的拼法
+要一起改(`TestPromptVersion_HashesWhatTheClientSends` 逐字节比真客户端发的请求体)。`Request`/`chatRequest` 加字段、加新 `Mode`,都要在测试里表态。
 **趟数按 artifact 种类选**(`judge/run.go` 里的 mode 表,不是固定四趟):injection(`LLM-003`,
 维度 1,跑 skill/CLAUDE.md/subagent/command/hook)、intent(`LLM-001`,维度 10,仅 skill)、
 deobfuscation(`LLM-004`,维度 6,**只解码、绝不执行**)、collusion(`LLM-006`,维度 3)、
