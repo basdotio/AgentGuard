@@ -38,34 +38,34 @@
 
 ## 完成的判据
 
-- [ ] `TestCheckCmd_LLMRunsTheJudge`(`cmd/aguard/check_llm_test.go`,新,走二进制):假端点 + `llm.enabled: true` 的 config,
+- [x] `TestCheckCmd_LLMRunsTheJudge`(`cmd/aguard/check_llm_test.go`,新,走二进制):假端点 + `llm.enabled: true` 的 config,
   `check <skill 目录> --llm --config … --json` → 退出 0,`judge.ran == true`,有一条 `LLM-003`,
   `overall` 与同一目录 `check` 不带 `--llm` 的 `overall` 相等,`overall_effective < overall`;**同一个 skill 打成 `.zip`** 再跑一遍,
   同样 `judge.ran == true`。不带 `--quiet` 时 stderr 有 `LLM judge:` 那行,带 `--quiet` 时没有。今天:退出 2,`unknown flag: --llm`
-- [ ] `TestCheckCmd_FailOnLLMNeedsAuthority`(同文件,新,走二进制):`authority: escalate` 下 `--llm --fail-on-llm high` → 退出 1;
-  `authority: advisory` 下同样的命令 → 退出 2,stderr 点名 `llm.authority: escalate`(拒绝,不是忽略)。今天两条都是 `unknown flag: --fail-on-llm`。
+- [x] `TestCheckCmd_FailOnLLMNeedsAuthority`(同文件,新,走二进制):`authority: escalate` 下 `--llm --fail-on-llm high` → 退出 1;
+  `authority: advisory` 下同样的命令 → 退出 2,stderr 点名 `llm.authority: escalate`(拒绝,不是忽略)。今天两条都退出 2,报的是 `unknown flag: --llm`(cobra 报第一个不认识的 flag;单独 `check <x> --fail-on-llm high` 报 `unknown flag: --fail-on-llm`)。
   这一条只在 fixture **没有**确定性 high 时成立 —— 有 high 时默认的 `--fail-on high` 先返回 1,拒绝根本不出现;拒绝出现时也已经在
   判官发完请求之后。由下一条(W7)补上
-- [ ] `TestFailGateFlags_RefusedBeforeTheJudge`(同文件,新,走二进制;W7):fixture **带一条确定性 high**,端点计数。
+- [x] `TestFailGateFlags_RefusedBeforeTheJudge`(同文件,新,走二进制;W7):fixture **带一条确定性 high**,端点计数。
   `check` 与 `scan` 上,缺授权的 `--fail-on-llm high`(带与不带 `--llm`)、`--fail-on-llm hgih`、`--fail-on hgih` → 一律退出 2、
   stderr 点名原因、端点 **0** 个请求、stdout 为空(没扫、没印报告)。反向:`authority: escalate` + `--llm --fail-on-llm high`
   → 退出 1、判官照跑。`TestFailGate_DeterministicHitDoesNotMaskARefusal`(同文件,进程内):`failGate` 在 `--fail-on` 已命中时
   照样拒绝兑现不了的 `--fail-on-llm`,不返回退出 1
-- [ ] 反向断言:`--fail-on` 在 `check --llm` 下仍只看确定性发现 —— 同一个 fixture、`authority: escalate`、`--llm` 加默认的
+- [x] 反向断言:`--fail-on` 在 `check --llm` 下仍只看确定性发现 —— 同一个 fixture、`authority: escalate`、`--llm` 加默认的
   `--fail-on high` → 退出 0(判官那条 high 够得着 `--fail-on-llm`,够不着 `--fail-on`)。`TestFailGate`、`TestFailGate_*` 不改一字仍绿
-- [ ] 反向断言:`TestGateScannerNeverEnablesLLM`(`cmd/aguard/check_llm_test.go`,新,进程内):一份**判官就绪**、`authority: escalate`
+- [x] 反向断言:`TestGateScannerNeverEnablesLLM`(`cmd/aguard/check_llm_test.go`,新,进程内):一份**判官就绪**、`authority: escalate`
   的 config 指向一个计数端点;`gateOptions(…).Scan`、`.ScanRoot`、`approvePath`、`runHook`(`PreToolUse[Skill]` 和 `SessionStart`)
   各跑一遍 → 端点收到 **0** 个请求,`Scan` / `ScanRoot` 的结果 `Judge == nil`。改动前后都绿:它钉的是"闸门不跟着 `check` 开判官"。
   W8 收紧:每条 hook 回复还要**读起来是一次审计** —— `PreToolUse` 不含 `GATE-000`、点名 `test-runner` 并带 `NN/100`;
   `SessionStart` 以 `AgentGuard audited … at session start` 开头。只断言回复非空不够:一条什么都没扫的 `GATE-000` 也非空、也是 0 个请求
-- [ ] 反向断言:`TestCheckCmd_ConfigAloneNeverCallsTheJudge`(同文件,新,走二进制):判官就绪的 config、**不带** `--llm` →
+- [x] 反向断言:`TestCheckCmd_ConfigAloneNeverCallsTheJudge`(同文件,新,走二进制):判官就绪的 config、**不带** `--llm` →
   端点 0 个请求,JSON 里没有 `judge` 键,stderr 为空。改动前后都绿
-- [ ] 反向断言:`check` 不带 `--llm` 的输出逐字节不变 —— `origin/main` 和本分支用同一组 `-ldflags` 各编一个二进制,
+- [x] 反向断言:`check` 不带 `--llm` 的输出逐字节不变 —— `origin/main` 和本分支用同一组 `-ldflags` 各编一个二进制,
   对恶意 skill / 良性 skill / 单文件 / zip 四个目标跑文本、`--json`(去掉 `scanned_at`)、`--md -`、`--sarif` 等,`diff` 为空,退出码相同。
   `TestGateAgreesWithCheck`、`TestCheckTarget_*`、`TestMarkdownFlag_*` 不改一字仍绿。**范围是合法阈值**:W7 之后,阈值打错时
   `check`(和 `scan`)在采集前退出 2、不印报告,`origin/main` 是先印完整报告再退出 2 —— 退出码相同,stdout 不同(见「不能说什么」)
-- [ ] 反向断言:`baselines/adapter/aguard/passthrough_test.go` 一字不改仍绿 —— adapter 仍然只给 `scan` 传 `--llm`
-- [ ] `make verify` 绿;`go version` 不切工具链;`go.mod` 第二行仍是 `go 1.23.5`,无新依赖
+- [x] 反向断言:`baselines/adapter/aguard/passthrough_test.go` 一字不改仍绿 —— adapter 仍然只给 `scan` 传 `--llm`
+- [x] `make verify` 绿;`go version` 不切工具链;`go.mod` 第二行仍是 `go 1.23.5`,无新依赖
 
 ## 不做什么
 
@@ -107,7 +107,7 @@
 | 1 | 四条新测试,跑红(两条二进制测试因 `unknown flag` 红;两条反向断言改动前就绿) | `cmd: tests — check has no --llm or --fail-on-llm, so a single target cannot reach the judge (P-004)` |
 | 2 | `check` 注册 `--llm` / `--fail-on-llm`,传 `quiet`,按 `cfg.LLM.MayEscalate()` 走 `failGate`;`gate.go` 注释改理由 | `cmd: check takes --llm and --fail-on-llm with scan's semantics, and the load-time gate still never asks (P-004)` |
 | 3 | 规格 §3 / §5.1 / §5.2 / §11 / §16.4 / §17 | `spec: check runs the judge only when asked with --llm, and the load-time gate never does (P-004)` |
-| 4 | `docs/llm-judge` / `docs/architecture` / `docs/install-gate` 三个对子、`ROADMAP.md`、`config.example.yaml` | `docs: the llm-judge, architecture and install-gate pairs stop saying check is always static (P-004)` |
+| 4 | `docs/llm-judge` / `docs/architecture` / `docs/install-gate` 三个对子、`config.example.yaml`(`ROADMAP.md` 不用动:本仓库的 ROADMAP 没有"`check` 从不调判官"那句) | `docs: the llm-judge, architecture and install-gate pairs stop saying check is always static (P-004)` |
 | 5 | `internal/judge/judge.go` 与 `internal/config/config.go` 的包注释、`.claude/rules/judge.md`、`.claude/rules/gate.md` | `judge, config, rules: package docs and the judge and gate rules name check --llm and keep the gate static (P-004)` |
 | 6 | `baselines/README.md`、adapter 两处注释、`-aguard-extra-args` 的帮助串 | `baselines: the adapter still passes --llm to scan only, now for the reason that is still true (P-004)` |
 | 7 | `check` / `scan` 的 RunE 在采集**之前**用 `validateFailGates` 校验两个阈值和授权;`failGate` 先校验再判;规格 §3 与 `docs/llm-judge` 对子各一句。测试与修复同一提交,红在「完成」里 | `cmd: a misspelt --fail-on-llm or a missing llm.authority is refused before anything is scanned or sent, and a deterministic hit no longer hides it behind exit 1 (P-004)` |
@@ -136,3 +136,30 @@
    **建议**:不。已提交的每一轮判官运行都是在 `scan` 那条路上量的,走 `check` 的样本是静态的;现在改,下一次重跑量的就不是同一件事,
    而且会悄悄改变一列已经发出去的数。要量,是另一份 proposal 的测量决定。
    **已决(2026-10-08)**:按建议。
+
+## 完成
+
+红的证据全部在本仓库测得:W1 的测试打在 `main` 的 `dec64ca` 上;W7 是"测试 + 修法"一个提交,红是把该提交的 `cmd/aguard/main.go`
+换回 W6 的版本、测试不动,再跑同一组测试得到的(换回后立刻还原,工作区干净)。
+
+```
+合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-004 找)
+发布:待发
+证据:TestCheckCmd_LLMRunsTheJudge(cmd/aguard/check_llm_test.go);W1 红(exit 2,error: unknown flag: --llm)→ W2 后绿:目录与 zip 各自 judge.ran = true、4 次调用、有 LLM-003,overall 83 = 静态 check 的 83,overall_effective 58;--quiet 时 stderr 无 "LLM judge"
+证据:TestCheckCmd_FailOnLLMNeedsAuthority(同文件);W1 红(三条都是 exit 2,unknown flag: --llm)→ W2 后绿:escalate + --fail-on-llm high → exit 1;advisory + --fail-on-llm high → exit 2,stderr 点名 llm.authority: escalate;反向断言 --llm + 默认 --fail-on high → exit 0(判官的 high 够不着 --fail-on)
+证据:反向断言 TestGateScannerNeverEnablesLLM(同文件);W1 时(改动前)与改动后都绿,计数端点 0 个请求、Scan / ScanRoot 的 Judge == nil。变异验证:gate.go 里 gateOptions 的 Scan 加 llm: true → 红(Judge.Ran = true、Calls 3,端点 6 次请求);ScanRoot 加 llm: true → 红(端点 6 次);approvePath 加 llm: true → 红(端点 3 次);三处都已还原
+证据:反向断言 TestCheckCmd_ConfigAloneNeverCallsTheJudge(同文件);改动前后都绿:判官就绪的 config、不带 --llm → 0 个请求、JSON 无 judge 键、stderr 为空
+证据:W7 TestFailGateFlags_RefusedBeforeTheJudge(同文件);main.go 换回 W6 时红 6/8 行:check 缺授权(--llm)exit 1 且 stderr 有 "LLM judge: 4 call(s)"、check 缺授权(无 --llm)exit 1、check --fail-on-llm hgih exit 1 且 4 次调用、check --fail-on hgih exit 2 但端点 4 次请求且 stdout 有完整 JSON、scan 缺授权 exit 1 且 4 次调用、scan --fail-on-llm hgih exit 2 但端点 4 次请求且 stdout 有 JSON → W7 后 8/8 绿:6 行拒绝全是 exit 2、0 次请求、stdout 为空;反向两行(escalate + --llm --fail-on-llm high,check 与 scan)前后都是 exit 1 且判官有请求
+证据:W7 TestFailGate_DeterministicHitDoesNotMaskARefusal(同文件);main.go 换回 W6 时红 2/2(typo 与 no authority 都返回 failExit,即 exit 1)→ W7 后都返回普通错误(exit 2)。TestFailGate、TestFailGate_*(6 条)不改一字仍绿
+证据:W8 TestGateScannerNeverEnablesLLM 收紧后在正确代码上绿。弱点演示(临时测试,未提交,未改产品代码):PreToolUse 一个没装的 skill、SessionStart 配一份解析不了的 config,两条回复都是 GATE-000、都非空、端点 0 次请求 —— 旧断言 reply.Len() > 0 两条都过;assertGateAudited 两条都红("the gate did not audit, so a zero request count proves nothing")
+证据:反向断言 check 不带 --llm 逐字节不变 —— origin/main(dec64ca)与本分支同一组 -ldflags 各编一个二进制,4 个目标(恶意 skill / 良性 skill / 单文件 / zip)× 8 种输出(文本、--json、--md -、--sarif、--quiet、--fail-on low、--fail-on critical、判官就绪的 --config)= 32 例,stdout / stderr / SARIF / 退出码 0 处不同。只规整了同一个二进制两次运行本来就不同的:scanned_at;zip 目标的临时解压目录名 aguard-inbox-N 与由它派生的 SARIF 指纹 aguard/v1(main 的二进制对同一个 zip 跑两次,6 个指纹全不同;既有问题,不属本条)
+证据:错误路径按设计不同(见「不能说什么」):check <恶意 skill> --fail-on hgih --json,main exit 2 + stdout 4610 字节,本分支 exit 2 + stdout 0 字节,stderr 相同
+证据:反向断言不改一字仍绿 —— TestGateAgreesWithCheck、TestFailGate、TestFailGate_*(6 条)、TestCheckTarget_*(8 条)、TestMarkdownFlag_*(3 条)、baselines/adapter/aguard 的 passthrough_test.go(一字未改)
+证据:移植 —— 旧仓 8 个代码提交(module path 已换成 AgentGuard、P 号已换成 P-004)按顺序 git am -3 打在 main 的 dec64ca 上;唯一冲突是 W4 的 ROADMAP.md 那一段(本仓库的 ROADMAP 是重写过的,没有那句"check 从不调判官"),丢掉该段,其余 7 个文件原样应用;其余 7 个提交无冲突、无手工改动
+证据:不做什么 —— git diff --stat origin/main -- internal/report internal/model internal/gate internal/score internal/collect internal/detect plugin README.md README.zh-CN.md ROADMAP.md .claude/rules/invariants.md go.mod go.sum baselines/adapter/aguard/passthrough_test.go baselines/results baselines/tools.yaml hack 为空;internal/judge/judge.go、internal/config/config.go、cmd/aguard/gate.go、baselines/adapter/aguard/aguard.go 只改注释,baselines/cmd/baseline/main.go 只改 -aguard-extra-args 的帮助串
+证据:make verify: all gates passed;go version go1.23.5(无工具链切换);go.mod 第二行 go 1.23.5,无新依赖;cmd/aguard 覆盖率 46.7% → 48.0%;真机扫描不适用(collect / detect 未动)
+```
+
+两条都合入后要补的(后合入的那一条负责,见「不做什么」):不变量 #1 的出网路径列表、规格 §16.4 的"出网的路径只有两条"、
+`baselines/tools.yaml` 的 `uploads_samples_basis`、`TestZeroDial_OnlyTheJudgeConnects` 正对照里的一行 `check --llm`(P-003);
+一条 `check --llm`(目录与 `.zip`)发出去的内容已擦 home 的出网断言(P-005,它让判官总是擦 `os.UserHomeDir()`,所以 `check --llm` 被它覆盖)。
