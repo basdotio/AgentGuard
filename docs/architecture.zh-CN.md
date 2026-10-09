@@ -66,6 +66,7 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
 | [`gate`](../internal/gate/) | 加载时闸门:hook 事件分派、判决、按哈希的批准、`settings.json` 合并安装与双槽备份 | 1646 |
 | [`inbox`](../internal/inbox/) | 下载目录扫描:候选发现、带上限且拒绝路径穿越的 zip 解包 | 376 |
 | [`safeio`](../internal/safeio/) | 打开一个不是自己写的文件的唯一途径:非常规文件在 Open 前拒绝,大小由读强制 | 101 |
+| [`redact`](../internal/redact/) | 唯一的脱敏器:已知 token 前缀、键名/旗标自证的凭据、URL userinfo、高熵串。是叶子包,`collect` 也用它;`detect.Redact` 委托它 | 209 |
 | [`cmd/aguard`](../cmd/aguard/) | CLI 接线、`analyze()`、下载目录那一趟、hook runner、`llm setup/test/status` | — |
 
 有一处职责是被刻意切成两半的,值得先知道,因为两半都叫"permission":
@@ -86,6 +87,8 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
    符号链接属于合法安装方式,但解析后必须落在 `$HOME` 之内。解析失败一律拒绝。
 3. **脱敏只有一个收口。** `detect.Redact` 是产出 snippet 的唯一途径,并且在所有地方都**先脱敏
    再截断** —— 否则跨越字节上限的 secret 会以残片形式漏出去。报告与 LLM judge 消费同一份已脱敏视图。
+   实现只有一个叶子包 `internal/redact`:`detect.Redact` 委托它;`collect` 在 import 图里位于 `detect` 之下,
+   它的笔记从文件正文或配置值抄来的那段(`@import` 行、插件键、hook 事件键)直接调它 —— 以前够不着 `detect`,就原样印了。
 4. **两个分数:`Overall` 纯确定性,`OverallEffective` 含 LLM 单向升级。** 单向性**由公式结构保证**,
    不靠约定:`OverallEffective = min(Overall, 升级分)`。于是一次成功的注入只能让攻击者自己的
    artifact 更可疑 —— **攻击收益为负**。

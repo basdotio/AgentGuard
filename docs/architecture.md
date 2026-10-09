@@ -72,6 +72,7 @@ Each package is an approximately pure stage over the immutable types in
 | [`gate`](../internal/gate/) | The load-time gate: hook event dispatch, verdicts, hash-keyed approvals, `settings.json` merge-install with two backup slots | 1646 |
 | [`inbox`](../internal/inbox/) | The Downloads scan: candidate discovery and bounded, traversal-refusing zip extraction | 376 |
 | [`safeio`](../internal/safeio/) | The one way a file the tool did not write is opened: non-regular files refused before Open, size capped by the read | 101 |
+| [`redact`](../internal/redact/) | The one secret redactor: known token prefixes, announced credentials, URL userinfo, high-entropy runs. A leaf, so `collect` uses it too; `detect.Redact` delegates | 209 |
 | [`cmd/aguard`](../cmd/aguard/) | CLI wiring, `analyze()`, the Downloads pass, the gate runner, `llm setup/test/status` | — |
 
 Two responsibilities are split in a way worth knowing up front, because both halves say
@@ -97,6 +98,10 @@ container's `.claude/rules/invariants.md` (moved out of `CLAUDE.md` 2026-09-16) 
 3. **Redaction has exactly one exit.** `detect.Redact` is the only path that produces a
    snippet, and everywhere it runs **before** truncation — otherwise a secret straddling the
    byte limit leaks as a fragment. Report and LLM judge consume the same redacted view.
+   The implementation is one leaf package, `internal/redact`: `detect.Redact` delegates to it,
+   and `collect` — below `detect` in the import graph — calls it directly for the text its
+   notes copy out of a file or a config value (an `@import` line, a plugin key, a hook event key),
+   which it used to print unredacted because it could not reach `detect`.
 4. **Two scores: `Overall` is purely deterministic; `OverallEffective` carries one-way LLM
    escalation.** The one-way property is structural, not conventional:
    `OverallEffective = min(Overall, escalated)`. A successful prompt injection can therefore

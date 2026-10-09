@@ -27,7 +27,8 @@ skill 与 plugin 用树哈希(按相对路径排序 + 每个文件的 sha256);�
 ### hook、MCP、permission 的内容哈希(`detect.ContentHashes`,P-009)
 
 这三类在 collect 里是 `""`,而每个消费方都把 `""` 读成"没人审过"(`Approved`、`Match` 恒 false)。它们的哈希在
-**detect 阶段**算(`Redact` 和脚本跟进在那里,collect 不能 import detect),由 `analyze()` 在 `Run` 之后**紧接着**填,
+**detect 阶段**算(脚本跟进在那里,collect 不能 import detect;`Redact` 的实现已挪进 collect 也能 import 的 `internal/redact`,
+但这不是把哈希挪进 collect 的理由),由 `analyze()` 在 `Run` 之后**紧接着**填,
 先于信誉、闸门 `SessionStart`、`aguard approve`、Downloads;`aguard hash` 调同一个函数。定义:
 `hex(sha256(<域> 0x00 <规范 JSON>))`,域是 `aguard:hook:v1` / `aguard:mcp:v1` / `aguard:permission:v1` /
 `aguard:settings-env:v1`。`TestContentHashGolden` 钉五个字面常量,**规范输入字节也钉**,可以 `printf … | shasum` 手算。
@@ -42,7 +43,7 @@ skill 与 plugin 用树哈希(按相对路径排序 + 每个文件的 sha256);�
   `outside-home` / `unreadable` 三个**不同**的标记(与 `TreeHash` 的 `unreadableMark` 同一个理由:"没有 X"和"X 读不了"
   不能同 key)。HOME 外的脚本**不为哈希去读**(不变量 #2)。permission 同样带上 allow 条目引用的脚本 —— 那个 artifact 上的
   发现一部分就来自它们。
-- **secret 先换掉再哈希,换的是 `Redact` 的凭据那一半(`redactCredentials`),不是全部。** 哈希会印进 JSON、存进
+- **secret 先换掉再哈希,换的是 `Redact` 的凭据那一半(`redactCredentials`,即 `redact.Credentials`),不是全部。** 哈希会印进 JSON、存进
   approvals,低熵 secret 的摘要可以暴力还原(W-006 那条:任何 Hash 都不能是凭据的摘要)。高熵兜底**故意不用**:摘要泄露
   不了高熵串,而兜底会把 `echo <base64> | base64 -d | sh` 的载荷换成 `<REDACTED>` —— 换载荷哈希不变。
   **替换只许忘掉 secret,不许拿走结构**(`guardedView`):一次替换要抹掉结构字符就整个值原样进哈希。结构按读它的东西定 ——
@@ -50,7 +51,7 @@ skill 与 plugin 用树哈希(按相对路径排序 + 每个文件的 sha256);�
   其余值是 URL 分隔符 `#?\`。凭据正则的值字符类(`[^\s'"]+`、`[^@/\s]+`)吞得下这些:`Bash(curl -u admin:*)` 与
   `…admin:hunter2)` 同哈希、`https://other.example:443#@good.example/` 与带密码的同哈希(都是评审实测),守卫之后都重键。
   **后果,有意为之:只改一个被换掉的 secret 不重键**;反过来,**改 `redactCredentials` 会让这三类全部重键**(多问一次,
-  不会静默放行),改高熵兜底不会。动 `redact.go` 前先想清楚是哪一半。
+  不会静默放行),改高熵兜底不会。动 `internal/redact/redact.go` 前先想清楚是哪一半。
 - **剩下的口子要说实话**:被换掉的那一段如果本身被拿去解码或求值(配置在批准时就在"解码一个凭据名变量再执行"),换掉
   那段载荷哈希不变。`Redact` 认不出的 secret(`MYSQL_PASS=…`、`--db-password …`、`-p<pw>`)原样进摘要输入 —— 补它要改
   `redactCredentials`,即重键,另开。MCP 的哈希只覆盖配置条目,不覆盖 server 的代码。
