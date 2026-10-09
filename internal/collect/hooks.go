@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/redact"
 )
 
 // hookGroup mirrors one entry of a settings.json hooks event:
@@ -142,7 +143,9 @@ func hookShapeNote(path, event string) model.Finding {
 		RuleID: "PARSE-000", Dimension: 0, Severity: model.SevLow, Source: model.SrcParseError,
 		Title: "Hook entry not understood, command not scanned (partial)",
 		Why:   "A hooks entry does not match the (matcher, command) or (type=http, url) shape, so neither a command nor a URL could be extracted from it; it was skipped rather than silently treated as clean.",
+		// The event is a key out of the settings file; config text reaches a snippet only through
+		// the redactor (invariant #3).
 		Evidence: []model.Evidence{{File: filepath.Base(path), Line: 0,
-			Snippet: "hooks." + event, Scope: ScopeFor(path)}},
+			Snippet: "hooks." + redact.Secrets(event), Scope: ScopeFor(path)}},
 	}
 }

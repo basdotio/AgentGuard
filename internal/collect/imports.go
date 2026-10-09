@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/redact"
 	"github.com/basdotio/AgentGuard/internal/safeio"
 )
 
@@ -151,6 +152,13 @@ func credentialFile(name string) (model.Severity, bool) {
 	return "", false
 }
 
+// importRef is how every note below quotes an import: the `@path` as the instruction file wrote
+// it, through the redactor. It is text copied out of a file body — the same bytes an engine rule
+// matching that line would quote as <REDACTED> — and these four notes used to print it raw, so a
+// token sitting in a directory name reached every rendering. Only the reference is redacted; the
+// fixed tail a note appends is this package's own text.
+func importRef(ref string) string { return redact.Secrets("@" + ref) }
+
 // importCredentialFinding is the SCORING half of a refused credential import (dimension 3,
 // EXFIL-005). The coverage note above says "I did not read it"; this says "the instruction
 // file loads a credential into the agent's context", which is the first leg of exfiltration
@@ -168,7 +176,7 @@ func importCredentialFinding(from, ref string, sev model.Severity) model.Finding
 			"context at launch, so the secret is read into every session and travels with whatever leaves it. " +
 			"There is no legitimate reason for an instruction file to load a secret; the file itself was NOT " +
 			"read by this scan (see the coverage note), so nothing here says what it contains.",
-		Evidence: []model.Evidence{{File: from, Line: 0, Snippet: "@" + ref}},
+		Evidence: []model.Evidence{{File: from, Line: 0, Snippet: importRef(ref)}},
 	}
 }
 
@@ -180,7 +188,7 @@ func importSensitiveNote(from, ref string) model.Finding {
 			"(.env, id_rsa, credentials, *.key, …) — was NOT read: no artifact, no hash, nothing sent to a judge. " +
 			"An instruction file naming one is itself worth a look: it makes the scanner (and the agent) read " +
 			"secrets on the author's behalf. Scored separately as EXFIL-005.",
-		Evidence: []model.Evidence{{File: from, Line: 0, Snippet: "@" + ref + " is a credential path"}},
+		Evidence: []model.Evidence{{File: from, Line: 0, Snippet: importRef(ref) + " is a credential path"}},
 	}
 }
 
@@ -190,7 +198,7 @@ func importEscapeNote(from, ref string) model.Finding {
 		Title: "Instruction import points outside the scanned tree, not read",
 		Why: "An @import resolving outside HOME is loaded into context by Claude Code but was NOT scanned: " +
 			"following it would read files the operator did not point this scan at.",
-		Evidence: []model.Evidence{{File: from, Line: 0, Snippet: "@" + ref + " escapes the scan boundary"}},
+		Evidence: []model.Evidence{{File: from, Line: 0, Snippet: importRef(ref) + " escapes the scan boundary"}},
 	}
 }
 
@@ -200,7 +208,7 @@ func importDepthNote(from, ref string) model.Finding {
 		Title: "Instruction import chain hit the depth limit (partial)",
 		Why: "Imports are followed four hops, matching Claude Code's own limit; a reference beyond that was " +
 			"NOT read. If this fires, the chain is deeper than the documented maximum and may not load either.",
-		Evidence: []model.Evidence{{File: from, Line: 0, Snippet: "@" + ref + " beyond depth " + itoa(maxImportDepth)}},
+		Evidence: []model.Evidence{{File: from, Line: 0, Snippet: importRef(ref) + " beyond depth " + itoa(maxImportDepth)}},
 	}
 }
 
