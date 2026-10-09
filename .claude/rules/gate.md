@@ -94,6 +94,10 @@ paths:
   绝不退化成固定围栏)。`Verdict.Reason()` 只带规则 ID 和 `file:line`,**不带 snippet** —— 把被审文件
   的原文塞进一条安全提示再喂给模型,正是这个工具拒绝采取的形状。有测试盯着
   (`TestReasonCarriesNoEvidenceSnippets`)。
+- **要复制粘贴的命令只能带 `CommandArg(v.FullPath)`,不能带 `v.Path`,也不能用 `%q`**(P-030)。`v.Path` 是截到
+  160 字符的显示形态,贴进 `aguard check` 指向一个不存在的目录(桌面版装的 skill 路径通常更长);`%q` 不是 shell
+  引号,`$HOME`、反引号、`$(…)` 照样被展开,粘贴就执行了路径里的一段。给人读的那行保持截短。
+  `TestGateCommandsPasteAsPrinted` 用真 `/bin/sh` 展开每一条命令,再喂给真的命令函数。
 - **判定必须走 `score.Deterministic`,不要在这里重写一遍条件。** 闸门和 `--fail-on` 必须对同一份
   字节给同一个答案;judge 在这条路上永不运行。`check` 自 P-004 起接受 `--llm`,**闸门不跟**:`gateOptions` 和
   `approvePath` 构造的 `scanOpts` 永不设 `llm`,`TestGateScannerNeverEnablesLLM` 用计数端点钉住(比检查字段更严:
