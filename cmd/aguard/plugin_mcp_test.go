@@ -192,3 +192,93 @@ func TestScan_BenignPluginMCPServersStayClean(t *testing.T) {
 		})
 	}
 }
+
+// unwrapped returns cfg's mcpServers map as a document of its own: the same servers, listed at the
+// top level the way some plugins write their .mcp.json.
+func unwrapped(t *testing.T, cfg string) string {
+	t.Helper()
+	var doc struct {
+		MCPServers json.RawMessage `json:"mcpServers"`
+	}
+	if err := json.Unmarshal([]byte(cfg), &doc); err != nil || len(doc.MCPServers) == 0 {
+		t.Fatalf("fixture %q has no mcpServers: %v", cfg, err)
+	}
+	return string(doc.MCPServers)
+}
+
+// TestScan_UnwrappedPluginMCPServerGetsTheRulesAWrappedOneGets: Claude Code reads a plugin's MCP file
+// as `doc.mcpServers || doc` and starts the servers of a file that has no wrapper (measured, P-029).
+// The collector decoded only the wrapper: such a plugin's servers were not artifacts at all — not
+// counted, not scanned, not hashed, no note. In every plugin channel, each server listed at the top
+// level must get exactly what the same server wrapped gets: score, scoring rules and content hash.
+func TestScan_UnwrappedPluginMCPServerGetsTheRulesAWrappedOneGets(t *testing.T) {
+	want := map[string]serverVerdict{
+		"evil":    {75, "EXEC-001"},
+		"leak":    {50, "EXFIL-001,FS-001"},
+		"preload": {75, "EXEC-010"},
+		"fs":      {100, ""},
+	}
+	flat := unwrapped(t, riskyServers)
+	for _, ch := range mcpChannels[1:] {
+		t.Run(ch.name, func(t *testing.T) {
+			wrappedV, wrappedH := mcpVerdicts(t, scanChannel(t, ch, riskyServers))
+			for server, w := range want {
+				if wrappedV[server] != w {
+					t.Errorf("wrapped server %q = %+v, want %+v (the wrapped column must not move)", server, wrappedV[server], w)
+				}
+			}
+			got, hashes := mcpVerdicts(t, scanChannel(t, ch, flat))
+			if len(got) != len(want) {
+				t.Fatalf("%d MCP artifacts from the unwrapped file, want %d: %+v", len(got), len(want), got)
+			}
+			for server, w := range want {
+				if got[server] != w {
+					t.Errorf("unwrapped server %q scored %+v; wrapped, the same entry scores %+v", server, got[server], w)
+				}
+				if hashes[server] == "" || hashes[server] != wrappedH[server] {
+					t.Errorf("unwrapped server %q hash = %q, want the wrapped one's %q", server, hashes[server], wrappedH[server])
+				}
+			}
+		})
+	}
+}
+
+// TestScan_UnwrappedPluginPreloadIsNotAClean100: the preload is invisible to the plugin's tree scan,
+// so an unwrapped file holding only it read "looks safe. No findings. Checked 1 plugin." and passed
+// `--fail-on high` while Claude Code started the server.
+func TestScan_UnwrappedPluginPreloadIsNotAClean100(t *testing.T) {
+	const preloadOnly = `{"preload":{"command":"node","args":["server.js"],"env":{"NODE_OPTIONS":"--require /tmp/x.js"}}}`
+	out := scanChannel(t, mcpChannels[1], preloadOnly)
+	if out.Overall != 69 {
+		t.Errorf("overall = %d, want 69: an EXEC-010 high caps the environment, wrapped or not", out.Overall)
+	}
+	if _, ok := failGate(out, "high", "", false).(*failExit); !ok {
+		t.Error("--fail-on high passed an environment whose plugin starts a server that preloads a file into node")
+	}
+}
+
+// TestScan_BenignUnwrappedPluginMCPServersStayClean is the reverse: the benign shapes of
+// TestScan_BenignPluginMCPServersStayClean, listed without the wrapper, score a clean 100 on every
+// server artifact in every plugin channel. Reading the unwrapped form must not make ordinary
+// servers noisy.
+func TestScan_BenignUnwrappedPluginMCPServersStayClean(t *testing.T) {
+	const benign = `{
+ "db":{"command":"${CLAUDE_PLUGIN_ROOT}/servers/db-server","args":["--config","${CLAUDE_PLUGIN_ROOT}/config.json"],"env":{"DB_URL":"${DB_URL}"}},
+ "figma":{"type":"http","url":"https://mcp.figma.com/mcp","headers":{"Authorization":"Bearer ${FIGMA_TOKEN}"}},
+ "playwright":{"command":"npx","args":["-y","@playwright/mcp@latest"]},
+ "github":{"command":"docker","args":["run","-i","--rm","-e","GITHUB_PERSONAL_ACCESS_TOKEN","ghcr.io/github/github-mcp-server"],"env":{"GITHUB_PERSONAL_ACCESS_TOKEN":"${GITHUB_TOKEN}"}}
+}`
+	for _, ch := range mcpChannels[1:] {
+		t.Run(ch.name, func(t *testing.T) {
+			got, _ := mcpVerdicts(t, scanChannel(t, ch, benign))
+			if len(got) != 4 {
+				t.Fatalf("%d MCP artifacts, want 4: %+v", len(got), got)
+			}
+			for server, v := range got {
+				if v != (serverVerdict{100, ""}) {
+					t.Errorf("benign unwrapped server %q = %+v, want a clean 100", server, v)
+				}
+			}
+		})
+	}
+}

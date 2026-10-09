@@ -182,6 +182,13 @@ type ArtifactReport struct {
 	// plugins' servers stay apart in the report — so anything that looks the entry up must use
 	// this. Scan input, never serialized.
 	MCPServer string `json:"-"`
+	// MCPUnwrapped is set for a plugin's MCP server whose file lists its servers at the top level,
+	// without the `mcpServers` wrapper — Claude Code reads a plugin MCP file as
+	// `doc.mcpServers || doc` and starts those servers too (P-029). The entry is then
+	// <top level>[MCPServer] rather than mcpServers[MCPServer]. The zero value is the wrapped
+	// layout, so every artifact built without saying otherwise reads as before. Scan input,
+	// never serialized.
+	MCPUnwrapped bool `json:"-"`
 	// Advisory carries DISPLAY-ONLY annotations (e.g. LLM triage labels, spec §5.2.1). They
 	// reference findings by RuleID but NEVER alter them — findings and Score are computed
 	// only from Findings. Advisory annotations can't move the score or the --fail-on gate.
