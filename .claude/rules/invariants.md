@@ -10,6 +10,10 @@
    - `check --llm`:单个目标(目录、文件或 `.zip`),走同一个 `analyze`;加载时闸门不走这条,恒静态;
    - `llm test`:一次 `HTTPClient.Ping`,不带任何被扫内容。
 
+   三条路径上判官也**不跟出 `llm.base_url` 那个源的重定向**:端点回的 30x 指向别的 scheme、主机或端口,那一跳不发,这次调用失败成
+   `LLM-000`(`judge.sameOriginOnly`,`TestNewHTTP_RefusesCrossOriginRedirects`,P-023)—— `CheckEndpoint` 只看配置里写的
+   地址,而 Go 默认的策略只比主机名就带上 key,307/308 还把摘录重发给任何主机。
+
    其余入口**即使配置里开着判官也一个请求都不发**。钉住它的是 `TestZeroDial_OnlyTheJudgeConnects`
    (`cmd/aguard/zero_dial_test.go`):`judge.Transport`(测试接缝,生产里恒为 nil)和 `http.DefaultTransport` 各换成
    一个只计数、拒绝请求的 RoundTripper,**先**断言上面三条路径确实被判官那个计数器看见(否则测试是瞎的),**再**断言
@@ -25,8 +29,9 @@
    - **自带 `http.Transport` 的 client**:两个计数器都不经过。本模块的产品代码由 `TestZeroDial_NoClientOutsideTheJudge`
      (`cmd/aguard/zero_dial_source_test.go`)从源码上堵住:`cmd/`、`internal/` 的非测试文件里,`internal/judge` 之外
      不许出现 `net/http` 的 `Client`/`Transport` 类型;`internal/judge` 里不许出现 `http.Transport`,`http.Client` 只许是
-     `NewHTTP` 里**唯一那一个** `http.Client{Transport: Transport}` 字面量的类型,或 `*http.Client` 字段/参数/返回值的类型
-     (声明,不造 client);`judge.Transport` 只许在 `_test.go` 里赋值。判官包不能豁免:正对照只看着它自己那几条路径用的
+     `NewHTTP` 里**唯一那一个** `http.Client{Transport: Transport, …}` 字面量的类型(`Transport` 的值就是接缝;
+     另外只带重定向策略 `CheckRedirect`,它只决定下一跳发不发,发出去的每一跳都过同一个 `Transport`,
+     `TestZeroDial_SeamClientLiteralShapes` 钉着哪些形状算数),或 `*http.Client` 字段/参数/返回值的类型(声明,不造 client);`judge.Transport` 只许在 `_test.go` 里赋值。判官包不能豁免:正对照只看着它自己那几条路径用的
      client,判官包里再造一个自带 transport 的 client、从零表里任何一个入口调用,照样拨出去而三条测试全绿;
    - **依赖在它自己代码里造的 client**:源码检查读的是本模块,不读它 import 的东西。今天二进制里别的模块都不 import
      `net/http` 或 `os/exec`(`pflag` import `net` 只为 IP 类型的 flag)—— 这是读代码的结论,不是测试的结论;

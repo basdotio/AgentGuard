@@ -32,13 +32,15 @@ import (
 )
 
 // seamClientFunc is the one function in internal/judge that may build an http.Client, and only
-// as http.Client{Transport: Transport}: the client every judge request crosses the seam in.
+// as http.Client{Transport: Transport, …}: the client every judge request crosses the seam in.
+// Today the "…" is CheckRedirect (P-023's same-origin policy), which decides whether the next hop
+// is sent at all; a hop that is sent crosses the same Transport, so the counters still see it.
 const seamClientFunc = "NewHTTP"
 
 // TestZeroDial_NoClientOutsideTheJudge: outside internal/judge, product code never names
 // net/http's Client or Transport type — so it cannot build a client or a transport of its own,
 // whether by literal, new(), a declared variable or a Clone of the default one. Inside
-// internal/judge the one client built is NewHTTP's http.Client{Transport: Transport}: the package
+// internal/judge the one client built is NewHTTP's http.Client{Transport: Transport, …}: the package
 // never names http.Transport, and names http.Client only as that literal's type or as the type of
 // a *http.Client field, parameter or result, which declares a client and builds none. No non-test
 // file assigns judge.Transport or takes its address, which keeps "nil in production" true.
@@ -85,7 +87,7 @@ func TestZeroDial_NoClientOutsideTheJudge(t *testing.T) {
 		t.Error("no package-level `var Transport` in internal/judge: the seam this check guards was renamed or removed, so it guards nothing")
 	}
 	if seamBuilt != 1 {
-		t.Errorf("found %d `http.Client{Transport: Transport}` literal(s) in judge.%s, want exactly 1: the one client construction this check allows moved or changed shape — move the check with it, or it no longer names the client the counters watch", seamBuilt, seamClientFunc)
+		t.Errorf("found %d `http.Client{Transport: Transport, …}` literal(s) in judge.%s, want exactly 1: the one client construction this check allows moved or changed shape — move the check with it, or it no longer names the client the counters watch", seamBuilt, seamClientFunc)
 	}
 }
 
@@ -93,7 +95,7 @@ func TestZeroDial_NoClientOutsideTheJudge(t *testing.T) {
 type dialSourceReport struct {
 	found        []string // every way the file steps around the two counters
 	seamDeclared bool     // the file declares internal/judge's package-level `var Transport`
-	seamBuilt    int      // http.Client{Transport: Transport} literals in judge.NewHTTP
+	seamBuilt    int      // http.Client{Transport: Transport, …} literals in judge.NewHTTP
 }
 
 // dialSourceViolations reads one file at repo-relative path rel.
@@ -158,7 +160,7 @@ func httpTypeViolation(pos, name string, inJudge bool) string {
 	case name == "Transport":
 		return fmt.Sprintf("%s names http.Transport inside internal/judge: the judge's one client takes its transport from the seam (judge.Transport), and a transport built here crosses neither counter", pos)
 	default:
-		return fmt.Sprintf("%s names http.Client inside internal/judge other than as the type of judge.%s's http.Client{Transport: Transport} or of a *http.Client field, parameter or result: that can build a second client with a transport of its own, which crosses neither counter, and the positive control only watches the paths it runs — get the client from judge.%s", pos, seamClientFunc, seamClientFunc)
+		return fmt.Sprintf("%s names http.Client inside internal/judge other than as the type of judge.%s's http.Client{Transport: Transport, …} or of a *http.Client field, parameter or result: that can build a second client with a transport of its own, which crosses neither counter, and the positive control only watches the paths it runs — get the client from judge.%s", pos, seamClientFunc, seamClientFunc)
 	}
 }
 
@@ -191,7 +193,7 @@ func dialSourceImports(module string, f *ast.File, at func(ast.Node) string, r *
 }
 
 // judgeClientAllowances returns the http.Client type expressions in an internal/judge file that
-// build no client but the seam's: the type of each http.Client{Transport: Transport} literal in
+// build no client but the seam's: the type of each http.Client{Transport: Transport, …} literal in
 // NewHTTP (counted in seamBuilt), and the X of each *http.Client that is the type of a field,
 // parameter or result — a declaration. Every other http.Client in the package is red.
 //
@@ -225,8 +227,10 @@ func judgeClientAllowances(f *ast.File, isClient func(ast.Expr) bool) (allowed m
 }
 
 // isSeamClientLiteral reports whether an http.Client literal is the seam's: every element keyed,
-// and Transport set to the identifier Transport. Other fields (a redirect policy, a timeout) may
-// join it; none of them carries a transport.
+// and Transport set to the identifier Transport. Other keys may join it — NewHTTP's carries
+// CheckRedirect (P-023) — because none of http.Client's other fields carries a transport: a
+// redirect policy only decides whether the next hop is sent, and a hop that is sent crosses the
+// same Transport. TestZeroDial_SeamClientLiteralShapes pins which shapes pass.
 func isSeamClientLiteral(lit *ast.CompositeLit) bool {
 	seam := false
 	for _, e := range lit.Elts {
@@ -247,6 +251,34 @@ func isSeamClientLiteral(lit *ast.CompositeLit) bool {
 		}
 	}
 	return seam
+}
+
+// TestZeroDial_SeamClientLiteralShapes: the literal NewHTTP builds today (the seam plus P-023's
+// redirect policy) is the seam's, and adding that key did not loosen the rule that matters — a
+// literal whose Transport is anything but the seam, or that leaves Transport out (so it falls back
+// to http.DefaultTransport), or is not fully keyed, is not.
+func TestZeroDial_SeamClientLiteralShapes(t *testing.T) {
+	for src, want := range map[string]bool{
+		"http.Client{Transport: Transport}":                                            true,
+		"http.Client{Transport: Transport, CheckRedirect: sameOriginOnly}":             true,
+		"http.Client{CheckRedirect: sameOriginOnly, Transport: (Transport)}":           true,
+		"http.Client{CheckRedirect: sameOriginOnly}":                                   false,
+		"http.Client{Transport: http.DefaultTransport, CheckRedirect: sameOriginOnly}": false,
+		"http.Client{Transport: other, CheckRedirect: sameOriginOnly}":                 false,
+		"http.Client{Transport, sameOriginOnly, nil, 0}":                               false,
+	} {
+		e, err := parser.ParseExpr(src)
+		if err != nil {
+			t.Fatalf("%s: %v", src, err)
+		}
+		lit, ok := e.(*ast.CompositeLit)
+		if !ok {
+			t.Fatalf("%s parsed as %T, want a composite literal", src, e)
+		}
+		if got := isSeamClientLiteral(lit); got != want {
+			t.Errorf("isSeamClientLiteral(%s) = %v, want %v", src, got, want)
+		}
+	}
 }
 
 // judgeSeamDeclared reports whether an internal/judge file declares the package-level
