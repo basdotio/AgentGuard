@@ -88,7 +88,7 @@ aguard version                                         # 版本 + 与已装插�
 **配置文件作用域(B4)**:hooks/permissions/MCP 不止一个来源,按优先级枚举并**标注每条 finding 来自哪个作用域**:
 `<root>/settings.json` → `<root>/settings.local.json` → 项目级 `.claude/settings.json` / `settings.local.json` → 项目 `.mcp.json` → `~/.claude.json`。P0 至少覆盖用户级 + 当前工作目录项目级。
 
-> 实现现状(2026-09-15):plugin 整棵树扫成一个 artifact,**同时**它自带的 hook 按 (event, matcher, command) 拆成独立 hook artifact(走 `settings.json` 同一个 builder,`HOOK-001`、脚本跟进、判官 hook pass 全都适用),自带的 MCP server(插件根 `.mcp.json`/`mcp.json`)拆成独立 mcp artifact,**按配置里的 key(`MCPServer`,经 `detect.MCPServerKey`)找条目**,规则和判官的 MCP 配置那一趟都跑 —— artifact 名带 ` (plugin …)` 后缀,2026-10-09 之前(P-021)规则和判官按名字找、找不到,每个插件 server 都是零 unit 的 100 分。一条 hook 命令、一个插件 MCP server 条目因此都出现两次(树里的文本 + 独立 artifact),报告按 (artifact, rule) 折叠,两行说的是不同粒度的事;宁可重复,不要让树扫描依赖 hook 解析成功。**仍未拆**的是插件自带的 skills/commands(只当树里的文本读),记在 `issues/006`。
+> 实现现状(2026-09-15):plugin 整棵树扫成一个 artifact,**同时**它自带的 hook 按 (event, matcher, command) 拆成独立 hook artifact(走 `settings.json` 同一个 builder,`HOOK-001`、脚本跟进、判官 hook pass 全都适用),自带的 MCP server(插件根 `.mcp.json`/`mcp.json`)拆成独立 mcp artifact,**按配置里的 key(`MCPServer`,经 `detect.MCPServerKey`)找条目**;**带不带 `mcpServers` 外壳都认**(P-029,2026-10-10 实测 Claude Code 2.1.107:插件 MCP 文件按 `doc.mcpServers || doc` 读,外壳缺失或为 JS 假值时顶层就是 server 表、照样启动;外壳键区分大小写;无外壳时只有带 `command` 或 `type` 的对象才算 server;用户级/项目级配置不认无外壳形式,不按此读),规则和判官的 MCP 配置那一趟都跑 —— artifact 名带 ` (plugin …)` 后缀,2026-10-09 之前(P-021)规则和判官按名字找、找不到,每个插件 server 都是零 unit 的 100 分。一条 hook 命令、一个插件 MCP server 条目因此都出现两次(树里的文本 + 独立 artifact),报告按 (artifact, rule) 折叠,两行说的是不同粒度的事;宁可重复,不要让树扫描依赖 hook 解析成功。**仍未拆**的是插件自带的 skills/commands(只当树里的文本读),记在 `issues/006`。插件 manifest(`.claude-plugin/plugin.json`)里声明的 `mcpServers`(内联、路径、数组、MCPB)以及数组形式的外壳,Claude Code 会启动(内联、路径、数组外壳三种 2026-10-10 实测),**仍未采集**(数组外壳照旧出解析失败的 artifact)。
 >
 > **plugin 的来源不止 `installed_plugins.json`。** Claude 桌面版(Cowork 和桌面版里的 Code 标签)在 Customize 里装的插件和 skill 同步到 `~/Library/Application Support/Claude/local-agent-mode-sessions/`,启动 CLI 时用 `--plugin-dir` 塞进去,**不经过** manifest;只读 root 的扫描对它们全盲,而这正是非技术用户的安装路径。`collect/desktop.go` 按 home 定位,布局是未文档化的观察结果(2026-09-04,macOS),只允许单向 best-effort:目录不存在 → 什么都不出;在但读不了 → `IO-000`/`COV-000`/`SCOPE-001`。桌面版的 skills 包**按单个 skill 采**(整包哈希一上传就变,单 skill 树哈希才稳)。同名 bundle 多份时按内容哈希去重,最新会话优先。
 >
@@ -371,6 +371,7 @@ type ArtifactReport struct {
     Hook      Hook       `json:"-"` // KindHook:事件/matcher/命令,以及原样的条目 JSON(Entry,内容哈希绑它),扫描内部输入,不序列化
     Connector *Connector `json:"-"` // KindConnector:通告的工具清单(name/description/参数 description),不序列化;报告带的是关于它的发现,不是它的副本
     MCPServer string     `json:"-"` // KindMCP:server 在 mcpServers 里的 key;插件自带的 server 的 Name 带 " (plugin …)" 后缀,按 key 找条目要用它
+    MCPUnwrapped bool    `json:"-"` // KindMCP:插件 MCP 文件没有 mcpServers 外壳、server 列在顶层时为 true,条目是「顶层[MCPServer]」(P-029);零值即外壳布局
 }
 
 type ScanResult struct {
