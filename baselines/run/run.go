@@ -81,6 +81,11 @@ type Run struct {
 	Counts ledger.Counts `yaml:"counts"`
 	// WorkListSize is what Counts.Total() must equal.
 	WorkListSize int `yaml:"work_list_size"`
+
+	// JudgeUsage is what the tool's judge cost over this run (aguard --llm), summed from the
+	// ledger with the basis it rests on. Nil when no sample's output carried a judge summary, so
+	// a static run's run.yaml is unchanged.
+	JudgeUsage *JudgeUsage `yaml:"judge_usage,omitempty"`
 }
 
 // ErrIncomplete is returned when a run is missing metadata that makes its numbers readable.
@@ -132,6 +137,9 @@ func (r Run) Signature() string {
 		s += fmt.Sprintf(". EXTRA ARGS: %s — the verdicts below fold deterministic findings only "+
 			"and are unaffected; anything these flags added lives in raw/ and is not committed",
 			strings.Join(r.ToolExtraArgs, " "))
+		if r.JudgeUsage != nil {
+			s += ", except what the judge cost, which run.yaml sums under judge_usage"
+		}
 	}
 	if r.Provisional {
 		s += ". PROVISIONAL: agent-artifact-corpus is public and " + r.Tool +

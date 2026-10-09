@@ -263,6 +263,7 @@ func realMain(o opts) error {
 		Provisional:  entry.Provisional,
 		Declarations: entry.Declared,
 		Counts:       counts, WorkListSize: len(list),
+		JudgeUsage: run.SumJudgeUsage(rows),
 	}
 	if err := meta.Validate(); err != nil {
 		return err
@@ -405,8 +406,9 @@ func uploadsFor(entry toolEntry, extra []string) (bool, string) {
 		if a == "--llm" {
 			return true, "this run passed --llm to aguard: redacted excerpts of every judged artifact " +
 				"were sent to the endpoint named in the judge config. The verdicts fold deterministic " +
-				"findings only, so verdicts.jsonl and the scorecard are unaffected; the judge's output " +
-				"exists only in raw/ (kept as a release asset, never in the tree) and is folded by hand."
+				"findings only, so verdicts.jsonl and the scorecard are unaffected; what the judge found " +
+				"exists only in raw/ (kept as a release asset, never in the tree) and is folded by hand, " +
+				"and what it cost is summed under judge_usage."
 		}
 	}
 	return entry.Uploads, entry.UploadsBasis
