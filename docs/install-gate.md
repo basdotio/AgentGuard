@@ -77,6 +77,13 @@ could not open, has no hash for an approval to be keyed on, so `aguard approve` 
 names the artifact and the reason, exits 2, and leaves the store untouched.
 `aguard check <path> --json` lists the notes that say what could not be read.
 
+The `aguard check` and `aguard approve` commands in the gate's messages carry the artifact's
+**full path**, quoted for a POSIX shell, so they work pasted exactly as printed. The path shown
+for reading is shortened past 160 characters (a skill installed through the desktop app is usually
+longer than that); the command is not. A path holding a control or invisible character is spelled
+with `$'…'` escapes, which bash, zsh and ksh read; a path longer than 4096 bytes once quoted gets a
+placeholder instead of a command.
+
 The store is `~/.claude/.aguard-approvals.json`, mode 0600, written atomically. Besides the
 approvals it holds, for at most an hour, the verdict behind each prompt still waiting for your
 answer: the answer arrives in a separate hook call, and this file is the only thing the two
