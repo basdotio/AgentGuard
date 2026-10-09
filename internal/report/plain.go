@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/basdotio/AgentGuard/internal/collect"
+	"github.com/basdotio/AgentGuard/internal/detect"
 	"github.com/basdotio/AgentGuard/internal/model"
 )
 
@@ -140,38 +142,75 @@ const incompleteLead = "Low risk in what was read, but coverage is incomplete."
 // coverageVerdict is verdictSentence with one more question asked of the result: was something
 // Claude Code actually loads left not fully read? "Looks safe" is a claim about what the agent
 // loads, and a settings.json that did not parse was read as "looks safe … Nothing was found to
-// check" over the file that holds the hooks, permissions and env.
+// check" over the file that holds the hooks, permissions and env (P-013); a skill whose payload sat
+// in a subdirectory the scan could not list read "looks safe" too (P-017).
 //
-// The set that answers it is named here and nowhere else, selected by rule id and by where the
-// note is attached, never by title:
-//   - any coverage note attached to an artifact (itemGaps — the same items the Checked line names):
-//     the item is in the inventory and in the score, and was not fully read;
-//   - an IO-000 or PARSE-000 note at scan level: a file in a load path that could not be read
-//     (an unreadable settings.json is the twin of an unparsable one) or a config entry not understood.
-//
-// Every other scan-level note stays in the Not checked line and leaves the headline alone. Above all
-// the COV-000 for top-level entries no collector owns — the user's own sessions/ and file-history/,
-// skipped by design and present on nearly every real machine — and LLM-002, a privacy notice about
-// where excerpts went, not a gap: a hedge on almost every Low-band report would stop meaning
-// anything (decided by the maintainer, 2026-10-09). Trust decisions are not gaps either.
-//
-// Only the Low band's lead changes; the other three already report problems, which an unread file
-// can only add to. The counting half never changes.
+// The set that answers it is named here and nowhere else (unreadLoaded). Only the Low band's lead
+// changes; the other three already report problems, which an unread file can only add to. The
+// counting half never changes.
 func coverageVerdict(level string, act, total int, r model.ScanResult) string {
-	if level != "Low" {
-		return verdictSentence(level, act, total)
-	}
-	unread := len(itemGaps(r)) > 0
-	for _, n := range r.Notes {
-		switch n.RuleID {
-		case "IO-000", "PARSE-000":
-			unread = true
-		}
-	}
-	if !unread {
+	if level != "Low" || !unreadLoaded(r) {
 		return verdictSentence(level, act, total)
 	}
 	return incompleteLead + countClause(act, total)
+}
+
+// unreadLoaded reports whether the result says that something Claude Code loads was not fully read.
+// Selected by rule id and by where the note sits:
+//   - any coverage note attached to an artifact (itemGaps): the item is in the inventory and in the
+//     score, and was not fully read;
+//   - at scan level, an IO-000 or PARSE-000 — a file in a load path that could not be read (an
+//     unreadable settings.json is the twin of an unparsable one) or a config entry not understood —
+//     and any COV-000 except the deliberate skips below. Most of what detect and collect say they did
+//     not read is a scan-level COV-000 (an unlistable skill subdirectory, a file over the size cap, a
+//     hook's second stage, a rules/ symlinked out of the root), and none of it used to hedge;
+//   - an artifact carrying SUP-004: it points the agent at a file inside a tree the scan skips by name,
+//     and its companion note (third-party trees) is one of the deliberate skips.
+//
+// A future scan-level COV-000 hedges until someone names it a deliberate skip: the wrong direction
+// for a gap is to say "safe" once too often. Everything that is not about reading — the judge's
+// LLM-* notes (LLM-002 is a privacy notice, decided by the maintainer 2026-10-09), the gate's GATE-*,
+// trust decisions — leaves the headline alone and stays in the Not checked line.
+func unreadLoaded(r model.ScanResult) bool {
+	if len(itemGaps(r)) > 0 {
+		return true
+	}
+	for _, n := range r.Notes {
+		switch {
+		case n.RuleID == "IO-000", n.RuleID == "PARSE-000":
+			return true
+		case n.RuleID == "COV-000" && !deliberateSkip[n.Title]:
+			return true
+		}
+	}
+	for _, a := range r.Artifacts {
+		for _, f := range a.Findings {
+			if f.RuleID == "SUP-004" && f.Source != model.SrcLLM {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// deliberateSkip names the scan-level COV-000 notes that disclose a skip of something that is not
+// loaded, or that was read after all — the only scan-level coverage notes that leave "looks safe"
+// alone. All four share one rule id, one place and one source with the gaps, so the title is the one
+// thing in the data that tells them apart; it is compared through the producers' own exported
+// constants, the way detect's coalescer matches them, so a reworded title moves both sides at once
+// and the report holds no title text of its own.
+var deliberateSkip = map[string]bool{
+	// The user's own sessions/, file-history/ at the top of the root: no collector owns them and
+	// nothing loads them; present on nearly every real machine (decided by the maintainer, 2026-10-09).
+	collect.UnownedNoteTitle: true,
+	// Nothing was collected, so nothing loaded went unread; the Checked line says so.
+	collect.EmptyRootNoteTitle: true,
+	// node_modules/, vendor/, .git/, coverage/ inside an artifact: skipped by name on purpose, and
+	// common on real machines. An artifact that points the agent INTO one raises SUP-004, which hedges.
+	detect.GeneratedDirNoteTitle: true,
+	// A hook's script found inside its plugin's tree: read in full with the plugin; only the per-hook
+	// attribution is missing.
+	detect.HookOwnedNoteTitle: true,
 }
 
 // countClause is the counting half of the verdict, with its leading space.
