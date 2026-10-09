@@ -217,7 +217,8 @@ produces or their ID/dimension/severity/advisory flag, **bump `rulesEpoch` in th
 Nothing enforces it; a forgotten bump lets two reports claim the same rules while different code
 produced them. The LLM judge is outside it altogether — prompts, grounding, consensus and severity
 clamping included: the judge moves only `overall_effective`, so a judge change never bumps the
-epoch, and today a report identifies the judge's code only through `tool_version`.
+epoch. A `--llm` report names the judge in its own `judge` block instead: `prompt_version` and
+`excerpt_version` for its code, `model` and `samples` for how it ran (P-031).
 
 ## Canonical hashing
 

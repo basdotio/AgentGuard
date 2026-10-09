@@ -176,7 +176,7 @@ Checked 那句数清单,清单什么都没数到时改数扫过的 artifact(`che
 `collect` 的凭据 import 检查(`EXFIL-005`)、`permcheck`——只要改变了某个输入产出哪些发现,或发现的 ID/维度/严重度/advisory,
 **同一个提交里把 `rulesEpoch` 加一。** 没有东西强制它;忘了加,两份报告就会自称同一版规则,而产出它们的代码其实不同。
 LLM 判官完全不在里面——提示词、证据落地、共识、严重度钳制都算:判官只动 `overall_effective`,所以改判官从不加 epoch;
-今天报告只通过 `tool_version` 标识判官的代码。
+`--llm` 报告在自己的 `judge` 块里标识判官:`prompt_version` 和 `excerpt_version` 标它的代码,`model` 和 `samples` 标它怎么跑(P-031)。
 
 ## Canonical 哈希
 
