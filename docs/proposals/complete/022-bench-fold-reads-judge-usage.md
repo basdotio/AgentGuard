@@ -172,7 +172,7 @@ and run.yaml of a static run (no judge summary) do not change by a single byte. 
 
 ```
 Merged: PR #35 (2026-10-09; find the sha with git log --grep P-022)
-Released: pending release
+Released: v0.19.0
 Evidence: TestJudgeUsage_ReportedCountsWinOverTheDerivation, TestJudgeUsage_UnreportedTokensStayAbsent, TestScan_LedgerRowCarriesTheJudgeUsage (baselines/adapter/aguard/usage_test.go), TestSumJudgeUsage_* (baselines/run/judgeusage_test.go), TestWriteAllCarriesTheJudgeUsage (baselines/cmd/baseline/judgeusage_test.go); W1 red at compile time (usage_test.go:30:48: undefined: ledger.JudgeUsage; usage_test.go:36:9: undefined: judgeUsage; judgeusage_test.go:22:19: undefined: run.SumJudgeUsage; judgeusage_test.go:22:3: unknown field JudgeUsage in struct literal of type run.Run), green after W3 / W4
 Evidence: TestRawKeepsTheToolsOwnBytes (baselines/adapter/aguard/raw_test.go); at W1, with usage_test.go temporarily moved aside and the test run alone, red at run time: raw/ carries "triage_calls", which the tool never printed — the raw file has "judge":{…,"triage_calls":0,"retries":0}, and also raw/ dropped a field the tool printed; green after W2
 Evidence: temporary probe (real judge.Run, two skills each with one static finding, samples 3, not committed): no budget calls 14 · triage 2; max_calls 13 → calls 13 · skipped 1 · triage reported 1, derived 2, questions reported (13−1)/3 = 4, derived (13−2)/3 = 3 remainder 2; max_calls 12 → reported 1, derived 2

@@ -111,7 +111,7 @@ ellipsis too), still requires a unique match, and rejects an empty prefix.
 
 ```
 Merged: PR #17 (2026-10-09; find the sha with git log --grep P-008)
-Released: pending release
+Released: v0.19.0
 Evidence: TestUndoHintPastesAsIs (cmd/aguard/gate_undo_test.go); W1 red: the undo command as printed failed: no approval matches "a1e9cd5dbc1a…" → green after W2: the pasted command deleted the approval, and the displayed content a1e9cd5dbc1a… is unchanged
 Evidence: TestForgetAcceptsTheShortHashAsPrinted (same file); W1 red (both … and ... give no approval matches) → still red after W2 (W2 changes only the hint) → green after W3
 Evidence: reverse assertion TestForgetRefusesAnEmptyPrefix (same file); W1 red: forget "" succeeded and withdrew the approval (the existing hazard) → after W3, "", … and ... are all refused and the approval remains

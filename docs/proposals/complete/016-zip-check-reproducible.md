@@ -251,7 +251,7 @@ already been fixed.
 
 ```
 Merged: PR #31 (2026-10-09; find the sha with git log --grep P-016)
-Released: pending release
+Released: v0.19.0
 Evidence: W1 on top of main (dec64ca): 6 red, 5 reverse assertions green: TestCheckZip_TwiceIsByteIdentical (flat: uri aguard-inbox-<random>/install.sh, artifact skill:aguard-inbox-<random>, all four outputs contain aguard-inbox; nested: artifact directory:aguard-inbox-<random>), TestCheckZip_SameFindingsAsItsFolder (zip uri aguard-inbox-<random>/install.sh vs directory install.sh), TestCheckZip_DoesNotReadTheSharedTempDir (picks up mcp:planted from $TMPDIR/.claude.json, four locations point at the temp dir), TestApprove_ZipRecordsTheArchive (name aguard-inbox-<random>, path a deleted temp dir), TestScanInbox_ZipEvidenceIsArchiveRelative (evidence aguard-inbox-<random>/install.sh), TestExtractZip_FolderNamedAfterTheArchive (dir name random, symlinks unresolved, directly in the shared temp dir)
 Evidence: after W2 the SARIF is already the same on both runs, and TestCheckZip_SameFindingsAsItsFolder / DoesNotReadTheSharedTempDir / ScanInbox_ZipEvidenceIsArchiveRelative / ExtractZip_FolderNamedAfterTheArchive turn green; TestCheckZip_TwiceIsByteIdentical is still red on text / markdown / JSON, TestApprove_ZipRecordsTheArchive still red because path is <temp-root>/flat.zip; all green after W3
 Evidence: TestCheckZip_SameFindingsAsItsFolder (cmd/aguard/archive_test.go); the zip and the same tree as a directory: uri install.sh, fingerprint 77848c2e390ecd00, level and message identical result by result, only artifact differs (skill:flat.zip vs skill:myskill); artifact hash identical

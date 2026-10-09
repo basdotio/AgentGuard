@@ -299,7 +299,7 @@ JSON identical key by key except for the three keys scanned_at / tool_version / 
 
 ```
 Merged: PR #21 (2026-10-09; find the sha with git log --grep P-002)
-Released: pending release
+Released: v0.19.0
 Evidence: W1 red at compile time on this repository's origin/main dec64ca, for the reasons the criteria give: internal/detect has no RulesVersion / rulesVersion / rulesEpoch; cmd/aguard has no detect.RulesVersion, model.ScanResult has no RulesVersion field, there is no binaryVersionLine; hack/gen-rules has no detect.RulesVersion
 Evidence: TestRulesVersion_MovesWithWhatDecidesAFinding (internal/detect/rules_version_test.go); green after W2: 14 mutations (regex, add except, remove except, severity, dimension, ID, Advisory, the four *Only, swapping the order of two rules, deleting one, epoch + 1) each move the version and are pairwise distinct; manual negative: temporarily removing the except field from the hash → the two "except added / removed" cases red, reverted
 Evidence: TestRulesVersion_IsStable (same file); green after W2: two calls equal, 12 lowercase hex digits, equal to rulesVersion(builtinRules(), rulesEpoch); current value in this repository 43f245966105 (46 engine rules, EXEC-012 included)

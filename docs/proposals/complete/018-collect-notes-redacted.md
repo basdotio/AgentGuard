@@ -238,7 +238,7 @@ All fixtures are built on the spot in `t.TempDir()`; the token is an obviously f
 
 ```
 Merged: PR #41 (2026-10-09; find the sha with git log --grep P-018)
-Released: pending release
+Released: v0.19.0
 Evidence: W1 red on this repository's main (fd28344), for the reasons in the criteria — TestImportNotes_SecretInReferenceIsRedacted: all six snippets carry the token verbatim (e.g. @~/vault/ghp_<36 chars>/.env is a credential path); TestConfigNamesInNotesAreRedacted: two (install path escapes HOME: ghp_<36 chars>@market, hooks.ghp_<36 chars>); TestUnreadableNote_SecretInEntryNameIsRedacted: the Why and snippet (unreadable: ghp_<36 chars>); TestDeadRegistrationNote_SecretInCommandIsRedacted (missing hook command: /opt/ghp_<36 chars>/aguard hook); TestScan_NoteSecretsNeverReachARendering: all seven subtests red → all green after W5
 Evidence: TestScan_NoteSecretsNeverReachARendering step by step (token count, json/text/verbose/markdown/sarif/html/check --md): W1 11/2/11/11/4/3/2 → W2 (move only) unchanged → W3 (collect) 3/0/3/3/1/1/2 → W4 (unreadableNote) 1/0/1/1/0/0/0 → W5 (GATE-001) all 0; the counts of the eight kinds of findings and notes unchanged at every step
 Evidence: reverse assertions TestImportNotes_OrdinaryReferenceUnchanged, TestConfigNamesInNotes_OrdinaryUnchanged, TestUnreadableNote_OrdinaryNamesUnchanged (three subtests, Why equal to the old formula character for character), TestDeadRegistrationNote_OrdinaryCommandUnchanged (four install commands), TestStatusDescribe_ShowsTheRegisteredCommandVerbatim (npx cache path, first asserting that Redact would change it) green already at W1, still green after the fix without a single change

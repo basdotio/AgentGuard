@@ -206,7 +206,7 @@ All fixtures are built on the fly in `t.TempDir()`; the token is an obviously fa
 
 ```
 Merged: PR #25 (2026-10-09; find the sha with git log --grep P-014)
-Released: pending release
+Released: v0.19.0
 Evidence: TestHookOutside_SecretInPathIsRedactedOnBothSides (internal/detect/snippet_redact_test.go); W1 red on this repository's main (dec64ca): under Engine.Run the HOOK-002 snippet is <REDACTED><REDACTED>/hook.sh → /var/folders/…/opt/ghp_<36 chars>/hook.sh, and in both literal-value subtests the token is in clear after the arrow → green after W2, both sides of the arrow are …/<REDACTED>/hook.sh
 Evidence: TestRegistryRedirect_WhyRedactsWhatTheSnippetRedacts (same file); W1 red, all four subtests (${PORT} port, no host after userinfo, broken ${R:-…} default, token-shaped host name) have the full token in Why → still red after W2 (not its concern) → green after W3
 Evidence: TestScan_PathSecretsNeverReachARendering (cmd/aguard/redact_render_test.go); W1 red: 2 occurrences each in JSON, terminal, --verbose, markdown, HTML, 3 in SARIF → after W2 1 each, 2 in SARIF (the SUP-006 Why remains) → after W3 0 in all six; HOOK-002 and SUP-006 both still present

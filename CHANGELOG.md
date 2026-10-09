@@ -17,7 +17,54 @@ rate copied into prose goes stale on the next rule. `git tag` and the Releases p
 - Invariants: never executes scanned content, no cross-root symlink reads, secret redaction before storage (+ high-entropy fallback).
 - Single static binary (`CGO_ENABLED=0`), MIT + SPDX, CI, bilingual README.
 
-## v0.2.0 – v0.18.0
+## v0.2.0 – v0.19.0
+
+**v0.19.0 (2026-10-09) — a plugin's own MCP servers are scanned, the judge can check a single target and sends less about you, the gate keeps the approvals you give it, and every spelling of a root gets the same answer.**
+
+No rule's severity changed and the score formula is the same. The answer changes where something used to be missed: MCP
+servers bundled in plugins now go through the rules, a relative or trailing-slash `--root` now reads what the absolute path
+reads, and a report no longer says "looks safe" when content Claude Code loads was not fully read. Reports gain a
+`rules_version` field; `aguard approve` now refuses content that has no hash.
+
+- **Scanning.**
+  - A plugin's bundled MCP servers run through the same rules as a server configured by hand (P-021). Before, the lookup
+    used the artifact name, which carries a plugin suffix, so a plugin carrying only a `NODE_OPTIONS=--require` server
+    scored 100 and passed `--fail-on high` while the same server in `~/.claude.json` scored 69 and failed.
+  - Hook, MCP and permission artifacts have content hashes, so the gate can approve them and the reputation allowlist can
+    match them (P-009).
+  - The root is anchored once and every entry point uses it: a relative or trailing-slash `--root` follows hook and
+    permission scripts (P-010), keeps symlink-installed skills and finds the configuration under home (P-012), and
+    `clean --root .`, `check .`, the gate and `version` answer as for the absolute path (P-019). With a relative root the
+    gate used to let a plugin skill with a high finding load unaudited.
+  - Frontmatter counts only when it starts at the first byte, as Claude Code reads it: a rule file with a BOM or a blank line
+    before `---`, or with a `paths:` value Claude Code ignores, is no longer labelled `(path-scoped)` (P-024).
+  - Checking a zip twice gives identical SARIF: the random extraction directory no longer reaches uris, artifact names or
+    fingerprints, so Code Scanning stops reopening alerts (P-016).
+- **The gate.** An approval given in the prompt is recorded, so the skill is not asked about again (P-007); the printed undo
+  command works when pasted (P-008); `aguard approve` exits 2 and stores nothing for content without a hash instead of
+  printing "approved" (P-011).
+- **The judge.**
+  - `check --llm` runs the judge on a single target, a zip included; `--fail-on` still reads deterministic findings only, and
+    the load-time gate never runs the judge (P-004).
+  - What is sent no longer carries the home directory, the user name or env values without their key (P-005); a run of
+    whitespace that padded a directive out of the excerpt is folded, so the judge sees the line (P-020); the client follows a
+    redirect only within the configured origin, so the API key is never resent in clear text and excerpts never go to a host
+    the user did not configure (P-023).
+  - A judge finding's snippet is the line of the sent text it grounded on, not the passage the model wrote; its reason and
+    the triage note are redacted and bounded, an omission marker can no longer be quoted as evidence, and SARIF no longer
+    takes a rule's description from one artifact's model reason (P-006). The JSON `judge` block reports prompt and
+    completion tokens, triage calls and retries, quiet runs included (P-001).
+- **Reports.** Every report names the rule table that produced it (`rules_version`, also on the `aguard version` line)
+  (P-002). An unparseable `settings.json`, a loaded file left unread, or a scan-level coverage gap now hedges the headline
+  and is named in the summary, and checking a single file no longer says "Nothing was found to check" next to its findings
+  (P-013, P-017).
+- **Redaction.** The resolved path in the hook-outside-the-boundary finding (P-014) and the notes for `@import` lines, plugin
+  keys, hook events and unreadable entries (P-018) go through redaction; there is still one implementation, now in
+  `internal/redact`.
+- **Tests and tooling.** A test pins that only the opted-in judge connects out (P-003). The rule files under `.claude/rules`
+  have their frontmatter on line 1 again, so their paths take effect (P-015). The benchmark rig reads the judge usage aguard
+  reports instead of inferring it (P-022).
+- **Docs.** Proposals, their index and the template are written in English.
 
 **v0.18.0 (2026-10-09) — slash commands are audited like skills, one more spelling of curl|bash is a finding, and the allowlist is current again.**
 

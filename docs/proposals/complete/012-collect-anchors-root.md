@@ -314,7 +314,7 @@ top-level `.claude.json`), and its home `<base>/work` also has its own `.mcp.jso
 
 ```
 Merged: PR #30 (2026-10-09; find the sha with git log --grep P-012)
-Released: pending release
+Released: v0.19.0
 Evidence: TestCollectAll_RootSpellingKeepsTheInventory (internal/collect/rootspelling_test.go); W1 on this repository's main (dec64ca) red on seven rows (.claude, .claude/, home/.claude, ../home/.claude and the through-a-symlink row: env Skills 2 vs 3, two SCOPE-001 [skills/escaper, skills/linked]; the ., ./ rows: Skills 1, MCPServers 0, three SCOPE-001 [escaper, linked, rel-linked]) → after W2 all ten rows green; the <abs>/, <abs>/. rows green already at W1
 Evidence: reverse assertion, same test — on all ten rows escaper is rejected and only it (exactly one SCOPE-001, no artifact under outside); the tree hashes of the three skills on every row equal the TreeHash computed directly on the resolved directories; TestHashGolden unchanged and still green
 Evidence: TestScan_RootSpellingIsTheAbsoluteReport (cmd/aguard/collectroot_test.go); W1 red on nine rows (<abs>/, <abs>/. diverge at JSON line 2, the root echo; seven rows have a different inventory) → after W3 all nine rows green, JSON byte-for-byte identical to the absolute spelling

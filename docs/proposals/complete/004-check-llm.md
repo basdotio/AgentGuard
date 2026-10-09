@@ -195,7 +195,7 @@ leaving the tests as they are, and running the same set of tests (restored right
 
 ```
 Merged: PR #26 (2026-10-09; find the sha with git log --grep P-004)
-Released: pending release
+Released: v0.19.0
 Evidence: TestCheckCmd_LLMRunsTheJudge (cmd/aguard/check_llm_test.go); red at W1 (exit 2, error: unknown flag: --llm) → green after W2: directory and zip each judge.ran = true, 4 calls, an LLM-003, overall 83 = the static check's 83, overall_effective 58; with --quiet no "LLM judge" on stderr
 Evidence: TestCheckCmd_FailOnLLMNeedsAuthority (same file); red at W1 (all three exit 2, unknown flag: --llm) → green after W2: escalate + --fail-on-llm high → exit 1; advisory + --fail-on-llm high → exit 2, stderr names llm.authority: escalate; reverse assertion --llm + default --fail-on high → exit 0 (the judge's high does not reach --fail-on)
 Evidence: reverse assertion TestGateScannerNeverEnablesLLM (same file); green at W1 (before the change) and after the change, counting endpoint 0 requests, Judge == nil for Scan / ScanRoot. Mutation check: adding llm: true to the Scan of gateOptions in gate.go → red (Judge.Ran = true, Calls 3, endpoint 6 requests); adding llm: true to ScanRoot → red (endpoint 6); adding llm: true to approvePath → red (endpoint 3); all three reverted

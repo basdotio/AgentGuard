@@ -114,7 +114,7 @@ doubles implement it).
 
 ```
 Merged: PR #19 (2026-10-09; find the sha with git log --grep P-001)
-Released: pending release
+Released: v0.19.0
 Evidence: TestRun_StatsCountTriageApart (internal/judge/consensus_test.go); W1 red at compile time (consensus_test.go:290: s1.TriageCalls undefined (type Stats has no field or method TriageCalls)), green after W2; measured: with samples=1, 3 calls = 2 questions + 1 triage; with samples=3, 7 = 3 × 2 + 1; triage_calls is 1 both times
 Evidence: TestE2E_JudgeSummaryCarriesCost (cmd/aguard/e2e_test.go); W1 red at compile time (e2e_test.go:315: j.PromptTokens undefined); with the fields added but runJudge not filling them (temporary probe, reverted) red at run time: tokens = 0 in / 0 out over 4 call(s); want 400 / 28, triage_calls = 0, want 1; green after W3: under quiet: true, tokens = 100 × calls / 7 × calls, triage_calls = the number of artifacts with static findings, retries = 0
 Evidence: TestScanInbox_JudgeCostAddsUp (cmd/aguard/main_test.go); still red after W3 (tokens = 0 in / 0 out over 6 call(s); want 600 / 42, triage_calls = 0, want 2) → green after W4

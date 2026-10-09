@@ -278,7 +278,7 @@ directory `<base>/sibling`), plus "working directory through a symlink" (`<base>
 
 ```
 Merged: PR #40 (2026-10-09; find the sha with git log --grep P-019)
-Released: pending release
+Released: v0.19.0
 Evidence: TestClean_RootSpellingIsTheAbsoluteRun (internal/clean/rootspelling_test.go); W1 red in nine rows on this repo's main (fd28344) (.claude, .claude/., ., ./, ../.claude, .., home/.claude, ../home/.claude, .claude through a symlink, all reporting "refusing to use <spelling>/.aguard-trash: it resolves to …/.aguard-trash, outside the scanned root" at the Apply dry run) → all twelve rows green after W3; the three rows <abs>, <abs>/, <abs>/. green already at W1
 Evidence: reverse assertion TestClean_RootSpellingKeepsTheRefusals (same file) — in all twelve rows a symlinked .aguard-trash is refused with "it is a symlink", the directory outside the root is empty and the skill is untouched; with the working directory in rules/ and spelled ., it is still refused with inside a "rules" directory; green already at W1, still green after the fix
 Evidence: TestCollectTarget_RootSpellingRoutesLikeTheAbsoluteTarget (internal/collect/targetspelling_test.go); W1 red in five rows (<abs>/., ., ./, .claude/., ..: Root empty, inventory a single directory) → all thirteen rows green after W2; reverse assertion TestCollectTarget_SingleTargetsKeepTheirSpelling (same file; skills/plain and ./skills/plain are still a single skill with Path as typed; a directory not named .claude is still one directory under five spellings) green already at W1, still green after the fix

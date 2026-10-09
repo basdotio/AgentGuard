@@ -173,7 +173,7 @@ All fixtures are built on the spot in `t.TempDir()`, the same way as the existin
 
 ```
 Merged: PR #32 (2026-10-09; find the sha with git log --grep P-015)
-Released: pending release
+Released: v0.19.0
 Evidence: TestClaudeRulesProblemsAreCaught (cmd/aguard/claude_rules_test.go); red with only the fixtures added and the check unchanged: one missing problem "<name>: frontmatter must start on line 1" for each of the four misplaced shapes, want exactly 7 problems, got 3 → green after adding misplacedFrontmatter
 Evidence: TestClaudeRulesAreScopedToExistingPaths (same file); after W1 red in this repository (dec64ca + W1): 10 problem(s), exactly one each for detect gate hash judge npm pipeline plugin report reputation score: "frontmatter must start on line 1 (Claude Code ignores it anywhere else, so this rule loads every session)" → green after W2
 Evidence: the five reverse assertions (licensed.md, ruled.md, example.md, moved.md, crlf.md all not reported) each confirmed by mutation to bite: removing the fence skip → example.md reported (got 8); counting any pair of --- → ruled.md reported (got 8); removing the BOM branch → late-bom.md missed (got 6); also reporting frontmatter that starts on line 1 → crlf.md reported (got 8). Mutations reverted after the run, not committed

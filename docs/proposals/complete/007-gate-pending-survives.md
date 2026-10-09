@@ -220,7 +220,7 @@ Manual comparison (`make build`, a temporary root under `/tmp`, one `aguard hook
 
 ```
 Merged: PR #18 (2026-10-09; find the sha with git log --grep P-007)
-Released: pending release
+Released: v0.19.0
 Evidence: TestGateRemembersAnApprovalAcrossHookProcesses (cmd/aguard/gate_pending_test.go); red at W1 (after two runHook calls approvals empty, PostToolUse output "") → green after W2: approvals 1 accepted-risk entry, hash equal to the one checkTarget computes, pending consumed, third PreToolUse 0 bytes
 Evidence: TestPendingSurvivesSaveAndLoad, TestPostPromotesAcrossProcesses, TestPendingHygieneOnLoad (fresh / near-ttl rows read back as 0), TestPostForAnotherCallPromotesNothing, TestExpiredPendingIsNotPromoted/answered_within_the_hour (internal/gate/pending_test.go); red at W1 (pending read back from the file is always 0 entries) → green after W2
 Evidence: reverse assertion (a)/(f) TestChangedBytesAreNotPromotedAcrossHookProcesses (cmd/aguard), TestChangedBytesAreNotPromotedAcrossProcesses, TestPendingHashIsComparedNotTrusted (internal/gate): at W1 "not approved" already held but "changed between the prompt and the load" was absent (red, proving the before half came for free) → after W2 both halves hold; mutation: short-circuit v.Hash != pending.Hash in handlePost → these three plus TestApprovalOnlyCoversWhatWasShown, 4 in total, turn red

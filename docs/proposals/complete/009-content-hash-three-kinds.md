@@ -363,7 +363,7 @@ edit the hook's script   —                                           SessionSt
 
 ```
 Merged: PR #29 (2026-10-09; find the sha with git log --grep P-009)
-Released: pending release
+Released: v0.19.0
 Evidence: TestContentHashGolden (internal/detect/contenthash_test.go); W1 red at compile time (undefined: ContentHashes / contentHashInput / configDoc / scriptUnresolved…, unknown field MCPServer) → W4 green; after W7 the five constants and the two script digests were recomputed by hand in this repository with printf … | shasum -a 256, all seven values match
 Evidence: TestReputation_RecognisesAHook (cmd/aguard/contenthash_test.go); W1 red "the hook has no hash, so no reputation entry can ever match it" → W5 green: a malicious entry built from the hook hash matches, REP-BAD on the hook
 Evidence: TestGate_ApprovedHookLeavesSessionStart (cmd/aguard/gate_e2e_test.go); W1 red "approve printed success; the store holds 0 approval(s), want the hook's one" → W5 green: approvals hold 1 entry (kind=hook), SessionStart no longer lists it; change the script it follows → listed again
