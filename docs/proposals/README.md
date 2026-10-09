@@ -54,4 +54,4 @@
 | [018](complete/018-collect-notes-redacted.md) | 导入行、插件名、树内条目名里的 token 经几条笔记原样进报告:那几处证据片段没经过脱敏 | P-014 的「不做什么」与未决 3 留下的:collect 的笔记、`unreadableNote`、`GATE-001` 的 snippet 把文件正文或配置值原样拼进证据,没过 `Redact` | PR #41;待发 |
 | [019](complete/019-raw-root-entry-points.md) | 同一个目录换一种写法就换一个答案:`clean --root .` 拒绝撤销,`check .` 不按 root 布局读,相对写法下闸门对插件 skill 不审就放行 | P-012 留下的同根因入口:`clean` 判 trash 越界、`check`/`hash` 按字符串路由、闸门和 `version` 从原样 root 取 home;人定(2026-10-09)合成一条 | PR #40;待发 |
 | [020](complete/020-excerpt-padding-evasion.md) | 一行指令垫满空白,判官摘录里就只剩一行省略标记:判官恰好看不见它存在要读的那句话 | P-005、P-006 记下的后续:摘录按字节封顶,行内垫几千字节空白(含 Unicode 空白、零宽字符)的指令行在发出去之前就被换成省略标记或截成纯空白前缀 | PR #38;待发 |
-| [021](complete/021-plugin-mcp-unscanned.md) | 插件自带的 MCP server 从不过规则:同一份配置手写进 ~/.claude.json 是 75 分,随插件装进来是 100 分 | P-009 未决 6 记下的已有缺口:detect 和判官按带 ` (plugin …)` 后缀的 artifact 名去 `mcpServers` 里找条目,找不到,零 unit,记成干净的 100 | PR 待合入;待发 |
+| [021](complete/021-plugin-mcp-unscanned.md) | 插件自带的 MCP server 从不过规则:同一份配置手写进 ~/.claude.json 是 75 分,随插件装进来是 100 分 | P-009 未决 6 记下的已有缺口:detect 和判官按带 ` (plugin …)` 后缀的 artifact 名去 `mcpServers` 里找条目,找不到,零 unit,记成干净的 100 | PR #37;待发 |
