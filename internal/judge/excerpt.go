@@ -130,6 +130,66 @@ func condense(path, text string, stripComments bool) (string, []int) {
 	return strings.Join(out, "\n"), lm
 }
 
+// maxFillerRunBytes is the longest run of filler an excerpt passes on as written. Real layout stays
+// under it: across 2.2 million non-blank lines of installed plugins and the benchmark corpus the
+// longest indentation is 121 bytes, and only 28 lines hold a longer run (27 markdown table rows'
+// column alignment, one run of spaces and zero-width characters at the end of a line). Lower, and
+// it starts to eat indentation; higher only halves what spacing the padding out costs (see foldPadding).
+const maxFillerRunBytes = 128
+
+// isFiller reports whether r is filler: a rune grounding reads as a word break or as nothing at all
+// (isMatchSpace, isMatchIgnored), except the line break, which the line map counts.
+func isFiller(r rune) bool { return r != '\n' && (isMatchSpace(r) || isMatchIgnored(r)) }
+
+// foldPadding replaces every run of filler longer than maxFillerRunBytes with what grounding reads it
+// as: one space, or nothing when the run holds only invisible runes (foldForMatch). It is the
+// horizontal twin of condense's blank-run collapse. The byte caps measure what an excerpt may cost,
+// and one line padded with thousands of bytes of whitespace — Unicode spaces and zero-width
+// characters included — no longer fit: capHeadTail sent the omission marker in its place (and,
+// as the head's first overlong line, every line after it until the tail), a body of that one line
+// went out as a prefix of blanks, a hook command or an MCP value was cut to its padding, and three
+// mostly-blank scripts each under the per-file cap spent the whole excerpt. The directive the
+// judge exists to read never left the machine.
+//
+// A run never crosses '\n', so the line count — and every line map — is unchanged; the result is
+// never longer than s; and since it is what grounding reads anyway, the folded text normalizes to
+// exactly what s does (FuzzFoldPadding), so quotes, citations and snippet windows are unaffected.
+// Filler broken up by a visible character at least every maxFillerRunBytes is content as far as
+// this can tell, and is capped like any other.
+func foldPadding(s string) string {
+	var b strings.Builder
+	copied := 0 // s[:copied] is in b, or nothing was folded yet
+	for i := 0; i < len(s); {
+		r, w := utf8.DecodeRuneInString(s[i:])
+		if !isFiller(r) {
+			i += w
+			continue
+		}
+		j, spaced := i, false
+		for j < len(s) {
+			r, w := utf8.DecodeRuneInString(s[j:])
+			if !isFiller(r) {
+				break
+			}
+			spaced = spaced || isMatchSpace(r)
+			j += w
+		}
+		if j-i > maxFillerRunBytes {
+			b.WriteString(s[copied:i])
+			if spaced {
+				b.WriteByte(' ')
+			}
+			copied = j
+		}
+		i = j
+	}
+	if copied == 0 {
+		return s
+	}
+	b.WriteString(s[copied:])
+	return b.String()
+}
+
 // omittedLinesMarker is the line an excerpt carries where it left lines out, so the model is told
 // the text it sees is not the whole file (capHeadTail) or the whole configuration (mcpExcerpt).
 const omittedLinesMarker = "# … %d line(s) omitted …"
