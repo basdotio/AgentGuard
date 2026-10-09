@@ -179,23 +179,23 @@ func rulesDocHeader(t *testing.T) string {
 // to say which side of that line they are on. A reader who took LLM-001 to be covered would read
 // two equal versions as "the judge was the same", which nothing in the hash supports.
 //
-// Nor may it send the reader elsewhere for the judge: "a report's judge summary says how it ran"
-// promised what no field holds. The judge summary records whether it ran, over how much and
-// against which endpoint — not its model, prompt version, samples or authority — so the only
-// thing in a report that pins the judge's code today is tool_version.
+// And it has to say where the judge IS named. P-002 wrote "only through tool_version", which was
+// true until a --llm report named its judge in its own block (P-031): prompt_version and
+// excerpt_version for this build's judge, model and samples for how it ran.
 func TestRulesDocHeaderPutsTheJudgeOutsideRulesVersion(t *testing.T) {
 	h := rulesDocHeader(t)
 	for _, want := range []string{
 		"It covers deterministic detection only.",
 		"**Outside `rules_version` entirely:** every `LLM-` ID",
-		"today a report identifies the judge's code only through `tool_version`",
+		"`prompt_version`",
+		"`excerpt_version`",
 	} {
 		if !strings.Contains(h, want) {
 			t.Errorf("docs/rules.md header does not say %q — fix hack/gen-rules, then run `make docs`", want)
 		}
 	}
-	if strings.Contains(h, "how it ran") {
-		t.Error("docs/rules.md header still says something in the report tells how the judge ran; nothing there identifies the judge but tool_version")
+	if strings.Contains(h, "only through `tool_version`") {
+		t.Error("docs/rules.md header still says a report identifies the judge only through tool_version; the judge block names it (P-031)")
 	}
 }
 
