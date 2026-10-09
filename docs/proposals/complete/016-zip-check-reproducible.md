@@ -65,26 +65,26 @@ uri 跟着相对于包根,于是 `check x.zip` 与 `check x/`(同一棵树,路�
 
 ## 完成的判据
 
-- [ ] `TestCheckZip_TwiceIsByteIdentical`(`cmd/aguard/archive_test.go`,新):扁平包与套一层目录的包,各 `checkTarget` 两次 →
+- [x] `TestCheckZip_TwiceIsByteIdentical`(`cmd/aguard/archive_test.go`,新):扁平包与套一层目录的包,各 `checkTarget` 两次 →
   SARIF、text **逐字节相同**,markdown 与 JSON 除扫描时间外相同(markdown 印到分钟);四种输出里都没有 `aguard-inbox-`。
   今天红:两种包的 `properties.artifact` 都带随机名(所有平台),扁平包在 macOS 上 uri 与指纹也变
-- [ ] `TestCheckZip_SameFindingsAsItsFolder`(同上):扁平包的 SARIF 结果与**同一棵树作为目录**查出来的逐条相同(uri `install.sh`、指纹、
+- [x] `TestCheckZip_SameFindingsAsItsFolder`(同上):扁平包的 SARIF 结果与**同一棵树作为目录**查出来的逐条相同(uri `install.sh`、指纹、
   级别、消息),只有 `artifact` 不同(`skill:flat.zip` 对 `skill:<目录名>`);artifact 哈希相同 —— 规范哈希不受影响
-- [ ] `TestCheckZip_DoesNotReadTheSharedTempDir`(同上):`$TMPDIR/.claude.json` 里放一个 MCP server,查 root 形状的包 → 没有这个 artifact,
+- [x] `TestCheckZip_DoesNotReadTheSharedTempDir`(同上):`$TMPDIR/.claude.json` 里放一个 MCP server,查 root 形状的包 → 没有这个 artifact,
   `locations` 只剩包路径那一条。今天红
-- [ ] `TestApprove_ZipRecordsTheArchive`(同上):`approvePath(x.zip)` 记下的 `name` = `x.zip`、`path` = 包路径,`hash` 与直接查同一棵树的相同。今天红
-- [ ] `TestScanInbox_ZipEvidenceIsArchiveRelative`(同上):Downloads 里的扁平包,条目发现的证据 `file` = `install.sh`,JSON 里没有 `aguard-inbox-`。今天在 macOS 上红
-- [ ] `TestExtractZip_FolderNamedAfterTheArchive`(`internal/inbox/inbox_test.go`,新):返回目录的 base = 包文件名、已解析软链、
+- [x] `TestApprove_ZipRecordsTheArchive`(同上):`approvePath(x.zip)` 记下的 `name` = `x.zip`、`path` = 包路径,`hash` 与直接查同一棵树的相同。今天红
+- [x] `TestScanInbox_ZipEvidenceIsArchiveRelative`(同上):Downloads 里的扁平包,条目发现的证据 `file` = `install.sh`,JSON 里没有 `aguard-inbox-`。今天在 macOS 上红
+- [x] `TestExtractZip_FolderNamedAfterTheArchive`(`internal/inbox/inbox_test.go`,新):返回目录的 base = 包文件名、已解析软链、
   父目录里只有它、父目录不是共享临时目录(两边都解析软链再比);`cleanup` 删掉父目录。今天红
-- [ ] `TestCheckZip_AbsoluteEvidenceNamesTheArchive`(同上):root 形状空包的 `COV-000` 证据 = `root.zip`,不是解压目录的绝对路径
-- [ ] `TestCheckZip_ErrorTextNamesTheArchive`(同上):root 形状包里 `installed_plugins.json` 是目录、或 `skills` 是文件 →
+- [x] `TestCheckZip_AbsoluteEvidenceNamesTheArchive`(同上):root 形状空包的 `COV-000` 证据 = `root.zip`,不是解压目录的绝对路径
+- [x] `TestCheckZip_ErrorTextNamesTheArchive`(同上):root 形状包里 `installed_plugins.json` 是目录、或 `skills` 是文件 →
   `IO-000` 的片段引用 I/O 错误原文,原文里是解压目录的绝对路径,而片段进指纹。两次 SARIF 逐字节相同,`IO-000` 仍在、片段写成包内路径
-- [ ] **反向断言**:目录目标的 SARIF 不变 —— `TestCheckDir_SARIFUnchanged` 钉住 uri `install.sh`、`artifact` `skill:myskill`、指纹字面量
+- [x] **反向断言**:目录目标的 SARIF 不变 —— `TestCheckDir_SARIFUnchanged` 钉住 uri `install.sh`、`artifact` `skill:myskill`、指纹字面量
   (在 `main` 上取值,W1 时就绿,改完仍绿),`locations` 仍有 "User MCP config" 等四条,`root` = 传入路径
-- [ ] **反向断言**:原本该响的仍然响 —— 包里的 `EXEC-001` 仍是 `error` 级、`overall < 70`;现有 `TestCheckTarget_ZipIsCheckedAsItsFolder`、
+- [x] **反向断言**:原本该响的仍然响 —— 包里的 `EXEC-001` 仍是 `error` 级、`overall < 70`;现有 `TestCheckTarget_ZipIsCheckedAsItsFolder`、
   `TestExtractZip_RefusesWhatWouldEscapeOrBloat`、`TestScanInbox_*` 不改一字仍绿;名叫 `.claude.zip`、顶层只有 `install.sh` 的包仍被当成目录读到
   (`TestCheckZip_DotClaudeNameIsNotARoot`:防"子目录用去掉扩展名的包名"这种改法把它路由进 `CollectAll`,顶层文件就没人读了)
-- [ ] `make verify` 绿;复现步骤(构建 `bin/aguard`,同一 zip 查两遍 `--sarif` 再 `diff`)扁平包 3 行变动、套一层的包 1 行 → 都是 0 行
+- [x] `make verify` 绿;复现步骤(构建 `bin/aguard`,同一 zip 查两遍 `--sarif` 再 `diff`)扁平包 3 行变动、套一层的包 1 行 → 都是 0 行
 
 ## 不做什么
 
@@ -144,3 +144,46 @@ uri 跟着相对于包根,于是 `check x.zip` 与 `check x/`(同一棵树,路�
    **建议:不处理,记为已知限制。** 失败方向是关的(报错,不放行);攻击者本来就能只靠深路径条目让解压失败,新增的只是"又长名又深路径的良性包";
    为它截断目录名会让 artifact 名和包名对不上,还要再改写一遍名字。真有人报了再说,届时的做法是"目录名超过 N 字节时用短名,`archiveView` 再把 artifact 名改回包名"。
    **已决(2026-10-08)**:按建议。
+
+**实现与 review 中攒下(旧仓 2026-10-08 攒下,本仓库重测)**
+
+- **W1 的临时根位置检查原来比的是未解析的 `TMPDIR` 前缀**:W2 之后解压路径已解析软链(macOS 上是 `/private/var/…`),W1 那句断言就抓不到
+  仍在临时根里的位置。W3 的提交里收紧(两种写法都比,并断言只剩包路径那一条),同时加 `TestCheckZip_AbsoluteEvidenceNamesTheArchive`
+  (root 形状空包的 `COV-000` 证据原来是解压目录的绝对路径)。本仓库的变异检验:把 `archiveView` 换成只改 `Root` 的直通,
+  位置检查报出四条("Config root" "User MCP config" "Claude Desktop store" "Desktop session cache"),`COV-000`、批准、两次比较三条也红;还原后全绿。
+- **Linux 上改前 uri 与指纹本来就稳**(`/tmp` 不是软链),每次变的只有 `artifact` 属性和 JSON 的名字 / 路径;新测试在 Linux 上靠这几处照样红,CI 跑的就是 Linux。
+- **W5**:`ExtractZip` 里的变量 `real` 遮住了内建函数 `real`,lint 没开这一项,改名 `resolved`。
+- **(review)解压目录还从片段里漏**:`collect.ioNote` 把 `err.Error()` 原样当片段,I/O 错误原文带绝对路径,片段进指纹。于是 root 形状包里
+  `skills` 是文件、或 `installed_plugins.json` 是目录时,同一个包两次的指纹仍然不同。W6 先写 `TestCheckZip_ErrorTextNamesTheArchive` 跑红,
+  W7 让 `archiveEvidence` 把片段和 `Why` 里的解压目录换成包文件名(`fdopendir skillsfile.zip/skills: not a directory`);只换工具自己拼的那段前缀,
+  不引入包里的内容,脱敏早已跑过。
+- **(review)markdown 印 "scanned … UTC" 到分钟**,而 `renderAll` 原来只在 JSON 前把时间清零,跨分钟会假红。W6 一并修,并且这说明判据第一条原来写错了 ——
+  markdown 不是逐字节相同;判据、"不能说什么"、spec 的措辞(W8)一起改成"SARIF 与终端报告逐字节相同"。
+- **(review)`TestExtractZip_FolderNamedAfterTheArchive` 里"父目录不是共享临时目录"那句在 macOS 上原来永远不会响**(一边解析了软链、一边没有)。W6 两边都解析。
+- **(review)长包名 + 深路径撞路径上限**:见未决 6,本仓库实测 200 字节的包名 + 816 字节的条目路径,`main` 的二进制退出 0,本分支退出 2
+  (`mkdir …/aguard-inbox-<随机>/<包名>/…: file name too long`)。按未决 6 记为已知限制,不修。
+
+## 完成
+
+红的证据全部在本仓库测得:W1 的测试打在 `main` 的 `dec64ca`(v0.18.0)上;W6 的测试打在 W5 上(W1–W5 已应用)。
+旧仓 8 个提交(module path 已换成 AgentGuard、P 号已换成 P-016)按顺序 `git am -3`,**无冲突、无手工改动**;移植时只把 W1 测试注释里的
+"Taken on origin/dev" 改成 "Taken on main"。本仓库自导出以来没有动过 `internal/inbox`、`cmd/aguard/inbox.go`、`cmd/aguard/main.go` 的 zip 路径,
+没有哪一部分已经被修过。
+
+```
+合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-016 找)
+发布:待发
+证据:W1 打在 main(dec64ca)上红 6 条、反向断言绿 5 条:TestCheckZip_TwiceIsByteIdentical(flat:uri aguard-inbox-<随机>/install.sh、artifact skill:aguard-inbox-<随机>,四种输出都含 aguard-inbox;nested:artifact directory:aguard-inbox-<随机>)、TestCheckZip_SameFindingsAsItsFolder(zip uri aguard-inbox-<随机>/install.sh 对目录 install.sh)、TestCheckZip_DoesNotReadTheSharedTempDir(收进 $TMPDIR/.claude.json 里的 mcp:planted,四条位置指向临时目录)、TestApprove_ZipRecordsTheArchive(name aguard-inbox-<随机>、path 已删除的临时目录)、TestScanInbox_ZipEvidenceIsArchiveRelative(证据 aguard-inbox-<随机>/install.sh)、TestExtractZip_FolderNamedAfterTheArchive(目录名随机、未解析软链、直接在共享临时目录里)
+证据:W2 后 SARIF 已两次相同、TestCheckZip_SameFindingsAsItsFolder / DoesNotReadTheSharedTempDir / ScanInbox_ZipEvidenceIsArchiveRelative / ExtractZip_FolderNamedAfterTheArchive 转绿;TestCheckZip_TwiceIsByteIdentical 仍因 text / markdown / JSON 红,TestApprove_ZipRecordsTheArchive 仍因 path 是 <临时根>/flat.zip 红;W3 后全绿
+证据:TestCheckZip_SameFindingsAsItsFolder(cmd/aguard/archive_test.go);zip 与同一棵树作目录:uri install.sh、指纹 77848c2e390ecd00、级别与消息逐条相同,只差 artifact(skill:flat.zip 对 skill:myskill);artifact 哈希相同
+证据:TestCheckZip_DoesNotReadTheSharedTempDir;位置只剩包路径一条。变异(archiveView 换成只改 Root 的直通)报出四条位置,TestCheckZip_AbsoluteEvidenceNamesTheArchive、TestApprove_ZipRecordsTheArchive、TestCheckZip_TwiceIsByteIdentical 同时红;已还原
+证据:TestCheckZip_ErrorTextNamesTheArchive;W6 打在 W5 上红(manifest_is_a_directory、skills_is_a_file 两例:IO-000 的 aguard/v1 指纹两次不同,text / markdown / JSON 含 aguard-inbox)→ W7 后绿,IO-000 仍在
+证据:TestExtractZip_FolderNamedAfterTheArchive(internal/inbox/inbox_test.go);W6 版测试对着 main 的 ExtractZip 跑,三句都响(名字随机、未解析软链、"sits directly in the shared temp dir")
+证据:反向断言 TestCheckDir_SARIFUnchanged —— 指纹字面量 77848c2e390ecd00 在 main 上绿,改完仍绿;TestCheckZip_DotClaudeNameIsNotARoot、TestCheckTarget_ZipIsCheckedAsItsFolder、TestExtractZip_RefusesWhatWouldEscapeOrBloat、TestScanInbox_ChecksDownloadsWithoutTouchingTheScore 不改一字前后都绿
+证据:复现(main 与本分支同一组 -ldflags 各编一个二进制,同一 zip 查两遍 --sarif 再 diff):扁平包 3 行变动 → 0,套一层的包 1 行 → 0;十种包形状(扁平、套一层、root 形状空包、root 形状带 skill、插件、单个 CLAUDE.md、.claude.zip、带被拒条目、installed_plugins.json 是目录、skills 是文件)× 四种输出(--json、--sarif、--md -、--verbose):aguard-inbox 出现 136 次 → 0 次,两次 SARIF 变动 22 行 → 0 行,退出码逐个相同
+证据:$TMPDIR 指向放了 .claude.json(含一个 MCP server)的目录,check root.zip:main 收进 mcp:planted + EXEC-001、列出四条位置 → 本分支 0 个 artifact、位置只有包路径;approve flat.zip:main 记 name aguard-inbox-<随机>、path /var/folders/…/aguard-inbox-<随机> → 本分支 flat.zip / 包路径,哈希键 43db58ad… 前后相同
+证据:反向断言 目录与单文件目标逐字节不变 —— 5 个目标(扁平目录、skill 目录、套一层的目录、单个 install.sh、root 形状目录)× 4 种输出(文本含退出码、--json 去掉 scanned_at、--sarif、--md - 去掉 scanned 行),main 与本分支 20 例 0 处不同
+证据:真机 scan --root ~/.claude --json:69/100、180 个 artifact,main 与本分支除 scanned_at / tool_version 外完全相同(这台机器 ~/Downloads 里没有候选,Downloads 一路的证据只来自测试和形状扫描);internal/collect、internal/detect 未动,这一条只为 Downloads 走 ExtractZip
+证据:不做什么 —— git diff --stat origin/main -- internal/report internal/collect internal/detect internal/gate internal/model .claude/rules/invariants.md go.mod go.sum 为空
+证据:make verify: all gates passed;go version go1.23.5(无工具链切换);go.mod 第二行 go 1.23.5,无新依赖;cmd/aguard 覆盖率 51.4%、internal/inbox 74.0%
+```
