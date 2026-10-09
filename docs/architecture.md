@@ -122,8 +122,10 @@ severity travels with the count: a baseline that suppressed a critical does not 
 low-severity footnote. The notes live in two places — the scan's own, and those a collector attaches
 to an artifact (a config file that did not parse becomes an artifact carrying `PARSE-000`) — and
 the three human renderers read both through one function, `report.notesOf`; reading only the
-scan's own once rendered a broken `settings.json` as "looks safe". While any coverage note is
-present the summary says coverage is incomplete instead of "looks safe". `--json`, `--html` and `--md` are unaffected by the flag, so a CI job's output
+scan's own once rendered a broken `settings.json` as "looks safe". When something Claude Code
+loads was not fully read (a note attached to an artifact, or an `IO-000` / `PARSE-000` anywhere)
+the summary says coverage is incomplete instead of "looks safe"; the other scan-level notes, such as
+the top-level entries skipped by design and the judge's privacy notice, stay in "Not checked" only. `--json`, `--html` and `--md` are unaffected by the flag, so a CI job's output
 never depends on which mode a human chose. `--md` (P-008) is the third human-read renderer, for PR
 comments and issues: same derived data and order, and every string off the scanned tree in a code span.
 

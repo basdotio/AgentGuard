@@ -33,11 +33,14 @@ paths:
   - **白话层只做派生,不做判断。** `verdictSentence` 是等级档 + 计数的函数,`actions` 就是 medium
     以上的 group 按既有顺序取前三,`dimLabel` 是每个维度一句固定短语(10 句,不是 70 条规则各写一句)。
     没有任何一处能说出下面列表里没有的东西,也没有任何一处能把严重度说轻。
-    - **"looks safe" 要以覆盖完整为前提**(`coverageVerdict`):有任何覆盖 note 时 Low 档的结论换成
-      `Low risk in what was read, but coverage is incomplete.`。判据是 "Not checked" 那行数的**同一个集合**
-      (`splitNotes(notesOf(r))` 的覆盖那半),所以头条和那行在构造上不会打架;压制类 note 不算。其余三档不变。
-      不要改成"只看 artifact 自带的 note":同一个 `settings.json` 读不了(`IO-000`,扫描级)和解析不了
-      (`PARSE-000`,artifact 级)会得到相反的头条。
+    - **"looks safe" 以"Claude Code 加载的东西都读全了"为前提**(`coverageVerdict`,集合只在这一处定义):
+      挂在 artifact 上的覆盖 note(`itemGaps`),或任何位置的 `IO-000` / `PARSE-000` → Low 档换成
+      `Low risk in what was read, but coverage is incomplete.`。**按规则 ID 和挂载位置选,不按标题匹配。**
+      其余扫描级 note 只进 "Not checked" 那行、不动头条 —— 尤其是"顶层条目没读"的 `COV-000`(用户自己的
+      `sessions/`、`file-history/`,按设计不读,真机上几乎总在)和 `LLM-002`(隐私告知,不是缺口):人定(2026-10-09),
+      否则几乎每份 Low 档报告都带这句,它就不再有意义。所以头条和 "Not checked" 那行**不是**同一个集合。
+      `IO-000` 必须在集合里:同一个 `settings.json` 读不了(扫描级 `IO-000`)和解析不了(artifact 上的 `PARSE-000`)
+      要得到同一个头条。其余三档不变;压制类 note 不算。
     - **Checked 那句点名"找到了、没检查全"的项**(`checkedWithGaps` + `itemGaps`/`gapList`,数据与组句分开,
       markdown 用代码跨度):artifact 自带覆盖 note 的那几项,最多 3 个、余下计数。清单计数来自采集器抽出来的东西,
       解析不了的文件什么都抽不出,所以没有这半句时那行会说 "Nothing was found to check"。
