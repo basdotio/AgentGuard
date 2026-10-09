@@ -106,7 +106,7 @@ artifact, control and bidi characters never printed raw).
 
 1. **How is a path holding a control or invisible character quoted?**
    **Recommendation**: `$'…'` with every byte outside a conservative safe set written as a three-digit octal escape.
-   Printing those characters raw would break invariant #7; Go's `%q` escapes (`‮`) are not shell syntax and fail
+   Printing those characters raw would break invariant #7; Go's `%q` escapes (`\u202e`) are not shell syntax and fail
    today as well; a placeholder would leave the operator without a command for exactly the paths most worth checking.
    Three-digit octal never absorbs a following digit, unlike `\x`. This form needs bash, zsh, ksh or a POSIX.1-2024 shell.
    **Decided (2026-10-09)**: as recommended.
