@@ -125,8 +125,11 @@ func everyStageEnv(t *testing.T, root string) {
 // Findings are compared exactly as rendered.
 func spellingView(t *testing.T, root string, out model.ScanResult) string {
 	t.Helper()
-	prefix := filepath.Clean(root) + string(filepath.Separator)
-	if filepath.Clean(root) == "." {
+	// Strip by the root the report says it scanned, not the one typed: since collect anchors the
+	// root (P-012), note evidence is absolute for every spelling, so the typed relative root would
+	// leave its prefix on and the spellings would differ for a reason that is not the subject here.
+	prefix := filepath.Clean(out.Root) + string(filepath.Separator)
+	if filepath.Clean(out.Root) == "." {
 		prefix = ""
 	}
 	arts := make([]model.ArtifactReport, 0, len(out.Artifacts))
