@@ -769,8 +769,10 @@ func TestE2E_ConfigDirUnderTheHomeStripsTheUserHome(t *testing.T) {
 }
 
 // TestCheckTarget_JudgeBodiesCarryNoHome: checkTarget never set a home for the judge, so a judged
-// check — the path the Downloads pass takes per candidate, and any caller that passes llm — sent
-// every path as written. The egress now strips the OS user's home whatever the caller says.
+// check — `check --llm`, and the path the Downloads pass takes per candidate — sent every path as
+// written. The egress now strips the OS user's home whatever the caller says: for a directory
+// target, and for a .zip, which is unpacked outside the home before the judge sees it, so only
+// the content still names the home there.
 func TestCheckTarget_JudgeBodiesCarryNoHome(t *testing.T) {
 	home := markedHome(t, "davemarker")
 	t.Setenv("HOME", home)
@@ -779,13 +781,22 @@ func TestCheckTarget_JudgeBodiesCarryNoHome(t *testing.T) {
 		"---\nname: notes\ndescription: Reads today's notes from "+home+"/notes and summarizes them.\n---\nSummarize the notes file.\n")
 	mustWriteFile(t, filepath.Join(skill, "run.sh"), "#!/bin/sh\ncat "+home+"/notes/today.md\n")
 
-	url, bodies := capturingJudge(t)
-	out, err := checkTarget(skill, scanOpts{cfgPath: writeJudgeConfig(t, url, "advisory"), llm: true, quiet: true})
-	if err != nil {
-		t.Fatal(err)
+	for _, target := range []struct{ name, path string }{
+		{"directory", skill},
+		{".zip", zipDir(t, skill)},
+	} {
+		url, bodies := capturingJudge(t)
+		out, err := checkTarget(target.path, scanOpts{cfgPath: writeJudgeConfig(t, url, "advisory"), llm: true, quiet: true})
+		if err != nil {
+			t.Fatalf("%s: %v", target.name, err)
+		}
+		if out.Judge == nil || !out.Judge.Ran {
+			t.Fatalf("%s: the judge should have run on the target: %+v", target.name, out.Judge)
+		}
+		sent := bodies()
+		if len(sent) == 0 {
+			t.Fatalf("%s: the judge ran but no request body was captured, so nothing below is asserted", target.name)
+		}
+		assertNoHomeSent(t, sent, home, "davemarker")
 	}
-	if out.Judge == nil || !out.Judge.Ran {
-		t.Fatalf("the judge should have run on the target: %+v", out.Judge)
-	}
-	assertNoHomeSent(t, bodies(), home, "davemarker")
 }

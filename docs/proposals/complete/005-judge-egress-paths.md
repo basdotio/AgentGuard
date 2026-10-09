@@ -220,6 +220,10 @@ W1–W8 是旧仓的首轮实现,W9–W15 是评审 1–7 的修复,W16–W20 �
     本条给它加了一个 `home` 参数;P-003(`p/003-zero-dial-test`)给 `openai.go` 的 `NewHTTP` 加了一个测试接缝,并用 `scanOpts{…}` 具名字段调
     `scanEnv` / `scanInbox` / `checkTarget`。本条不碰 `NewHTTP`、只给 `scanOpts` 加一个具名字段,和 P-003 没有语义冲突。
     谁后合谁 rebase:`runJudge` 那一处按两边的意图合;若 P-003 的零外连源码检查对 `NewHTTP` 里客户端字面量的形状有要求,由后合的一方适配。
+    **合入时(2026-10-09,本条在 P-001、P-003、P-004 之后)**:`runJudge` 自动合并,两边都在(P-001 的用量进 summary,本条的 `home`
+    进 `judge.Options`);`NewHTTP` 没动,零外连源码检查照常过。P-004 把"`check --llm`(目录与 `.zip`)发出去的内容已擦 home"的断言
+    交给后合入的一方,也就是本条:`TestCheckTarget_JudgeBodiesCarryNoHome` 改成目录和 `.zip` 各跑一次;变异(建好 zip 后把 `HOME`
+    换成别的目录,出口就不知道该擦哪个 home)两行都红,还原绿。
 
 ## 完成
 
