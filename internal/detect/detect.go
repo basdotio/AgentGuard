@@ -265,15 +265,14 @@ func (e *Engine) unitsFor(root string, a model.ArtifactReport) ([]unit, []model.
 	case model.KindHook:
 		return hookUnits(root, a)
 	case model.KindMCP:
-		key := MCPServerKey(a)
-		return append(jsonStrings(a.Path, "mcpServers", key), envUnit(a.Path, "mcpServers", key)...), nil
+		return mcpUnits(a), nil
 	case model.KindConnector:
 		return connectorUnits(a), nil
 	case model.KindPermission:
 		// permcheck (spec §7) judges the SHAPE of each grant from its text. This reads the
 		// local scripts those grants point at — the half permcheck structurally cannot see.
 		if strings.HasPrefix(a.Name, collect.SettingsEnvName) {
-			return envUnit(a.Path, "", ""), nil
+			return settingsEnvUnit(a.Path), nil
 		}
 		return permissionUnits(root, a)
 	default:
@@ -1229,7 +1228,8 @@ func readCapped(path, relBase string) ([]byte, *model.Finding) {
 	return b, nil
 }
 
-// MCPServerKey is the key an MCP artifact's server sits under in the `mcpServers` of a.Path. The
+// MCPServerKey is the key an MCP artifact's server sits under in the server map of a.Path — its
+// `mcpServers`, or the top level of a plugin file without the wrapper (mcpServerMap, P-029). The
 // rule engine, the content hash and the LLM judge all find the entry through it, so the three
 // cannot be reading different entries.
 //
@@ -1247,7 +1247,7 @@ func MCPServerKey(a model.ArtifactReport) string {
 	if a.MCPServer != "" {
 		return a.MCPServer
 	}
-	if _, ok := configEntry(a.Path, "mcpServers", ""); ok {
+	if _, ok := mcpEntry(a.Path, a.MCPUnwrapped, ""); ok {
 		return ""
 	}
 	return a.Name
@@ -1301,6 +1301,11 @@ func ConfigLines(path, section, name string) []string {
 	if !ok {
 		return nil
 	}
+	return entryLines(raw)
+}
+
+// entryLines is ConfigLines for an entry already read (MCPConfigLines reads an MCP artifact's).
+func entryLines(raw json.RawMessage) []string {
 	var v any
 	if json.Unmarshal(raw, &v) != nil {
 		return nil
@@ -1338,23 +1343,20 @@ func ConfigLines(path, section, name string) []string {
 	return out
 }
 
-// jsonStrings wraps configStrings into one synthetic unit. Marked synthetic: evidence Line
-// is 0 (JSON values have no meaningful per-line number in this blob).
-func jsonStrings(path, section, name string) []unit {
-	strs := configStrings(path, section, name)
+// jsonStrings wraps an entry's string leaves (configStrings' bag of values) into one synthetic
+// unit of path. Marked synthetic: evidence Line is 0 (JSON values have no meaningful per-line
+// number in this blob).
+func jsonStrings(path string, raw json.RawMessage) []unit {
+	var strs []string
+	collectStrings(raw, &strs)
 	if len(strs) == 0 {
 		return nil
 	}
 	return []unit{{file: path, text: strings.Join(strs, "\n"), role: roleScript, synthetic: true}}
 }
 
-// envUnit renders a config's `env` map as KEY=VALUE lines, one synthetic unit. collectStrings
-// keeps only VALUES, and for an environment block the KEY is the signal: `--require /tmp/x.js`
-// is code injection under NODE_OPTIONS and an ordinary argument under args (ts-node servers start
-// with `--require ts-node/register`); LD_PRELOAD's value is just a path. section/name select the
-// MCP server entry (`mcpServers.<name>`); an empty section reads the top-level `env` of a
-// settings file. Keys are sorted so evidence is byte-stable across runs.
-func envUnit(path, section, name string) []unit {
+// settingsEnvUnit is envUnit for the top-level `env` block of a settings file.
+func settingsEnvUnit(path string) []unit {
 	b, err := safeio.ReadFile(path, safeio.MaxConfigBytes)
 	if err != nil {
 		return nil
@@ -1364,20 +1366,29 @@ func envUnit(path, section, name string) []unit {
 		return nil
 	}
 	envRaw, ok := doc["env"]
-	if section != "" {
-		sec := map[string]json.RawMessage{}
-		if raw, ok := doc[section]; ok {
-			_ = json.Unmarshal(raw, &sec)
-		}
-		entry := map[string]json.RawMessage{}
-		if raw, ok := sec[name]; ok {
-			_ = json.Unmarshal(raw, &entry)
-		}
-		envRaw, ok = entry["env"]
-	}
 	if !ok {
 		return nil
 	}
+	return envUnit(path, envRaw)
+}
+
+// entryEnvUnit is envUnit for the `env` of one MCP server entry.
+func entryEnvUnit(path string, raw json.RawMessage) []unit {
+	entry := map[string]json.RawMessage{}
+	_ = json.Unmarshal(raw, &entry)
+	envRaw, ok := entry["env"]
+	if !ok {
+		return nil
+	}
+	return envUnit(path, envRaw)
+}
+
+// envUnit renders a config's `env` map as KEY=VALUE lines, one synthetic unit. collectStrings
+// keeps only VALUES, and for an environment block the KEY is the signal: `--require /tmp/x.js`
+// is code injection under NODE_OPTIONS and an ordinary argument under args (ts-node servers start
+// with `--require ts-node/register`); LD_PRELOAD's value is just a path. Keys are sorted so
+// evidence is byte-stable across runs.
+func envUnit(path string, envRaw json.RawMessage) []unit {
 	var env map[string]any
 	if json.Unmarshal(envRaw, &env) != nil || len(env) == 0 {
 		return nil

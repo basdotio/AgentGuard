@@ -534,17 +534,41 @@ func RootMCPConfigs(root, home string) []string {
 // report diff and would have made any content-addressed handle for a server unstable.
 //
 // The artifact Name is the BARE server name, never decorated with a scope suffix. Name is not just
-// a label: detect and the judge use it as the key to look the server up inside the JSON
-// (`jsonStrings(a.Path, "mcpServers", a.Name)`). A decorated name misses, yields zero units, and the
-// artifact scores a clean 100 — so labelling a project-level server " (project)" made the newly
-// collected servers strictly worse than not collecting them: unscanned, unflagged, and averaged
-// into `overall` as perfect. The two scopes stay distinguishable by Path.
+// a label: for an artifact built without MCPServer, detect and the judge fall back to it as the key
+// to look the server up inside the JSON (detect.MCPServerKey). A decorated name misses, yields zero
+// units, and the artifact scores a clean 100 — so labelling a project-level server " (project)"
+// made the newly collected servers strictly worse than not collecting them: unscanned, unflagged,
+// and averaged into `overall` as perfect. The two scopes stay distinguishable by Path.
 //
 // A plugin's servers are the exception the rule above describes: they arrive with nameSuffix
 // " (plugin …)", so a lookup by Name misses them. MCPServer always holds the bare key, and every
 // lookup goes through detect.MCPServerKey, which uses it: the rules, the judge and the content hash.
 // Until P-021 the rules and the judge looked up by Name, and every plugin server scored a clean 100.
+// A plugin's file may also list its servers without the wrapper; that layout is read only by
+// pluginMCPServersFrom (P-029), never here.
 func mcpServersFrom(path, nameSuffix string, env *model.EnvSummary) ([]model.ArtifactReport, []model.Finding) {
+	return readMCPServers(path, nameSuffix, wrappedMCPServers, env)
+}
+
+// mcpServerDecoder returns a config document's server map, whether that map is the top level of
+// the document (unwrapped), and ok=false when the document is not one this decoder can read.
+type mcpServerDecoder func(b []byte) (servers map[string]json.RawMessage, unwrapped, ok bool)
+
+// wrappedMCPServers is the user-level and project-level layout: the servers are the
+// `mcpServers` member and nothing else is.
+func wrappedMCPServers(b []byte) (map[string]json.RawMessage, bool, bool) {
+	var doc struct {
+		MCPServers map[string]json.RawMessage `json:"mcpServers"`
+	}
+	if json.Unmarshal(b, &doc) != nil {
+		return nil, false, false
+	}
+	return doc.MCPServers, false, true
+}
+
+// readMCPServers reads one MCP config file and yields an artifact per server decode finds, names
+// sorted; see mcpServersFrom.
+func readMCPServers(path, nameSuffix string, decode mcpServerDecoder, env *model.EnvSummary) ([]model.ArtifactReport, []model.Finding) {
 	b, err := safeio.ReadFile(path, safeio.MaxConfigBytes)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -552,14 +576,12 @@ func mcpServersFrom(path, nameSuffix string, env *model.EnvSummary) ([]model.Art
 		}
 		return nil, []model.Finding{ioNote(path, err)}
 	}
-	var doc struct {
-		MCPServers map[string]json.RawMessage `json:"mcpServers"`
-	}
-	if json.Unmarshal(b, &doc) != nil {
+	servers, unwrapped, ok := decode(b)
+	if !ok {
 		return []model.ArtifactReport{withParseError(model.KindMCP, "mcpServers"+nameSuffix, path)}, nil
 	}
-	names := make([]string, 0, len(doc.MCPServers))
-	for name := range doc.MCPServers {
+	names := make([]string, 0, len(servers))
+	for name := range servers {
 		names = append(names, name)
 	}
 	sort.Strings(names)
@@ -567,6 +589,7 @@ func mcpServersFrom(path, nameSuffix string, env *model.EnvSummary) ([]model.Art
 	for _, name := range names {
 		a := artifact(model.KindMCP, name+nameSuffix, path, "")
 		a.MCPServer = name // the key itself: a plugin server's Name carries nameSuffix
+		a.MCPUnwrapped = unwrapped
 		out = append(out, a)
 		env.MCPServers++
 	}

@@ -58,6 +58,10 @@ func TestCollect_PluginMCPWithoutWrapper(t *testing.T) {
 		{"wrapped beside a top-level sibling", ".mcp.json", `{"mcpServers":{"in":` + node + `},"out":` + node + `}`,
 			[]string{"in (plugin p@mkt)|in|false"}},
 		{"empty wrapper beside a sibling", ".mcp.json", `{"mcpServers":{},"out":` + node + `}`, nil},
+		// JSON.parse keeps the last of a repeated key; Go's struct decoder merged both maps.
+		{"wrapper repeated: the last one is the wrapper", ".mcp.json",
+			`{"mcpServers":{"first":` + node + `},"mcpServers":{"last":` + node + `}}`,
+			[]string{"last (plugin p@mkt)|last|false"}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
