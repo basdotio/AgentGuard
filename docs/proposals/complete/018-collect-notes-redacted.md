@@ -76,34 +76,34 @@ collect 那半留给了本条(其未决 3)。
 
 fixture 都在 `t.TempDir()` 现搭;token 用 `ghp_` 加 36 位的明显假值(`redact_test.go` 已有同样写法),`Redact` 的已知前缀表认得它。
 
-- [ ] `TestImportNotes_SecretInReferenceIsRedacted`(`internal/collect/notes_redact_test.go`,新):`CLAUDE.md` 四行导入
+- [x] `TestImportNotes_SecretInReferenceIsRedacted`(`internal/collect/notes_redact_test.go`,新):`CLAUDE.md` 四行导入
   (`@~/vault/<token>/.env`、`@~/.ssh/<token>/config`、`@../../outside/<token>/notes.md`、第五跳 `@<token>/d5.md`)走 `CollectAll`,
   `EXFIL-005` ×2、凭据路径 / 越界 / 深度三种 `COV-000` 的 Title、Why、Evidence 里都没有 token,snippet 带 `<REDACTED>`、仍以 `@` 开头、
   仍以原来的尾巴结尾(`/.env is a credential path`、`/notes.md escapes the scan boundary`、`/d5.md beyond depth 4`…)。今天红
-- [ ] `TestConfigNamesInNotesAreRedacted`(同文件,新):`<token>@market` 插件装在 HOME 外 → `SCOPE-001`;settings.json `hooks` 下键为 `<token>`
+- [x] `TestConfigNamesInNotesAreRedacted`(同文件,新):`<token>@market` 插件装在 HOME 外 → `SCOPE-001`;settings.json `hooks` 下键为 `<token>`
   的坏条目 → `PARSE-000`:snippet 里没有 token、带 `<REDACTED>`、固定前缀不变。今天红
-- [ ] `TestUnreadableNote_SecretInEntryNameIsRedacted`(`internal/detect/note_redact_test.go`,新):skill 里 `0111` 的目录名为 token,走 `Engine.Run`,
+- [x] `TestUnreadableNote_SecretInEntryNameIsRedacted`(`internal/detect/note_redact_test.go`,新):skill 里 `0111` 的目录名为 token,走 `Engine.Run`,
   那条 `COV-000` 的 Why 和 snippet 里都没有 token、都带 `<REDACTED>`,且两处是同一份列表。今天红
-- [ ] `TestDeadRegistrationNote_SecretInCommandIsRedacted`(`internal/gate/status_redact_test.go`,新):注册命令 `/opt/<token>/aguard hook` 的
+- [x] `TestDeadRegistrationNote_SecretInCommandIsRedacted`(`internal/gate/status_redact_test.go`,新):注册命令 `/opt/<token>/aguard hook` 的
   `GATE-001` snippet 等于 `missing hook command: /opt/<REDACTED>/aguard hook`。今天红
-- [ ] `TestScan_NoteSecretsNeverReachARendering`(`cmd/aguard/note_redact_render_test.go`,新):上面全部放进一份 fixture 走 `scanEnv` 并像 `scan`
+- [x] `TestScan_NoteSecretsNeverReachARendering`(`cmd/aguard/note_redact_render_test.go`,新):上面全部放进一份 fixture 走 `scanEnv` 并像 `scan`
   命令那样挂上 `gateLivenessNote`,JSON(与 CLI 同样的缩进编码)、终端(普通与 `--verbose`)、markdown、SARIF、HTML 六种渲染里都没有 token,
   且 `EXFIL-005`、三种 import `COV-000`、`SCOPE-001`、`PARSE-000`、读不了条目的 `COV-000`、`GATE-001` 都还在;同一个 skill 走 `checkTarget` 的
   markdown(贴 PR 评论那条路)也没有 token。今天红
-- [ ] 反向断言:普通值**逐字不变** —— `TestImportNotes_OrdinaryReferenceUnchanged`、`TestConfigNamesInNotes_OrdinaryUnchanged`、
+- [x] 反向断言:普通值**逐字不变** —— `TestImportNotes_OrdinaryReferenceUnchanged`、`TestConfigNamesInNotes_OrdinaryUnchanged`、
   `TestUnreadableNote_OrdinaryNamesUnchanged`、`TestDeadRegistrationNote_OrdinaryCommandUnchanged` 用字面值钉住(`@~/.env is a credential path`、
   `@../../outside/notes.md escapes the scan boundary`、`@h5.md beyond depth 4`、`install path escapes HOME: figma@claude-plugins-official`、
   `hooks.PreToolUse`、`unreadable: lib/helper.sh, sub`、超过 10 个名字的 `… (N more)`、`missing hook command: /usr/local/bin/aguard hook`、
   带空格加引号的 `"/Applications/Some Tool/aguard" hook`),并且每条都等于按今天的拼法算出的值;修前修后都绿
-- [ ] 反向断言:`aguard hook status` 仍按原样印注册的命令 —— `TestStatusDescribe_ShowsTheRegisteredCommandVerbatim`(同 gate 文件)用一条
+- [x] 反向断言:`aguard hook status` 仍按原样印注册的命令 —— `TestStatusDescribe_ShowsTheRegisteredCommandVerbatim`(同 gate 文件)用一条
   `Redact` 会改动的 npx 缓存形状路径,断言它逐字出现在 `Describe` 输出里;修前修后都绿(钉住未决 5)
-- [ ] 搬家不改行为:`internal/detect/redact_test.go`、`contenthash_test.go`、`snippet_redact_test.go`、`internal/judge/*_test.go`、
+- [x] 搬家不改行为:`internal/detect/redact_test.go`、`contenthash_test.go`、`snippet_redact_test.go`、`internal/judge/*_test.go`、
   `internal/permcheck/permcheck_test.go`、`cmd/aguard/redact_render_test.go` 一字不改仍绿(`git diff --stat origin/main` 对它们为空);
   挪走的模式、两遍函数和熵判定逐字节等于 `origin/main` 的 `internal/detect/redact.go` 里那一段(去掉包名与包注释后 `diff` 为空)
-- [ ] fixture 二进制前后(fd28344 vs 本分支,同一份 fixture,`--json --inbox off`):token 11 → 0,上面那几条发现与 note 条数不变,overall 不变
-- [ ] 真机 `scan --root ~/.claude`:修前修后 JSON 去掉 `scanned_at`、`tool_version` 后逐字节相同(本机唯一一条落在改动处的 note 是 `hooks.hooks`,
+- [x] fixture 二进制前后(fd28344 vs 本分支,同一份 fixture,`--json --inbox off`):token 11 → 0,上面那几条发现与 note 条数不变,overall 不变
+- [x] 真机 `scan --root ~/.claude`:修前修后 JSON 去掉 `scanned_at`、`tool_version` 后逐字节相同(本机唯一一条落在改动处的 note 是 `hooks.hooks`,
   `Redact` 不改它)
-- [ ] `.claude/rules/*.md` 都不超过 200 行;`make verify` 绿;`go version` 不切换工具链,`go.mod` 第二行仍是 `go 1.23.5`,不加依赖
+- [x] `.claude/rules/*.md` 都不超过 200 行;`make verify` 绿;`go version` 不切换工具链,`go.mod` 第二行仍是 `go 1.23.5`,不加依赖
 
 ## 不做什么
 
@@ -168,3 +168,19 @@ fixture 都在 `t.TempDir()` 现搭;token 用 `ghp_` 加 36 位的明显假值(`
    **建议**:接受。报告是会被转贴、上传的那份;`Why` 给的修法(`aguard hook install`)不需要旧路径;旧路径在 `aguard hook status` 里原样可查。
    替 `Redact` 分辨"安装路径"和"secret",就是第二个出口(P-014 未决 1 同理)。
    **已决(2026-10-09)**:按建议。
+
+## 完成
+
+```
+合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-018 找)
+发布:待发
+证据:W1 在本仓 main(fd28344)上红,原因与判据一致 —— TestImportNotes_SecretInReferenceIsRedacted 六条 snippet 都是原样 token(如 @~/vault/ghp_<36 位>/.env is a credential path);TestConfigNamesInNotesAreRedacted 两条(install path escapes HOME: ghp_<36 位>@market、hooks.ghp_<36 位>);TestUnreadableNote_SecretInEntryNameIsRedacted 的 Why 与 snippet(unreadable: ghp_<36 位>);TestDeadRegistrationNote_SecretInCommandIsRedacted(missing hook command: /opt/ghp_<36 位>/aguard hook);TestScan_NoteSecretsNeverReachARendering 七个子测试全红 → W5 后全绿
+证据:TestScan_NoteSecretsNeverReachARendering 逐步(token 次数,json/text/verbose/markdown/sarif/html/check --md):W1 11/2/11/11/4/3/2 → W2(只搬家)不变 → W3(collect)3/0/3/3/1/1/2 → W4(unreadableNote)1/0/1/1/0/0/0 → W5(GATE-001)全 0;八类发现与 note 的条数每一步都不变
+证据:反向断言 TestImportNotes_OrdinaryReferenceUnchanged、TestConfigNamesInNotes_OrdinaryUnchanged、TestUnreadableNote_OrdinaryNamesUnchanged(三个子测试,Why 与旧公式逐字相等)、TestDeadRegistrationNote_OrdinaryCommandUnchanged(四种安装命令)、TestStatusDescribe_ShowsTheRegisteredCommandVerbatim(npx 缓存路径,先断言 Redact 会改它)W1 时就绿,修后不改一字仍绿
+证据:搬家不改行为 —— W2 之后 internal/detect、judge、permcheck、hygiene、clean 全绿,只剩 W1 的那条红;git diff --stat origin/main -- internal/detect/redact_test.go internal/detect/contenthash_test.go internal/detect/contenthash.go internal/detect/snippet_redact_test.go internal/judge internal/permcheck internal/hygiene internal/clean cmd/aguard/redact_render_test.go 为空;origin/main 的 internal/detect/redact.go 第 18–213 行与 internal/redact/redact.go 对应段 diff:只差 Redact→Secrets、redactCredentials→Credentials 两个函数头及其注释,和留在 detect 的 redactClip;每个模式、熵判定、两遍函数体逐字节相同
+证据:二进制前后(fd28344 vs 本分支,同一份 fixture,HOME 指向 fixture,scan --json --inbox off):token 11 → 0;JSON 299 行里只差 11 行,恰是那 11 处;各规则条数不变(EXFIL-005 2、COV-000 6、SCOPE-001 1、PARSE-000 1、GATE-001 1),overall 69 → 69。HOME 外那两条路径(/tmp/ag-scratch/018/…,带数字的长路径)整段被熵检测吃成 <REDACTED><REDACTED>/notes.md、<REDACTED><REDACTED>/aguard hook —— 未决 4、6 接受的代价
+证据:真机 ~/.claude(带 Downloads):修前修后 overall 69 / artifact 180 / 发现 806 / note 10;JSON 去掉 scanned_at、tool_version 后 15730 行里只差 3 行,都是两个桌面版 connector artifact 的 path 和一条证据 file —— 会话缓存里"最新的那份工具清单"在两次运行之间换了文件(桌面版在本会话中持续写会话文件;connectors.go 本条未动),把这两个字段遮住后逐字节相同。再背靠背各跑一次(--inbox off):去掉 scanned_at、tool_version 后 15724 行逐字节相同
+证据:不做什么 —— git diff --stat origin/main -- internal/detect/hooks.go internal/report internal/collect/hash.go internal/collect/connectors.go internal/collect/unowned.go internal/collect/loaded.go internal/collect/desktop.go docs/rules.md go.mod go.sum 为空;internal/collect/collect.go 只有包注释一个 hunk(unresolvedNote、ioNote 未动);internal/gate/status.go 三个 hunk:import、DeadRegistrationNote 的注释、snippet 那一行,Describe 未动;internal/detect/detect.go 两个 hunk 都在 unreadableNote
+证据:.claude/rules/invariants.md 84 → 90 行、hash.md 62 → 63 行,detect.md 200 行未动;TestClaudeRulesAreScopedToExistingPaths 绿
+证据:make verify: all gates passed;go version go1.23.5(无工具链切换),go.mod 第二行 go 1.23.5,无新依赖
+```
