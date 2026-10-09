@@ -72,36 +72,36 @@ check"(找到了,只是没读成)。这正是不变量 #5("任何遗漏都不许
 夹具是同一个 `.claude` 的两份 `settings.json`:**坏的** `{"hooks": {"PreToolUse": [ broken`,**好的**是同一个开头写完整、
 注册一条 `echo ok` 的 hook(`main` 上 100/100、零发现、零 note,输出 "looks safe" + "Checked 1 hook.")。
 
-- [ ] `TestBrokenSettingsIsNotReportedSafe`(`cmd/aguard/artifact_notes_test.go`,新):坏夹具分别走 `scanEnv` 和 `checkTarget`,
+- [x] `TestBrokenSettingsIsNotReportedSafe`(`cmd/aguard/artifact_notes_test.go`,新):坏夹具分别走 `scanEnv` 和 `checkTarget`,
   四个给人读的渲染器(终端默认、`--verbose`、markdown、HTML)每一个都含 `PARSE-000` 和 `settings.json` 的路径,
   每一个都**不含** `looks safe` 和 `Nothing was found to check`。今天红:四个渲染器都没有 `PARSE-000`
-- [ ] `TestCheckBrokenSettingsCLI`(同文件,新):真二进制 `aguard check <坏夹具>` 的 stdout 含 `PARSE-000`、不含 `looks safe`,
+- [x] `TestCheckBrokenSettingsCLI`(同文件,新):真二进制 `aguard check <坏夹具>` 的 stdout 含 `PARSE-000`、不含 `looks safe`,
   **退出码 0**。今天红在 stdout 那半;退出码那半今天就是 0,修完仍是 0
-- [ ] `TestArtifactNoteReachesEveryHumanRenderer`(`internal/report/artifact_notes_test.go`,新):手搭的结果,artifact 自带一条
+- [x] `TestArtifactNoteReachesEveryHumanRenderer`(`internal/report/artifact_notes_test.go`,新):手搭的结果,artifact 自带一条
   dim-0 note,文件名里带 U+202E 和 ESC;四个渲染器都显示这条 note,且输出里**没有** U+202E / ESC(不变量 #7,
   文件名是被扫目录给的)。今天红:note 不显示
-- [ ] `TestSummaryDoesNotCallIncompleteCoverageSafe`(同文件,新):Low 档 + **Claude Code 加载的东西没读全**(人定的集合,
+- [x] `TestSummaryDoesNotCallIncompleteCoverageSafe`(同文件,新):Low 档 + **Claude Code 加载的东西没读全**(人定的集合,
   见未决问题 2:挂在 artifact 上的覆盖 note,或任何位置的 `IO-000` / `PARSE-000`)→ 三个渲染器的 Summary 都说
   `coverage is incomplete`、不说 `looks safe`。今天红。另有三行:只有"顶层条目没读"的扫描级 `COV-000` → 仍说
   `looks safe`;只有 `LLM-002` → 仍说 `looks safe`;扫描级 `PARSE-000`(hook 条目没看懂)→ 对冲
-- [ ] `TestUnownedEntriesKeepTheHeadline`(`cmd/aguard/artifact_notes_test.go`,新):真实流水线,好夹具 + 一个
+- [x] `TestUnownedEntriesKeepTheHeadline`(`cmd/aguard/artifact_notes_test.go`,新):真实流水线,好夹具 + 一个
   `sessions/a.jsonl` → 恰好一条扫描级 `COV-000`、Low 档;四个渲染器都仍是 `Your Claude Code setup looks safe.`,且这条
   note 仍然披露(终端的 "Not checked —" 行、`--verbose` 的 "⚠ Scan warnings"、markdown 的 "## Not checked"、HTML 的
   `notchecked` 区块)
-- [ ] 反向断言 `TestUnreadableSettingsHedgesTheHeadline`(同文件,新):`chmod 000` 的 `settings.json` → 扫描级
+- [x] 反向断言 `TestUnreadableSettingsHedgesTheHeadline`(同文件,新):`chmod 000` 的 `settings.json` → 扫描级
   `IO-000`、没有 artifact → 四个渲染器的头条都对冲(以 root 运行读得到时 skip)
-- [ ] 反向断言 `TestCleanSettingsReportIsUnchanged`(`cmd/aguard/artifact_notes_test.go`,新,今天就绿):好夹具的终端默认、
+- [x] 反向断言 `TestCleanSettingsReportIsUnchanged`(`cmd/aguard/artifact_notes_test.go`,新,今天就绿):好夹具的终端默认、
   `--verbose`、markdown 输出与**本仓 `main` 上录下**的 golden **逐字节相同**(只把临时目录替换成占位符、把时间和版本固定);
   HTML 说 `looks safe`、`Checked 1 hook.`、没有 "Not checked" 区块。修完不改一字仍绿
-- [ ] 反向断言 `TestBrokenSettingsMachineOutputUnchanged`(同文件,新,今天就绿):坏夹具的 JSON 里 `PARSE-000` 仍在
+- [x] 反向断言 `TestBrokenSettingsMachineOutputUnchanged`(同文件,新,今天就绿):坏夹具的 JSON 里 `PARSE-000` 仍在
   `artifacts[0].findings`、`notes` 仍为空,SARIF 仍有这条结果且归属 `hook:settings.json` —— 数据没挪;分数 100 不变;
   `failGate` 在 `--fail-on high` 与 `--fail-on low` 下都放行(dim-0 不 gate)。修完不改一字仍绿
-- [ ] 反向断言:Low 档、没有覆盖 note → 仍是 `Your Claude Code setup looks safe.`;只有压制类 note(`REP-GOOD`/`IGN-000`)
+- [x] 反向断言:Low 档、没有覆盖 note → 仍是 `Your Claude Code setup looks safe.`;只有压制类 note(`REP-GOOD`/`IGN-000`)
   → 仍是 `looks safe`(压制不是覆盖缺口,Summary 已有自己的一行);`TestVerdictSentence`、`TestCheckedLine` 不改一字仍绿
-- [ ] 真机:坏夹具和好夹具在 `main` 与本分支的 `check --json` / `check --sarif` 输出(去掉 `scanned_at`)`diff` 为 0 字节;
+- [x] 真机:坏夹具和好夹具在 `main` 与本分支的 `check --json` / `check --sarif` 输出(去掉 `scanned_at`)`diff` 为 0 字节;
   只带"顶层条目没读"的夹具和空 root 的终端输出与 `main` 逐字节相同;真机 `~/.claude` 输出不变(若它不在 Low 档或没有
   artifact 自带的 note)
-- [ ] `make verify` 绿;`go version` 不切换工具链
+- [x] `make verify` 绿;`go version` 不切换工具链
 
 ## 不做什么
 
@@ -203,3 +203,26 @@ W2–W4 是旧仓第一轮的宽集合,W5–W7 是人定的收窄;两段按原�
    修在同一处;本条的契约("artifact 自带的 note 有人渲染、头条不再说 looks safe")已满足。
    **已决(2026-10-09,人)**:两个措辞缺陷(这一条,和 `check <单个脚本>` / `check <普通目录>` 报发现时仍说 "Nothing was found
    to check")合成**一份**独立 proposal,本条合入后另开;本条不修。收窄后 `IO-000` 仍在头条的集合里,头条那半不变。
+
+## 完成
+
+```
+合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-013 找)
+发布:待发
+证据:TestBrokenSettingsIsNotReportedSafe(cmd/aguard/artifact_notes_test.go);W1 在本仓 main 的渲染器上红:scanEnv 与 checkTarget 两路,终端默认 / --verbose / markdown / HTML 四个都 "does not name the parse failure [PARSE-000]",且都说 "looks safe" 和 "Nothing was found to check"(24 处)→ W2 后 PARSE-000 进了四个渲染器 → W3 后四个全绿:Summary 是 "Low risk in what was read, but coverage is incomplete. No findings." + "Not fully checked: …/.claude/settings.json [PARSE-000]."
+证据:TestCheckBrokenSettingsCLI(同文件);W1 红在 stdout(没有 PARSE-000、有 looks safe)→ W3 后绿;退出码修前修后都是 0
+证据:TestArtifactNoteReachesEveryHumanRenderer(internal/report/artifact_notes_test.go);W1 红:四个渲染器都 "does not show the artifact's own note" → W2 后只剩终端默认红(文件名不在默认视图、没有 U+FFFD)→ W3 后绿;四个输出里 U+202E 与 ESC 都是 0 处,U+FFFD 在
+证据:TestSummaryDoesNotCallIncompleteCoverageSafe(同文件);W1 红 16 处(扫描级 IO-000 / artifact 级 PARSE-000 × 4 个渲染器 × 2 条断言)→ W3 后绿;"no note" 与 "trust decision only" 两行 W1 起就绿,之后不改一字仍绿
+证据:人定收窄 —— 同一测试新增三行;W5 红 8 处("unowned top-level entries only" 与 "judge privacy notice only" × 4 个渲染器,looks safe = false, want true)→ W6 后绿;"scan-level PARSE-000" 一行前后都绿;原有四行 W5 / W6 未改一字,仍绿。TestCoverageVerdict(W3 自己加的)随 coverageVerdict 改为接收整个结果而改了入参,每行期望的句子不变
+证据:TestUnownedEntriesKeepTheHeadline(cmd/aguard/artifact_notes_test.go);W5 红:四个渲染器都 "an unowned top-level entry changed the headline" → W6 后绿,四个都说 Your Claude Code setup looks safe.,且 Not checked 行 / Scan warnings / ## Not checked / notchecked 区块仍在
+证据:反向断言 TestUnreadableSettingsHedgesTheHeadline(同文件);W5 时就绿,W6 后不改一字仍绿;变异(coverageVerdict 的扫描级集合去掉 IO-000)→ 四个渲染器都红 "an unreadable settings.json must hedge the headline",还原后绿
+证据:反向断言 TestCleanSettingsReportIsUnchanged(同文件);golden 在 W1 上用本仓 main 的渲染器现录(临时 dump 测试,未提交),与旧仓 golden 只差 markdown 末尾 rules 链接 blob/main ← blob/dev;W1 起绿,W2–W7 后不改一字仍绿(终端默认 = --verbose,markdown 逐字节)
+证据:反向断言 TestBrokenSettingsMachineOutputUnchanged(同文件);W1 起绿,之后不改一字仍绿:JSON 里 PARSE-000 仍在 artifacts[0].findings、notes 为 [],SARIF 归属 hook:settings.json,overall 100,--fail-on high / low 都不触发
+证据:反向断言 —— TestVerdictSentence、TestCheckedLine(internal/report/plain_test.go)未改、仍绿;text_test.go 只改了 TestText_AggregatesAndLabels 的一条断言(未决问题 7),W1 红 "must fold into the Not checked line, not vanish" → W2 后绿
+证据:真机二进制 —— main(dec64ca)与本分支各编一个(同一 -ldflags version 串),7 个夹具(好、坏 settings.json、坏 ~/.claude.json、坏 installed_plugins.json、只带顶层条目的、空 root、chmod 000 的 settings.json)× check --json(去 scanned_at)/ check --sarif 共 14 个文件 0 字节差;好夹具的终端默认 / --verbose / --md(去时间行)/ scan --html(去 meta 行)0 字节差;只带顶层条目的夹具和空 root 的终端默认 / --verbose / --md / scan 输出 0 字节差,两者 HTML 只多出单条证据 note 的文件名(未决问题 5)
+证据:真机二进制 —— 坏 settings.json、坏 ~/.claude.json、坏 installed_plugins.json 三个 withParseError 调用点由 "looks safe … Nothing was found to check" 变为 "Low risk in what was read, but coverage is incomplete." + "Not fully checked: <短路径> [PARSE-000].",Not checked 行出现 [PARSE-000];markdown 多出 "## Not checked",HTML 多出 notchecked 区块并印出文件;chmod 000 的 settings.json 头条对冲,Checked 那句仍是 "Nothing was found to check"(不做什么 (b));7 个夹具退出码前后都是 0
+证据:真机 ~/.claude(scan --inbox off,175 项,Elevated,605 行):main 与本分支输出 0 字节差 —— 不在 Low 档,也没有 artifact 自带的 note
+证据:不做什么 —— git diff --stat origin/main -- internal/collect internal/detect internal/score internal/model internal/report/sarif.go internal/report/sanitize.go cmd/aguard/main.go cmd/aguard/inbox.go internal/gate go.mod go.sum 为空
+证据:移植 —— 7 个补丁在本仓 main 上 git am -3 全部无冲突;本仓 internal/report 与旧仓导出基点只差一处(markdown 里 rules 链接的分支名 blob/main ← blob/dev,已体现在重录的 golden 里),v0.16–v0.18 没有再动 internal/report(git log 2b4c2a7..origin/main -- internal/report 为空)
+证据:make verify: all gates passed;go version go1.23.5(无工具链切换),go.mod 第二行 go 1.23.5
+```
