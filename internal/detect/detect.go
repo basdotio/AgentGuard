@@ -265,7 +265,8 @@ func (e *Engine) unitsFor(root string, a model.ArtifactReport) ([]unit, []model.
 	case model.KindHook:
 		return hookUnits(root, a)
 	case model.KindMCP:
-		return append(jsonStrings(a.Path, "mcpServers", a.Name), envUnit(a.Path, "mcpServers", a.Name)...), nil
+		key := MCPServerKey(a)
+		return append(jsonStrings(a.Path, "mcpServers", key), envUnit(a.Path, "mcpServers", key)...), nil
 	case model.KindConnector:
 		return connectorUnits(a), nil
 	case model.KindPermission:
@@ -1226,6 +1227,30 @@ func readCapped(path, relBase string) ([]byte, *model.Finding) {
 		return nil, &n
 	}
 	return b, nil
+}
+
+// MCPServerKey is the key an MCP artifact's server sits under in the `mcpServers` of a.Path. The
+// rule engine, the content hash and the LLM judge all find the entry through it, so the three
+// cannot be reading different entries.
+//
+// It is MCPServer, the key collect recorded, and NOT the artifact Name: a server a plugin ships is
+// named "<key> (plugin …)" so two plugins' servers stay apart in a report, and looked up by that
+// name it was never found — zero units, a clean 100, no judge request — for exactly the servers a
+// user installs without reading (P-021). Name is the fallback for an artifact built without
+// collect, whose Name is the key. An empty MCPServer is ambiguous, though: it is also what collect
+// records for a server whose key IS "", and since the key is the plugin author's to choose,
+// "empty means use Name" would hand them a free way out. So "" is the key whenever the config has
+// an entry under it, and only otherwise does Name stand in — "" first, because the Name collect
+// gives that server (" (plugin p@mkt)") is itself a key the author can add, as a benign decoy.
+// The cost is a hand-built artifact in a config that also has a "" key; collect never builds one.
+func MCPServerKey(a model.ArtifactReport) string {
+	if a.MCPServer != "" {
+		return a.MCPServer
+	}
+	if _, ok := configEntry(a.Path, "mcpServers", ""); ok {
+		return ""
+	}
+	return a.Name
 }
 
 // configEntry reads section[name] of a JSON config file — one MCP server, one permissions list.
