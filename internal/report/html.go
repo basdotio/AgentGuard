@@ -287,7 +287,7 @@ func buildHTMLData(r model.ScanResult) htmlData {
 		EffectiveDeg: r.OverallEffective * 360 / 100, EffectiveColor: gaugeColor(r.OverallEffective),
 		Env: r.Env, Groups: toHTMLGroups(groups, "f"), JudgeGroups: toHTMLGroups(judge, "j"), Hygiene: hy,
 		Trust: toHTMLTrust(trust), Coverage: toHTMLNotes(coverage), Reclaim: reclaim,
-		Verdict: coverageVerdict(score.Level(r.Overall), actionable(groups), len(groups), len(coverage)),
+		Verdict: coverageVerdict(score.Level(r.Overall), actionable(groups), len(groups), r),
 		Checked: checkedWithGaps(r.Env, gapList(itemGaps(r), plainGap)), JudgeLine: judgeSummaryLine(r), JudgeRequested: r.Judge != nil, WorstLine: worstLine(r),
 		Inbox: toHTMLInbox(r.Inbox), Locations: r.Locations,
 		Actions:       actions(groups, 3),

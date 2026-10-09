@@ -144,22 +144,26 @@ func TestSummaryDoesNotCallIncompleteCoverageSafe(t *testing.T) {
 	}
 }
 
-// TestCoverageVerdict: only the Low band's lead depends on the gaps, and the counting half never
-// does — a verdict that changed its counts with coverage would say something the list does not.
+// TestCoverageVerdict: only the Low band's lead depends on what was left unread, and the counting
+// half never does — a verdict that changed its counts with coverage would say something the list
+// does not. Which notes count as "unread" is TestSummaryDoesNotCallIncompleteCoverageSafe's job.
 func TestCoverageVerdict(t *testing.T) {
+	none := model.ScanResult{}
+	unread := parseFailure("/x/.claude/settings.json")
 	for _, c := range []struct {
-		level            string
-		act, total, gaps int
-		want             string
+		level      string
+		act, total int
+		r          model.ScanResult
+		want       string
 	}{
-		{"Low", 0, 0, 0, "Your Claude Code setup looks safe. No findings."},
-		{"Low", 0, 0, 1, "Low risk in what was read, but coverage is incomplete. No findings."},
-		{"Low", 1, 3, 2, "Low risk in what was read, but coverage is incomplete. 1 finding needs a look (medium or above); 2 more are informational."},
-		{"Watch", 1, 1, 4, "Mostly fine, with a few things to review. 1 finding needs a look (medium or above)."},
-		{"Elevated", 2, 2, 1, "There are problems you should fix before relying on this setup. 2 findings need a look (medium or above)."},
+		{"Low", 0, 0, none, "Your Claude Code setup looks safe. No findings."},
+		{"Low", 0, 0, unread, "Low risk in what was read, but coverage is incomplete. No findings."},
+		{"Low", 1, 3, unread, "Low risk in what was read, but coverage is incomplete. 1 finding needs a look (medium or above); 2 more are informational."},
+		{"Watch", 1, 1, unread, "Mostly fine, with a few things to review. 1 finding needs a look (medium or above)."},
+		{"Elevated", 2, 2, unread, "There are problems you should fix before relying on this setup. 2 findings need a look (medium or above)."},
 	} {
-		if got := coverageVerdict(c.level, c.act, c.total, c.gaps); got != c.want {
-			t.Errorf("coverageVerdict(%s,%d,%d,%d) =\n  %q\nwant\n  %q", c.level, c.act, c.total, c.gaps, got, c.want)
+		if got := coverageVerdict(c.level, c.act, c.total, c.r); got != c.want {
+			t.Errorf("coverageVerdict(%s,%d,%d) =\n  %q\nwant\n  %q", c.level, c.act, c.total, got, c.want)
 		}
 	}
 }
