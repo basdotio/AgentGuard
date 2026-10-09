@@ -44,3 +44,4 @@
 | [008](complete/008-undo-hint-pastes.md) | 闸门批准后给的撤销命令照抄就失败:哈希后面带着省略号 | 接受风险后的撤销命令照抄失败、`forget ""` 删掉唯一批准;移植自 agent-guard 的 P-050 | PR 待合入;待发 |
 | [009](complete/009-content-hash-three-kinds.md) | hook、MCP、permission 没有哈希,闸门和信誉库对它们恒"不认识" | 三类 artifact 哈希为空,闸门 SessionStart 与信誉库对它们恒判未知;移植自旧仓 P-051 | PR 待合入;待发 |
 | [010](complete/010-relative-root-hook-scripts.md) | --root 带尾斜杠或用相对路径时,hook 和授权引用的脚本不被跟进,同一份配置分数变高 | `--root` 写成 `<abs>/`、`.`、`./`、`home/.claude` 时 hook 和授权引用的 `~/…` 脚本不读,分数 69 → 100;移植自 agent-guard 的 P-052 | PR 待合入;待发 |
+| [011](draft/011-approve-empty-hash.md) | aguard approve 对没有内容哈希的东西也打印 approved,实际什么都没存 | `approve` 对没有哈希的最差 artifact 照样报 approved 退出 0,闸门干净分支对空哈希也说 trusted;移植自 agent-guard 的 P-053 | `p/011-approve-empty-hash` |
