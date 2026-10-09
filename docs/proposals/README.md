@@ -43,3 +43,4 @@
 | [007](complete/007-gate-pending-survives.md) | 在闸门弹窗里批准过的 skill,下次加载还会再问:批准从来没被记下来 | 每个 hook 事件是新进程,pending 从没被读回;移植自旧仓 P-049 | PR 待合入;待发 |
 | [008](complete/008-undo-hint-pastes.md) | 闸门批准后给的撤销命令照抄就失败:哈希后面带着省略号 | 接受风险后的撤销命令照抄失败、`forget ""` 删掉唯一批准;移植自 agent-guard 的 P-050 | PR 待合入;待发 |
 | [009](complete/009-content-hash-three-kinds.md) | hook、MCP、permission 没有哈希,闸门和信誉库对它们恒"不认识" | 三类 artifact 哈希为空,闸门 SessionStart 与信誉库对它们恒判未知;移植自旧仓 P-051 | PR 待合入;待发 |
+| [010](draft/010-relative-root-hook-scripts.md) | --root 带尾斜杠或用相对路径时,hook 和授权引用的脚本不被跟进,同一份配置分数变高 | `--root` 写成 `<abs>/`、`.`、`./`、`home/.claude` 时 hook 和授权引用的 `~/…` 脚本不读,分数 69 → 100;移植自 agent-guard 的 P-052 | `p/010-relative-root-hook-scripts` |
