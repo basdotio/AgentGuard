@@ -58,6 +58,22 @@ func TestContextBloat(t *testing.T) {
 	}
 }
 
+// Context bloat is measured on the description Claude Code puts in the listing. Behind a BOM it reads
+// no frontmatter at all and lists "---" (P-024, 2.1.107), so the long text costs that session nothing.
+func TestContextBloat_OnlyForADescriptionClaudeCodeLists(t *testing.T) {
+	root := t.TempDir()
+	md := "---\nname: x\ndescription: " + strings.Repeat("verbose word ", 200) + "\n---\n# X\n"
+	listed := skill(t, root, "listed", md, nil)
+	ignored := skill(t, root, "ignored", "\uFEFF"+md, nil)
+	var got []string
+	for _, it := range allOf(Analyze(root, []model.ArtifactReport{listed, ignored}, Options{}), "context_bloat") {
+		got = append(got, it.Targets...)
+	}
+	if strings.Join(got, ",") != "listed" {
+		t.Errorf("context_bloat targets = %v, want only [listed]", got)
+	}
+}
+
 func TestDuplicateSkills(t *testing.T) {
 	root := t.TempDir()
 	desc := "description: opens a browser and takes screenshots to test the website end to end"
