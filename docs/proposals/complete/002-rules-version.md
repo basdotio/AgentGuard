@@ -104,9 +104,10 @@ advisory 与几个 `*Only` 标志、正则源码(`re` / `except`)做规范化哈
   不说 "permission and note checks" / "权限和 note"
 - [ ] `TestEpochTriggerIsStatedAlike`(同文件,新):architecture 对子、spec §5.1 的 epoch 纪律、`rulesEpoch` 注释都把 advisory 算进
   触发条件,并点名 `collect` 的凭据 import 检查(`EXFIL-005`)
-- [ ] `TestEpochRuleLoadsWhereCoveredCodeIsEdited`(`cmd/aguard/claude_rules_test.go`,新):`.claude/rules/pipeline.md` 的
-  `paths:` 覆盖七个表外检测文件(shape / hooks / logical / imports / permcheck / gate status / main),且有一行同时点名
-  `detect.rulesEpoch`、`builtinRules()`、`make docs`。**变异**:`paths` 收窄到 `internal/detect/**` → 红
+- [ ] `TestEpochRuleLoadsWhereCoveredCodeIsEdited`(`cmd/aguard/claude_rules_test.go`,新):`.claude/rules/pipeline.md` 在七个表外检测文件
+  (shape / hooks / logical / imports / permcheck / gate status / main)被编辑时都会加载 —— 没有开头的 frontmatter 就是常驻(`frontmatterPaths`
+  的读法),有就要求 `paths:` 覆盖这七个 —— 且有一行同时点名 `detect.rulesEpoch`、`builtinRules()`、`make docs`。
+  **变异**:frontmatter 生效时把 `paths` 收窄到 `internal/detect/**` → 红
 - [ ] `TestE2E_ReportNamesItsRules`(`cmd/aguard/e2e_test.go`,新):`scanEnv` 和 `checkTarget` 的结果 `RulesVersion == detect.RulesVersion()`,
   `--json` 序列化里有 `"rules_version"` 键。今天 `ScanResult` 没有这个字段,编译即红
 - [ ] `TestBinaryVersionLine_RulesComeAfterTheExistingFields`(`cmd/aguard/main_test.go`,新):`binaryVersionLine(...)` 的 `strings.Fields()[1]` 是版本号,
@@ -170,8 +171,10 @@ advisory 与几个 `*Only` 标志、正则源码(`re` / `except`)做规范化哈
 | 13 | architecture 对子的 epoch 触发条件加上 advisory,表外代码点名 `collect` 的 `EXFIL-005` 检查;一条测试,同时钉住 spec §5.1 和 `rulesEpoch` 注释 | `docs: the architecture pair's epoch trigger reads like spec §5.1 — the advisory flag counts and collect's EXFIL-005 check is named — so neither change looks exempt from a bump (P-002)` |
 | 14 | 本文件、索引 | `proposals: P-002 (P-002)` |
 
-W1–W13 在旧仓按同样的顺序做过并经过两轮 review;本仓逐个重放,冲突与本仓的差异(`versionLine` 已被占用、
-`buildinfo.go`、`EXEC-012` 让引擎规则变成 46 条)在对应提交里解决,证据在本仓重测。
+W1–W13 在旧仓按同样的顺序做过并经过两轮 review;本仓逐个重放,冲突与本仓的差异在对应提交里解决,证据在本仓重测:
+`versionLine` 已被插件那一行占用 → W3 用 `binaryVersionLine`,并在提交说明里写明 version / commit / date 照旧来自 `-ldflags` 或
+`applyBuildInfo`;`EXEC-012` 让引擎规则变成 46 条 → W4 起 `docs/rules.md` 由本仓 `make docs` 重新生成;本仓带 `paths:` 的
+rules 文件第一行是 SPDX 注释 → W8 的测试按 `frontmatterPaths` 的读法把"没有开头的 frontmatter"算作常驻(见「完成」)。
 
 ## 未决问题
 
@@ -200,3 +203,38 @@ W1–W13 在旧仓按同样的顺序做过并经过两轮 review;本仓逐个重
    **建议**:不进。`rules_version` 的用途是离线复算 `overall`,判官只动 `overall_effective`;把判官的规则映射列进 epoch,
    改 `internal/judge` 的人看不见这份义务。
    **已决(2026-10-08,人)**:按建议,判官移出范围(W6)。
+
+**真机扫描头部(实现阶段记录,不是问题)**:`scan --root ~/.claude --quiet --json`,origin/main dec64ca 构建 vs 本分支(W13 之后),只记汇总行:
+
+```
+before: overall 69 · overall_effective 69 · artifacts 175 · scoring findings high 162 / medium 451 / low 193 · notes 10 · rules_version (absent)
+after:  overall 69 · overall_effective 69 · artifacts 175 · scoring findings high 162 / medium 451 / low 193 · notes 10 · rules_version 43f245966105
+JSON 除 scanned_at / tool_version / rules_version 三个键外逐键相同;逐 (rule_id × severity) 的发现计数相同
+```
+
+## 完成
+
+```
+合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-002 找)
+发布:待发
+证据:W1 在本仓 origin/main dec64ca 上编译红,原因与判据一致:internal/detect 无 RulesVersion / rulesVersion / rulesEpoch;cmd/aguard 无 detect.RulesVersion、model.ScanResult 无 RulesVersion 字段、无 binaryVersionLine;hack/gen-rules 无 detect.RulesVersion
+证据:TestRulesVersion_MovesWithWhatDecidesAFinding(internal/detect/rules_version_test.go);W2 后绿:14 种变异(正则、加 except、去 except、严重度、维度、ID、Advisory、四个 *Only、交换两条顺序、删一条、epoch + 1)各自让版本号变且两两不同;手工负向:临时从哈希里删掉 except 字段 → "except added / removed" 两条红,已还原
+证据:TestRulesVersion_IsStable(同文件);W2 后绿:两次调用相等、12 位小写十六进制、等于 rulesVersion(builtinRules(), rulesEpoch);本仓当前值 43f245966105(46 条引擎规则,含 EXEC-012)
+证据:反向断言 TestRulesVersion_IgnoresProse(同文件):46 条规则的 Title / Why / Ref 全部改写 → 版本号不变
+证据:TestRulesVersion_EveryRuleFieldIsDecided(同文件,W9):Rule 的 13 个字段 = 10 个进哈希 + 3 个只是文字;每个字段在 INJ-001 的副本上改一次,进哈希的都让版本号变、文字的都不变。W9 的红是变异出来的:① 把 Title 从文字清单挪进哈希清单 —— W9 前的测试 PASS,W9 的测试 FAIL "Rule.Title is listed as hashed, but changing it does not move the rules version";② 给 Rule 加 DocOnly bool 并只登记进哈希清单 —— FAIL "Rule.DocOnly is listed as hashed, but changing it does not move the rules version";两次变异都已还原
+证据:TestRulesEpoch_ScopeIsDeterministicOnly(internal/detect/rules_version_test.go)与 TestRulesDocHeaderPutsTheJudgeOutsideRulesVersion(hack/gen-rules/main_test.go),W6:放到 W5 的树上红 5 + 2 条(缺 "DETERMINISTIC detection only"、缺 "The LLM judge is outside the rules version"、列着 clampSeverity / LLM-007 / "the judge's rule mapping";页眉缺 "It covers deterministic detection only." 与 LLM 条目在外那句)→ W6 后绿
+证据:TestRulesDocHeaderSaysWhatTheHashCovers(hack/gen-rules/main_test.go),W7:放到 W6 的树上红 3 条(缺 "It hashes the 46 engine rules' ID, dimension, severity, flags and pattern"、缺 "The structural, permission, scan-note and gate entries on this page are covered only by that epoch"、仍有 "what decides a finding")→ W7 后绿;46 取自 len(detect.Rules())
+证据:TestEpochRuleLoadsWhereCoveredCodeIsEdited(cmd/aguard/claude_rules_test.go),W8:旧仓原样的测试放到 W7 的树上红 8 条 —— 缺那一行 1 条,外加 7 条 "does not load … (paths: [])",而且在 W8 的树上那 7 条照样红。它们不是 paths 太窄:本仓每个带 paths 的 rules 文件第一行是 SPDX 注释,frontmatterPaths 读不到开头的 --- 块,按"无 frontmatter = 常驻"处理(TestClaudeRulesAreScopedToExistingPaths 也是这样读的)。测试按同一读法改:无 frontmatter 算加载,有就必须覆盖七个文件;改后的测试放到 W7 的树上只红 1 条(缺那一行)→ W8 后绿。变异:删掉 pipeline.md 那一行 → 红 1 条;去掉 SPDX 行让 frontmatter 生效、paths 不变 → 绿;再把 internal/** 收窄成 internal/detect/** → 红 3 条(imports.go、permcheck.go、gate/status.go);都已还原。pipeline.md 151 → 152 行(上限 200)
+证据:TestRulesVersionDocs_IdentifyTheJudgeOnlyByToolVersion(internal/detect/rules_version_docs_test.go)与收紧后的 TestRulesDocHeaderPutsTheJudgeOutsideRulesVersion,W10:放到 W9 的树上红 12 + 2 条(rulesEpoch 注释、ScanResult.RulesVersion 注释、architecture 对子、spec §5.1、spec §8 六段各缺 "only through tool_version" / "只通过 tool_version"、各仍有 "how it ran" / "怎么跑的" / "Judge 说明";页眉缺 "today a report identifies the judge's code only through `tool_version`"、仍说判官怎么跑的)→ W10 后绿
+证据:TestRulesDocHeaderSaysWhatTheHashCovers(W11 重写):放到 W10 的树上红 5 条,同时 TestRulesDocHeaderPutsTheJudgeOutsideRulesVersion 红 1 条 → gen-rules 改页眉 + make docs 后绿;分类断言靠变异证明:① gateNotes 加一条 GATE-002 → 红 "GATE-002 is in 0 header classes";② 把 LLM-010 放进 structural → 红 "LLM-010 is in 2 header classes [epoch outside]"(计数句同时红);两次都已还原
+证据:TestArchitectureEpochNotesExcludeLLM(internal/detect/rules_version_docs_test.go),W12:放到 W11 的树上红 4 条(对子两边各缺 "the notes that are not LLM- IDs" / "不是 LLM- ID 的 note",各仍有 "permission and note checks" / "权限和 note")→ W12 后绿
+证据:TestEpochTriggerIsStatedAlike(同文件),W13:放到 W12 的树上红 4 条,全在 architecture 对子(两边各缺 advisory 那半和 EXFIL-005 那句)→ W13 后绿;变异:从 rulesEpoch 注释删掉 "or advisory flag" → 红 1 条;从 spec §5.1 的 epoch 纪律删掉 "/advisory" → 红 1 条;都已还原
+证据:rules_version 从 W4 到 W13 一直是 43f245966105 —— W6–W13 只改注释、文档、生成器页眉文字和测试,rulesEpoch 仍是 1;每个改了生成器的提交之后 make docs 都已提交、无漂移
+证据:TestE2E_ReportNamesItsRules(cmd/aguard/e2e_test.go);W1 编译红 → W3 后绿:scan 与 check 两个入口 rules_version == detect.RulesVersion(),--json 有 rules_version 键,tool_version 仍在
+证据:TestBinaryVersionLine_RulesComeAfterTheExistingFields(cmd/aguard/main_test.go);W1 编译红 → W3 后绿。真机:make build 的 aguard version 首行 "aguard v0.18.0-15-gc2d0a4f (commit c2d0a4f, built …) · reputation entries=18 · rules=43f245966105",awk '{print $2}' = v0.18.0-15-gc2d0a4f(release.yml:60 的契约不变);不带 ldflags 的 go build 首行 "aguard dev (commit none, built unknown) · reputation entries=18 · rules=43f245966105" —— dev 构建也说得出规则表
+证据:TestRulesDocHeaderCarriesRulesVersion(hack/gen-rules/main_test.go);W2 之后在 origin/main 的 rules.md 上红("does not name rules version 43f245966105")→ W4 make docs 后绿
+证据:反向断言不改一字仍绿 —— TestEveryRuleIDIsDocumented、TestDocumentedMetadataMatchesEngine(hack/gen-rules/main_test.go)、TestHashGolden(internal/collect/hash_test.go)、TestPluginVersionLine、TestPluginVersionLine_LegacyName、TestApplyBuildInfo(cmd/aguard)
+证据:真机 scan,origin/main 构建 → 本分支:overall 69 → 69、overall_effective 69 → 69、artifacts 175 → 175、计分发现 high 162 / medium 451 / low 193 两边相同、notes 10 → 10;JSON 除 scanned_at / tool_version / rules_version 外逐键相同;逐 (rule_id × severity) 计数相同
+证据:不做什么 —— git diff --stat origin/main -- internal/report internal/collect internal/gate internal/reputation internal/judge internal/permcheck internal/clean baselines plugin .claude/rules go.mod go.sum internal/detect/rules_data.go internal/detect/rules.go cmd/aguard/buildinfo.go cmd/aguard/buildinfo_test.go 只剩 .claude/rules/pipeline.md 一行(detect.md 未动);docs/rules.md 只多页眉 17 行;cmd/aguard/version.go 只多 binaryVersionLine 一个函数,已有的 versionLine 一字未动
+证据:make verify: all gates passed;go version go1.23.5(无工具链切换);go.mod 第二行 go 1.23.5,module github.com/basdotio/AgentGuard,无新依赖
+```
