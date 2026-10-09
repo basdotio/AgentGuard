@@ -39,37 +39,38 @@ P-001 之后,`--json` 的判官摘要里有 aguard 自己数的 `triage_calls`�
 
 ## 完成的判据
 
-- [ ] `TestJudgeUsage_ReportedCountsWinOverTheDerivation`(`baselines/adapter/aguard/usage_test.go`,新):预算截断形状的样本 JSON
+- [x] `TestJudgeUsage_ReportedCountsWinOverTheDerivation`(`baselines/adapter/aguard/usage_test.go`,新):预算截断形状的样本 JSON
   (两个各带一条确定性发现的 skill,`calls 13 · skipped 1 · triage_calls 1 · retries 2`,两个 token 数)→ 折出
   `basis: reported`、`triage_calls 1`、`retries 2`、token 原样;测试先断言文档推导在同一份 fixture 上给出 2,
   保证这是一份**推导会错**的 fixture。今天没有这个折叠,编译即红
-- [ ] `TestScan_LedgerRowCarriesTheJudgeUsage`(同文件,新):桩二进制回答上面那份 JSON → `Scan` 返回的 ledger 行带
+- [x] `TestScan_LedgerRowCarriesTheJudgeUsage`(同文件,新):桩二进制回答上面那份 JSON → `Scan` 返回的 ledger 行带
   `judge_usage`,是报的数;桩回答一份静态 JSON(无 `judge`)→ 行与今天逐字段相同
-- [ ] `TestRawKeepsTheToolsOwnBytes`(`baselines/adapter/aguard/raw_test.go`,新):桩二进制打印一份**不带** `triage_calls` / `retries`、
+- [x] `TestRawKeepsTheToolsOwnBytes`(`baselines/adapter/aguard/raw_test.go`,新):桩二进制打印一份**不带** `triage_calls` / `retries`、
   带一个未知字段的判官摘要 → raw/ 里没有这两个键、未知字段还在。今天运行红:raw/ 是 `model.ScanResult` 的重编码,
   凭空出现 `"triage_calls":0,"retries":0`,未知字段丢失
-- [ ] `TestSumJudgeUsage_*`(`baselines/run/judgeusage_test.go`,新):逐样本加总进 `run.yaml` 的 `judge_usage:`,写明口径
+- [x] `TestSumJudgeUsage_*`(`baselines/run/judgeusage_test.go`,新):逐样本加总进 `run.yaml` 的 `judge_usage:`,写明口径
   (`reported` / `derived` / `mixed`);不能逐样本都给出的合计(retries、token)不写,写缺了几个;0 次调用的样本不算"没报 token"
-- [ ] `TestWriteAllCarriesTheJudgeUsage`(`baselines/cmd/baseline/judgeusage_test.go`,新):判官运行的 `ledger.jsonl` 与 `run.yaml`
+- [x] `TestWriteAllCarriesTheJudgeUsage`(`baselines/cmd/baseline/judgeusage_test.go`,新):判官运行的 `ledger.jsonl` 与 `run.yaml`
   带 `judge_usage`,静态运行的两份文件里没有这个词
-- [ ] 反向断言 `TestJudgeUsage_WithoutTheFieldsFoldsAsBefore`(usage_test.go,新):不带新字段的样本(按已提交 s3 `judge.jsonl`
+- [x] 反向断言 `TestJudgeUsage_WithoutTheFieldsFoldsAsBefore`(usage_test.go,新):不带新字段的样本(按已提交 s3 `judge.jsonl`
   的三行造形)→ `basis: derived`,`triage_calls` 等于文档推导,retries 与 token **缺键**而不是 0
-- [ ] 反向断言(实测,不提交):新折叠的推导回退套在四轮已提交判官运行的 raw/ 上,s3 两轮 224/224 行的
+- [x] 反向断言(实测,不提交):新折叠的推导回退套在四轮已提交判官运行的 raw/ 上,s3 两轮 224/224 行的
   `triage_calls` / `questions` 与已提交 `judge.jsonl` 逐行一致,四轮 `judge_calls` 819/819、819/819、224/224、224/224 一致
-- [ ] 反向断言 `TestJudgeUsage_NoSummaryNoUsage`、`TestSumJudgeUsage_StaticRunHasNone`(新):没有判官摘要就没有用量块,
+- [x] 反向断言 `TestJudgeUsage_NoSummaryNoUsage`、`TestSumJudgeUsage_StaticRunHasNone`(新):没有判官摘要就没有用量块,
   `run.yaml` 里没有 `judge_usage` 键,签名那句不变;实测(不提交)对语料的一个小子集跑静态 driver,改动前后 `ledger.jsonl`、
   `verdicts.jsonl`、`scorecard.txt` 字节相同,`run.yaml` 只差 `started_at`
-- [ ] 反向断言:`TestVerdictFollowsTheGatePredicate`、`TestJudgePassthroughIsExplicitAndScanOnly`、`TestAJudgeRunDisclosesTheUpload`、
+- [x] 反向断言:`TestVerdictFollowsTheGatePredicate`、`TestJudgePassthroughIsExplicitAndScanOnly`、`TestAJudgeRunDisclosesTheUpload`、
   `TestSignatureNamesWhatIsOurs`、`TestYAMLRoundTripKeepsTheAttribution`、`TestEveryRowPassesTheLedgersOwnCheck` 不改一字仍绿;
   `TestRawOutputNamesNoWorkDirectory` 只改一行(`keepRaw` 改收字节),断言不动
-- [ ] `make verify` 绿
+- [x] `make verify` 绿
 
 ## 不做什么
 
 - **不动 `cmd/`、`internal/`**:二进制已经报了要的数;缺的只有 `samples`(见未决 3),那一条不做
 - **不重跑、不改写 `baselines/results/` 下任何已提交文件**。按新代码,那四轮如果由 driver 写 `run.yaml`,会多出一个
-  `judge_usage:` 块、口径 `derived`,数和已提交的一致(s3:calls 1769 · failed 10 · skipped 0 · triage_calls 104;
-  samples:1 两轮:calls 1923 · triage_calls 296);它们手写的 `run.yaml` 没有这个块,`fold:` 那段已经写着 triage 是推的。这里写清楚,不去改
+  `judge_usage:` 块、口径 `derived`,数和已提交的一致(s3 两轮:calls 1769 · skipped 0 · triage_calls 104;
+  samples:1 两轮:calls 1923 · triage_calls 241,只算带判官摘要的 692 个样本——走 `check` 的 127 个没有摘要,其中 55 个有静态发现,
+  照字面套"每个有静态发现的 artifact 一次"会多算出 55 次从没发生的 triage);它们手写的 `run.yaml` 没有这个块,`fold:` 那段已经写着 triage 是推的。这里写清楚,不去改
 - **不动 verdict 的折叠**:`fill`、`FlaggingRules`、`DimensionMap` 不改,`verdicts.jsonl` 和成绩单不受判官影响这一条照旧
 - **不在 rig 里折叠判官的发现**:`judge.jsonl` 的 `static` / `judge` / `judge_any` / `escalated_rules` / `votes` 照旧手工从 raw/ 折
 - **不算 `questions`、不估算金额**
@@ -128,3 +129,19 @@ P-001 之后,`--json` 的判官摘要里有 aguard 自己数的 `triage_calls`�
    上传说明本来就只在 `--llm` 运行里出现,把"判官的输出只在 raw/"改成"判官的发现只在 raw/,用量在 judge_usage"。
    签名印在每份成绩单的最上面,不改它就会在每份判官成绩单上说一句不再全对的话。
    **已决(2026-10-09)**:按建议。
+
+## 完成
+
+```
+合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-022 找)
+发布:待发
+证据:TestJudgeUsage_ReportedCountsWinOverTheDerivation、TestJudgeUsage_UnreportedTokensStayAbsent、TestScan_LedgerRowCarriesTheJudgeUsage(baselines/adapter/aguard/usage_test.go)、TestSumJudgeUsage_*(baselines/run/judgeusage_test.go)、TestWriteAllCarriesTheJudgeUsage(baselines/cmd/baseline/judgeusage_test.go);W1 编译红(usage_test.go:30:48: undefined: ledger.JudgeUsage;usage_test.go:36:9: undefined: judgeUsage;judgeusage_test.go:22:19: undefined: run.SumJudgeUsage;judgeusage_test.go:22:3: unknown field JudgeUsage in struct literal of type run.Run),W3 / W4 后绿
+证据:TestRawKeepsTheToolsOwnBytes(baselines/adapter/aguard/raw_test.go);W1 时把 usage_test.go 暂移走单跑,运行红:raw/ carries "triage_calls", which the tool never printed —— raw 文件里是 "judge":{…,"triage_calls":0,"retries":0},另有 raw/ dropped a field the tool printed;W2 后绿
+证据:临时探针(真实 judge.Run,两个各带一条静态发现的 skill,samples 3,不提交):不设预算 calls 14 · triage 2;max_calls 13 → calls 13 · skipped 1 · 报 triage 1、推 2,questions 报 (13−1)/3 = 4、推 (13−2)/3 = 3 余 2;max_calls 12 → 报 1、推 2
+证据:端到端(真二进制 + 本仓 driver + 本机回环假端点,不连模型、不出网;20 个样本 = s3 samples.jsonl 前 10 恶意 + 前 10 良性,samples 3):不设预算 → run.yaml judge_usage basis reported · calls 108 · skipped 0 · triage_calls 9(推导也是 9)· retries 0 · tokens 10800 / 756(= 端点每次报的 100 / 7 × 108);max_calls 6 → calls 105 · skipped 3 · triage_calls 6,推导 9;逐样本 3 个(两个 hook、一个 permission)报 0 推 1,questions 报 2 推 1.67;ledger 每行的 triage_calls / retries 与该样本 raw 里二进制打印的值相同
+证据:反向断言 TestJudgeUsage_WithoutTheFieldsFoldsAsBefore(usage_test.go,五例,三例按已提交 s3 行造形);实测(临时测试,不提交)新折叠套在四轮已提交判官运行的 raw/(旧仓 agent-guard P-039 之前那次提交里的 raw/)上:s3 两轮 judge_calls / triage_calls / questions 各 224/224 一致,口径全是 derived,合计 calls 1769 · triage_calls 104;samples:1 两轮 judge_calls 819/819 一致,692 个带摘要、127 个走 check 的无摘要不出用量,合计 calls 1923 · triage_calls 241;两条护栏(0 次调用记 0、不大于 calls)在四轮上改变 0 个样本
+证据:反向断言(静态)TestJudgeUsage_NoSummaryNoUsage、TestSumJudgeUsage_StaticRunHasNone;实测同一个二进制、同 20 个样本跑静态 driver,origin/main 源码对本分支:ledger.jsonl、verdicts.jsonl 字节相同,scorecard.txt 与 run.yaml 只差开始时间那一行,两边都没有 judge_usage;raw/ 解码后只差 scanned_at(两次扫描)
+证据:不改一字仍绿 —— TestVerdictFollowsTheGatePredicate、TestJudgePassthroughIsExplicitAndScanOnly、TestAJudgeRunDisclosesTheUpload、TestSignatureNamesWhatIsOurs、TestOurOwnRunIsNotProvisional、TestYAMLRoundTripKeepsTheAttribution、TestEveryRowPassesTheLedgersOwnCheck、TestPlaceableArtifactIsScored;TestRawOutputNamesNoWorkDirectory 只把 keepRaw 的参数换成 json.Marshal(res) 的字节,断言不动
+证据:不做什么 —— git diff --stat origin/main -- cmd internal baselines/results baselines/adapter/ccaudit baselines/adapter/cisco baselines/adapter/sarif go.mod go.sum plugin 为空;fill / FlaggingRules / DimensionMap 不在 diff 里
+证据:make verify: all gates passed(golangci-lint 0 issues);go version go1.23.5(无工具链切换),go.mod 的 go 指令仍是 go 1.23.5,无新依赖
+```
