@@ -114,6 +114,10 @@ var pluginManifest = filepath.Join(".claude-plugin", "plugin.json")
 // CLAUDE_CONFIG_DIR with a custom name is a `scan --root` target, not a `check` target —
 // `check` audits one thing, and its help says so.
 func looksLikeRoot(dir string) bool {
+	// Judged on the anchored path: being named .claude is a property of the directory, and `check .`
+	// from inside one must route as `check "$PWD"` does. Only the question is anchored — CollectTarget
+	// keeps the target as typed for the single-target branches.
+	dir = AnchorRoot(dir)
 	if filepath.Base(dir) == ".claude" {
 		return true
 	}
@@ -216,6 +220,31 @@ func emptyRootNote(root string) model.Finding {
 	}
 }
 
+// AnchorRoot is the one spelling of a root that anything deriving home from it, or judging it by
+// its name, may use: the absolute, cleaned path. filepath.Dir and filepath.Base answer about the
+// STRING. Clean alone fixed `--root ~/.claude/` (shell completion adds the slash), which left
+// home == root; it did not fix a relative root. Under `--root .` home was `.` again — the user-level
+// MCP config, home's CLAUDE.md and the desktop store were looked for inside the root — and under
+// `--root .claude` home was the relative `.`, which withinDir cannot relate to the absolute target of
+// an install symlink or an installPath, so a legitimately installed skill or plugin was dropped as
+// "outside HOME". The same string answered `check .` from inside a config root: Base(".") is not
+// ".claude".
+//
+// Abs, not EvalSymlinks: resolving would move home to wherever a symlinked ~/.claude points. The
+// symlinks are resolved where they always were, at check time (invariant #2). If the working
+// directory is gone Abs fails, and Clean keeps the slash fixed: `.` then stays home == root, a
+// narrower boundary that refuses more rather than less.
+//
+// Anything outside this package that derives home from a root, or relates a root to resolved
+// paths, anchors with this function rather than a copy of it: a second copy is a second place for
+// the spellings to drift apart.
+func AnchorRoot(root string) string {
+	if abs, err := filepath.Abs(root); err == nil {
+		return abs
+	}
+	return filepath.Clean(root)
+}
+
 // CollectAll runs every collector under root. home (the parent of root, e.g. ~ for
 // ~/.claude) scopes the user-level MCP config and the install-symlink guard, so the
 // whole scan is hermetic and honours --root.
@@ -224,21 +253,8 @@ func emptyRootNote(root string) model.Finding {
 // cannot distinguish "root absent" from "root empty", and only the caller knows whether a
 // missing root was a typo.
 func CollectAll(root string) Result {
-	// Anchor first, once: home is filepath.Dir of the root, and Dir answers about the STRING. Clean
-	// alone fixed `--root ~/.claude/` (shell completion adds the slash), which left home == root. It
-	// did not fix a relative root: under `--root .` home was `.` again — the user-level MCP config,
-	// home's CLAUDE.md and the desktop store were looked for inside the root — and under
-	// `--root .claude` home was the relative `.`, which withinDir cannot relate to the absolute target
-	// of an install symlink, so a legitimately installed skill was dropped as "outside HOME".
-	//
-	// Abs, not EvalSymlinks: resolving would move home to wherever a symlinked ~/.claude points. The
-	// symlinks are resolved where they always were, in withinDir at check time (invariant #2). If the
-	// working directory is gone Abs fails, and Clean keeps today's behaviour.
-	if abs, err := filepath.Abs(root); err == nil {
-		root = abs
-	} else {
-		root = filepath.Clean(root)
-	}
+	// Anchor first, once: home is filepath.Dir of the root, and Dir answers about the string.
+	root = AnchorRoot(root)
 	home := filepath.Dir(root)
 	res := Result{Root: root}
 
