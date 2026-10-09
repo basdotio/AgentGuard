@@ -204,7 +204,7 @@ fixture 都在 `t.TempDir()` 现搭,临时目录先 `EvalSymlinks`(macOS 的 `/v
 ## 完成
 
 ```
-合入:PR 待开(2026-10-09;sha 合入后用 git log --grep P-019 找)
+合入:PR #40(2026-10-09;sha 用 git log --grep P-019 找)
 发布:待发
 证据:TestClean_RootSpellingIsTheAbsoluteRun(internal/clean/rootspelling_test.go);W1 在本仓 main(fd28344)上红九行(.claude、.claude/.、.、./、../.claude、..、home/.claude、../home/.claude、经符号链接的 .claude,都在 Apply 预演就报 "refusing to use <写法>/.aguard-trash: it resolves to …/.aguard-trash, outside the scanned root")→ W3 后十二行全绿;<abs>、<abs>/、<abs>/. 三行 W1 时就绿
 证据:反向断言 TestClean_RootSpellingKeepsTheRefusals(同文件)—— 十二行符号链接的 .aguard-trash 都以 "it is a symlink" 拒绝、root 外目录为空、skill 未动,工作目录在 rules/ 里写 . 仍以 inside a "rules" directory 拒绝;W1 时就绿,修后仍绿
