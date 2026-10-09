@@ -346,6 +346,15 @@ const eventPermissionRequest = "PermissionRequest"
 // Dimension 4, because an unaudited payload at a silent-execution intercept is a code-
 // execution surface even though we refused to open the file. Spec §16.2 is unchanged —
 // we still do not read it; we score the refusal.
+//
+// The snippet is redacted WHOLE, arrow and both sides, unlike hookOwnedNote's — the two look alike,
+// so the difference is spelled out. resolved here is the reference itself after `~`/$HOME expansion
+// (for an absolute reference, the very same bytes); it lies in no tree this scan walks, so it is text
+// out of the hook COMMAND, not a path the scanner located. Redacting only the half before the arrow
+// printed whatever the redactor had removed right after it — two exits where invariant #3 allows one.
+// hookOwnedNote's resolved path is a file inside a plugin tree the scan reads whole, so it stays on
+// the clipped-only side (see the note on what the hook notes redact). The cost lands only where
+// Redact rewrites a path: one the entropy pass reads as an opaque token is now masked on both sides.
 func hookOutsideFinding(a model.ArtifactReport, ref, resolved string) model.Finding {
 	sev := model.SevMedium
 	why := "This hook command names a script that resolves outside HOME, so the second stage was NOT read: the scanner never follows a path out of the home directory. Confirm what it is: hooks run silently on every matching event, and an unaudited payload at that interception point is a risk of its own, not just a coverage gap."
@@ -355,10 +364,9 @@ func hookOutsideFinding(a model.ArtifactReport, ref, resolved string) model.Find
 	}
 	return model.Finding{
 		RuleID: "HOOK-002", Dimension: 4, Severity: sev, Source: model.SrcStatic,
-		Title: "Hook second stage is outside HOME and was not read",
-		Why:   why,
-		Evidence: []model.Evidence{{File: clip(a.Name), Line: 0,
-			Snippet: clip(redactClip(ref) + " → " + resolved)}},
+		Title:    "Hook second stage is outside HOME and was not read",
+		Why:      why,
+		Evidence: []model.Evidence{{File: clip(a.Name), Line: 0, Snippet: redactClip(ref + " → " + resolved)}},
 	}
 }
 
