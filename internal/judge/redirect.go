@@ -33,13 +33,12 @@ func (e *redirectRefused) Error() string {
 // sameOriginOnly is the redirect policy of the client NewHTTP builds (P-023). CheckEndpoint vets
 // the configured base_url — remote means https, because the API key is a bearer header and the
 // body is the redacted excerpts — but a 30x is the endpoint choosing a new address, which nothing
-// had vetted. Under net/http's default policy that address got the key whenever the host NAME
-// matched (an https→http downgrade on the same host, another port, a subdomain), and a 307/308
-// resent the excerpts to any host at all.
+// had vetted. Under net/http's default policy that address got the key whenever its host NAME was
+// the configured one or a subdomain of it (so an https→http downgrade on the same host, another
+// port, a subdomain), and a 307/308 resent the excerpts to any host at all.
 //
 // So a hop is sent only when it stays in the origin the user configured: the first request's
-// scheme, host and port. It is compared with via[0], not with the previous hop, so a chain cannot
-// walk away one same-origin step at a time. A refused hop is never sent.
+// (via[0]'s) scheme, host and port. A refused hop is never sent.
 func sameOriginOnly(req *http.Request, via []*http.Request) error {
 	configured := via[0].URL
 	if origin(req.URL) != origin(configured) {

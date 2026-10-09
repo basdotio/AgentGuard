@@ -21,7 +21,7 @@ Bearer 头,明文 http 等于把它送上网),setup/test/judge 三处都过它,j
 让错 key/错模型名在扫描之前失败;status 永不打印 key。
 **`NewHTTP` 的 client 只跟同源重定向**(`sameOriginOnly`,P-023):`CheckEndpoint` 只看配置里写的地址,而 Go 默认的策略
 只比主机名就把 key 带到下一跳(实测 https→http 同主机、换端口、子域都带),307/308 还把摘录原样重发给任何主机。**不要换回默认
-策略,也不要放宽成"同主机"**:scheme 或端口不同就是另一个源。和 `via[0]` 比而不是和上一跳比;被拒是**不重试**的调用失败,经
+策略,也不要放宽成"同主机"**:scheme 或端口不同就是另一个源。被拒是**不重试**的调用失败,经
 `Run` 汇成 `LLM-000`;报错只写 scheme://host,不写 `Location` 的路径和 query(签名 URL 把一次性凭据放在那里)。
 **送给模型的摘录先压缩、再截两头**(`judge/excerpt.go`,2026-09-08):`condense` 把连续空行折成一行、把注释行整行去掉
 (用 `detect.CommentOnlyLines`,和 A1 同一个分类器),`capHeadTail` 在字节上限内保留文件头 2/3 和文件尾 1/3,中间放一行
