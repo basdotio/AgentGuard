@@ -121,7 +121,7 @@ was redacted whole before detect clipped it (a defensive second pass, not the pr
 
 ```
 Merged: PR #44 (2026-10-09; find the sha with git log --grep P-028)
-Released: pending release
+Released: v0.20.0
 Evidence: red → green — TestPreview_SecretAcrossTheColumnLimitIsRedacted (internal/clean/preview_redact_test.go), all four subtests FAIL on origin/main 155865b with the head printed before the cut mark (`… ghp_abcdefghij…` for the file line, the directory entry and the symlink target, `…&key=AIzaFAKE0F…` for the URL query), PASS on this branch; TestUndoDryRun_PreviewDoesNotPrintASecretHead FAIL → PASS the same way (`ddd…/ghp_abcdefghij…` under `would restore deadskill`)
 Evidence: reverse assertions — TestPreview_OrdinaryTextIsUnchanged (four subtests: lines, entry names and a symlink target over 100 bytes render as `x[:100] + "…"`, the `⚠   EXEC-001 <title>` line unchanged), TestPreview_ShortSecretIsStillRedacted (three subtests) and TestPreview_WorstFindingLineQuotesOnlyToolText (46 rules, longest 83 bytes with its ID, none changed by Redact) PASS on origin/main and on this branch without a change; the existing internal/clean tests, TestUndo_CoordinatedRewriteSucceedsButIsAnnounced among them, PASS unchanged
 Evidence: not doing — git diff --stat origin/main -- internal/detect internal/redact internal/judge internal/collect internal/clean/clean.go internal/clean/clean_test.go go.mod go.sum docs/rules.md is empty; internal/clean/preview.go is the only production file changed (the four call sites, the helper, one doc-comment sentence)

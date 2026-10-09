@@ -141,7 +141,7 @@ artifact, control and bidi characters never printed raw).
 
 ```
 Merged: PR #45 (2026-10-10; find the sha with git log --grep P-030)
-Released: pending release
+Released: v0.20.0
 Evidence: TestGateCommandsPasteAsPrinted (cmd/aguard/gate_paste_test.go); W1 red on this base (155865b): for the long path (272 runes on this machine) all five commands expand to the first 160 runes and "…", and the pasted checkTarget / approvePath fail with stat …: no such file or directory; for the shell-syntax path each of the five pastes creates pwned and pwned2 and expands $HOME → after W2 the four commands the gate prints are green and approve's note is still red (W2 changes only the gate) → after W3 all green
 Evidence: TestApproveNoHashHintPastesAsPrinted (same file); red on W2's tree (pwned and pwned2 created, $HOME expanded) → green after W3
 Evidence: TestShellQuoteRoundTripsThroughAShell and TestShellQuoteNeverPrintsAnInvisibleCharacter (internal/gate/command_test.go) green; the round trip ran through /bin/sh, bash and zsh here, the $'…' form through bash and zsh

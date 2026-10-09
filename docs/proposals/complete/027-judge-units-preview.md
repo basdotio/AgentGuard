@@ -174,7 +174,7 @@ preview [path]` next to `setup`/`test`/`status`, or `check --llm --dry-run`.
 
 ```
 Merged: PR #47 (2026-10-10; find the sha with git log --grep P-027)
-Released: pending release
+Released: v0.20.0
 Evidence: TestPlan_PayloadsAreWhatTheClientSends, TestPlan_BudgetAndSamplesMatchRun, TestPlan_TriageCapIsShown, TestPlan_SourcesNameTheLinesSent, TestRequestModel (internal/judge/preview_test.go); red at compile at W1 (undefined: PlannedCall, Plan, RequestModel) → green at W2; a Plan that shows the bare Behavior instead of judgePayload → red (12 previewed, 12 sent, 3 "planned but not sent"); a Plan that drops the triage cap note → red
 Evidence: TestLLMPreview_MatchesWhatScanAndCheckSend, TestLLMPreview_Deterministic, TestLLMPreview_TerminalViewIsSanitized (cmd/aguard/preview_test.go, built binary); red at W3 (undefined: previewOpts, runLLMPreview, previewGutter; with stubs for them the binary has no llm preview: "unknown flag: --inbox") → green at W4; planning with an empty home instead of the scan's → red (scan --llm: the hook's injection and capability calls differ on both sides)
 Evidence: zero table of TestZeroDial_OnlyTheJudgeConnects (cmd/aguard/zero_dial_test.go): rows "llm preview <target>" and "llm preview (environment, Downloads items)" green with the judge enabled in the config, each having planned calls; the same rows with llm: true added to the preview's opts → red, 4 and 16 judge requests to 127.0.0.1:9
