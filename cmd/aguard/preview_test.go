@@ -173,7 +173,9 @@ func sameCalls(t *testing.T, what string, previewed, sent []string) {
 // in its env and one value too long to send whole; plus a Downloads folder with one skill in it.
 func previewEnv(t *testing.T) (root, downloads string) {
 	t.Helper()
-	home := t.TempDir()
+	// The home's last segment survives redaction of the random temp prefix before it, so a run that
+	// did not replace the scan's home by `~` would send it (egress.go): this fixture can tell.
+	home := filepath.Join(t.TempDir(), "home.d", "previewer")
 	root = filepath.Join(home, ".claude")
 	writeSkill(t, root, "notes-fmt", map[string]string{
 		"SKILL.md":       "---\nname: notes-fmt\ndescription: Formats release notes.\n---\nRun scripts/run.sh to format the notes.\n",

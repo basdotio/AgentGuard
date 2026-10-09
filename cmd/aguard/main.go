@@ -80,6 +80,9 @@ type scanOpts struct {
 	// check and the Downloads pass leave it empty: their root is the target, whose parent names
 	// nothing in particular.
 	home string
+	// preview, when set, receives the judge's plan at the point analyze() would run the judge, and
+	// nothing is sent: `aguard llm preview` (P-027). It is independent of llm, which stays false there.
+	preview *previewSink
 }
 
 // scanEnv audits a whole .claude root (the `scan` and `clean` commands).
@@ -290,15 +293,10 @@ func runJudge(cfg config.Config, arts []model.ArtifactReport, home string, quiet
 	client := judge.NewHTTP(cfg.LLM.BaseURL, key, cfg.LLM.Model, nil)
 
 	started := time.Now()
-	notes, stats := judge.Run(ctx, client, arts, judge.Options{
-		Progress:    progressPrinter(quiet),
-		Concurrency: cfg.LLM.Concurrency,
-		CallTimeout: call,
-		MaxCalls:    cfg.LLM.MaxCalls,
-		MaxRetries:  cfg.LLM.MaxRetries,
-		Samples:     cfg.LLM.Samples,
-		Home:        home,
-	})
+	opts := judgePlanOptions(cfg, home)
+	opts.Progress = progressPrinter(quiet)
+	opts.Concurrency, opts.CallTimeout, opts.MaxRetries = cfg.LLM.Concurrency, call, cfg.LLM.MaxRetries
+	notes, stats := judge.Run(ctx, client, arts, opts)
 	summary.Ran = true
 	summary.Calls, summary.Failed, summary.Skipped = stats.Calls, stats.Failed, stats.Skipped
 	// Cost goes into the summary whether or not anyone is watching stderr: quiet is how every
@@ -453,6 +451,11 @@ func analyze(root string, res collect.Result, o scanOpts) (model.ScanResult, err
 	// adds advisory (Source=llm) findings — never scored, never gates — so scoring stays
 	// deterministic. Runs after suppression so an advisory can surface even on a trusted tool.
 	var judgeSummary *model.JudgeSummary
+	if o.preview != nil {
+		// Here and not elsewhere: the plan must see the artifacts exactly as runJudge would below —
+		// after reputation and the baseline, before hygiene. runJudge is not reached for it.
+		o.preview.record(cfg, arts, o.home)
+	}
 	if o.llm {
 		if cfg.JudgeReady() {
 			if !isLoopbackEndpoint(cfg.LLM.BaseURL) {
@@ -885,7 +888,9 @@ func main() {
 	// `approvals` are its manual half. They are assembled elsewhere because they need the
 	// persistent flags by reference, and because main() is already the longest thing here.
 	rootCmd.AddCommand(newGateCommands(&root, &cfgPath, &quiet)...)
-	rootCmd.AddCommand(newLLMCommand(&cfgPath))
+	llmCmd := newLLMCommand(&cfgPath)
+	llmCmd.AddCommand(newLLMPreviewCommand(&root, &cfgPath, &ignorePath, &noRep))
+	rootCmd.AddCommand(llmCmd)
 	if err := rootCmd.Execute(); err != nil {
 		if ee, ok := err.(*failExit); ok {
 			// Only a code no report line explains carries a message (exit 4): under --json or

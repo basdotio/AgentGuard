@@ -97,6 +97,7 @@ func checkCandidate(c inbox.Candidate, o scanOpts, judge *model.JudgeSummary) mo
 	it := model.InboxItem{Name: c.Name, Path: c.Path, Kind: c.Kind, Archive: c.Archive, Findings: []model.Finding{}, Notes: []model.Finding{}}
 	o.autoBaseline = false // the target is untrusted; it must not bring its own baseline (as for check)
 	o.ignorePath = ""
+	o.preview = o.preview.forItem(c.Name) // a preview names the item each plan belongs to
 	var res model.ScanResult
 	var err error
 	if c.Archive {
