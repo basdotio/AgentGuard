@@ -32,7 +32,7 @@ Measured with a binary built from `main` (`155865b`) against a temporary root:
 
 ```
 skill directory of 212 characters, one EXEC-001 (curl … | bash), PreToolUse[Skill] → ask
-  the reason's "aguard check …" argument, expanded by sh: 178 characters (160 + "…")
+  the reason's "aguard check …" argument, expanded by sh: the first 160 characters of the path and "…"
   aguard check <that argument>  → error: stat <W>/home/.claude/skills/desktop-skill-xxx…: no such file   exit 2
 skill directory named x$(touch pwned), aguard approve <full path> → the note prints
   aguard check "<W>/home/.claude/skills/x$(touch pwned)"
@@ -51,7 +51,7 @@ artifact, control and bidi characters never printed raw).
 
 ## Done criteria
 
-- [ ] `TestGateCommandsPasteAsPrinted` (`cmd/aguard/gate_paste_test.go`, new): two real fixture skills — one whose
+- [x] `TestGateCommandsPasteAsPrinted` (`cmd/aguard/gate_paste_test.go`, new): two real fixture skills — one whose
   directory path is longer than 160 runes, one whose path holds shell syntax (a space, `'`, `"`, `$HOME`, `$(touch
   pwned)`, a backtick, `\`, `!`) — each with one high finding. For every copyable command the gate and `approve` print
   (`Reason()` under `default`: `aguard check` and `aguard approve`; the deny under `auto`: `aguard approve`;
@@ -60,18 +60,26 @@ artifact, control and bidi characters never printed raw).
   command function (`checkTarget` / `approvePath`) then succeeds on it; the working directory stays empty. Red on `main`
   for the reason stated in the Problem: the long path is the clipped one (`stat …: no such file`), and the shell-syntax
   path is changed by the shell and creates `pwned`
-- [ ] `TestShellArg*` (`internal/gate/command_test.go`, new with the fix): the quoting round-trips through `/bin/sh` for
-  printable paths, and through `bash` and `zsh` (skipped when absent) for paths holding control and bidi characters;
-  no command ever holds a raw control or invisible character (invariant #7)
-- [ ] Reverse assertion: for an ordinary path (printable, no `"` `\` `$` `` ` `` `!`), the command argument is
-  byte-identical to today's `%q` form — pinned by a literal `Reason()` / `UnrememberedLine()` / deny reply for a short
-  path, green on `main` and after the fix, and by `ShellArg(p) == fmt.Sprintf("%q", p)` over a table of such paths
-- [ ] Reverse assertion: the display stays shortened where it is display only — for the long fixture, `Verdict.Path`,
+- [x] `TestApproveNoHashHintPastesAsPrinted` (same file, added with open question 4): `approve`'s refusal for a root
+  with no content hash prints `aguard check <target> --json`; pasted the same way it is one word equal to the target, the
+  real `checkTarget` runs on it, nothing is created. Red before W3: `pwned` and `pwned2` appear and `$HOME` is expanded
+- [x] `TestShellQuoteRoundTripsThroughAShell` / `TestShellQuoteNeverPrintsAnInvisibleCharacter`
+  (`internal/gate/command_test.go`, new with the fix): the quoting round-trips through `/bin/sh` for printable paths,
+  and through `bash` and `zsh` (skipped when absent) for paths holding control, bidi and zero-width characters and
+  bytes that are not UTF-8; no quoted form holds a raw control or invisible character (invariant #7)
+- [x] Reverse assertion: for an ordinary path (printable, no `"` `\` `$` `` ` `` `!`), the command argument is
+  byte-identical to today's `%q` form — pinned by a literal `Reason()` / `UnrememberedLine()`
+  (`TestCommandsForAnOrdinaryPathAreUnchanged`) and the deny reply (`TestDenyCommandForAnOrdinaryPathIsUnchanged`) for
+  a short path, green on `main` and after the fix, and by `shellQuote(p) == fmt.Sprintf("%q", p)` over a table of such
+  paths (`TestShellQuoteIsPercentQForOrdinaryText`)
+- [x] Reverse assertion: the display stays shortened where it is display only — for the long fixture, `Verdict.Path`,
   the path line of `Reason()`, and the `Path` recorded in the approvals store remain the 160-rune clip plus `…`
-- [ ] Bound: a command argument longer than 4096 bytes once quoted is not printed; a placeholder names its length
-  instead. `TestAttackerControlledNameIsSanitizedAndBounded` and `TestReasonCarriesNoEvidenceSnippets` stay green
-  unchanged, and a 100 000-byte path keeps `Reason()` under 4000 bytes
-- [ ] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no new dependency
+  (`TestGateDisplayStaysClipped`, `cmd/aguard/gate_paste_test.go`)
+- [x] Bound: a command argument longer than 4096 bytes once quoted is not printed; a placeholder names its length
+  instead (`TestCommandArgBound`). `TestAttackerControlledNameIsSanitizedAndBounded` and
+  `TestReasonCarriesNoEvidenceSnippets` stay green unchanged, and a 100 000-byte path keeps `Reason()` and
+  `UnrememberedLine()` under 4000 bytes (`TestCommandsCannotSizeTheMessage`)
+- [x] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no new dependency
 
 ## Out of scope
 
@@ -98,7 +106,7 @@ artifact, control and bidi characters never printed raw).
 |---|---|---|
 | 1 | The paste test and the short-path pins, run red | `cmd: tests — the commands the gate prints to copy fail for a long path and run shell syntax in a path (P-030)` |
 | 2 | The gate's commands carry the full path, quoted for a POSIX shell and bounded; the display stays clipped | `gate: a copyable command carries the full path, quoted for a POSIX shell (P-030)` |
-| 3 | `approve`'s two notes use the same quoting | `cmd: approve's notes print commands that paste as printed (P-030)` |
+| 3 | The no-hash refusal's paste test, run red; then `approve`'s two notes use the same quoting (two commits) | `cmd: test — approve's no-hash refusal quotes its check command with %q, and a shell runs what the path holds (P-030)` · `cmd: approve's notes print commands that paste as printed (P-030)` |
 | 4 | The install-gate pair and the gate rules say what a copyable command carries | `docs: install-gate says the gate's commands carry the full path, quoted for a shell (P-030)` |
 | 5 | This file, the index | `proposals: P-030 (P-030)` |
 
@@ -128,3 +136,17 @@ artifact, control and bidi characters never printed raw).
    **Recommendation**: no. It is display text, which this proposal keeps unchanged by its own reverse assertion; it is a
    separate invariant #7 follow-up.
    **Decided (2026-10-09)**: as recommended.
+
+## Done
+
+```
+Merged: PR to be opened (2026-10-10; find the sha with git log --grep P-030 after the merge)
+Released: pending release
+Evidence: TestGateCommandsPasteAsPrinted (cmd/aguard/gate_paste_test.go); W1 red on this base (155865b): for the long path (272 runes on this machine) all five commands expand to the first 160 runes and "…", and the pasted checkTarget / approvePath fail with stat …: no such file or directory; for the shell-syntax path each of the five pastes creates pwned and pwned2 and expands $HOME → after W2 the four commands the gate prints are green and approve's note is still red (W2 changes only the gate) → after W3 all green
+Evidence: TestApproveNoHashHintPastesAsPrinted (same file); red on W2's tree (pwned and pwned2 created, $HOME expanded) → green after W3
+Evidence: TestShellQuoteRoundTripsThroughAShell and TestShellQuoteNeverPrintsAnInvisibleCharacter (internal/gate/command_test.go) green; the round trip ran through /bin/sh, bash and zsh here, the $'…' form through bash and zsh
+Evidence: reverse assertions TestCommandsForAnOrdinaryPathAreUnchanged, TestDenyCommandForAnOrdinaryPathIsUnchanged (literal pins), TestGateDisplayStaysClipped and TestCommandsCannotSizeTheMessage green at W1 on the base and green after the fix without a character changed; TestShellQuoteIsPercentQForOrdinaryText green; internal/gate/gate_test.go and hook_test.go unchanged and green
+Evidence: binary run by hand against a temporary root — main (155865b): the reason's aguard check pasted exits 2 with stat …: no such file; approve's note for a skill named x$(touch pwned), pasted into sh, expands to …/skills/x and creates pwned. This branch: the reason's aguard check pasted runs the audit (exit 1, the EXEC-001 at the default --fail-on high); the note prints aguard check '<W>/home/.claude/skills/x$(touch pwned)', which pastes to the exact path with nothing created
+Evidence: Out of scope — git diff --stat origin/main -- internal/gate/approvals.go internal/collect internal/detect internal/report internal/clean go.mod go.sum internal/gate/gate_test.go internal/gate/hook_test.go docs/spec is empty
+Evidence: make verify: all gates passed; go version go1.23.5 (no toolchain switch), the go directive in go.mod is still go 1.23.5
+```
