@@ -997,7 +997,7 @@ func unaskedTarget(out model.ScanResult) string {
 	for _, a := range out.Artifacts {
 		if a.Path == out.Root && judge.AsksNothingOf(a.Kind) {
 			return fmt.Sprintf("the judge asked nothing about the target: it has no pass for a %s (1 artifact), "+
-				"so none of its content was put to the model (the report's LLM-000 note has the detail)", a.Kind)
+				"so no question about its content was put to the model (the report's LLM-000 note has the detail)", a.Kind)
 		}
 	}
 	return ""

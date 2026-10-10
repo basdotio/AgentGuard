@@ -67,8 +67,8 @@ func unaskedNote(arts []model.ArtifactReport) (model.Finding, bool) {
 		labels = append(labels, fmt.Sprintf("and %d more", total-len(labels)))
 	}
 	return coverageNote(fmt.Sprintf(
-		"the judge asked nothing about %d artifact(s) of a kind it has no pass for — %s: none of their content "+
-			"was put to the model, and their static findings, where they have any, were only triaged (%s). "+
+		"the judge asked nothing about %d artifact(s) of a kind it has no pass for — %s: no question about "+
+			"their content was put to the model, and their static findings, where they have any, were only triaged (%s). "+
 			"The static scan read them as usual.",
 		total, strings.Join(kinds, ", "), strings.Join(labels, "; "))), true
 }
