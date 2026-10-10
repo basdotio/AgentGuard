@@ -50,33 +50,35 @@ endpoint `check` exits 0 — the triage label answered, the sentence was never p
 
 ## Done criteria
 
-- [ ] `TestFailOnLLM_TargetTheJudgeAsksNothingAbout` (`cmd/aguard/fail_on_llm_unasked_test.go`, new, drives the built binary,
+- [x] `TestFailOnLLM_TargetTheJudgeAsksNothingAbout` (`cmd/aguard/fail_on_llm_unasked_test.go`, new, drives the built binary,
   `check … --llm --fail-on-llm high --fail-on critical --json --quiet`): a plugin directory, the same with a trailing slash, the
   same as a `.zip`, a plain directory, and a plugin whose only static finding is one medium (triage only) exit **4** with one
   stderr line carrying `(exit 4)`, `asked nothing about the target` and the kind, against a working stub endpoint and (plugin
   directory) a closed port; each report carries one `LLM-000` naming the kind. Red on the base: exit 0, empty stderr, no
   `LLM-000`
-- [ ] `TestRun_NamesTheArtifactsNoPassCovers` (`internal/judge/unasked_test.go`): `judge.Run` over a skill, a plugin, a
+- [x] `TestRun_NamesTheArtifactsNoPassCovers` (`internal/judge/unasked_test.go`): `judge.Run` over a skill, a plugin, a
   directory, a quarantined entry and a permission block returns exactly one `LLM-000` counting `plugin`, `directory` and
   `quarantined` (and not `permission`); over judged kinds only it returns none. Red on the base: no such note
-- [ ] `TestAsksNothingOf_FollowsPlanFor` (same file): for **every** `ArtifactKind` constant declared in `internal/model/model.go`
+- [x] `TestAsksNothingOf_FollowsPlanFor` (same file): for **every** `ArtifactKind` constant declared in `internal/model/model.go`
   (read from the source, so a new kind without a row fails), `planFor` over a fixture of that kind plans at least one judge
   question exactly when `judge.AsksNothingOf(kind)` is false — `permission` being the one kind with neither
-- [ ] `TestFailGate_TargetTheJudgeAsksNothingAbout` (unit, same cmd file): a result whose artifact at the checked path is a plugin,
+- [x] `TestFailGate_TargetTheJudgeAsksNothingAbout` (unit, same cmd file): a result whose artifact at the checked path is a plugin,
   judge ran fully → 4; the same plugin in a scan-shaped result (no artifact at the root path) → 0; a deterministic hit → 1;
   `--fail-on` alone → 0; a judge that did not run → 4 with P-026's reason, not this one
-- [ ] **Reverse assertions** (same binary test): a skill target with a working stub and no finding exits **0** with an empty
+- [x] **Reverse assertions** (same binary test): a skill target with a working stub and no finding exits **0** with an empty
   stderr and no `LLM-000`; the plugin directory under `--llm --fail-on high` with no `--fail-on-llm` exits 0 (base: 0), closed
   port or working stub; the triage-only plugin under `--fail-on-llm medium` exits 1 (a fired gate beats 4); `scan --llm
   --fail-on-llm high` over a root holding an installed plugin and a skill exits **0** with the note (the scan boundary, decided
   below), and over a root holding only judged kinds exits 0 with no `LLM-000`; `TestZeroDial_*`, `TestFailGate_LLMGateNotEvaluable`
   and `TestFailOnLLM_ExitCodesWhenTheJudgeIsBlind` green unchanged
-- [ ] The real `~/.claude`, before and after (closed port and stub): exit code unchanged, one new `LLM-000` counting 11 plugins
+- [x] The real `~/.claude`, before and after (closed port and stub): exit code unchanged, one new `LLM-000` counting 11 plugins
   and 1 directory
-- [ ] Docs say it: `docs/llm-judge*.md` (what the judge does not ask about; exit 4 on a `check` target), the `LLM-000` row of
-  `docs/rules.md` via `make docs`, spec §3 exit 4 and §16 note, `.claude/rules/pipeline.md` (the P-026 bullet), `.claude/rules/judge.md`
-  (the kind table follows `planFor`); `issues/023` records the design question
-- [ ] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no toolchain switch; no new dependency
+- [x] Docs say it: `docs/llm-judge*.md` (what the judge does not ask about; exit 4 on a `check` target), the `LLM-000` row of
+  `docs/rules.md` via `make docs`, the README pair's exit-code line, the vet skill's exit-4 line, spec (§5.2 trigger table, exit
+  codes, test list, the plugin note in §4); `issues/023` records the design question. No guard note in `.claude/rules/`: the kind
+  table is pinned by a test that fails on drift in either direction, and the scan boundary is stated where it is enforced
+  (`unaskedTarget`'s comment)
+- [x] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no toolchain switch; no new dependency
 
 ## Out of scope
 
@@ -105,7 +107,8 @@ endpoint `check` exits 0 — the triage label answered, the sentence was never p
 | 1 | Binary, gate and judge tests for the unasked target and the note, with their reverse rows, run red on the base | `cmd, judge: tests — a check target the judge asks nothing about passes --fail-on-llm (P-038)` |
 | 2 | `judge.AsksNothingOf` and one `LLM-000` from `schedule` naming the artifacts no pass covers; the kind table pinned against `planFor` | `judge: one LLM-000 names the artifacts no judge pass covers (P-038)` |
 | 3 | `failGate` exits 4 when the artifact at the checked path is of a kind the judge asks nothing about | `cmd: --fail-on-llm exits 4 when the judge asked nothing about the check target (P-038)` |
-| 4 | `docs/llm-judge*.md`, the `LLM-000` rule row (`make docs`), spec, `pipeline.md`, `judge.md` | `docs: what the judge asks nothing about, and exit 4 on a check target (P-038)` |
+| 3b | The note and the exit-4 line say no question was asked, not that no text was sent (triage still sends finding snippets) | `judge, cmd: say no question was asked, not that no text was sent (P-038)` |
+| 4 | `docs/llm-judge*.md`, the `LLM-000` rule row (`make docs`), README pair, vet skill, spec | `docs: what the judge asks nothing about, and exit 4 on a check target (P-038)` |
 | 5 | `issues/023` and its index row | `issues: 023 — the judge asks nothing of plugin trees and unrecognised directories (P-038)` |
 | 6 | "Done" in this file, the index | `proposals: P-038 (P-038)` |
 
@@ -148,3 +151,36 @@ endpoint `check` exits 0 — the triage label answered, the sentence was never p
    **Recommendation**: it narrows it, for the target of a `check` only. Zero calls over a target of a judged kind with nothing to
    send stays evaluable; zero calls because no pass exists for the target's kind is not an answer.
    **Decided (2026-10-10)**: as recommended.
+
+## Done
+
+```
+Merged: PR to be opened (2026-10-10; find the sha with git log --grep P-038 after the merge)
+Released: pending release
+Evidence: TestFailOnLLM_TargetTheJudgeAsksNothingAbout, TestFailOnLLM_ScanKeepsItsCodeAndNamesWhatWasNotAsked,
+  TestFailGate_TargetTheJudgeAsksNothingAbout (cmd/aguard/fail_on_llm_unasked_test.go) and TestRun_NamesTheArtifactsNoPassCovers
+  (internal/judge/unasked_test.go), committed first and run on the base code (6cab205): red on exactly the not-evaluable and
+  note rows — check of a plugin directory (working stub, closed port, trailing slash, .zip), a plain directory and a triage-only
+  plugin exit 0 with an empty stderr and no LLM-000; the --fail-on-only and --fail-on-llm-medium plugin rows and the scan with
+  an installed plugin have no LLM-000; failGate returns nil for a plugin or directory target; judge.Run returns no note — and
+  green after
+Evidence: the measured table, re-run with the fixed binary against a local stub and the closed port: plugin directory 0 -> 4,
+  plain directory 0 -> 4, plugin as a .zip 0 -> 4, plugin with one static medium (one triage call, answered) 0 -> 4, each with
+  one stderr line "--fail-on-llm could not be evaluated (exit 4): the judge asked nothing about the target: it has no pass for a
+  plugin (1 artifact), ..." and one LLM-000; the same SKILL.md as a skill target 0 -> 0 (stub) and 4 -> 4 (closed port)
+Evidence: the real ~/.claude, scan --inbox off --llm --fail-on-llm critical, 184 artifacts: closed port 4 -> 4 (300 of 300
+  calls failed, P-026's reason), local stub 0 -> 0 (300 calls answered); both now carry one more LLM-000: "the judge asked
+  nothing about 12 artifact(s) of a kind it has no pass for — plugin (11), directory (1)"
+Evidence (reverse assertion): green on the base and after — a skill target answered by a working stub exits 0 with an empty
+  stderr and no LLM-000; a plugin under --llm --fail-on high only exits 0 (stub and closed port); a scan of a root holding only
+  judged kinds exits 0 with no LLM-000; a scan of a root holding an installed plugin exits 0; in failGate a skill target and a
+  scan-shaped plugin give 0, a deterministic hit 1, --fail-on alone 0, a judge that did not run P-026's 4;
+  TestFailGate_LLMGateNotEvaluable, TestFailOnLLM_ExitCodesWhenTheJudgeIsBlind and TestZeroDial_* green unchanged
+Evidence (pin): TestAsksNothingOf_FollowsPlanFor over the 15 ArtifactKind constants read from model.go; with quarantined taken
+  out of noPassKinds it fails ("planFor asks nothing about a quarantined, yet noPassKinds does not list it")
+Evidence (not done): git diff --stat origin/main...HEAD -- internal/collect internal/detect internal/score internal/report
+  internal/model internal/judge/excerpt.go internal/judge/decode.go internal/judge/ground.go go.mod go.sum .claude CLAUDE.md
+  CHANGELOG.md -> empty; internal/judge/run.go changes by the three lines that append the note in schedule (planFor untouched,
+  ExcerptVersion 2); ./bin/aguard check plugin --fail-on low -> exit 0
+Verify: make verify -> "verify: all gates passed"; go.mod still go 1.23.5; go version go1.23.5, no toolchain switch; no new dependency
+```
