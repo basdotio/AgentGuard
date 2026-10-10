@@ -80,7 +80,9 @@ func locate(root string, s skillInfo, sub string) (model.Locator, bool) {
 func Analyze(root string, arts []model.ArtifactReport, opts Options) []model.CleanItem {
 	var skills []skillInfo
 	for _, a := range arts {
-		if a.Kind != model.KindSkill {
+		// A plugin's skills (P-044) are not entries to merge, trim or quarantine: `clean` cannot move
+		// anything inside a plugin, and the blocker it would print was wrong for them.
+		if a.Kind != model.KindSkill || a.Plugin != "" {
 			continue
 		}
 		skills = append(skills, skillInfo{name: a.Name, meta: parse.ReadSkill(a.Path), path: a.Path, hash: a.Hash})
