@@ -61,7 +61,7 @@ touch (Out of scope).
 | `overall` (published) | 69 | 69 | 69 |
 | average before the high cap | 95 | 97 | 95 |
 | scoring findings in JSON | 806 | 834 (+28) | 834 |
-| judge calls (`llm preview`) | 300 | 598 | 583 (no second triage of a finding the plugin carries) |
+| judge calls (`llm preview`) | 300 | 598 | 588 with the shipped build: no second triage of a finding the plugin row shows; 5 triage calls remain for children whose finding sits on the copy that loads |
 | bytes in the judge payloads | 592 KiB | 1,409 KiB | 1,407 KiB |
 | `scan` CPU (user) | 137.6 s | 140.5 s | — |
 
@@ -155,7 +155,7 @@ approval the gate recorded for `p:s1` already sits under the child's hash.
    its row names the copy that loads, the plugin row the copy the tree walk met first.
 6. **Judge.** No new pass; `planFor` and `ExcerptVersion` do not move. Children get the passes of their kind (a skill: intent,
    injection, and explain or collusion when their triggers fire; a command or an agent: injection). Triage on a child skips the
-   findings the plugin row already shows (the plugin's own triage asks about them): 598 → 583 calls here.
+   findings the plugin row already shows (the plugin's own triage asks about them): 598 → 588 calls here (the design's 583 assumed no child triage at all; the 6 mirror-copy findings keep 5 triage calls on their children).
 7. **P-038's note and exit 4.** A plugin counts as "asked nothing about" only when none of its children got a question; the same
    predicate drives the `LLM-000` count and `check <plugin> --fail-on-llm`'s exit 4, so they cannot disagree. A plugin with no
    loadable skill, command or agent keeps both.
@@ -190,7 +190,7 @@ approval the gate recorded for `p:s1` already sits under the child's hash.
   child's deterministic findings suppressed and counted in the one `REP-GOOD` note; the same tree with one byte changed suppresses
   nothing on the plugin or its children
 - [ ] `llm preview --json` over the fixture plugin plans the passes of each child's kind and no triage of a finding the plugin row
-  shows; over the real `~/.claude`, 300 → 583 calls (recorded with the build that ships, not this design's scratch build)
+  shows; over the real `~/.claude`, 300 → 588 calls with the build that ships (283 questions + 5 triage calls about findings only a child carries)
 - [ ] P-038's rows move as decided: `check <plugin with skills/p1/SKILL.md> --llm --fail-on-llm high` answers from the judge (stub
   answering: exit 0 and no `LLM-000` "asked nothing"; closed port: exit 4 with P-026's reason, the calls failed); a plugin with no
   loadable skill, command or agent still exits 4 and is still counted; plain directories still exit 4
@@ -247,15 +247,15 @@ approval the gate recorded for `p:s1` already sits under the child's hash.
 
 | W | In one sentence | Commit message (no sha; a rebase changes it) |
 |---|---|---|
-| 1 | The collect, gate-alignment, score, render, reputation, preview and P-038 tests above, with their reverse rows, run red on the base | `collect, score, report, cmd: tests — a plugin's skills, commands and agents are never artifacts of their own (P-044)` |
-| 2 | `pluginContents` following the 2.1.107 loader, called by the three plugin channels and `CollectTarget`; `ArtifactReport.Plugin`; `BundledCommands` / `BundledAgents` | `collect: a plugin's skills, commands and agents become artifacts of their own (P-044)` |
-| 3 | Children inherit their plugin's GOOD reputation match | `cmd: a plugin's children inherit its reputation match (P-044)` |
-| 4 | The environment average runs over units: a plugin with its children is one entry | `score: a plugin and its children are one unit of the environment average (P-044)` |
-| 5 | One "the plugin row already shows this" predicate; renderers list children under their plugin and print a duplicate once; SARIF the same | `report: a child finding its plugin already shows is printed once (P-044)` |
-| 6 | Triage skips what the plugin row shows; the `LLM-000` count and `check`'s exit 4 count a plugin only when no child got a question; the quarantined label | `judge, cmd: a plugin whose contents were judged is not "asked nothing about" (P-044)` |
+| 1 | The collect, score, report, judge, cmd, gate and hygiene tests above, with their reverse rows, run red on the base (one commit per package group) | `collect: tests — …`, `score: tests — …`, `report: tests — …`, `judge: tests — …`, `cmd: tests — …`, `gate, hygiene: tests — …` (P-044) |
+| 2 | `pluginContents` following the 2.1.107 loader, called by the three plugin channels and `CollectTarget`; `ArtifactReport.Plugin`; `BundledCommands` / `BundledAgents` (BundledSkills now counts the skill children) | `collect: a plugin's skills, commands and agents become artifacts of their own (P-044)` |
+| 3 | `score.Families`; the environment average runs over units: a plugin with its children is one entry | `score: a plugin and its children are one unit of the environment average (P-044)` |
+| 4 | Children inherit their plugin's GOOD reputation match, counted in its one `REP-GOOD` | `cmd: a plugin's children inherit its reputation match (P-044)` |
+| 5 | `Family.ShownByPlugin`; `Aggregate` and SARIF print a duplicate once; the inventory lines name commands and agents; the worst-item line counts units (`UnitScores`) | `report: a child finding its plugin already shows is printed once (P-044)` |
+| 6 | Triage skips what the plugin row shows; `judge.Unasked` drives the `LLM-000` count and `check`'s exit 4; the quarantined label | `judge, cmd: a plugin whose contents were judged is not "asked nothing about" (P-044)` |
 | 7 | `SessionStart`, `Summarize` and hygiene skip children | `gate, hygiene: children of a plugin are not listed twice (P-044)` |
-| 8 | `detect.rulesEpoch` + 1 and `make docs` | `detect: bump rulesEpoch — plugin children carry findings (P-044)` |
-| 9 | The docs listed in Done criteria; `issues/023` and the issue index | `docs: a plugin's skills, commands and agents are judged as artifacts of their own (P-044)` |
+| 8 | `detect.rulesEpoch` 1 → 2, the `LLM-000` description, `make docs` | `detect: bump rulesEpoch — plugin children carry findings (P-044)` |
+| 9 | README pair, judge pair, architecture pair, spec, `issues/023`/`008`/`017` and the index, `.claude/rules/` (score, pipeline, reputation, gate), CLAUDE.md, the vet skill | `docs: …`, `issues: …` (P-044) |
 | 10 | "Done" in this file, the index | `proposals: P-044 (P-044)` |
 
 ## Open questions
