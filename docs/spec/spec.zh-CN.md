@@ -551,7 +551,10 @@ v1 写的 `internal/rules/` 从未存在:规则表就在 `detect/rules_data.go`,
    (`password=` / `api_key:` / `Authorization:`),值有多长都不改变它是凭证这个事实 —— 这一档的下限是 4,
    且**只对 `:`/`=` 赋值形态生效**(纯空格分隔的形态也符合英文散文"the secret sauce is",保留 12 字符下限,
    否则报告 snippet 会被 `<REDACTED>` 打成马赛克却没保护到任何东西)。凭证也可能作为**命令行参数**出现
-   (`curl -u user:pass`、`--password=`),这一形态与 `scheme://user:pw@host` 同等对待。
+   (`curl -u user:pass`、`--password=`),这一形态与 `scheme://user:pw@host` 同等对待。参数数组(MCP 的 `args`)里
+   flag 和值是两个元素:`redact.Argv` 把跟在 flag 后面的元素和 flag 合成一条命令行来认(同一组模式,不另列 flag 名单),
+   认出的元素从第一个被换掉的字节到元素末尾整个换掉;判官的 MCP 摘录把它写在 flag 那一行(`args=--api-key <REDACTED>`,P-036)。
+   内容哈希自 P-009 起就按 `flag value` 配对数组元素,两边认的是同一批元素。
    与 §5.1「只报位置 + key 名」对应:**替换只作用于值那一半,key 名必须存活** —— 运维要行动,靠的是"哪一项
    泄了",把整行连名字一起抹掉是保护了值、废掉了发现。
    **实现只有一份**,在叶子包 `internal/redact`(`redact.Secrets` 两遍;内容哈希只取凭据那一遍 `redact.Credentials`),

@@ -193,7 +193,12 @@ everything on your machine. That trade-off is yours.
   (a real configuration fits). A value whose key names a credential (`…PASS`, `…PWD`, `…TOKEN`,
   `…KEY`, `…SECRET`, anything with auth / cred / cookie / private) is replaced by `<REDACTED>`
   whatever it looks like; every other value goes through redaction as usual. It used to be the
-  values alone, so a password under `DB_PASS` went out as a bare `hunter2`.
+  values alone, so a password under `DB_PASS` went out as a bare `hunter2`. An array (`args`) is
+  redacted as the command line it forms: an element after a flag that announces a credential
+  (`--api-key`, `--access-token`, `--token`, `--password`, `--secret`, `-u` / `--user user:pass`, …) is
+  replaced and written on the flag's line, `args=--api-key <REDACTED>`. Each element used to be
+  redacted alone, and a short key after `--api-key` was sent as written. A flag the redaction does
+  not know (`--key`, `-p`) still sends its value.
 - **A declared purpose is capped at 1,000 bytes** (a description, a hook's interception point),
   cut on a character boundary.
 - **Non-local endpoint → an `LLM-002` warning** is added to the report, because
