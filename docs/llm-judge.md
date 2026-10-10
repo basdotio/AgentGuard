@@ -208,6 +208,16 @@ everything on your machine. That trade-off is yours.
   not know (`--key`, `-p`) still sends its value.
 - **A declared purpose is capped at 1,000 bytes** (a description, a hook's interception point),
   cut on a character boundary.
+- **Every field a request carries is bounded, valid UTF-8 and redacted as a whole.** Behavior is at
+  most 6,000 bytes on every pass: the deobfuscation pass sends whole decoded payloads and the collusion
+  pass whole digest lines, from the first, while they fit, and the rest are named in the preview's
+  `shortened` and in an `LLM-000` note (eight payloads of 800 bytes used to make 6,435 bytes, and the
+  digest had no cap). Each static finding's evidence — a triage item, a digest line — is at most 1,000
+  bytes; its file position had no bound. Every cut falls on a character boundary, and a byte that is
+  not UTF-8 is sent as U+FFFD — what the request's JSON encoding writes anyway — so the text a quote
+  is grounded against is the text the endpoint read. The last step of building each field is one more
+  `detect.Redact` over the whole field, cut again if that lengthened it: parts redacted one at a time
+  and then joined could leave a second pass something to change.
 - **Non-local endpoint → an `LLM-002` warning** is added to the report, because
   best-effort-redacted skill content is leaving the machine.
 - **What the judge sees is a condensed excerpt, not the file.** Per skill, up to 6000 bytes of
