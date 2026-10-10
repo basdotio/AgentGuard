@@ -123,7 +123,7 @@ var notes = []entry{
 	{"REP-GOOD", 0, "", false, "Findings suppressed as known-trusted",
 		"The artifact's hash is on the embedded allowlist, so its scoring findings were dropped to cut trusted-tool noise. Also carries the highest suppressed severity."},
 	{"LLM-000", 0, "", false, "LLM judge unavailable or incomplete",
-		"The judge was requested but could not complete (endpoint error, timeout, unparseable reply). Announced, so an absent opinion is never mistaken for a clean one."},
+		"The judge was requested but could not complete (endpoint error, timeout, unparseable reply), or has no pass for some artifacts' kind (a plugin tree, an unrecognised directory, quarantined content) and asked nothing about them. Announced, so an absent opinion is never mistaken for a clean one."},
 	{"LLM-002", 0, model.SevMedium, false, "LLM endpoint is not local",
 		"base_url points somewhere other than loopback, so redacted excerpts leave the machine. A privacy warning, not a risk finding about the artifact."},
 	{"LLM-005", 0, model.SevLow, false, "LLM verdicts discarded as ungrounded",
