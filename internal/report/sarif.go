@@ -12,6 +12,7 @@ import (
 
 	"github.com/basdotio/AgentGuard/internal/detect"
 	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/score"
 )
 
 // SARIF is the format that puts a finding where the person who can fix it will see it: annotated on
@@ -263,8 +264,14 @@ func SARIF(w io.Writer, res model.ScanResult, version, infoURI string) error {
 		}
 	}
 
-	for _, a := range res.Artifacts {
+	// A plugin's child repeats the plugin tree's findings (P-044): one the plugin's results already
+	// carry at the same rule, file and line is one alert in a code-review UI, not two.
+	fam := score.Families(res.Artifacts)
+	for ai, a := range res.Artifacts {
 		for _, f := range a.Findings {
+			if fam.ShownByPlugin(ai, f) {
+				continue
+			}
 			add(f, string(a.Kind)+":"+a.Name, a.Kind)
 		}
 	}

@@ -190,8 +190,8 @@ func writeScanDetails(w io.Writer, r model.ScanResult) {
 	// Skills inside plugins ARE read — as part of the plugin's tree — and used to be invisible
 	// on this line, which sent a reviewer to publish "check plugin/skills/* by hand or it is not
 	// audited". Said explicitly; attribution and hashes are unchanged.
-	if r.Env.BundledSkills > 0 {
-		fmt.Fprintf(w, "  Inside plugins: %d skill(s), scanned as part of their plugin (not counted in skills= above)\n", r.Env.BundledSkills)
+	if b := bundledParts(r.Env); b != "" {
+		fmt.Fprintf(w, "  Inside plugins: %s, scanned with their plugin and as artifacts of their own (not counted above)\n", b)
 	}
 	// The auto-loaded surfaces get their own line, and only when present. They answer a different
 	// question than the inventory above: these are files nobody chose to invoke — they enter context

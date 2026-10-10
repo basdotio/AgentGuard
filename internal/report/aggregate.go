@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/score"
 )
 
 // Group is one aggregated risk row: findings sharing (artifact, rule) folded into a
@@ -91,10 +92,17 @@ func notesOf(r model.ScanResult) []model.Finding {
 // Aggregate folds all non-dim0 findings by (artifact, rule), sorted by severity then
 // hit count. Nothing is dropped — only folded (spec §12 honesty). The dim-0 notes it skips are
 // rendered through notesOf.
+//
+// A plugin's child (P-044) repeats the plugin tree's findings on its own files; one its plugin row
+// already shows (score.Family.ShownByPlugin: same rule, same file and line) is folded into that row
+// rather than printed again, so looking closer at a plugin does not double its rows or its headline
+// count. JSON keeps it on both artifacts. What only the child says — the judge's findings, a finding
+// on the copy that loads where the tree walk met a mirror — is printed on the child's row.
 func Aggregate(r model.ScanResult) []Group {
 	index := map[string]*Group{}
 	var order []*Group
-	for _, a := range r.Artifacts {
+	fam := score.Families(r.Artifacts)
+	for ai, a := range r.Artifacts {
 		triageByRule := map[string]model.AdvisoryLabel{}
 		for _, t := range a.Advisory {
 			// On a duplicate rule id, prefer likely-real (safe side): a benign label must not
@@ -106,6 +114,9 @@ func Aggregate(r model.ScanResult) []Group {
 		}
 		for _, f := range a.Findings {
 			if f.Dimension == 0 { // parse/IO/coverage notes shown separately (notesOf)
+				continue
+			}
+			if fam.ShownByPlugin(ai, f) {
 				continue
 			}
 			art := string(a.Kind) + ":" + a.Name
