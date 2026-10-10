@@ -196,8 +196,8 @@ func TestRun_ClosedEarlyReplyIsAnswered(t *testing.T) {
 
 	notes, stats := Run(context.Background(), closedEarlyEndpoint(t, paddedDirective), arts, Options{Concurrency: 1})
 
-	if stats.Failed != 0 {
-		t.Errorf("Failed = %d; want 0: the closed-early reply was answered", stats.Failed)
+	if stats.Failed != 0 || stats.Repaired != 1 {
+		t.Errorf("Failed = %d, Repaired = %d; want 0 and 1: the closed-early reply was answered, and counted", stats.Failed, stats.Repaired)
 	}
 	for _, n := range notes {
 		if n.RuleID == "LLM-000" {
@@ -308,4 +308,18 @@ func distinctFold(names []string) bool {
 		}
 	}
 	return true
+}
+
+// TestRun_CleanRepliesAreNotRepaired: the reverse — a run whose replies are all clean counts no
+// repair, so the count only ever appears when a reply needed it.
+func TestRun_CleanRepliesAreNotRepaired(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "demo")
+	writeFile(t, filepath.Join(dir, "SKILL.md"), padFM+padIntro+"Note: "+paddedDirective+"\n")
+	arts := []model.ArtifactReport{{Kind: model.KindSkill, Name: "demo", Path: dir, Findings: []model.Finding{}}}
+	client, _ := directiveEndpoint(t, paddedDirective)
+
+	_, stats := Run(context.Background(), client, arts, Options{Concurrency: 1})
+	if stats.Calls == 0 || stats.Failed != 0 || stats.Repaired != 0 {
+		t.Errorf("calls %d, failed %d, repaired %d; want calls, none failed, none repaired", stats.Calls, stats.Failed, stats.Repaired)
+	}
 }

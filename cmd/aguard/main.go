@@ -299,6 +299,7 @@ func runJudge(cfg config.Config, arts []model.ArtifactReport, home string, quiet
 	notes, stats := judge.Run(ctx, client, arts, opts)
 	summary.Ran = true
 	summary.Calls, summary.Failed, summary.Skipped = stats.Calls, stats.Failed, stats.Skipped
+	summary.Repaired = stats.Repaired
 	// Cost goes into the summary whether or not anyone is watching stderr: quiet is how every
 	// Downloads item is judged, and a driver that reads --json (the baseline adapter) never sees
 	// stderr at all — those are the runs a cost is read from afterwards.

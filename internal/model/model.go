@@ -575,6 +575,7 @@ type JudgeSummary struct {
 	Calls     int    `json:"calls"`            // calls issued (a retry is the same call)
 	Failed    int    `json:"failed"`           // calls that ended in error after retries
 	Skipped   int    `json:"skipped"`          // calls never issued: budget or deadline
+	Repaired  int    `json:"repaired"`         // answered calls read only by the closed-early repair (P-034)
 	Findings  int    `json:"findings"`         // advisory leads added
 	Endpoint  string `json:"endpoint,omitempty"`
 	// What the run cost. TriageCalls is the part of Calls that was triage (asked once, where a
