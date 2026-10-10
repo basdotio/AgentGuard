@@ -383,6 +383,9 @@ func handleSessionStart(ev Event, o Options) (Output, bool) {
 	}
 	var rows []row
 	for _, a := range res.Artifacts {
+		if a.Plugin != "" {
+			continue // a plugin's child (P-044): every blocking rule of it is on its plugin's row
+		}
 		if _, done := o.Store.Approved(a.Hash); done {
 			continue
 		}

@@ -100,11 +100,20 @@ func Summarize(res model.ScanResult, threshold model.Severity) (Verdict, bool) {
 	if len(res.Artifacts) == 0 {
 		return Verdict{}, false
 	}
-	worst := 0
+	// A plugin's skills, commands and agents (P-044) are never "the artifact an operator would act on":
+	// the plugin row carries their findings, and picking a lower-scoring child would make `aguard
+	// approve <plugin>` store the child's hash for an approval of the plugin.
+	worst := -1
 	for i := range res.Artifacts {
-		if res.Artifacts[i].Score < res.Artifacts[worst].Score {
+		if res.Artifacts[i].Plugin != "" {
+			continue
+		}
+		if worst < 0 || res.Artifacts[i].Score < res.Artifacts[worst].Score {
 			worst = i
 		}
+	}
+	if worst < 0 {
+		worst = 0
 	}
 	a := res.Artifacts[worst]
 

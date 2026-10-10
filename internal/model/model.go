@@ -203,9 +203,9 @@ type ArtifactReport struct {
 	// Plugin is set on a plugin's skill, command or agent collected as an artifact of its own
 	// (P-044): the Name of the plugin artifact whose tree holds it. Set by the collector, never by
 	// content. The environment average counts a plugin and its children as one unit, the human
-	// renderers print a child's finding its plugin row already shows once, and the gate's session
-	// start, `approve` and hygiene skip children — all through score.Families, never by parsing the
-	// " (plugin …)" name suffix, which a plugin author controls.
+	// renderers print a child's finding its plugin row already shows once (both through
+	// score.Families), and the gate's session start, `approve` and hygiene skip children — all by this
+	// field, never by parsing the " (plugin …)" name suffix, which a plugin author controls.
 	Plugin string `json:"plugin,omitempty"`
 }
 
