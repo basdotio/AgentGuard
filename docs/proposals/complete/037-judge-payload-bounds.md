@@ -67,40 +67,41 @@ is a fixed point of `Redact`, valid UTF-8 and within its cap. Bumps `ExcerptVers
 
 ## Done criteria
 
-- [ ] `TestPlan_ExplainAndDigestFitTheExcerpt` (`internal/judge/bounds_test.go`): the two oversize fixtures above give a
+- [x] `TestPlan_ExplainAndDigestFitTheExcerpt` (`internal/judge/bounds_test.go`): the two oversize fixtures above give a
   deobfuscation and a collusion behavior of at most 6,000 bytes, made of whole payloads / whole digest lines (each unit's
   text appears in the field, and no unit is left for text that was not sent), a `shortened` naming how many were left
   out, and an `LLM-000` from `schedule` naming the artifact. **Red on the base**: 6,435 and 12,941 bytes, nothing shortened
-- [ ] `TestPlan_CutsFallOnCharacterBoundaries` (`internal/judge/bounds_test.go`, table-driven): `中` (3 bytes) and `😀`
+- [x] `TestPlan_CutsFallOnCharacterBoundaries` (`internal/judge/bounds_test.go`, table-driven): `中` (3 bytes) and `😀`
   (4 bytes) placed so each cap falls on every byte of a character — the hook command (6,000), a one-line `CLAUDE.md`
   (6,000), a one-line skill script (2,000 per file), a decoded payload (800), a static snippet (200, through triage) —
   give fields and unit texts that are valid UTF-8 and unchanged by a JSON round trip, and a quote of the text as the
   endpoint reads it grounds. **Red on the base** for every cap at a split offset
-- [ ] `TestClip_CutsOnACharacterBoundary` (`internal/detect`): `clip` never ends inside a character, and returns ASCII
+- [x] `TestClip_CutsOnACharacterBoundary` (`internal/detect`): `clip` never ends inside a character, and returns ASCII
   input exactly as before (`s[:200] + "…"`)
-- [ ] `TestTriageItems_EvidenceIsBounded` (`internal/judge/bounds_test.go`): a finding whose file position is 3,000 bytes
+- [x] `TestTriageItems_EvidenceIsBounded` (`internal/judge/bounds_test.go`): a finding whose file position is 3,000 bytes
   (ASCII and CJK) gives evidence of at most 1,000 bytes, valid UTF-8, and a token that straddles the cut leaves no head
   behind (redacted first). **Red on the base**: 3,000+ bytes
-- [ ] `TestPlan_FieldsAreRedactionFixedPoints` (`internal/judge/bounds_test.go`): the two non-fixed-point fixtures above
+- [x] `TestPlan_FieldsAreRedactionFixedPoints` (`internal/judge/bounds_test.go`): the two non-fixed-point fixtures above
   give fields that `detect.Redact` leaves unchanged, with units that hold the sent bytes. **Red on the base**
-- [ ] `FuzzPlanFields` (`internal/judge/bounds_test.go`): for an artifact set built from the fuzz input (a skill with its
+- [x] `FuzzPlanFields` (`internal/judge/bounds_test.go`): for an artifact set built from the fuzz input (a skill with its
   description, body, script, blobs and static findings; a `CLAUDE.md`; a hook; an MCP entry; a connector), every
   planned field `f` — declared, behavior, triage evidence — satisfies `detect.Redact(f) == f`, `utf8.ValidString(f)` and
   `len(f) <= ` its cap (1,000 / 6,000 / 1,000), and every unit's text is a substring of the field it was built for. Its
   seeds include every fixture above, so it is **red on the base**
-- [ ] **Reverse assertion, corpus level** (scratch replay, not committed): over the 3,539 corpus samples, every one of the
+- [x] **Reverse assertion, corpus level** (scratch replay, not committed): over the 3,539 corpus samples, every one of the
   8,770 planned payloads (and every artifact hash) is byte-identical between the base binary and this branch's
-- [ ] **Reverse assertion, unit level**: `TestExcerptVersion_IsPinnedWithItsGolden` stays green on digest
+- [x] **Reverse assertion, unit level**: `TestExcerptVersion_IsPinnedWithItsGolden` stays green on digest
   `270922b0e0fc4223` through every code commit before the golden fixture is extended — an ASCII fixture under every cap
-  is planned byte for byte as before — and every existing judge test passes unchanged
-- [ ] **Reverse assertion, static**: `scan --json` over the corpus and over `~/.claude` gives the same report on both
+  is planned byte for byte as before — and every existing judge test passes; the only edits to existing tests are one
+  call's arity (`egress_test.go`: `capabilityDigest` now also returns what it left out) and the golden fixture's extension
+- [x] **Reverse assertion, static**: `scan --json` over the corpus and over `~/.claude` gives the same report on both
   binaries (`scanned_at` aside), except snippets whose 200-byte cut fell inside a character (counted, each listed)
-- [ ] `judge.PromptVersion()` unchanged (`aguard version` prints the same `judge-prompt=` on both binaries);
+- [x] `judge.PromptVersion()` unchanged (`aguard version` prints the same `judge-prompt=` on both binaries);
   `ExcerptVersion` is 3, pinned with the digest of the golden fixture extended to hit a multibyte cut, the triage bound
   and a flag before a file header
-- [ ] `.claude/rules/judge.md` carries the guard: a change under `internal/redact` changes excerpt bytes and bumps
+- [x] `.claude/rules/judge.md` carries the guard: a change under `internal/redact` changes excerpt bytes and bumps
   `ExcerptVersion` in the same commit; the file stays at or under 200 lines
-- [ ] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no new dependency
+- [x] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no new dependency
 
 ## Out of scope
 
@@ -137,7 +138,8 @@ is a fixed point of `Redact`, valid UTF-8 and within its cap. Bumps `ExcerptVers
 | 3 | Triage evidence capped at 1,000 bytes after redaction | `judge: bound each triage item's evidence at 1,000 bytes, redacted first (P-037)` |
 | 4 | Decoded payloads and digest lines dropped whole from the end to fit 6,000 bytes, with their units, disclosed as `shortened` and in an `LLM-000` | `judge: fit the deobfuscation and collusion fields to the excerpt cap, and say what was left out (P-037)` |
 | 5 | The last step of every field is a whole-field `Redact`, re-capped if that lengthened it; `ExcerptVersion` 3 with the extended golden | `judge: make every payload field a redaction fixed point, and bump ExcerptVersion to 3 (P-037)` |
-| 6 | The `docs/llm-judge` pair, spec §16.3, the invariant #3 note and the `judge.md` guard | `docs: every judge field is bounded, valid UTF-8 and a redaction fixed point (P-037)` |
+| 6 | The `docs/llm-judge` pair, the `docs/architecture` pair, spec §16.3, the invariant #3 note and the `judge.md` guard | `docs: every judge field is bounded, valid UTF-8 and a redaction fixed point (P-037)` |
+| 7 | The comments that document a call's `shortened` name the fitted fields too | `judge: name the fitted fields where a call's shortened is documented (P-037)` |
 
 ## Open questions
 
@@ -175,3 +177,52 @@ is a fixed point of `Redact`, valid UTF-8 and within its cap. Bumps `ExcerptVers
 9. **SARIF fingerprints.** A fingerprint is (rule, file, snippet); a snippet whose 200-byte cut fell inside a character
    gets a different (valid) snippet, so that alert is re-keyed once. **Recommendation**: accept it — the old snippet held
    invalid UTF-8 — and count such snippets over the corpus and `~/.claude`. **Decided (2026-10-10)**: as recommended
+
+## Done
+
+```
+Merged: PR to be opened (2026-10-10; find the sha with git log --grep P-037 after the merge)
+Released: pending release
+Evidence: red on the base with the tests alone (commit "judge: tests — …"): TestPlan_ExplainAndDigestFitTheExcerpt 6,435 and
+  11,934 bytes, nothing shortened, no LLM-000; TestPlan_CutsFallOnCharacterBoundaries 29 of 40 (surface, character, offset)
+  rows — every one whose cut fell inside a character — send invalid UTF-8, and on 29 calls a quote of what the endpoint read
+  does not ground; TestClip_CutsOnACharacterBoundary 6 of 8 offsets end inside a character; TestTriageItems_EvidenceIsBounded
+  3,049 / 2,849 / 1,040 bytes; TestPlan_FieldsAreRedactionFixedPoints the header `# b.sh` and the `---` separator rewritten by
+  a second Redact; FuzzPlanFields red on 3 of its 4 seeds. Green as the fix landed: W2 the boundary and clip tests, W3 triage,
+  W4 deobfuscation and collusion, W5 the fixed points and the fuzz seeds
+Evidence: the measured fixtures, planned again on the branch (scanEnv with the preview sink): deobfuscation 6,435 → 5,630 bytes,
+  shortened "1 of 8 decoded payload(s) past the 6000-byte excerpt not sent"; collusion 12,941 → 5,943, "34 of 63 capability
+  line(s) past the 6000-byte excerpt not sent"; the four invalid-UTF-8 fields valid and unchanged by a JSON round trip (hook
+  6,000 → 5,999 bytes, CLAUDE.md 6,000 → 5,998, decoded payload 800 → 798, triage item ending on a whole character); the deep
+  path's evidence 1,022 → 1,000; both non-fixed points fixed (the header goes as `<REDACTED> b.sh`, the separator as
+  `<REDACTED>` — what a second pass made of them)
+Evidence: reverse, corpus — 3,539 samples placed by baselines/adapter/aguard.Stage (a superset of the four committed judge runs'
+  samples), `llm preview --json` on the base binary and the branch's: 8,770 payloads and 4,704 artifact hashes byte-identical
+  (0 differing lines); before and after, 0 fields over a cap, 0 U+FFFD, 0 fields a second redact.Secrets changes, 0 payloads it
+  changes. `scan --json` (or `check --json` for a sample Stage cannot place) on both binaries: 3,539 reports identical with
+  scanned_at removed, and none holds a U+FFFD — no snippet in the corpus is cut inside a character, so no SARIF fingerprint
+  there moves
+Evidence: reverse, unit — TestExcerptVersion_IsPinnedWithItsGolden green on digest 270922b0e0fc4223 at W2, W3, W4 and with W5's
+  code before the fixture was extended; the extended fixture digests 6f976e938511cce8 on the base, b5a7dc70f28922c2 at W4 and
+  870e91b426266cd3 with W5, pinned as {3, 870e91b426266cd3}; every other existing judge, detect and cmd test green
+Evidence: ~/.claude — `scan --root ~/.claude --json --inbox off` identical on both binaries run back to back (184 artifacts,
+  overall 69, scanned_at aside); `scan --root ~/.claude --quiet` prints nothing and exits 0 on both
+Evidence: `aguard version` — judge-prompt=e863a9dc881c on both binaries (PromptVersion unchanged), judge-excerpt=2 → 3
+Evidence: fuzz — FuzzPlanFields 180 s (15,642 execs) during W5 and 300 s (25,782 execs) on the final code, no failure; FuzzSendable 20 s
+  (484,334 execs), no failure
+Evidence: not done — `git diff --stat origin/main -- internal/redact internal/collect internal/detect/contenthash.go
+  internal/detect/contenthash_test.go internal/reputation internal/gate baselines go.mod go.sum docs/rules.md
+  internal/judge/prompt.go internal/judge/prompt_version.go internal/judge/triage.go internal/judge/reply.go` is empty;
+  internal/judge/ground.go differs by the ExcerptVersion line only
+Verify: make verify → "verify: all gates passed" (go1.23.5, no toolchain switch; go.mod line 2 `go 1.23.5`)
+```
+
+Follow-ups left out on purpose:
+
+- Report-side cuts that can still split a character: the `LLM-005` quote clip (`clipQuote`, 120 bytes), the `clean`
+  restore preview's clip (100 bytes) and SARIF's `clipMessage` (300 bytes, at a space when there is one). They bound text
+  for a reader, not a request.
+- Two judge limits are still silent, as on the base: the intent pass leaves out files past its 6,000-byte budget, and the
+  deobfuscation pass blobs past its eighth. Disclosing them adds a note to many large skills, so it is its own proposal.
+- The request body as a whole is not a fixed point of `Redact` (a field ending in a flag makes it read the label after it
+  as the flag's value); every field is. No corpus payload is affected.
