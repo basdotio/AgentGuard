@@ -513,14 +513,14 @@ v1 写的 `internal/rules/` 从未存在:规则表就在 `detect/rules_data.go`,
 
 ## 13. 测试计划(≥80% 覆盖,TDD)
 
-- **单测**:每个 collector/parser/rule/score/hygiene 纯函数,table-driven。
+- **单测**:每个 collector/parser/rule/score/hygiene 纯函数,table-driven。插件子项的采集按 Claude Code 加载器逐种情形一行 fixture(`TestPluginContents_FollowClaudeCodesLoader`,P-044)。
 - **恶意样本 fixtures**:`testdata/` 造 10 维度各若干"应命中"skill/hook/mcp + "良性应放行"样本(防误报)。断言 findings 精确到 rule + 行号。
 - **judge 测试**:mock LLM,验 nonce barrier 生效(注入 artifact 内的"忽略指令"不改变判定)、schema 解析、无 key 时跳过。
 - **隐私测试**:含假 secret 的 fixture,断言输出中值被 REDACTED、绝不出现明文。
 - **端到端**:对 `testdata/fake-claude-home/` 跑 `scan --json`,快照比对;真实机冒烟(只读)。
-- **退出码**:`--fail-on` 各级别验证(闸门/CI 契约);`--fail-on-llm` 在判官没跑/跑短时为 `4`、`check` 的目标是判官没有一趟的种类时也为 `4`(`scan` 不因此变,只出 `LLM-000`)、命中时仍为 `1`、只设 `--fail-on` 时与判官状态无关(`TestFailGate_LLMGateNotEvaluable`、`TestFailOnLLM_ExitCodesWhenTheJudgeIsBlind`、`TestFailOnLLM_TargetTheJudgeAsksNothingAbout`、`TestFailOnLLM_ScanKeepsItsCodeAndNamesWhatWasNotAsked`)。
+- **退出码**:`--fail-on` 各级别验证(闸门/CI 契约);`--fail-on-llm` 在判官没跑/跑短时为 `4`、`check` 的目标是判官没有一趟的种类时也为 `4`(插件里有可加载子项时不算,P-044)(`scan` 不因此变,只出 `LLM-000`)、命中时仍为 `1`、只设 `--fail-on` 时与判官状态无关(`TestFailGate_LLMGateNotEvaluable`、`TestFailOnLLM_ExitCodesWhenTheJudgeIsBlind`、`TestFailOnLLM_TargetTheJudgeAsksNothingAbout`、`TestFailOnLLM_ScanKeepsItsCodeAndNamesWhatWasNotAsked`)。
 - **不变量测试(B2,§16)**:①"若被执行会落地标记文件"的 fixture,断言标记始终不存在(证明不执行);②越界 symlink fixture(skill 内软链到 `/etc/passwd`),断言其内容绝不出现在任何输出;③含假 secret 的会话日志 fixture,断言 zombie 检查读取后仍脱敏。④配置里**开着**判官,把判官的 transport(测试接缝 `judge.Transport`)和 `http.DefaultTransport` 换成计数器:先断言 §16.4 的三条出网路径确实被看见(正对照),再断言其余每个命令入口零次请求(`TestZeroDial_OnlyTheJudgeConnects`);计数器看不见自带 transport 的 client,本模块产品代码的这一块(判官包在内,只许 `NewHTTP` 那一个 client)由源码检查 `TestZeroDial_NoClientOutsideTheJudge` 补上;依赖在自己代码里造的不在内(§16.4)。⑤判官的 client 对端点回的跨源重定向(https 降成 http、换主机、换端口、子域)一跳都不发,调用失败、不重试,经 `LLM-000` 进报告,静态结果不变;同源的照跟,10 跳上限保留(`TestNewHTTP_RefusesCrossOriginRedirects`、`TestNewHTTP_SameOriginRedirectsAndPlainCallsUnchanged`,端到端 `TestE2E_JudgeRedirectIsRefusedAndReported`、`TestLLMTest_RedirectIsRefused`)。
-- **评分测试**:确定性输入→固定分(可复现);critical 触发木桶封顶;floor=0 不为负;**开不开 `--llm`,`overall` 逐位相同**(§16.7 的可复现性契约)。
+- **评分测试**:确定性输入→固定分(可复现);critical 触发木桶封顶;floor=0 不为负;插件和子项是一个单元,子项不稀释插件、子项的合格 LLM 发现照样进 `overall_effective`(`TestApply_PluginAndChildrenAreOneUnit`,P-044);**开不开 `--llm`,`overall` 逐位相同**(§16.7 的可复现性契约)。
 - **单向升级测试(§16.7)**(已实现):①任意 finding 组合下 `overall_effective ≤ overall` 恒成立(属性测试);②证据落地不通过的 LLM finding 被丢弃且计入 `LLM-005`;③`authority: advisory` 下即使有 flagged 发现,升级也是 no-op;④k-of-n:3 次采样中 1 次 flagged **不**升级、2 次 flagged 升级;⑤`--fail-on` 不受任何 LLM 发现影响,`--fail-on-llm` 默认关;⑥铁律 #2 回归:LLM 仍无法删除/降级静态发现。
 
 ---
