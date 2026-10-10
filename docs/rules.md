@@ -64,7 +64,7 @@ agree were produced by the same engine rule table.
 | `INJ-003` | medium | Jailbreak persona switch | Classic jailbreak / persona-override pattern. |
 | `INJ-004` | medium | Hidden / Unicode-steganography characters | Zero-width / directional control characters are used to hide injected instructions. |
 | `INJ-005` | high | Fetches remote instructions to act on | The skill downloads a file named like instructions/steps/commands/payload from a remote URL. Whatever that file says, the agent is told to carry out — remote-controlled behaviour delivered after install. |
-| `LLM-003` | medium · advisory | Hidden prompt injection | A directive aimed at the agent, phrased to dodge keyword rules. Runs on skills, CLAUDE.md, subagents, slash commands and hooks. |
+| `LLM-003` | medium · advisory | Hidden prompt injection | A directive aimed at the agent, phrased to dodge keyword rules. Runs on skills, CLAUDE.md, subagents, slash commands and hooks. The severity is the tool's, from the category the model names (exfiltration, credential read, remote execution, safety disable, concealed directive → high; other directive → medium). |
 | `LLM-007` | high · advisory | Artifact tried to instruct the analyzer | While being examined, the content addressed the analysis model — telling it what to conclude, or to ignore its instructions. Legitimate content has no reason to talk to a scanner. Unlike every other verdict the SEVERITY IS THE TOOL'S, not the model's: a hijacked model would rate its own capture low. |
 | `MCP-001` | high | Tool description asks the agent to read or hand over local files or secrets | A tool's own description tells the model to read a file, key or credential from the user's machine and pass it along. A description explains what a tool does; it has no business directing the model at the user's secrets — that is the tool-poisoning shape. |
 | `MCP-002` | medium | Tool description steers other tools or hides from the user | The description tries to change how the model uses OTHER tools, or tells it to keep something from the user. Sequencing among a connector's own tools is normal; a claim over every tool, or over what the user gets told, is a hijack attempt. |
@@ -74,7 +74,7 @@ agree were produced by the same engine rule table.
 
 | ID | Severity | Title | Why it fires |
 |---|---|---|---|
-| `LLM-008` | medium · advisory | Hook capability exceeds its interception point | The hook command does more than intercepting its own event requires. |
+| `LLM-008` | medium · advisory | Hook capability exceeds its interception point | The hook command does more than intercepting its own event requires. The severity is the tool's, from the category the model names (network, credential, install, permission override → high; file write, process control, other → medium). |
 | `PERM-002` | medium | Wildcard arbitrary-code-execution grant | The allow wildcards an interpreter (sh/bash/python/node/…), i.e. arbitrary code execution without confirmation; narrow it to exact commands. |
 | `PERM-004` | low | No deny fallback list | allow without deny. Add a deny fallback for sensitive paths (~/.ssh, ~/.aws, .env). Raised once per settings scope, not per entry. |
 | `PERM-005` | high | Allows arbitrary commands via Bash(*) | Any shell command may run without confirmation — command-layer protection is effectively off. |
@@ -93,7 +93,7 @@ agree were produced by the same engine rule table.
 | `EXFIL-005` | high | Instruction file imports a credential into the agent's context | An @import in CLAUDE.md (or another instruction file) resolves to a credential: a file inside .ssh/.aws/.gnupg/…, or a file named .env, id_rsa, credentials, *.key, *.p12 … Claude Code expands imports into context at launch. The file is NOT read by the scan (a COV-000 says so); this scores the import itself. High for names that hold only secrets; medium for .pem / .npmrc / .pypirc and paths through .config, which often hold configuration. `.env.example` and friends are not credentials and are scanned normally. |
 | `EXFIL-006` | medium | Anthropic API base URL points at a third-party host | Requests — the API key and every prompt with it — go to this host instead of api.anthropic.com. Gateways and proxies are legitimate; the reader should know which host is in the middle. |
 | `EXFIL-007` | high | Host identity sent to an outside URL | An outbound URL carries $(hostname)/$(whoami)/$(id)/$(uname) in a query parameter — the machine's identity beaconed to a remote server. A reconnaissance leg leaving the box. |
-| `LLM-006` | medium · advisory | Cross-file capability chain | Different files of one artifact collect and send between them. |
+| `LLM-006` | medium · advisory | Cross-file capability chain | Different files of one artifact collect and send between them. The severity is the tool's: credential-to-network → high; any other chain → medium. |
 | `MCP-004` | medium | Tool description directs data to an outside address | The description tells the model to send something to a URL. Where a tool's data goes is decided by the server behind it, not by a sentence the model is asked to obey; a description that names a destination is routing data past the tool. |
 | `MCP-005` | high | Tool description adds a fixed outside recipient | The description tells the model to add a specific email address to the bcc/cc/recipients of what the user sends. Every message then goes to that address too, without the user choosing it — exfiltration through a parameter the user never sees. |
 | `PERM-001` | high | Inline plaintext secret in a permission entry | An allow entry embeds a credential value directly; remove it and use a secret manager. |
@@ -135,7 +135,7 @@ agree were produced by the same engine rule table.
 
 | ID | Severity | Title | Why it fires |
 |---|---|---|---|
-| `LLM-004` | medium · advisory | Decoded obfuscated payload | An embedded base64/hex blob was decoded — never executed — and the model was asked what it does. |
+| `LLM-004` | medium · advisory | Decoded obfuscated payload | An embedded base64/hex blob was decoded — never executed — and the model was asked what it does. The severity is the tool's, from the category the model names (network, remote execution, credential read, file deletion → high; other → medium). |
 | `OBF-001` | medium | base64 decode surface | Decodes a hidden payload — often combined with execution into an obfuscation attack. |
 | `OBF-002` | low | Suspicious large base64 blob | A very long base64 string in an assignment/argument position looks like a hidden payload. |
 | `OBF-003` | medium | Decode-then-eval | Decodes then executes — a classic anti-analysis obfuscation. |
@@ -178,7 +178,7 @@ and never trips `--fail-on`.
 
 | ID | Severity | Title | Why it fires |
 |---|---|---|---|
-| `LLM-001` | medium · advisory | Intent mismatch | The declared purpose and what the scripts actually do do not line up. Severity is the model's own, clamped to at most high. |
+| `LLM-001` | medium · advisory | Intent mismatch | The declared purpose and what the scripts actually do do not line up. The severity is the tool's, from the category the model names (exfiltration, credential read, remote execution, safety disable, concealed directive, software source, file deletion, privilege → high; other → medium), one step lower when the declared purpose states the behaviour, except a changed software source. |
 
 ## Scan notes (dimension 0)
 
