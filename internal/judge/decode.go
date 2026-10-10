@@ -71,10 +71,7 @@ func decodedPayloads(dir string, eg egress) []sourceUnit {
 				continue
 			}
 			seen[dec.text] = true
-			red := eg.redact(dec.text)
-			if len(red) > maxDecodedBytes {
-				red = red[:maxDecodedBytes]
-			}
+			red := detect.RunePrefix(eg.redact(dec.text), maxDecodedBytes)
 			// collapsed: the decoded text never existed in the file as lines — it was one
 			// encoded run on one line, so that is the only honest position to cite.
 			out = append(out, sourceUnit{

@@ -1468,13 +1468,40 @@ func relPath(root, p string) string {
 	return filepath.Join(dir, filepath.Base(p))
 }
 
-// clip caps a snippet to keep reports readable.
+// clip caps a snippet to keep reports readable, on a character boundary (RunePrefix).
 func clip(s string) string {
 	const max = 200
 	if len(s) > max {
-		return s[:max] + "…"
+		return RunePrefix(s, max) + "…"
 	}
 	return s
+}
+
+// RunePrefix returns the longest prefix of s that is at most max bytes and does not end inside a
+// character: the one byte cap that cannot split a rune (P-037). Cut at a bare byte offset, a line of
+// CJK or emoji past the cap ended in half a character — invalid UTF-8, which a report prints as a
+// broken glyph and the judge's request is marshalled with as U+FFFD, so the endpoint read other text
+// than grounding compared against. Every byte cap in detect and judge cuts through here.
+//
+// It backs off at most utf8.UTFMax-1 bytes, to the start of the character the cut falls in: bytes
+// that are invalid already (a run of continuation bytes) are cut where they are, not eaten whole.
+func RunePrefix(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	if max <= 0 {
+		return ""
+	}
+	for p := max - 1; p >= 0 && p > max-utf8.UTFMax; p-- {
+		if !utf8.RuneStart(s[p]) {
+			continue
+		}
+		if _, size := utf8.DecodeRuneInString(s[p:]); p+size > max {
+			return s[:p]
+		}
+		break
+	}
+	return s[:max]
 }
 
 // connectorUnits renders a connector's advertised tool list as one synthetic unit. Every line
