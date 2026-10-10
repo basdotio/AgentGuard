@@ -74,8 +74,8 @@ go run ./baselines/cmd/baseline -tool aguard -aguard bin/aguard -corpus ../agent
 
 Three consequences to know before quoting anything from such a run. **The verdicts do not
 change**: the fold reads deterministic findings only, so `verdicts.jsonl` and the scorecard from a
-`--llm` run are the static numbers. What the judge found exists only in `-raw`, and folding it —
-which findings escalated, at what severity — is yours to do and to describe; what it cost is
+`--llm` run are the static numbers. What the judge found exists only in `-raw`, and
+`baselines/cmd/judgefold` folds it (see "Folding what the judge found"); what it cost is
 folded by the driver (below). **`run.yaml` says
 the content left the machine**: `uploads_samples` flips to true with a basis written for that
 run, and `tool_extra_args` records the flags. **A judge run goes under `results/` in its own
@@ -120,6 +120,53 @@ carry it), exact only when `skipped` is 0; a `judge.jsonl` folded from a new run
 printed, whitespace removed, not the rig's re-encoding of them: the re-encoding wrote
 `"triage_calls":0` for a binary that never counted it, which is the one thing the basis is read
 from.
+
+### Folding what the judge found
+
+```bash
+go run ./baselines/cmd/judgefold -samples subset.jsonl -corpus ../agent-artifact-corpus \
+  -out /tmp/judge-fold /tmp/judge-run [/tmp/judge-run-2 ...]
+```
+
+`judgefold` never runs aguard, never calls a model and links no networking package: it reads
+the bytes a run already wrote. Each argument is a run directory holding the `raw/` the driver
+kept with `-raw` (and its `ledger.jsonl`, when the run got that far); `-samples` is the run's
+whole work list, and `-corpus` the checkout it read, which decides each sample's route (staged
+for `scan`, or handed to `check`) and its corpus source. A `raw/` whose judge summary predates
+`samples` (P-031) needs `-judge-samples N`, the judge config's value. It writes into `-out`:
+
+| file | what it is |
+|---|---|
+| `judge.jsonl` | one row per work-list sample, in work-list order: the schema of the committed judge runs, plus each vote's `kind` (the aguard artifact kind it sits on) and `incomplete` when the answer is not complete |
+| `verdicts.jsonl` | what `corpus score` reads, folded at the judge's predicate: malicious when a deterministic finding is at or above the threshold, or an escalated (grounded and k of n) LLM finding is and its rule is not `LLM-009` |
+| `ledger.jsonl` | the merged ledger, every row rebuilt from `raw/` by the aguard adapter's own code (`Rebuild`) and checked with `ledger.Check` against the whole work list |
+| `per-kind-rule.txt` | generated, never hand-edited: FP, FP per artifact, FP_any and recall per (aguard kind, rule), hard negatives on their own lines, Δrecall per kind, and rows per corpus source; the `run.SumJudgeUsage` totals in its header |
+| `incomplete.jsonl` | the work-list lines of every sample without a complete answer |
+
+**One answer per sample, by one rule.** Several directories are one run in parts (shards, a
+resumed tail, whole-sample retries), and the first complete answer in argument order wins. An
+answer is complete when the judge summary says `failed: 0` and `skipped: 0` and, on a sample
+staged for `scan`, says the judge ran; a sample routed to `check` is complete without a judge,
+which never runs there. A retry replaces the whole row, so votes from two attempts are never
+mixed. A sample with no complete answer keeps its first attempt, marked `incomplete`, and is left
+out of every table row and counted in the table's header.
+
+**Resuming a run that died.** The driver writes each `raw/` file as its sample finishes, but its
+ledger only at the end. Fold what is there: when the ledger cannot account for every sample, the
+fold writes only `incomplete.jsonl` and exits 1. Run the driver on that list into a new directory
+(`-samples incomplete.jsonl -out <dir2> -raw <dir2>/raw -no-fixtures`; on a subset its tripwire
+may refuse to publish, which leaves `raw/` in place) and fold again with both directories. A
+retried sample is a second draw from the model, not the answer the first run would have given.
+
+**Reading the table.** Its kinds are aguard's, read from `raw/`, and they are not the corpus's
+surface names: corpus surface `mcp` (tool catalogues) is aguard kind `connector`, and corpus
+surface `connector` (`.mcp.json`) is aguard kind `mcp`. `raw/` records how many questions the
+judge asked per sample, not per artifact, so a (kind, rule) row's denominator is every complete
+sample with an artifact of that kind and at least one question asked, shared by all of that
+kind's rules; a row exists only for a pair the run holds a vote for. A cell prints the rate and
+its Wilson 95% interval only when the half-width is at most 15 points, the corpus's own rule, and
+the bare count otherwise. A benign label is the corpus's assumption, so a flag on one is not a
+confirmed error.
 
 Three things about skill-scanner, measured 2026-09-24 (P-022):
 
@@ -191,6 +238,8 @@ results/<tool>/<YYYY-MM-DD>/
                                   and, on a judge run, what the judge cost on that sample
   scorecard.txt                   `corpus score` output, verbatim, never paraphrased
   run.yaml                        version, threshold, corpus commit, and the attribution
+  judge.jsonl                     a judge run only: what the judge found, per sample (cmd/judgefold)
+  per-kind-rule.txt               a judge run only: the generated per-(kind, rule) table
   raw/                            NOT committed
 ```
 

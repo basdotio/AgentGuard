@@ -407,7 +407,8 @@ func uploadsFor(entry toolEntry, extra []string) (bool, string) {
 			return true, "this run passed --llm to aguard: redacted excerpts of every judged artifact " +
 				"were sent to the endpoint named in the judge config. The verdicts fold deterministic " +
 				"findings only, so verdicts.jsonl and the scorecard are unaffected; what the judge found " +
-				"exists only in raw/ (kept as a release asset, never in the tree) and is folded by hand, " +
+				"exists only in raw/ (kept as a release asset, never in the tree) and is folded by " +
+				"baselines/cmd/judgefold, " +
 				"and what it cost is summed under judge_usage."
 		}
 	}
