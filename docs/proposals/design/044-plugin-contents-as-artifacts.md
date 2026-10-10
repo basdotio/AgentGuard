@@ -123,3 +123,46 @@ approval the gate recorded for `p:s1` already sits under the child's hash.
   not to the hook" and the findings live once, on the plugin.
 - Plugin hooks and MCP servers count in the environment average as artifacts of their own (56 here). Folding them into a plugin
   unit would move today's numbers (real average before the cap 95 → 94, fixture `scan` 94 → 88), so this proposal does not.
+
+## Design (as recommended in the open questions)
+
+1. **Collect.** One helper, `collect.pluginContents(pluginRoot, bundle, suffix)`, called by all three plugin channels
+   (`installed_plugins.json`, `plugins/synced/<uuid>/`, the Claude Desktop store) and by `CollectTarget`'s plugin branch — one
+   builder, as for hooks, because two would drift. It follows the 2.1.107 table above and nothing else: no `docs/`, no mirror
+   copies. Containment is checked per entry against the plugin root after resolving (invariant #2); an entry that exists and cannot
+   be resolved or read joins the existing aggregate `COV-000` shapes, a dangling one stays silent (`hidesContent`). Kinds and
+   hashes: `skill` with `TreeHash` of the skill directory, `command` and `subagent` with `FileHash` of the file — what
+   `aguard hash` and the gate compute. Name: `<bundle>:<leaf> (plugin <name@marketplace>)`, the leaf exactly as Claude Code and the
+   gate resolve it (`<dir>` for a skill; `<sub>:<file>` for a command or an agent), the suffix as for plugin hooks and MCP servers.
+   A new field `ArtifactReport.Plugin` (`json:"plugin,omitempty"`) names the parent plugin artifact. `skills=` and the other
+   inventory counters do not move; the "Inside plugins" line gains commands and agents (`EnvSummary.BundledCommands`,
+   `BundledAgents`, next to `BundledSkills`).
+2. **Detect and hashes** run on a child as on any artifact of its kind, so a child's score and hash are what `check <its path>`
+   and the gate say about the same bytes.
+3. **Reputation.** A child of a plugin that matched a GOOD entry inherits the match: its deterministic findings are suppressed and
+   counted in the plugin's `REP-GOOD` note. The child's bytes are inside the reviewed tree (hash-exact), and its findings are in the
+   entry's reviewed `findings` list (the 18 above). No entry is added, none changes.
+4. **Score.** The environment average runs over **units**: a plugin and its children are one entry, scored with the existing
+   per-artifact formula over the union of their findings (within a dimension the highest hit counts, so a duplicate adds nothing);
+   the effective number does the same with `score.Escalating`. Per-artifact `score` / `score_effective` keep their definition.
+   While a child's deterministic findings are a subset of its plugin's (all 28 measured), `overall` is byte-identical to today; a
+   qualified LLM finding on a child lowers its unit's effective score, and a high one caps `overall_effective` at 69 like any
+   other.
+5. **Report.** Children are listed under their plugin. A child's deterministic finding that its plugin also carries (same rule,
+   same evidence file and line) is not printed again — terminal, markdown, HTML, SARIF — and is not counted again in the headline
+   counts; JSON carries every finding of every artifact. One exported predicate decides "the plugin row already shows this",
+   used by the renderers and by the judge (item 6), so the two cannot disagree. The 6 mirror-copy cases are printed on the child:
+   its row names the copy that loads.
+6. **Judge.** No new pass; `planFor` and `ExcerptVersion` do not move. Children get the passes of their kind (a skill: intent,
+   injection, and explain or collusion when their triggers fire; a command or an agent: injection). Triage on a child skips the
+   findings the plugin row already shows (the plugin's own triage asks about them): 598 → 583 calls here.
+7. **P-038's note and exit 4.** A plugin counts as "asked nothing about" only when none of its children got a question; the same
+   predicate drives the `LLM-000` count and `check <plugin> --fail-on-llm`'s exit 4, so they cannot disagree. A plugin with no
+   loadable skill, command or agent keeps both.
+8. **Gate, hygiene, approve.** No change in `internal/gate`'s resolution. `SessionStart`, `Summarize` (hence `aguard approve`) and
+   hygiene skip children: every blocking rule of a child is on its plugin's row, approvals of a skill loaded by the gate already
+   key on the child's hash, and `clean` never moves anything outside `skills/` anyway. Their outputs stay as today.
+9. **`rules_version`.** The deterministic findings an input produces change (new artifacts carry findings), so `detect.rulesEpoch`
+   is bumped and `make docs` run (pipeline.md, P-002).
+10. **Quarantined (D).** P-038's note already counts them; its kind label becomes `quarantined (N, no longer loaded)` so the count
+    does not read as a loaded gap. No judging, no triage change.
