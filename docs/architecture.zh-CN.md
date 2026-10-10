@@ -189,7 +189,8 @@ hook、MCP server、permission 列表用的是**内容哈希**([`detect/contenth
 由 `analyze()` 在规则引擎跑完后紧接着填,先于信誉、闸门 `SessionStart`、`aguard approve` 和 Downloads 那一路读它。
 定义是 `sha256(<种类域> 0x00 <规范 JSON>)`,只覆盖配置本身 —— 整个 hook 或 server 条目,不含路径、不含 artifact 名 ——
 所以同一份配置在两台机器上是同一个身份。hook 的输入包含它运行的脚本内容(读不到时是一个说明原因的标记);secret 在哈希前
-由 `Redact` 的凭据那一半换掉,但带结构的片段(shell 语法、授权通配、URL 分隔符)绝不换。参数数组里被 flag 认出的元素整个换掉
+由 `Redact` 的凭据那一半换掉,但带结构的片段(shell 语法、授权通配、URL 分隔符)绝不换:被拒的只是那一次替换,同一个值里
+别的 secret 照换。flag 或 key 后面引号里的值在引号之间换掉。参数数组里被 flag 认出的元素整个换掉
 —— 与判官摘录同一个判定(`redact.Announced`)—— 而不是只换到第一个空白或引号,那样会把 secret 的一段留在输入里。只改 secret 不重键,而改
 `Redact` 的那一半会让这三类全部重键。配置 parse 失败的 artifact 仍是空哈希,
 任何批准和信誉条目都匹配不到它。

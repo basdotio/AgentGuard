@@ -236,7 +236,8 @@ alone — the whole hook or server entry, no path, no artifact name — so one c
 machines is one identity. A hook's input includes the content of the script it runs (or a marker
 saying why that could not be read); secrets are replaced by `Redact`'s credential half before
 hashing, but never a span that carries structure (shell syntax, a grant wildcard, a URL
-delimiter). In an argument array, an element a flag announces is replaced whole — the same decision
+delimiter): that one replacement is refused and the value's other secrets are still replaced. A
+quoted value after a flag or a key is replaced between its quotes. In an argument array, an element a flag announces is replaced whole — the same decision
 the judge's excerpt takes (`redact.Announced`) — not only up to its first space or quote, which
 left a fragment of the secret in the input. Changing only a secret does not re-key; changing that half of `Redact` re-keys all
 three kinds. Artifacts whose config did

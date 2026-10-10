@@ -171,6 +171,14 @@ aguard scan --llm --config config.yaml
   最后一个词是凭据名的 flag 也算声明(`--key`、`--private-key`、`--db-pass`、`--client-secret`),值是路径或 URL 时除外 ——
   `--private-key ~/.ssh/id_rsa` 照原样发出,server 读哪个密钥文件是证据,不是 secret。单字母 flag(`-p`)和不足 12 个字符的
   `token` 组合词(`--auth-token`)后面的值照旧发出:`-p` 是端口、提示词或 `mkdir -p` 的次数远多于密码。
+- **引号里的值在引号之间脱敏。** hook 命令、permission 条目、脚本行或 skill 正文里的 `--password "correct horse"`、
+  `API_TOKEN='P@ss word'`、`curl -u "admin:pass word"` 发出去是 `--password "<REDACTED>"`、`API_TOKEN='<REDACTED>'`、
+  `curl -u "admin:<REDACTED>"`。以前脱敏停在开引号:flag 后面的值整个发出去,key 后面第一个词之后的部分发出去。
+  引号里的值到配对的闭引号为止(双引号里反斜杠转义一个字符),或到这一行结束。值里有 `$` 或反引号时照原样发 ——
+  `"$GITHUB_TOKEN"`、`"Bearer ${API_KEY}"`、`"$(op read …)"` 说的是 secret 从哪来,这个名字就是证据;值以空白开头或结尾、
+  或以 `, ; ) ] } + .` 开头时也照原样发,那是一个正在拼接的字符串的闭引号(`"--password=" + pw`)。key 后面只隔空白
+  (`token "…"`)时不读引号里的值。flag 声明的参数也一样:作者把一句话写进 `--password "…"`,判官就看不到它,和 MCP
+  server `args` 里 `"--password", "…"` 一样;静态规则读的是原文,被藏住的那一段到这一行结束。
 - **声明用途截到 1,000 字节**(description、hook 的拦截点),截在字符边界上。
 - **请求里的每个字段都有上限、都是合法 UTF-8、都整段脱敏过。** 每一趟的行为文本最多 6,000 字节:去混淆那趟按顺序发
   完整的解码载荷、串通那趟发完整的摘要行,装得下多少发多少,其余的在预览的 `shortened` 和一条 `LLM-000` 里写明
