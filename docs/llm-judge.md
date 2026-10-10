@@ -210,6 +210,19 @@ everything on your machine. That trade-off is yours.
   as written, because which key file a server reads is evidence, not a secret. Single-letter flags
   (`-p`) and `token` compounds under 12 characters (`--auth-token`) still send their value: `-p` is
   a port, a prompt or `mkdir -p` far more often than a password.
+- **A quoted value is redacted between its quotes.** In a hook command, a permission entry, a script
+  line or skill text, `--password "correct horse"`, `API_TOKEN='P@ss word'` and
+  `curl -u "admin:pass word"` are sent as `--password "<REDACTED>"`, `API_TOKEN='<REDACTED>'` and
+  `curl -u "admin:<REDACTED>"`. The redaction used to stop at the opening quote: after a flag the
+  value went out whole, after a key everything past its first word. A quoted value ends at its
+  closing quote (a backslash escapes one inside double quotes) or at the end of its line. It is
+  left as written when it holds `$` or a backtick — `"$GITHUB_TOKEN"`, `"Bearer ${API_KEY}"` and
+  `"$(op read …)"` name where a secret comes from, and the name is evidence — and when it starts or
+  ends with a space or starts with `, ; ) ] } + .`, the shape of a quote that closes a string being
+  built (`"--password=" + pw`). A key followed by whitespace alone (`token "…"`) reads no quoted
+  value. The same holds for an argument a flag announces: an author can keep a sentence from the
+  judge by writing it inside `--password "…"`, as inside `"--password", "…"` in an MCP server's
+  `args`; the static rules read the text as written, and the hidden span ends with its line.
 - **A declared purpose is capped at 1,000 bytes** (a description, a hook's interception point),
   cut on a character boundary.
 - **Every field a request carries is bounded, valid UTF-8 and redacted as a whole.** Behavior is at

@@ -362,7 +362,8 @@ type ArtifactReport struct {
                           // hook/mcp/permission=内容哈希(P-009,detect 阶段算,先于信誉/闸门):
                           //   sha256(<域> 0x00 <规范 JSON>),域 aguard:{hook,mcp,permission,settings-env}:v1;
                           //   hook 与 mcp 哈希整个条目;不含任何路径和 artifact 名;secret 先过 Redact 的凭据那一半
-                          //   (不含高熵兜底),且替换不许拿走结构字符(shell 元字符、授权通配、URL 分隔符);
+                          //   (不含高熵兜底),且替换不许拿走结构字符(shell 元字符、授权通配、URL 分隔符)——
+                          //   按每一次替换判,被拒的那段原样进哈希,同一个值里别的替换照做(P-043);
                           //   参数数组里被 flag 认出的元素(redact.Announced)整个换掉,不只换到第一个空白(P-039);
                           //   hook/permission 带上跟进脚本的 sha256,读不到按原因记 unresolved/outside-home/unreadable。
                           //   parse 失败的 artifact 仍为 ""(""=没读过,永不匹配批准或信誉)。
@@ -565,6 +566,11 @@ v1 写的 `internal/rules/` 从未存在:规则表就在 `detect/rules_data.go`,
    flag 是 `--no-*`、或值在下一行时不换 —— 路径是"读哪个密钥文件"的证据,哈希也必须留着它,换了密钥文件才会重问。
    凭据词不在最后的(`--key-file`、`--secret-id`、`--token-endpoint`)、`key` 前面是开放限定词的(`--space-key`)、
    `token` 组合词、单字母 flag(`-p`)都不在内;实测见 P-040。
+   **值可以在引号里**(P-043):flag、`-u user:`、带 `=`/`:` 的凭据 key 后面的 `"…"`(反斜杠转义一个字符)或 `'…'`
+   (无转义)在引号之间换掉,引号、`user:`、引号里的 carrier 词(`"Bearer <REDACTED>"`)保留;值到闭引号或行尾为止,
+   不跨行。带 `$` 或反引号的(`"$TOKEN"`、`"$(op read …)"`:引用,不是 secret)、以空白或 `, ; ) ] } + .` 开头、以空白结尾、
+   首尾是不可见字符的不算值,照原来的裸词读法;key 后面只隔空白的(`looseAssignRE`)不读引号。第二档 flag 的路径/URL
+   豁免问的是引号里的内容。代价照实说:作者能把一句话写进 `--password "…"` 不让判官看到,和 P-036 的参数数组一样。
    判官请求里的每个字段(声明用途、行为、triage 证据)构造的**最后一步是整段 `Redact` 到不动点**,变长了再按该字段自己的
    上限重截(前缀、头尾、或从末尾整块丢掉一个文件/载荷/摘要行);各段分别脱敏再拼接、分隔或截断,跨接缝的模式和"截断后
    才像 token"的串以前都留给第二遍去改。所有字节截断落在字符边界上(`detect.RunePrefix`),不是 UTF-8 的字节先换成 U+FFFD

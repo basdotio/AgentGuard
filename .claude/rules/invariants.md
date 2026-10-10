@@ -62,6 +62,7 @@
      内容哈希要的是凭据那一半加结构守卫,不能直接调 `Argv`,所以问的是同一个判定 `redact.Announced`(P-039),忘掉的是同一段。
      **哪些 flag 算声明,名单只在 `flagSecretRE`**(`internal/redact/flags.go`,P-040):第二档(最后一个词是凭据名)对路径、URL、
      `--no-*`、下一行的值放行 —— 去掉这条豁免,哈希就忘掉 `--private-key` 指向哪个文件,换文件不重问。加 flag 先量误报(P-040 的表)。
+     **引号里的值是同三条模式的另一种值形**(`internal/redact/quoted.go`,P-043),不是第二套模式:带 `$`/反引号、像闭引号的不算值。
    - **判官请求的每个字段,最后一步是整段 `Redact` 到不动点**(`settle`/`fitUnits`,P-037):声明用途、行为、triage 证据各段分别
      脱敏后再拼、再截,整段再过一次,变长了按该字段自己的上限重截;字节截断一律用 `detect.RunePrefix` 落在字符边界上。
      `FuzzPlanFields` 钉着每个字段 `Redact(f)==f`、合法 UTF-8、不超上限,且每个 unit 的文本都在发出去的字段里。
