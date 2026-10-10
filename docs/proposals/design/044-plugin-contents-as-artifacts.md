@@ -298,3 +298,31 @@ recommendation and no decision yet. Questions 7–12 are covered by the task and
    **Recommendation**: yes: a `check` target plugin with at least one child that got a question is answered (P-026's rules then
    apply to those calls); one with no loadable skill, command or agent still exits 4. P-038's decision 2 anticipated this ("when
    `issues/023` gives plugin contents their own questions, the scan side shrinks to what is genuinely unjudged").
+7. **Quarantined (D): what is the smallest disclosure?**
+   **Recommendation**: none beyond a label. P-038's note already counts quarantined artifacts (none on the real `~/.claude`); its
+   kind label becomes `quarantined (N, no longer loaded)` so a reader does not take the count for a loaded gap. No pass, and triage
+   stays as it is.
+   **Decided (2026-10-11)**: as recommended.
+8. **Which files are a plugin's skills, commands and agents?**
+   **Recommendation**: exactly the 2.1.107 table — symlinked skill directories collected, symlinked command and agent files not,
+   manifest paths inside the plugin root added to the defaults — pinned by one fixture row per case. Collecting a copy that never
+   loads repeats `issues/017`; missing one that loads leaves it judged nowhere, so the table is a test, not a comment.
+   **Decided (2026-10-11)**: as recommended.
+9. **Names and hashes.**
+   **Recommendation**: `<bundle>:<leaf> (plugin <name@marketplace>)`, the leaf as the gate resolves it; tree hash for a skill
+   directory, file hash for a command or an agent — the values `aguard hash` and the gate already compute, so an approval recorded
+   at load time names the same thing the report does.
+   **Decided (2026-10-11)**: as recommended.
+10. **`SessionStart`, `aguard approve` and hygiene.**
+    **Recommendation**: they skip children, so their output does not move: the plugin row already lists every blocking rule of its
+    children; `Summarize` must not pick a child as the "worst artifact" of a `check <plugin>` (it would store the child's hash for
+    an approval of the plugin); hygiene's blocker text is wrong for plugin children (measured) and `clean` cannot move them.
+    **Decided (2026-10-11)**: as recommended.
+11. **Triage of a child's duplicate findings.**
+    **Recommendation**: skipped, by the predicate of question 2: the plugin's triage already asks about the same finding, and a
+    label on a row the renderers do not print is a call nobody reads (15 calls on the real `~/.claude`).
+    **Decided (2026-10-11)**: as recommended.
+12. **`rules_version`.**
+    **Recommendation**: bump `detect.rulesEpoch`: the same input now yields deterministic findings on more artifacts, which is the
+    change P-002's epoch exists to announce.
+    **Decided (2026-10-11)**: as recommended.
