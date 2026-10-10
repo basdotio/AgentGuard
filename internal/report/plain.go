@@ -9,6 +9,7 @@ import (
 	"github.com/basdotio/AgentGuard/internal/collect"
 	"github.com/basdotio/AgentGuard/internal/detect"
 	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/score"
 )
 
 // This file is the report's plain-language layer, shared by the terminal and HTML renderers so
@@ -317,7 +318,8 @@ var kindNoun = []struct {
 func scannedParts(r model.ScanResult) []string {
 	counts := map[model.ArtifactKind]int{}
 	for _, a := range r.Artifacts {
-		if !isGapArtifact(a) {
+		// A plugin's children are counted with their plugin ("inside those plugins"), not as items.
+		if !isGapArtifact(a) && a.Plugin == "" {
 			counts[a.Kind]++
 		}
 	}
@@ -366,10 +368,32 @@ func checkedParts(e model.EnvSummary) []string {
 	add(e.Memories, "memory file", "memory files")
 	add(e.Workflows, "workflow", "workflows")
 	add(e.Connectors, "remote connector", "remote connectors")
-	if e.BundledSkills > 0 {
-		parts = append(parts, fmt.Sprintf("%d skill(s) inside those plugins", e.BundledSkills))
+	if b := bundledParts(e); b != "" {
+		parts = append(parts, b+" inside those plugins")
 	}
 	return parts
+}
+
+// bundledParts says what the plugins hold that is collected as artifacts of their own (P-044): "3
+// skill(s)", or "3 skill(s), 2 command(s) and 1 agent(s)". "" when they hold none. One wording for the
+// Checked line and the inventory line of every renderer.
+func bundledParts(e model.EnvSummary) string {
+	var ps []string
+	for _, c := range []struct {
+		n    int
+		noun string
+	}{{e.BundledSkills, "skill(s)"}, {e.BundledCommands, "command(s)"}, {e.BundledAgents, "agent(s)"}} {
+		if c.n > 0 {
+			ps = append(ps, fmt.Sprintf("%d %s", c.n, c.noun))
+		}
+	}
+	switch len(ps) {
+	case 0:
+		return ""
+	case 1:
+		return ps[0]
+	}
+	return strings.Join(ps[:len(ps)-1], ", ") + " and " + ps[len(ps)-1]
 }
 
 // gap is an item that was found but not fully checked: an artifact carrying its own coverage note
@@ -643,34 +667,40 @@ func judgeSummaryLine(r model.ScanResult) string {
 
 // worstLine names the lowest-scoring artifact next to the environment score. The environment
 // number is a mean, so 144 perfect artifacts pull a 0/100 up to a 69 headline, and the report
-// never printed the 0. Derived only: the artifact's own score and name, plus how many
-// artifacts the mean spans and how many sit at 100. Nothing here changes Overall, and the line
+// never printed the 0. Derived only: the item's own score and name, plus how many
+// items the mean spans and how many sit at 100. Nothing here changes Overall, and the line
 // is omitted when it would restate the headline (one artifact, or the worst equals the mean).
 func worstLine(r model.ScanResult) string {
 	w, perfect, ok := worstItem(r)
 	if !ok {
 		return ""
 	}
+	leads, _ := score.UnitScores(r.Artifacts)
 	return fmt.Sprintf("Worst single item: %d/100 — %s. The score above is an average over %d items (%d of them at 100), so it hides this one.",
-		w.Score, friendlyArtifact(string(w.Kind)+":"+w.Name), len(r.Artifacts), perfect)
+		w.Score, friendlyArtifact(string(w.Kind)+":"+w.Name), len(leads), perfect)
 }
 
 // worstItem is the artifact worstLine is about, with how many artifacts sit at 100; ok is
 // false when the line would restate the headline.
+//
+// The items are the entries the mean runs over (score.UnitScores): a plugin and its children are one
+// item, scored over their findings together (P-044), so the count and the score are the headline's.
 func worstItem(r model.ScanResult) (w model.ArtifactReport, perfect int, ok bool) {
-	if len(r.Artifacts) < 2 {
+	leads, scores := score.UnitScores(r.Artifacts)
+	if len(leads) < 2 {
 		return w, 0, false
 	}
 	worst := -1
-	for i, a := range r.Artifacts {
-		if a.Score == 100 {
+	for i, s := range scores {
+		if s == 100 {
 			perfect++
 		}
-		if worst < 0 || a.Score < r.Artifacts[worst].Score {
+		if worst < 0 || s < scores[worst] {
 			worst = i
 		}
 	}
-	w = r.Artifacts[worst]
+	w = r.Artifacts[leads[worst]]
+	w.Score = scores[worst]
 	if w.Score >= r.Overall {
 		return w, perfect, false
 	}

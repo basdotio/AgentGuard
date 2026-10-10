@@ -126,3 +126,31 @@ func (f Family) units() [][]model.Finding {
 	}
 	return out
 }
+
+// UnitScores lists the entries the environment average runs over: for each, the index of its lead
+// artifact (the artifact itself, or the plugin of a plugin with its children) and its deterministic
+// score — the artifact's Score as Apply set it, or, for a plugin with children, the score of their
+// findings together. The report's "worst single item" line reads it so that it names the same
+// entries, and the same count, the headline averages.
+func UnitScores(arts []model.ArtifactReport) (leads, scores []int) {
+	f := Families(arts)
+	units := f.units()
+	hasChildren := map[int]bool{}
+	for i := range arts {
+		if p := f.Parent(i); p >= 0 {
+			hasChildren[p] = true
+		}
+	}
+	for i, a := range arts {
+		if f.Child(i) {
+			continue
+		}
+		s := a.Score
+		if hasChildren[i] {
+			s = findingsScore(units[len(leads)], Deterministic)
+		}
+		leads = append(leads, i)
+		scores = append(scores, s)
+	}
+	return leads, scores
+}

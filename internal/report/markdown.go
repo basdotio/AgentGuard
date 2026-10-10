@@ -312,8 +312,8 @@ func mdScanDetails(b *strings.Builder, r model.ScanResult) {
 	e := r.Env
 	fmt.Fprintf(b, "- Inventory: skills=%d mcp=%d hooks=%d permissions=%d subagents=%d commands=%d plugins=%d connectors=%d\n",
 		e.Skills, e.MCPServers, e.Hooks, e.Permissions, e.Subagents, e.Commands, e.Plugins, e.Connectors)
-	if e.BundledSkills > 0 {
-		fmt.Fprintf(b, "- Inside plugins: %d skill(s), scanned as part of their plugin (not counted in skills= above)\n", e.BundledSkills)
+	if bp := bundledParts(e); bp != "" {
+		fmt.Fprintf(b, "- Inside plugins: %s, scanned with their plugin and as artifacts of their own (not counted above)\n", bp)
 	}
 	if n := e.Rules + e.OutputStyles + e.Memories; n > 0 {
 		fmt.Fprintf(b, "- Auto-loaded: rules=%d output-styles=%d memory=%d\n", e.Rules, e.OutputStyles, e.Memories)
