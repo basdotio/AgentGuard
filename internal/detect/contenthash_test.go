@@ -81,7 +81,7 @@ func permArtifact(path, name string) model.ArtifactReport {
 // Each fixture also carries the property it is there for: a followed script folded in by its
 // sha256 (299001…cbba is `printf '#!/bin/sh\necho hi\n' | shasum -a 256`), a credential in a
 // URL, a flag value and an env value replaced, a number kept as written (30.0), no HTML escaping
-// (`<REDACTED>` stays literal), keys sorted.
+// (`<REDACTED>` stays literal), keys sorted, an announced argument replaced to its end (P-039).
 func TestContentHashGolden(t *testing.T) {
 	home := t.TempDir()
 	root := filepath.Join(home, ".claude")
@@ -92,7 +92,8 @@ func TestContentHashGolden(t *testing.T) {
 			`"env":{"API_TOKEN":"s3cr3t-value","ANTHROPIC_BASE_URL":"https://proxy.example"}}`)
 	claudeJSON := writeAt(t, filepath.Join(home, ".claude.json"),
 		`{"mcpServers":{"db":{"command":"npx","args":["-y","@scope/db-server","--api-key","hunter2-xyz"],`+
-			`"env":{"DB_PASSWORD":"hunter2","LOG_LEVEL":"debug"},"timeout":30.0}}}`)
+			`"env":{"DB_PASSWORD":"hunter2","LOG_LEVEL":"debug"},"timeout":30.0},`+
+			`"vault":{"command":"npx","args":["-y","@scope/vault-server","--password","correct horse battery","-u","admin:pass word"]}}}`)
 
 	cases := []struct {
 		name, input, hash string
@@ -118,6 +119,15 @@ func TestContentHashGolden(t *testing.T) {
 			a:     mcpArtifact(claudeJSON, "db"),
 			input: `{"args":["-y","@scope/db-server","--api-key","<REDACTED>"],"command":"npx","env":{"DB_PASSWORD":"<REDACTED>","LOG_LEVEL":"debug"},"timeout":30.0}`,
 			hash:  "e7fb868e8fe8f84079b30fe279807852cd8d4c8ab1d37294252031eac63d6d0c",
+		},
+		{
+			// P-039: an argument a flag announces is forgotten whole. The patterns stop a value at whitespace,
+			// and before this the input was `"<REDACTED> horse battery"` and `"admin:<REDACTED> word"` — a
+			// fragment of each secret, recoverable from the published hash with a word list.
+			name:  "mcp server, announced arguments holding a space",
+			a:     mcpArtifact(claudeJSON, "vault"),
+			input: `{"args":["-y","@scope/vault-server","--password","<REDACTED>","-u","admin:<REDACTED>"],"command":"npx"}`,
+			hash:  "630d1bd53d013b990e69d1b899c40ce2b221cae0699fab5822bed59c1573049e",
 		},
 		{
 			name: "permissions",
