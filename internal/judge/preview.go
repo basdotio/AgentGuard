@@ -27,8 +27,9 @@ type PlannedCall struct {
 	// Payload is the text inside the fence, byte for byte what the client puts there.
 	Payload string
 	Sources []Source
-	// Shortened is what the run discloses as left out of this call: an MCP configuration cut to fit
-	// (the run's LLM-000 names it), triage items past the per-artifact cap.
+	// Shortened is what the run discloses as left out of this call: an MCP configuration cut to fit, decoded
+	// payloads or digest lines past the excerpt cap (the run's LLM-000 names each), triage items past the
+	// per-artifact cap.
 	Shortened string
 }
 

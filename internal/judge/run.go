@@ -140,7 +140,8 @@ type task struct {
 	// are consecutive in the table, so counting them stays order-stable.
 	group int
 	// shortened says what this call's excerpt left out of the artifact, when that is a gap the
-	// operator must be told about rather than an ordinary cap (an MCP configuration cut to fit).
+	// operator must be told about rather than an ordinary cap (an MCP configuration cut to fit, decoded
+	// payloads or digest lines past the excerpt cap: shortenedNote, boundedNote).
 	shortened string
 }
 
