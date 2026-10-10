@@ -49,7 +49,7 @@ exactly the ones Claude Code 2.1.107 loads, manifest-declared paths included —
 `check <plugin>` (`internal/collect/plugincontents.go`), each with `Plugin` naming its plugin artifact, so the judge's skill,
 command and subagent passes read them unchanged. The plugin tree artifact and its hash did not move. Measured on one real
 `~/.claude`: 178 children (105 skills, 51 commands, 22 agents; 311 copies that never load are not collected), judge calls
-300 → 583, `overall` unchanged. The costs listed under A below are each answered:
+300 → 588, `overall` unchanged. The costs listed under A below are each answered:
 
 - the score: a plugin and its children are one unit of the environment average (`score.Families`), so they do not dilute it;
 - the double report: a child's finding its plugin row already shows is printed once (terminal, markdown, HTML, SARIF) and
