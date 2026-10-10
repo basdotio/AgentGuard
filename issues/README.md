@@ -31,6 +31,7 @@
 | [020](020-interactive-picker-withdrawn.md) | `clean --ask` 方向键选择器审查后撤回并重做（11 项缺陷） | 安全缺陷 / 功能撤回 | 高 | **已修复**；已按收集→对账→一次执行重做，方向键待下一轮 |
 | [021](021-judge-triage-by-static-severity-rejected.md) | 只在静态报到 medium 以上时才问判官：实测否决（保住 14/62，丢 77%） | 功能范围 | — | **不规划**（前提实测不成立）|
 | [022](022-plugin-install-case-collision-macos.md) | macOS 上 CLI 装不上插件：插件名与 marketplace 名只差大小写（上游 bug） | 分发缺陷 | 高 | **已修复**（0.17.0 改名 `aguard`；上游 bug 仍在） |
+| [023](023-judge-asks-nothing-of-plugins-and-directories.md) | 判官对 plugin 整树和无法识别的目录一个问题都不问（`scan` 里插件的 skill/命令/子 agent 也不被判） | 覆盖缺口 | 中 | 未修复（P-038 已披露，`check` 目标退出 4；该问什么未定） |
 
 ## 判定口径
 
