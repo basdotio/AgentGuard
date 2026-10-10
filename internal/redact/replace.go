@@ -22,12 +22,7 @@ func replaceEach(re *regexp.Regexp, s string, repl func(g []string) string, keep
 	var b strings.Builder
 	last := 0
 	for _, loc := range locs {
-		g := make([]string, len(loc)/2)
-		for i := range g {
-			if loc[2*i] >= 0 {
-				g[i] = s[loc[2*i]:loc[2*i+1]]
-			}
-		}
+		g := submatches(s, loc)
 		r := repl(g)
 		if r != g[0] && keep != nil && !keep(g[0], r) {
 			r = g[0]
@@ -38,4 +33,16 @@ func replaceEach(re *regexp.Regexp, s string, repl func(g []string) string, keep
 	}
 	b.WriteString(s[last:])
 	return b.String()
+}
+
+// submatches reads the groups of one match of s in place, from its index pairs loc; a group that did not
+// take part is "".
+func submatches(s string, loc []int) []string {
+	g := make([]string, len(loc)/2)
+	for i := range g {
+		if loc[2*i] >= 0 {
+			g[i] = s[loc[2*i]:loc[2*i+1]]
+		}
+	}
+	return g
 }
