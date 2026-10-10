@@ -50,7 +50,7 @@ var namedFlagRE = regexp.MustCompile(`(?i)^(?:password|passwd|passphrase|pass|to
 // keyFileRE is a value that names a file holding a key rather than being one.
 var keyFileRE = regexp.MustCompile(`(?i)\.(?:pem|key|crt|cer|der|p12|pfx|jks|pub|gpg|asc|json|txt|env)$`)
 
-// redactFlags replaces the value of every flagSecretRE hit, except where a second-tier flag is
+// flagValue replaces the value of a flagSecretRE hit g, except where a second-tier flag is
 // followed by something that is plainly not a secret, or by nothing on its own line.
 //
 // The line rule is the second tier's too. Across a line break the next word is the next line, not the
@@ -58,19 +58,13 @@ var keyFileRE = regexp.MustCompile(`(?i)\.(?:pem|key|crt|cer|der|p12|pfx|jks|pub
 // (`args=--private-key` then `args=~/.ssh/id_rsa`), and the excerpt's final whole-field Redact (P-037)
 // would read `args=~/.ssh/id_rsa` as the value — not a path, since it starts with `args=` — and erase
 // the line the exemption kept. The eight named flags keep reading across it, as P-036 pinned.
-func redactFlags(s string) string {
-	return flagSecretRE.ReplaceAllStringFunc(s, func(m string) string {
-		g := flagSecretRE.FindStringSubmatch(m)
-		if g == nil {
-			return m
+func flagValue(g []string) string {
+	if !namedFlagRE.MatchString(g[2]) {
+		if sep := g[1][len("--")+len(g[2]):]; strings.ContainsAny(sep, "\n\r") || notASecret(g[2], g[3]) {
+			return g[0]
 		}
-		if !namedFlagRE.MatchString(g[2]) {
-			if sep := g[1][len("--")+len(g[2]):]; strings.ContainsAny(sep, "\n\r") || notASecret(g[2], g[3]) {
-				return m
-			}
-		}
-		return g[1] + marker
-	})
+	}
+	return g[1] + marker
 }
 
 // notASecret is the exemption of the second tier (P-040): a `--no-*` switch takes no value (the word

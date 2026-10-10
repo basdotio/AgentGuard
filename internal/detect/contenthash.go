@@ -43,7 +43,8 @@ import (
 //     not up to its first space (viewElement). Consequence, intended: changing ONLY a replaced secret
 //     does not re-key.
 //     The rule that keeps that from becoming "changing the code does not re-key": a replacement may
-//     forget a secret, never structure.
+//     forget a secret, never structure — decided per replacement, so refusing one span keeps the
+//     value's other secrets out (P-043).
 //   - A followed script is folded in by its sha256, or by a marker saying why it could not be.
 
 // Domains. The version suffix is the definition's shape — which fields go in, how they are encoded, the
@@ -301,13 +302,14 @@ func scriptDigest(root, home, ownerRoot, ref string) string {
 
 // guardedView is what of a value goes into a content hash: Redact's credential half — not the
 // entropy catch-all, see Redact for why — with every replacement that would take away a character
-// of structure refused, in which case the value goes in as written.
+// of structure refused. The refusal is the replacement's own (P-043): its match goes in as written and
+// every other replacement in the value still applies. It used to be the value's — one refused span put
+// the value in whole, so `Bash(curl -u admin:* --token hunter2)` hashed `hunter2`, and a quoted password
+// with `#` in it would have done the same to every other secret on its line.
 func guardedView(s, structure string) string {
-	v := redactCredentials(s)
-	if skeleton(s, structure) != skeleton(v, structure) {
-		return s
-	}
-	return v
+	return redactCredentials(s, func(match, repl string) bool {
+		return skeleton(match, structure) == skeleton(repl, structure)
+	})
 }
 
 // skeleton is the sequence of structure characters in s, ignoring the replacement marker's own.

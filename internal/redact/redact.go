@@ -121,14 +121,25 @@ func Secrets(s string) string { return redactEntropy(Credentials(s)) }
 
 // Credentials is Secrets without the entropy catch-all: every value that something in the
 // text announces as a credential.
-func Credentials(s string) string {
-	out := urlCredRE.ReplaceAllString(s, `$1<REDACTED>$3`)
-	out = flagUserPassRE.ReplaceAllString(out, `$1$2<REDACTED>`)
-	out = redactFlags(out) // flagSecretRE, flags.go
-	out = redactValueHalf(assignRE, out)
-	out = redactValueHalf(looseAssignRE, out)
+func Credentials(s string) string { return CredentialsKeeping(s, nil) }
+
+// CredentialsKeeping is Credentials with every replacement offered to keep first: one keep refuses
+// leaves its match as written, and every other replacement in s still applies (P-043). keep sees the
+// matched text and what would stand in its place; nil keeps every replacement, which is Credentials.
+//
+// It exists for the content hash (detect.guardedView), which must not let a replacement forget
+// structure — `*` in `Bash(curl -u admin:*)` would let an exact grant widen without re-keying — and
+// which used to refuse the WHOLE string for it: one refused span put every other secret of the string
+// back into the digest input (`… -u admin:* --token hunter2` hashed `hunter2`). Deciding per
+// replacement keeps the guard and loses only the span it guards.
+func CredentialsKeeping(s string, keep func(match, repl string) bool) string {
+	out := replaceEach(urlCredRE, s, func(g []string) string { return g[1] + marker + g[3] }, keep)
+	out = replaceEach(flagUserPassRE, out, func(g []string) string { return g[1] + g[2] + marker }, keep)
+	out = replaceEach(flagSecretRE, out, flagValue, keep) // flags.go
+	out = replaceEach(assignRE, out, valueHalf, keep)
+	out = replaceEach(looseAssignRE, out, valueHalf, keep)
 	for _, re := range redactPatterns {
-		out = re.ReplaceAllString(out, "<REDACTED>")
+		out = replaceEach(re, out, func([]string) string { return marker }, keep)
 	}
 	return out
 }
@@ -146,21 +157,14 @@ func redactEntropy(s string) string {
 	})
 }
 
-// redactValueHalf replaces the VALUE half of every key/value hit, keeping the key and the
-// separator so the report still names WHICH setting held a secret, and leaving language
-// literals alone (see keywordValues). re must have the key/separator/value group layout of
-// assignRE.
-func redactValueHalf(re *regexp.Regexp, s string) string {
-	return re.ReplaceAllStringFunc(s, func(m string) string {
-		g := re.FindStringSubmatch(m)
-		if g == nil {
-			return m
-		}
-		if v := strings.ToLower(g[3]); keywordValues[v] || carrierWords[v] {
-			return m
-		}
-		return g[1] + g[2] + "<REDACTED>"
-	})
+// valueHalf replaces the VALUE half of a key/value hit, keeping the key and the separator so the
+// report still names WHICH setting held a secret, and leaving language literals alone (see
+// keywordValues). g is a match of a pattern with the key/separator/value group layout of assignRE.
+func valueHalf(g []string) string {
+	if v := strings.ToLower(g[3]); keywordValues[v] || carrierWords[v] {
+		return g[0]
+	}
+	return g[1] + g[2] + marker
 }
 
 // secretish reports whether a long token looks like an opaque credential: mixed
