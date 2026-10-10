@@ -53,6 +53,20 @@ type unit struct {
 	text      string
 	role      fileRole
 	synthetic bool
+	// views maps a line of text to the snippet a finding on it quotes, already redacted, where Redact reading
+	// the line alone would quote a secret: a member whose credential key announces a value the shell-line
+	// patterns stop reading at its first space, or whose key is not on the line at all (memberView, P-042). Nil
+	// for every other unit.
+	views map[string]string
+}
+
+// evidence is the snippet a finding on the logical line raw quotes: the unit's view of that line, bounded, or
+// redactClip — redacted first, then bounded, either way.
+func (u unit) evidence(raw string) string {
+	if v, ok := u.views[raw]; ok {
+		return clip(v)
+	}
+	return redactClip(raw)
 }
 
 // Engine holds the compiled rule set (constructed once, reused across scans).
@@ -335,7 +349,7 @@ func (e *Engine) scanUnits(root string, units []unit) []model.Finding {
 				findings = append(findings, model.Finding{
 					RuleID: r.ID, Dimension: r.Dimension, Severity: r.Severity,
 					Title: r.Title, Why: r.Why, Source: model.SrcStatic, Advisory: r.Advisory,
-					Evidence: []model.Evidence{{File: rel, Line: lineNo, Snippet: redactClip(ll.raw)}},
+					Evidence: []model.Evidence{{File: rel, Line: lineNo, Snippet: u.evidence(ll.raw)}},
 				})
 				if r.ID == "PERM-007" {
 					perm007Fired = true
@@ -343,10 +357,10 @@ func (e *Engine) scanUnits(root string, units []unit) []model.Finding {
 			}
 			if permFileWriteScope && !ll.comment {
 				if settingsNameEv == nil && settingsFileRE.MatchString(ll.norm) && !settingsReadRE.MatchString(ll.norm) {
-					settingsNameEv = &model.Evidence{File: rel, Line: lineNo, Snippet: redactClip(ll.raw)}
+					settingsNameEv = &model.Evidence{File: rel, Line: lineNo, Snippet: u.evidence(ll.raw)}
 				}
 				if settingsWriteEv == nil && settingsWriteRE.MatchString(ll.norm) {
-					settingsWriteEv = &model.Evidence{File: rel, Line: lineNo, Snippet: redactClip(ll.raw)}
+					settingsWriteEv = &model.Evidence{File: rel, Line: lineNo, Snippet: u.evidence(ll.raw)}
 				}
 			}
 			// Exfil chain is a code behavior — only on script/instruction files, per file (F4).
@@ -358,7 +372,7 @@ func (e *Engine) scanUnits(root string, units []unit) []model.Finding {
 			// by a continuation is still a leg.
 			if u.role != roleDoc && u.role != roleToolDesc && !ll.comment {
 				fileChain.observe(ll.raw, ll.norm, func() model.Evidence {
-					return model.Evidence{File: rel, Line: lineNo, Snippet: redactClip(ll.raw)}
+					return model.Evidence{File: rel, Line: lineNo, Snippet: u.evidence(ll.raw)}
 				})
 			}
 		}
@@ -1352,7 +1366,57 @@ func jsonStrings(path string, raw json.RawMessage) []unit {
 	if len(strs) == 0 {
 		return nil
 	}
-	return []unit{{file: path, text: strings.Join(strs, "\n"), role: roleScript, synthetic: true}}
+	return []unit{{file: path, text: strings.Join(strs, "\n"), role: roleScript, synthetic: true, views: bareValueViews(raw)}}
+}
+
+// bareValueViews are the views of the bag of values jsonStrings builds: a value a credential key holds is on
+// its line without that key, so Redact reading the line alone announces nothing and quoted the whole secret —
+// `correct horse; curl … | sh` under API_TOKEN. Each such value is quoted as the member question has it
+// (memberView): its head, then the marker.
+func bareValueViews(raw json.RawMessage) map[string]string {
+	var v any
+	if json.Unmarshal(raw, &v) != nil {
+		return nil
+	}
+	var views map[string]string
+	var walk func(any)
+	walk = func(x any) {
+		switch t := x.(type) {
+		case []any:
+			for _, e := range t {
+				walk(e)
+			}
+		case map[string]any:
+			for k, e := range t {
+				if s, ok := e.(string); ok {
+					if view, ok := memberView(k, s); ok {
+						if views == nil {
+							views = map[string]string{}
+						}
+						views[strings.TrimSpace(s)] = view
+					}
+					continue
+				}
+				walk(e)
+			}
+		}
+	}
+	walk(v)
+	return views
+}
+
+// memberView is the snippet of the value a credential key announces, quoted without its key (keyedValue, the
+// question the content hash asks; envUnit quotes the line with its key the same way): the head before the
+// announced byte, redacted, then the marker — the whole value from there is
+// the secret, however much of it the patterns would read (P-042). No structure guard: that guard keeps an
+// identity from forgetting code, while a snippet keeps the reader's secret out of the report, and a rule that
+// fired on such a value is still named with its key. ok=false when the key announces nothing.
+func memberView(key, value string) (string, bool) {
+	at, ok := keyedValue(key, value)
+	if !ok {
+		return "", false
+	}
+	return Redact(value[:at]) + redacted, true
 }
 
 // settingsEnvUnit is envUnit for the top-level `env` block of a settings file.
@@ -1399,11 +1463,20 @@ func envUnit(path string, envRaw json.RawMessage) []unit {
 	}
 	sort.Strings(keys)
 	lines := make([]string, 0, len(keys))
+	var views map[string]string
 	for _, k := range keys {
 		v, _ := env[k].(string)
 		lines = append(lines, k+"="+v)
+		// The line reads as an assignment, and the patterns stop its value at the first space: quote the
+		// member as the member question has it instead (P-042).
+		if at, ok := keyedValue(k, v); ok {
+			if views == nil {
+				views = map[string]string{}
+			}
+			views[strings.TrimSpace(k+"="+v)] = Redact(k+"="+v[:at]) + redacted
+		}
 	}
-	return []unit{{file: path, text: strings.Join(lines, "\n"), role: roleScript, synthetic: true}}
+	return []unit{{file: path, text: strings.Join(lines, "\n"), role: roleScript, synthetic: true, views: views}}
 }
 
 func collectStrings(raw json.RawMessage, out *[]string) {
