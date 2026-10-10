@@ -82,7 +82,8 @@ func permArtifact(path, name string) model.ArtifactReport {
 // sha256 (299001…cbba is `printf '#!/bin/sh\necho hi\n' | shasum -a 256`), a credential in a
 // URL, a flag value and an env value replaced, a number kept as written (30.0), no HTML escaping
 // (`<REDACTED>` stays literal), keys sorted, an announced argument replaced to its end (P-039), a
-// quoted value after a flag replaced between its quotes (P-043).
+// quoted value after a flag replaced between its quotes (P-043), a value a credential key announces replaced
+// from its first replaced byte to its end, carrier word kept (P-042).
 func TestContentHashGolden(t *testing.T) {
 	home := t.TempDir()
 	root := filepath.Join(home, ".claude")
@@ -94,9 +95,11 @@ func TestContentHashGolden(t *testing.T) {
 	claudeJSON := writeAt(t, filepath.Join(home, ".claude.json"),
 		`{"mcpServers":{"db":{"command":"npx","args":["-y","@scope/db-server","--api-key","hunter2-xyz"],`+
 			`"env":{"DB_PASSWORD":"hunter2","LOG_LEVEL":"debug"},"timeout":30.0},`+
-			`"vault":{"command":"npx","args":["-y","@scope/vault-server","--password","correct horse battery","-u","admin:pass word"]}}}`)
+			`"vault":{"command":"npx","args":["-y","@scope/vault-server","--password","correct horse battery","-u","admin:pass word"]},`+
+			`"keyed":{"command":"mytool","env":{"DB_PASSWORD":"correct horse battery"},"headers":{"Authorization":"Bearer abcd1234 efgh5678"}}}}`)
 	quoted := writeAt(t, filepath.Join(home, "proj", ".claude", "settings.json"),
 		`{"permissions":{"allow":["Bash(mytool --token 'correct horse' *)"]}}`)
+	keyedEnv := writeAt(t, filepath.Join(home, "proj2", ".claude", "settings.json"), `{"env":{"API_TOKEN":"correct horse"}}`)
 
 	cases := []struct {
 		name, input, hash string
@@ -159,6 +162,28 @@ func TestContentHashGolden(t *testing.T) {
 			a:     permArtifact(settings, collect.SettingsEnvName),
 			input: `{"ANTHROPIC_BASE_URL":"https://proxy.example","API_TOKEN":"<REDACTED>"}`,
 			hash:  "fe0b0183a3f6b3e233d9cfdb4aa0cc9e6a0579fa0375173e06b70d686c1da4f9",
+		},
+		{
+			// P-042: a value a credential key announces is forgotten whole. The patterns stop a value at
+			// whitespace, and before this the input was `"<REDACTED> horse battery"` and
+			// `"Bearer <REDACTED> efgh5678"` — a fragment of each secret, recoverable from the published hash.
+			name:  "mcp server, credential-keyed env and header values holding a space",
+			a:     mcpArtifact(claudeJSON, "keyed"),
+			input: `{"command":"mytool","env":{"DB_PASSWORD":"<REDACTED>"},"headers":{"Authorization":"Bearer <REDACTED>"}}`,
+			hash:  "bdc5c4cd380e45687f4bc953df6bb059ff2fa131095e3e8e8cbda9305b05641f",
+		},
+		{
+			name: "http hook, a credential-keyed header holding a space",
+			a: hookArtifact(settings, hookEntry("PostToolUse", "",
+				`{"type":"http","url":"https://hooks.example/x","headers":{"Authorization":"Bearer abcd1234 efgh5678"}}`)),
+			input: `{"entry":{"headers":{"Authorization":"Bearer <REDACTED>"},"type":"http","url":"https://hooks.example/x"},"event":"PostToolUse","matcher":""}`,
+			hash:  "ff64dd634dc0f86dc7505361c4a93cbdd175c5a06ce25064dd6a9af8a10e26b2",
+		},
+		{
+			name:  "settings env, a credential-keyed value holding a space",
+			a:     permArtifact(keyedEnv, collect.SettingsEnvName),
+			input: `{"API_TOKEN":"<REDACTED>"}`,
+			hash:  "7ee07c8ccdcb4f89cf10fc452aef47c1b7ec8a86c719f88aa56c182e3b80332b",
 		},
 	}
 	for _, c := range cases {
