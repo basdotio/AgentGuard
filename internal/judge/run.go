@@ -362,6 +362,9 @@ func schedule(arts []model.ArtifactReport, opts Options) (send, refused []task, 
 	if n, ok := shortenedNote(send); ok {
 		notes = append(notes, n)
 	}
+	if n, ok := boundedNote(send); ok {
+		notes = append(notes, n)
+	}
 	if n, ok := unaskedNote(arts); ok {
 		notes = append(notes, n)
 	}
@@ -448,20 +451,18 @@ func planFor(i int, a model.ArtifactReport, eg egress) []task {
 		ask(Request{Mode: ModeInjection, Declared: declared, Behavior: body},
 			[]sourceUnit{{file: "SKILL.md", text: body, firstLine: skill.BodyLine, lineMap: offsetLines(bodyLM, skill.BodyLine-1)}})
 
-		if payloads := decodedPayloads(a.Path, eg); len(payloads) > 0 {
-			texts := make([]string, len(payloads))
-			for k, p := range payloads {
-				texts[k] = p.text
-			}
-			ask(Request{Mode: ModeExplain, Behavior: strings.Join(texts, "\n---\n")}, payloads)
+		if text, units, shortened := explainExcerpt(decodedPayloads(a.Path, eg)); text != "" {
+			ask(Request{Mode: ModeExplain, Behavior: text}, units)
+			out[len(out)-1].shortened = shortened
 		}
 
 		// Collusion: only once the static screen has seen the two halves land in DIFFERENT
 		// files. The digest describes what each file can do; it does not ship the files.
 		if hasFinding(a, crossFileChainRule) {
-			if digest, units := capabilityDigest(a, eg); len(units) > 0 {
+			if digest, units, shortened := capabilityDigest(a, eg); len(units) > 0 {
 				ask(Request{Mode: ModeCollusion, Declared: declared, Behavior: digest},
 					append([]sourceUnit{{file: "SKILL.md", text: declared, firstLine: 1, collapsed: true}}, units...))
+				out[len(out)-1].shortened = shortened
 			}
 		}
 
@@ -804,7 +805,7 @@ func shortenedNote(tasks []task) (model.Finding, bool) {
 	seen := map[int]bool{}
 	var parts []string
 	for _, t := range tasks {
-		if t.shortened == "" || t.kind != taskJudge || seen[t.group] {
+		if t.shortened == "" || t.kind != taskJudge || t.req.Mode != ModeMCPConfig || seen[t.group] {
 			continue
 		}
 		seen[t.group] = true

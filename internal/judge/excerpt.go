@@ -445,9 +445,13 @@ var capabilityDims = map[int]bool{
 // The digest line carries the static File and Snippet, so both are scrubbed for sending (the
 // File as a file position, the Snippet as the clipped static snippet it is); the unit keeps the
 // static File as its citation, since that is what the report shows for the same line.
-func capabilityDigest(a model.ArtifactReport, eg egress) (string, []sourceUnit) {
+//
+// Bounded like any excerpt (P-037): each line, the evidence of one static finding, as a triage item is
+// (boundedEvidence), and the digest as the deobfuscation field is — whole lines from the first while they
+// fit the excerpt cap, the rest named in shortened for the run to disclose. It had no cap at all: a large
+// skill sent every line it had.
+func capabilityDigest(a model.ArtifactReport, eg egress) (digest string, units []sourceUnit, shortened string) {
 	var lines []string
-	var units []sourceUnit
 	seen := map[string]bool{}
 	for _, f := range a.Findings {
 		if f.Source == model.SrcLLM || !capabilityDims[f.Dimension] || len(f.Evidence) == 0 {
@@ -457,7 +461,7 @@ func capabilityDigest(a model.ArtifactReport, eg egress) (string, []sourceUnit) 
 			if e.File == "" || e.Snippet == "" {
 				continue
 			}
-			line := fmt.Sprintf("%s:%d [%s] %s", eg.file(e.File), e.Line, f.RuleID, eg.snippet(e.Snippet))
+			line := boundedEvidence(fmt.Sprintf("%s:%d [%s] %s", eg.file(e.File), e.Line, f.RuleID, eg.snippet(e.Snippet)))
 			if seen[line] {
 				continue
 			}
@@ -468,7 +472,15 @@ func capabilityDigest(a model.ArtifactReport, eg egress) (string, []sourceUnit) 
 			units = append(units, sourceUnit{file: e.File, text: line, firstLine: e.Line, collapsed: true})
 		}
 	}
-	return strings.Join(lines, "\n"), units
+	digest, sent, left := fitUnits(lines, maxExcerptBytes, joined("\n"))
+	units = units[:len(sent)]
+	for k := range sent {
+		units[k].text = sent[k]
+	}
+	if left > 0 {
+		shortened = fmt.Sprintf("%d of %d capability line(s) past the %d-byte excerpt not sent", left, len(lines), maxExcerptBytes)
+	}
+	return digest, units, shortened
 }
 
 // boundedRedact redacts s (best-effort, see judge.go header), strips the home, then caps it to max
