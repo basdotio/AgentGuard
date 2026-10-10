@@ -17,7 +17,23 @@ rate copied into prose goes stale on the next rule. `git tag` and the Releases p
 - Invariants: never executes scanned content, no cross-root symlink reads, secret redaction before storage (+ high-entropy fallback).
 - Single static binary (`CGO_ENABLED=0`), MIT + SPDX, CI, bilingual README.
 
-## v0.2.0 – v0.20.0
+## v0.2.0 – v0.20.1
+
+**v0.20.1 (2026-10-10) — a judge reply whose object closes one member early is read instead of failing the call, and a judge benchmark run can be folded, merged and resumed by a tool.**
+
+No rule's severity changed, the score formula is the same, and nothing sent to the judge changed: `judge-prompt` and
+`judge-excerpt` on the `aguard version` line are the same as in v0.20.0.
+
+- **The judge.** A model reply that closes its verdict object one member early and then writes the last member used to
+  fail the call with `invalid character ',' after top-level value` and an `LLM-000` note (5 of 1,482 calls in P-034's
+  measurement on gpt-4.1-mini); a sample with many calls lost the whole check. Such a reply is now repaired when
+  dropping that one `}` leaves exactly one object with no repeated member, and counted as `repaired` in the JSON `judge`
+  block and on the report's judge line. Any other shape still fails, and a closed-early reply that also lost its last
+  `}`, which used to be read silently as its first half, now fails too (P-034).
+- **Benchmark tooling.** `baselines/cmd/judgefold` folds what the judge found in a run's `raw/`: `judge.jsonl` with each
+  vote's artifact kind, `verdicts.jsonl` at the judge's predicate, and a generated per-(kind, rule) table; it rebuilds
+  ledger rows from `raw/`, so a run that died can be resumed, and merges shards on one rule, the first complete answer
+  wins. It never calls a model (P-033). The four 2026-09 judge runs now say their raw archive was never published.
 
 **v0.20.0 (2026-10-10) — `--fail-on-llm` no longer passes when the judge could not answer, `aguard llm preview` shows what `--llm` would send before you turn it on, a report names the judge that produced its LLM findings, and a plugin's MCP servers are found without the `mcpServers` wrapper.**
 

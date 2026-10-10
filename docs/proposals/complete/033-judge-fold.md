@@ -218,7 +218,7 @@ Found while implementing:
 
 ```
 Merged: PR #52 (2026-10-10; find the sha with git log --grep P-033)
-Released: pending release
+Released: v0.20.1
 Evidence: W1 red at compile time on origin/main 0bffbdb — baselines/judgefold: undefined: Answer, Fold, Options, Vote, Wilson, Cell, Table, Meta; baselines/adapter/aguard: b.Rebuild undefined (type *Adapter has no field or method Rebuild); baselines/corpus: undefined: ReadAnnotation; baselines/cmd/judgefold: no non-test Go files in baselines/judgefold — green after W2–W6
 Evidence: TestSchema_RoundTripsTheCommittedJudgeFiles: 2,086 of 2,086 committed judge.jsonl lines re-encode to their own bytes
 Evidence: TestJudgefold_Golden (baselines/cmd/judgefold/golden_test.go): real binary + adapter + scripted endpoint on 127.0.0.1, three directories (run, retry, shard), fold with the binary deleted: 3 of 3 escalates and flips judge, 1 of 3 votes without escalating, LLM-009 high sets judge_any only, the retry replaces the failed attempt's row, the max_calls cut stays incomplete ("the judge skipped 5 planned call(s)") and is the one line of incomplete.jsonl, the check-routed sample is complete with judge_calls 0; four outputs equal golden_values_test.go, stable over 3 runs and under -race; a one-character change to a golden line fails the test
