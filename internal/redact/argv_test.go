@@ -32,6 +32,10 @@ func TestArgv(t *testing.T) {
 	add("a space in the value", []string{"--password", "correct horse battery"}, []string{"--password", marker})
 	add("a quote in the value", []string{"--api-key", "ab'cd" + v}, []string{"--api-key", marker})
 	add("the user half keeps up to the value", []string{"-u", "admin:pa ss"}, []string{"-u", "admin:" + marker})
+	// Two rows that were reverse rows until P-040 widened flagSecretRE: a key word at the end of the flag
+	// now announces a value of any length, and `--key` announces one.
+	add("a key word in the flag, under 12 characters", []string{"--db-password", "hunter2"}, []string{"--db-password", marker})
+	add("--key", []string{"run", "--key", v}, []string{"run", "--key", marker})
 
 	// Reverse: nothing announced, so each element is Secrets of itself.
 	for _, in := range [][]string{
@@ -43,8 +47,6 @@ func TestArgv(t *testing.T) {
 		{"token", v},
 		{"--header", "Authorization: Bearer " + v},
 		{"--env", "API_KEY=" + v},
-		{"--db-password", "hunter2"},
-		{"run", "--key", v},
 		{},
 	} {
 		want := make([]string, len(in))

@@ -24,7 +24,7 @@ import (
 var excerptGolden = struct {
 	version int
 	digest  string
-}{version: 3, digest: "870e91b426266cd3"}
+}{version: 4, digest: "b94da7ba8cb9c053"}
 
 func TestExcerptVersion_IsPinnedWithItsGolden(t *testing.T) {
 	got := excerptDigest(t)
@@ -49,7 +49,7 @@ const fixtureHome = "/home/aguard-fixture"
 // the per-file cap (capHeadTail and its line map), padding inside a line (foldPadding), a base64
 // payload (decode), home paths (egress), a token (redaction before any cut), static findings
 // (the collusion digest and triage), a hook, an MCP entry whose args pass a key after its flag
-// (redacted as one argv, P-036) and a connector's tool list. P-037 added the bounds: a script ending in a
+// (redacted as one argv, P-036; after `--key` too, which P-040 added) and a connector's tool list. P-037 added the bounds: a script ending in a
 // flag before the next file's header (a whole-field redaction), a finding with a 1,200-byte path (the
 // evidence bound), a rule file of one CJK line past the excerpt cap with a Latin-1 byte (a cut inside a
 // character, an invalid byte) and a skill with eight long decoded payloads (the deobfuscation field cap).
@@ -93,7 +93,7 @@ func excerptFixture(t *testing.T) []model.ArtifactReport {
 	write("blobs/SKILL.md", "---\nname: blobs\ndescription: Prints a banner.\n---\nPrint the banner.\n")
 	write("blobs/stage.sh", blobs.String())
 	settings := write("settings.json", `{"hooks":{}}`)
-	mcp := write(".mcp.json", `{"mcpServers":{"fetcher":{"command":"npx","args":["-y","some-mcp@latest","--api-key","k7Qp2xLm9Rt4Vw8Z"],`+
+	mcp := write(".mcp.json", `{"mcpServers":{"fetcher":{"command":"npx","args":["-y","some-mcp@latest","--api-key","k7Qp2xLm9Rt4Vw8Z","--key","Hx7Lq2Vw9Rt4"],`+
 		`"env":{"API_TOKEN":"abc123def456ghi789","DATA_DIR":"`+fixtureHome+`/data"}}}}`)
 
 	static := func(rule string, dim int, file string, line int, snippet string) model.Finding {

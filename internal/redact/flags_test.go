@@ -96,6 +96,13 @@ func TestFlagSecrets_Reverse(t *testing.T) {
 			t.Errorf("Argv(%q) = %q, want it unchanged", in, got)
 		}
 	}
+	// Across a line break the next word is the next line, not the flag's argument: the judge's MCP excerpt
+	// writes a kept element on its own line, and a widened flag must not take that line for its value.
+	for _, s := range []string{"tool --key\n" + v, "args=--private-key\nargs=~/.ssh/id_rsa", "x --db-pass\r\n" + v} {
+		if got := Secrets(s); got != s {
+			t.Errorf("Secrets(%q) = %q, want it unchanged: a widened flag reads no value across a line break", s, got)
+		}
+	}
 	for _, s := range []string{"mkdir -p build/out", "mysql -p" + v + " db", "find . -path ./x -print"} {
 		if got := Secrets(s); got != s {
 			t.Errorf("Secrets(%q) = %q, want it unchanged: short flags are not widened", s, got)
@@ -112,6 +119,7 @@ func TestFlagSecrets_NamedFlagsUnchanged(t *testing.T) {
 		{"tool --token https://t.example/x", "tool --token <REDACTED>"},
 		{"tool --api-key=/k/v", "tool --api-key=<REDACTED>"},
 		{"tool --secret ~/s", "tool --secret <REDACTED>"},
+		{"tool --password\nhunter2", "tool --password\n<REDACTED>"}, // the named flags still read across a line
 	} {
 		if got := Secrets(c.in); got != c.want {
 			t.Errorf("Secrets(%q) = %q, want %q", c.in, got, c.want)
