@@ -79,3 +79,49 @@ type argvCase struct {
 	in, want  []string
 	announced bool // a flag announces an element: the joined output must then be a fixed point too
 }
+
+// TestAnnounced pins the one decision Argv and the content hash share (P-039): whether the element after a
+// flag is a value the flag announces, and the byte where that value starts — everything from there to the
+// element's end is the secret, however much of it the patterns would have read. The reverse rows are the
+// elements Argv's own reverse rows leave to Secrets alone.
+func TestAnnounced(t *testing.T) {
+	cases := []struct {
+		flag, arg string
+		start     int
+		ok        bool
+	}{
+		{"--password", "correct horse", 0, true},
+		{"--api-key", "ab'cd", 0, true},
+		{"--token", "abc\tdef", 0, true},
+		{"--client-secret", "abcdefghijklmnop==", 0, true}, // a key word inside the flag (looseAssignRE)
+		{"-u", "admin:pass word", len("admin:"), true},
+		{"--user", "admin:pw", len("admin:"), true},
+		{"--password", " lead", 1, true}, // the separator class takes the space; it is not the secret
+		// Reverse: nothing announced.
+		{"--verbose", "plain word", 0, false},
+		{"-y", "@scope/pkg", 0, false},
+		{"--port", "8080", 0, false},
+		{"-u", "root", 0, false},
+		{"positional", "correct horse", 0, false}, // not a flag
+		{"", "correct horse", 0, false},
+		{"--api-key=abc", "positional", 0, false},  // the flag was rewritten itself
+		{"--header", "token=abcd1234", 0, false},   // the element says it alone
+		{"--token", marker, 0, false},              // already replaced
+		{"--password", `"quoted value"`, 0, false}, // the patterns cannot start a value at a quote
+	}
+	for _, c := range cases {
+		start, ok := Announced(c.flag, c.arg)
+		if start != c.start || ok != c.ok {
+			t.Errorf("Announced(%q, %q) = %d, %v; want %d, %v", c.flag, c.arg, start, ok, c.start, c.ok)
+			continue
+		}
+		// Argv is Announced plus Secrets of the head: the two must not drift apart.
+		want := Secrets(c.arg)
+		if ok {
+			want = Secrets(c.arg[:start]) + marker
+		}
+		if got := Argv([]string{c.flag, c.arg})[1]; got != want {
+			t.Errorf("Argv(%q, %q)[1] = %q, want %q", c.flag, c.arg, got, want)
+		}
+	}
+}
