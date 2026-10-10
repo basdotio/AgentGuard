@@ -182,7 +182,7 @@ not done here.
 ## Done
 
 ```
-Merged: PR to be opened (2026-10-10; find the sha with git log --grep P-039 after the merge)
+Merged: PR #56 (2026-10-10; find the sha with git log --grep P-039)
 Released: pending release
 Evidence: TestContentHashGolden case "mcp server, announced arguments holding a space" and
   TestContentHash_ArgvValueIsForgottenWhole (internal/detect/contenthash_test.go, contenthash_argv_test.go): red on the
