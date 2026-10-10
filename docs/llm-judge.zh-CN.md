@@ -189,7 +189,20 @@ aguard scan --llm --config config.yaml
   前提是去掉之后恰好是一个对象、后面只有空白或一个收尾围栏、没有哪个成员名出现两次(不分大小写比较)。
   第一个对象之后以逗号开头的其他任何东西、以及含两个对象的回复,这次调用一律失败:绝不只读前半个,因为后半个
   可能带着另一个 `flagged`。修过的回复是回答了,不是失败;判官区块把它记为 `repaired`。
-- LLM 严重度封顶:模型永远吐不出 `critical`(advisory 猜测不能冒充确认的 critical)。
+- **判官发现的严重度由工具定,不由模型定**(P-041)。每一趟都让模型从一个封闭列表里选一个 `category`(它发现的是哪一类事),
+  `internal/judge/severity.go` 里的一张表把类别映射成严重度。模型自己写的 `severity` 一词只记录(票数列表里能看到),不决定任何事;
+  不在表里的类别一律 medium,所以被诱导编造类别的模型抬不高自己的权重。表:
+
+  | 趟 | high | medium |
+  |------|------|--------|
+  | 注入(`LLM-003`) | exfiltration · credential-read · remote-execution · safety-disable · concealed-directive | other-directive |
+  | 意图(`LLM-001`) | 上述五类 · software-source · file-deletion · privilege | other |
+  | hook 越权(`LLM-008`) | network · credential · install · permission-override | file-write · process-control · other |
+  | 解码(`LLM-004`) | network · remote-execution · credential-read · file-deletion | other |
+  | 共谋(`LLM-006`) | credential-to-network | other |
+
+  意图趟里,声明用途里写明了的行为(`disclosed: true`)降一档——改软件源除外,那条无论披露与否都报。`LLM-007` 一直是工具定死的 high;
+  `LLM-009` 没有表(只提示),仍按模型的词、封顶到 high。任何一趟都吐不出 `critical`。
 
 ## 规则 ID 速查
 
@@ -296,12 +309,12 @@ em 空格(U+2003)、不换行空格和 tab 一样折叠,所以用它们垫开的
 一次结论只是一个概率过程的一次抽样。设成 `samples: 3`,同一个问题会被问三遍,一条发现要过**多数**
 才有资格影响 effective 分。
 
-- **没过线的发现照样报出来** —— 并附上票数(`[1 of 3 samples agreed] [severities: medium] — below the
+- **没过线的发现照样报出来** —— 并附上票数(`[1 of 3 samples agreed] [severities: medium] [tool: medium] — below the
   consensus bar, so it is shown but carries no weight`)。"模型对它前后不一致"和"它不存在"是两回事,而判官只能增不能减:
   共识扣的是**权重**,不是**可见性**。
-- **每张同意票的严重度都记着**,按采样顺序紧跟在票数后面:`[2 of 3 samples agreed] [severities: high, medium]`。
-  发现本身带的是第一张同意票的严重度。改取多数票那一档在一次记全了票面的运行上量过,224 个判定一个没变,
-  所以没采用(P-035)。这一列让你看得到几次采样之间差多远。
+- **每张同意票的用词都记着**,按采样顺序紧跟在票数后面,再后面是工具定的严重度:`[2 of 3 samples agreed] [severities: high, medium] [tool: high]`。
+  `severities` 是模型逐票写的词;`tool` 是发现的严重度,工具按第一张同意票的类别定(P-041)。词留着是为了让以后的运行能拿表去核对,
+  也能看到几次采样之间差多远。改取多数票那一档在一次记全了票面的运行上量过,224 个判定一个没变,所以没采用。
 - **采样会提温。** 温度为 0 时同一个问题永远给同一个答案 —— 票数会按构造一致,"共识"什么也没测。
   有方差才有意义。
 - **这份方差绝不会渗进 `overall`。** 两次跑可能给出不同的 LLM 发现,确定性分数逐位相同。

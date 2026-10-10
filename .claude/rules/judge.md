@@ -46,7 +46,11 @@ Bearer 头,明文 http 等于把它送上网),setup/test/judge 三处都过它,j
 deobfuscation(`LLM-004`,维度 6,**只解码、绝不执行**)、collusion(`LLM-006`,维度 3)、
 hook capability(`LLM-008`,维度 2)、MCP config(`LLM-009`,维度 5,**只提示**:`run.go` 的 `advisoryOnly` 让它无论几票都不升级,
 因为 500 个良性配置上它是唯一升级过的判官规则,P-019)、triage(仅展示用的标签)。
-`LLM-007`(artifact 试图指挥分析器,维度 1)的严重度由工具定死。被扫内容按**敌对**处理:
+`LLM-007`(artifact 试图指挥分析器,维度 1)的严重度由工具定死。**其余各趟的严重度自 P-041 也由工具定**:`severity.go` 的
+`categoryTables` 按 (趟, 类别) 查,模型只能从提示词列出的封闭名单里选 `category`,不认识的名字一律 medium;意图趟多一个 `disclosed`,
+为真降一档,`software-source` 除外。**改表就是改规则**:`categoryPrompt` 把表原样印进系统提示,所以 `PromptVersion` 随之变,不用手动;
+别给表加 low 行(一行 low 等于让模型自己选"不计分"),别让 `Severity` 那个词重新进 `finding()`。投票文本是 `[k of n samples agreed] [severities: a, b] [tool: X]`:
+`severities` 仍是模型逐票的词(benchmark 的 judgefold 用正则读这一格,**别改它的格式**),`[tool: X]` 是工具定的严重度;前者是以后拿表去核对模型的唯一记录,别删。被扫内容按**敌对**处理:
 每次调用用 `crypto/rand` 生成 **nonce barrier** 把内容围成惰性数据块;nonce 生成失败时**让该次调用
 失败**,而不是退化成一个可被猜到的围栏。`base_url` 非 loopback 时追加 `LLM-002` 隐私警告。**`ScanResult.Judge`(2026-09-05)**:`--llm` 时必填,记录跑没跑、
 判了几个、几次调用、补了几条、没跑的原因;两个渲染器在摘要里印一行,HTML 的判官区块在请求了就出现(空则放那一行),

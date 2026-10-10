@@ -238,8 +238,24 @@ everything on your machine. That trade-off is yours.
   first object that starts with a comma, and any reply holding two objects, fails the call: the
   first half is never read alone, because the second may carry a different `flagged`. A repaired
   reply is an answer, not a failure; the judge block counts it as `repaired`.
-- LLM severities are capped: the model can never emit a `critical` (an advisory guess must
-  never present as a confirmed critical).
+- **The severity of a judge finding is the tool's, not the model's** (P-041). Each pass asks the
+  model for a `category` from a closed list — the kind of thing it found — and a table in
+  `internal/judge/severity.go` maps the category to a severity. The model's own `severity` word is
+  recorded (the vote list shows it) and never decides; a category not in the list is medium, so a
+  model talked into inventing one cannot raise its own weight. The table:
+
+  | Pass | high | medium |
+  |------|------|--------|
+  | injection (`LLM-003`) | exfiltration · credential-read · remote-execution · safety-disable · concealed-directive | other-directive |
+  | intent (`LLM-001`) | the five above · software-source · file-deletion · privilege | other |
+  | hook capability (`LLM-008`) | network · credential · install · permission-override | file-write · process-control · other |
+  | deobfuscation (`LLM-004`) | network · remote-execution · credential-read · file-deletion | other |
+  | collusion (`LLM-006`) | credential-to-network | other |
+
+  On the intent pass a behaviour the declared purpose states (`disclosed: true`) is one step
+  lower — except a changed software source, which the prompt flags disclosed or not. `LLM-007`
+  was always high by the tool's decision; `LLM-009` has no table (advisory-only) and keeps the
+  model's word, clamped to at most high. No pass can emit `critical`.
 
 ## Rule-ID reference
 
@@ -385,14 +401,15 @@ question is asked three times; a finding needs a **majority** before it may weig
 effective score.
 
 - **Below the bar, a finding is still reported** — with the vote attached
-  (`[1 of 3 samples agreed] [severities: medium] — below the consensus bar, so it is shown but
-  carries no weight`). "The model wasn't consistent about it" is a different claim from "it isn't
+  (`[1 of 3 samples agreed] [severities: medium] [tool: medium] — below the consensus bar, so it
+  is shown but carries no weight`). "The model wasn't consistent about it" is a different claim from "it isn't
   there", and the judge may only ever add. What consensus withholds is influence, not visibility.
-- **Every agreeing vote's severity is on record**, in sample order, right after the count:
-  `[2 of 3 samples agreed] [severities: high, medium]`. The finding itself carries the first
-  agreeing vote's severity. Taking the severity a majority reached instead was measured on one
-  run where every vote was recorded, and it changed none of 224 verdicts, so it was not adopted
-  (P-035). The list is what lets you see how far apart the samples were.
+- **Every agreeing vote's word is on record**, in sample order, right after the count, and the
+  tool's severity after that: `[2 of 3 samples agreed] [severities: high, medium] [tool: high]`.
+  `severities` lists what the model wrote, vote by vote; `tool` is the finding's severity, set from
+  the first agreeing vote's category (P-041). The words are kept so a later run can check the
+  table against them and see how far apart the samples were. Taking the severity a majority reached instead was measured once, on a run
+  where every vote was recorded, and it changed none of 224 verdicts, so it was not adopted.
 - **Sampling runs at a non-zero temperature.** At temperature 0 the same question returns the
   same answer every time — the votes would agree by construction and the agreement would
   measure nothing. Variance is the entire point.
