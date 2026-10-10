@@ -93,15 +93,6 @@ var carrierWords = map[string]bool{"bearer": true, "basic": true, "token": true}
 // (`sort-u a:b`); the boundary sits inside group 1, which the replacement echoes back.
 var flagUserPassRE = regexp.MustCompile(`(?i)((?:^|\s)-u\s+|--user[=\s]+)([^\s'":]*:)([^\s'"]+)`)
 
-// flagSecretRE catches a credential passed as a flag ARGUMENT, where the value IS the secret.
-// urlCredRE only ever covered `scheme://user:pass@host`, and a skill script is far likelier to
-// spell it as a flag.
-//
-// Single-letter flags other than `-u` are deliberately absent: `-p` is a password to mysql, a
-// port to nc and "pretty" to half a dozen others, so matching it would redact arguments that
-// are not secrets in files that have nothing to do with credentials.
-var flagSecretRE = regexp.MustCompile(`(?i)(--(?:password|passwd|passphrase|pass|token|secret|api[_-]?key|access[_-]?token)[=\s]+)([^\s'"]+)`)
-
 // entropyTokenRE finds long opaque tokens; those with high Shannon entropy are redacted
 // as a catch-all for keyword-less / bespoke secrets (spec §16.3 "high-entropy strings").
 //
@@ -133,7 +124,7 @@ func Secrets(s string) string { return redactEntropy(Credentials(s)) }
 func Credentials(s string) string {
 	out := urlCredRE.ReplaceAllString(s, `$1<REDACTED>$3`)
 	out = flagUserPassRE.ReplaceAllString(out, `$1$2<REDACTED>`)
-	out = flagSecretRE.ReplaceAllString(out, `$1<REDACTED>`)
+	out = redactFlags(out) // flagSecretRE, flags.go
 	out = redactValueHalf(assignRE, out)
 	out = redactValueHalf(looseAssignRE, out)
 	for _, re := range redactPatterns {
