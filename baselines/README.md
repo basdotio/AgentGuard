@@ -86,6 +86,10 @@ split and the escalated rule ids, and `samples.jsonl` because the subset was a r
 `raw/` is not in the tree: it is the only primary evidence and cannot be regenerated, so it ships
 as a release asset instead, named with its sha256 in the run's `run.yaml` under `raw_archive:` —
 6.2 MB of model output quoting malicious samples does not belong in a source checkout (P-039).
+**The four 2026-09 judge runs below have no published archive:** their `raw_archive:` names one
+and its sha256, but no release carries it (checked 2026-10-10). Their `raw/` survives only in the
+history of the former repository, before its P-039, so a reader of this repository cannot re-fold
+them. Attach the archive to a release before a judge run's directory is committed, not after.
 A judge number depends on the model, the
 day and the sampling, so its `run.yaml` says so at the top, and it is reported beside the static
 column with model, `samples`, subset size and date, never pooled with it. Two such
