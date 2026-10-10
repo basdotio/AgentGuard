@@ -145,7 +145,13 @@ func (a *Adapter) Scan(ctx context.Context, s corpus.Sample, tree string) ledger
 		return row
 	}
 	a.keepRaw(s.Sample, out)
-	row = fill(row, res, a.Threshold)
+	return scanned(row, res, out, a.Threshold)
+}
+
+// scanned folds what `scan --root` printed into the row. Scan and Rebuild share it, so a row
+// rebuilt from raw/ cannot drift from the row the run itself produced.
+func scanned(row ledger.Row, res model.ScanResult, out []byte, threshold model.Severity) ledger.Row {
+	row = fill(row, res, threshold)
 	row.JudgeUsage = judgeUsage(out, res)
 	return row
 }
@@ -158,6 +164,16 @@ func (a *Adapter) checkBare(ctx context.Context, row ledger.Row, tree, placement
 		row.Detail = "no load path for `scan` (" + placementReason + "); `check` then failed: " + err.Error()
 		return row
 	}
+	row = checked(row, res, out, placementReason, a.Threshold)
+	if row.Outcome == ledger.Scored {
+		a.keepRaw(row.Sample, out)
+	}
+	return row
+}
+
+// checked folds what `check` printed for a tree `scan` could not place. Scan and Rebuild share it
+// (see scanned); raw/ is only ever kept for the scored branch.
+func checked(row ledger.Row, res model.ScanResult, out []byte, placementReason string, threshold model.Severity) ledger.Row {
 	if readNothing(res) {
 		row.Outcome = ledger.NoVerdict
 		row.Reason = ledger.NoLoadPath
@@ -166,8 +182,7 @@ func (a *Adapter) checkBare(ctx context.Context, row ledger.Row, tree, placement
 		row.Detail = placementReason + "; `check` on the bare tree read nothing"
 		return row
 	}
-	a.keepRaw(row.Sample, out)
-	row = fill(row, res, a.Threshold)
+	row = fill(row, res, threshold)
 	row.JudgeUsage = judgeUsage(out, res) // nil today: the judge never runs on `check`'s path here
 	// Disclosed, not hidden. This verdict came from `check` on the bare tree rather than from
 	// the `scan --root` placement this sample's surface implies, and the difference is not
