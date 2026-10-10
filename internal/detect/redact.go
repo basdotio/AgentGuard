@@ -26,6 +26,11 @@ import (
 // drift (see that package's doc).
 func Redact(s string) string { return redact.Secrets(s) }
 
+// RedactArgv is Redact for an argument vector — redact.Argv: every element redacted, and one that
+// follows a flag read together with that flag, so `"--api-key", "<key>"` loses the key as the one
+// string `--api-key <key>` does (P-036). The judge's MCP excerpt calls it. A delegation, like Redact.
+func RedactArgv(args []string) []string { return redact.Argv(args) }
+
 // redactCredentials is Redact without the entropy catch-all — redact.Credentials, the half the
 // content hash takes (contenthash.go; why only that half is explained on redact.Secrets).
 func redactCredentials(s string) string { return redact.Credentials(s) }
