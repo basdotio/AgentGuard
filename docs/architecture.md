@@ -47,7 +47,8 @@ Four of those orderings are decisions, not sequence:
   suppression must leave a note carrying the *highest* severity it silenced.
 - **`check` enters through layout routing, not through `scan`** —
   `collect.CollectTarget` decides most-specific-first: single file → `SKILL.md` → plugin
-  manifest → looks-like-a-root → any other directory (read as one whole tree).
+  manifest (the tree, plus its skills, commands and agents) → looks-like-a-root → any other
+  directory (read as one whole tree).
 
 Each package is an approximately pure stage over the immutable types in
 [`internal/model`](../internal/model/model.go).
@@ -153,9 +154,15 @@ in this project's history. When you touch collection, ask what an empty result r
 
 ```
 per artifact = clamp(100 − Σ_dimensions max(severity penalty), 0, 100)   # critical 40 · high 25 · medium 12 · low 5
-overall      = mean of artifact scores, then leaky-bucket caps: any critical → ≤49 · any high → ≤69
+overall      = mean of unit scores, then leaky-bucket caps: any critical → ≤49 · any high → ≤69
 band         = ≥85 Low · ≥70 Watch · ≥50 Elevated · <50 High
 ```
+
+A **unit** is an artifact, except that a plugin and its children — its skills, commands and agents, collected as
+artifacts of their own (`ArtifactReport.Plugin`, P-044) — are one unit, scored with the per-artifact formula over their
+findings together (`score.Families`). The children re-read bytes the plugin tree already covers, so averaging them on
+their own would dilute the plugin (measured 94 → 98, the 86 → 97 effect `issues/008` warned about); as one unit a
+duplicate adds nothing and a child's own finding still counts. Per-artifact scores keep their definition.
 
 Within one dimension only the highest hit counts; penalties add across dimensions. That
 property is used deliberately when placing a rule — see `OBF-004`, which sits in dimension 6
@@ -300,7 +307,8 @@ stale copy), including the shape checks in `detect/shape.go` (padding, disguised
 shipped bytecode, registry redirects), permission audit with the escapable-binary table,
 per-command hook artifacts that follow referenced scripts, plugin collection (both
 `installed_plugins.json`, Claude Desktop's own plugin/skill store in `collect/desktop.go`, and
-the sandbox's `synced/<uuid>/` layout), remote MCP connectors read from the desktop's cached
+the sandbox's `synced/<uuid>/` layout; a plugin's skills, commands and agents are artifacts of
+their own, following Claude Code's loader, `collect/plugincontents.go`), remote MCP connectors read from the desktop's cached
 tool lists (`collect/connectors.go`, never by connecting) with the `MCP-001..004` poisoning
 rules, sandbox detection that stamps a "this is not your computer" banner on a report produced
 inside Claude Cloud / Cowork (`collect/environment.go`), the Downloads scan (`internal/inbox`:

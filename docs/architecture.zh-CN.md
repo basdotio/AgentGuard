@@ -42,7 +42,7 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
 - **抑制在评分之前** —— 基线会改变分数,所以"每次抑制必须留一条带**最高被抑制严重度**的 note"
   是硬要求。
 - **`check` 的入口是布局路由,不是 `scan`** —— `collect.CollectTarget` 按"从具体到宽泛"依次判定:
-  单文件 → `SKILL.md` → plugin manifest → 像 root → 其他目录(整棵树当一个 artifact 读掉)。
+  单文件 → `SKILL.md` → plugin manifest(整树,外加它的 skill、命令、子 agent)→ 像 root → 其他目录(整棵树当一个 artifact 读掉)。
 
 每个包都是围绕 [`internal/model`](../internal/model/model.go) 中不可变类型的一个(近似)纯函数阶段。
 
@@ -129,9 +129,14 @@ Checked 那句数清单,清单什么都没数到时改数扫过的 artifact(`che
 
 ```
 单 artifact = clamp(100 − Σ_维度 max(严重度惩罚), 0, 100)   # critical 40 · high 25 · medium 12 · low 5
-总分        = 各 artifact 分数的平均值,再套木桶封顶: 出现 critical → ≤49 · 出现 high → ≤69
+总分        = 各单元分数的平均值,再套木桶封顶: 出现 critical → ≤49 · 出现 high → ≤69
 风险等级    = ≥85 Low · ≥70 Watch · ≥50 Elevated · <50 High
 ```
+
+**单元**就是一个 artifact,只有一处例外:插件和它的子项 —— 作为各自 artifact 采集的 skill、命令、子 agent(`ArtifactReport.Plugin`,
+P-044)—— 合成一个单元,把它们的发现合在一起按单 artifact 的公式算(`score.Families`)。子项读的是插件树已经读过的字节,单独平均会
+稀释插件(实测 94 → 98,就是 `issues/008` 警告过的 86 → 97);合成一个单元后,重复的发现不加分,子项自己独有的发现照样算。单 artifact
+的分数定义不变。
 
 同一维度内只取最高的那一次命中,跨维度惩罚相加。**放规则时会刻意利用这个性质** —— 例如 `OBF-004`
 落在维度 6 而不是 3,就是为了让惩罚相加而不是被吸收掉。
@@ -232,7 +237,8 @@ MCP 配置、triage 标签。被扫内容按**敌对**处理:每次调用用 `cr
 **已完成且承重的**:10 个维度的静态检测(规则条数以 [`rules.md`](rules.md) 头部由代码生成的计数块为准,
 这里再写一个数就是会过期的副本),含 `detect/shape.go` 的形状检查(空行填充、伪装压缩包、随包字节码、改包源)、
 带可逃逸二进制表的权限体检、逐条 command 的 hook artifact(并跟进被引用脚本)、plugin 采集(`installed_plugins.json`、
-Claude 桌面版自己的插件/skill 仓库 `collect/desktop.go`、以及沙箱的 `synced/<uuid>/` 布局)、从桌面版缓存读取的远程 MCP
+Claude 桌面版自己的插件/skill 仓库 `collect/desktop.go`、以及沙箱的 `synced/<uuid>/` 布局;插件的 skill、命令、子 agent
+按 Claude Code 的加载规则各自成为 artifact,`collect/plugincontents.go`)、从桌面版缓存读取的远程 MCP
 connector 工具清单(`collect/connectors.go`,从不联网)与 `MCP-001..004` 投毒规则、沙箱识别(在 Claude Cloud / Cowork 里跑出的
 报告顶部盖「这不是你的电脑」横幅,`collect/environment.go`)、下载目录扫描(`internal/inbox`:~/Downloads 下像 agent 的东西和 zip,
 逐个单独查,永不计分)、hygiene/clean(默认只报告;`--apply` 可逆隔离僵尸 skill,`--undo` 恢复)、确定性评分、
