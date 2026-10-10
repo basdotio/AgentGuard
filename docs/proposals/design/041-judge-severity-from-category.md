@@ -108,10 +108,11 @@ into; running the 127 server-source samples through `check --llm` (P-004) so the
   result — `{"severity":"high","category":"file-write"}` on the capability pass → medium, `{"severity":"low",
   "category":"exfiltration"}` on the injection pass → high, `{"severity":"critical","category":"catastrophe"}` → medium.
   **Red on the base**: `finding()` returns the clamped word
-- [ ] `TestRun_SeverityIsTheTools` (`internal/judge/severity_test.go`; `httptest` endpoint, real `NewHTTP`, the style of
-  `padding_test.go`): the endpoint answers the injection pass with `flagged: true, severity: "medium",
-  category: "exfiltration"` and a verbatim quote; the grounded `LLM-003` is **high**, `Escalates` is set, and
-  `failGate(out, "", "high", …)` in `cmd/aguard` fires. **Red on the base**: the finding is medium and the gate is quiet
+- [ ] `TestRun_SeverityIsTheTools` (`internal/judge/severity_test.go`): a scripted client answers the injection pass
+  with `flagged: true, severity: "medium", category: "exfiltration"` and a verbatim quote; the grounded `LLM-003` is
+  **high** and `score.Escalating` holds — the weight `--fail-on-llm` reads (its e2e in `cmd/aguard` keeps firing).
+  `TestJudge_HTTPReplyCarriesCategory` drives the real `NewHTTP` client over an `httptest` endpoint for the two reply
+  shapes (with and without `category`). **Red on the base**: the finding is medium
 - [ ] `TestRun_IntentDisclosedBehaviourIsOneStepLower` (same file): the intent pass answers `category: "credential-read",
   disclosed: true` → medium; `category: "software-source", disclosed: true` → high (the prompt's own exception).
   **Red on the base**: both are whatever word the reply carried
@@ -122,8 +123,9 @@ into; running the 127 server-source samples through `check --llm` (P-004) so the
   tool as today), `advisory_only_test.go` (`LLM-009` never escalates, category or not), `consensus_test.go` (the vote
   count and the `[k of n samples agreed]` text are unchanged), `ground_test.go`, `reply_test.go` (a reply without a
   `category` member — a model answering the old schema — is read as unknown category, not as a parse failure, and is
-  counted nowhere as repaired or failed); `git diff --numstat origin/main -- '*_test.go'` shows only added lines in
-  existing test files
+  counted nowhere as repaired or failed). Existing tests change only where a fixture's reply pinned the model's word as
+  the finding's severity (they gain a `category`) or pinned the vote text (they gain the trailing `[tool: …]`); each
+  such file is named in Done
 - [ ] `TestPromptVersion_HashesWhatTheClientSends` golden moves exactly once and `aguard version` prints the new
   `judge-prompt=<v>`; `ExcerptVersion` does **not** move (the excerpt is untouched)
 - [ ] `make docs` regenerates `docs/rules.md` with the `LLM-001/003/004/006/008` rows saying the severity is set by the
