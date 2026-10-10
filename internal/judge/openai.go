@@ -217,18 +217,3 @@ func retryAfter(h string) time.Duration {
 	}
 	return 0
 }
-
-// parseVerdict extracts the JSON verdict from a model reply, tolerating prose or code
-// fences around it by slicing the outermost { … }.
-func parseVerdict(content string) (Verdict, error) {
-	start := strings.IndexByte(content, '{')
-	end := strings.LastIndexByte(content, '}')
-	if start < 0 || end <= start {
-		return Verdict{}, fmt.Errorf("no JSON object in judge reply")
-	}
-	var v Verdict
-	if err := json.Unmarshal([]byte(content[start:end+1]), &v); err != nil {
-		return Verdict{}, fmt.Errorf("parse judge verdict: %w", err)
-	}
-	return v, nil
-}

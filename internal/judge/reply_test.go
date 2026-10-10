@@ -140,6 +140,9 @@ func TestParseVerdict_ReadsOneObject(t *testing.T) {
 			if !sameAnswer(v, *c.want) {
 				t.Errorf("read %+v; want %+v", v, *c.want)
 			}
+			if v.repaired != c.repaired {
+				t.Errorf("repaired = %v; want %v (a repair is counted, a clean reply is not)", v.repaired, c.repaired)
+			}
 			if !c.repaired && (legacyErr != nil || !sameAnswer(v, legacy)) {
 				t.Errorf("a reply today reads as %+v (err %v) now reads as %+v; a clean reply must read as before", legacy, legacyErr, v)
 			}
@@ -210,4 +213,99 @@ func TestRun_ClosedEarlyReplyIsAnswered(t *testing.T) {
 	if found == 0 {
 		t.Errorf("no grounded LLM finding quotes the directive; findings %+v", arts[0].Findings)
 	}
+}
+
+// FuzzParseVerdict: whatever the reply, the reader never panics, and whenever it accepts one an
+// independent reading agrees. Unrepaired, the reply is what it always was — today's slice — and it
+// is not the first half of an object closed early (nothing after it starts with a comma).
+// Repaired, removing exactly one `}` from the reply leaves one object, followed by nothing but
+// whitespace or a closing fence, with no member named twice, that reads as the same verdict.
+func FuzzParseVerdict(f *testing.F) {
+	for _, c := range replyCases {
+		f.Add(c.reply)
+	}
+	f.Fuzz(func(t *testing.T, reply string) {
+		v, err := parseVerdict(reply)
+		if err != nil {
+			return
+		}
+		if !v.repaired {
+			legacy, lerr := legacyParse(reply)
+			if lerr != nil || !sameAnswer(v, legacy) {
+				t.Fatalf("accepted %q as %+v, which today reads as %+v (err %v)", reply, v, legacy, lerr)
+			}
+			after := reply[strings.LastIndexByte(reply, '}')+1:]
+			if strings.HasPrefix(strings.TrimLeft(after, jsonSpace), ",") {
+				t.Fatalf("accepted %q as its first half %+v", reply, v)
+			}
+			return
+		}
+		if !oneBraceFromAnObject(reply, v) {
+			t.Fatalf("repaired %q into %+v, but no single `}` removed from it leaves one clean object that reads so", reply, v)
+		}
+	})
+}
+
+// oneBraceFromAnObject is the fuzz oracle for a repair: some `}` of reply, removed, leaves a reply
+// whose first `{` to last `}` is one object with distinct member names that reads as v, followed by
+// nothing but whitespace or a closing fence.
+func oneBraceFromAnObject(reply string, v Verdict) bool {
+	for i := 0; i < len(reply); i++ {
+		if reply[i] != '}' {
+			continue
+		}
+		s := reply[:i] + reply[i+1:]
+		start, end := strings.IndexByte(s, '{'), strings.LastIndexByte(s, '}')
+		if start < 0 || end <= start || !json.Valid([]byte(s[start:end+1])) {
+			continue
+		}
+		if tail := strings.Trim(s[end+1:], jsonSpace); tail != "" && tail != "```" {
+			continue
+		}
+		names, ok := oracleNames(s[start : end+1])
+		if !ok || !distinctFold(names) {
+			continue
+		}
+		var got Verdict
+		if json.Unmarshal([]byte(s[start:end+1]), &got) == nil && sameAnswer(got, v) {
+			return true
+		}
+	}
+	return false
+}
+
+// oracleNames lists an object's top-level member names in order; ok is false for a non-object.
+func oracleNames(obj string) ([]string, bool) {
+	var m map[string]json.RawMessage
+	if json.Unmarshal([]byte(obj), &m) != nil || m == nil {
+		return nil, false
+	}
+	dec := json.NewDecoder(strings.NewReader(obj))
+	if _, err := dec.Token(); err != nil {
+		return nil, false
+	}
+	var names []string
+	for dec.More() {
+		tok, err := dec.Token()
+		if err != nil {
+			return nil, false
+		}
+		names = append(names, tok.(string))
+		var skip json.RawMessage
+		if dec.Decode(&skip) != nil {
+			return nil, false
+		}
+	}
+	return names, true
+}
+
+func distinctFold(names []string) bool {
+	for i := range names {
+		for j := i + 1; j < len(names); j++ {
+			if strings.EqualFold(names[i], names[j]) {
+				return false
+			}
+		}
+	}
+	return true
 }

@@ -100,6 +100,10 @@ type Verdict struct {
 	// own right (LLM-007). Note the asymmetry — a report means an attempt was made, but silence
 	// proves nothing, because a manipulation that worked would not be reported.
 	BarrierEvidence string `json:"barrier_evidence"`
+	// repaired says the reply closed its object one member early and was read by dropping that
+	// brace (parseVerdict, P-034). Set by the reader, never by a model: unexported, so encoding/json
+	// neither reads nor writes it, and Run counts it so the repair is never silent.
+	repaired bool
 }
 
 // TriageItem is one static finding submitted for triage (RuleID + a redacted evidence line).
