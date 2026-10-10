@@ -60,7 +60,8 @@ aguard hash ./some-skill                      # canonical hash: the artifact's i
 
 Exit codes: `0` below threshold · `1` a finding at or above `--fail-on` · `2` runtime error ·
 `4` (only with `--fail-on-llm`) the deep check could not answer for everything — it did not run,
-some of its calls failed, or it has no questions for this kind of target (a plugin, a plain folder) —
+some of its calls failed, or it has no questions for this kind of target (a plain folder, or a plugin
+holding no skill, command or agent) —
 and the reason is on stderr. A `4` is not a pass either.
 
 **Exit code 2 is not a pass.** `check` errors rather than returning an empty result when the
