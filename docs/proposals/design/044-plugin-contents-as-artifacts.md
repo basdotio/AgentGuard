@@ -166,3 +166,40 @@ approval the gate recorded for `p:s1` already sits under the child's hash.
    is bumped and `make docs` run (pipeline.md, P-002).
 10. **Quarantined (D).** P-038's note already counts them; its kind label becomes `quarantined (N, no longer loaded)` so the count
     does not read as a loaded gap. No judging, no triage change.
+
+## Done criteria
+
+- [ ] `TestPluginContents_FollowClaudeCodesLoader` (`internal/collect`, new, `t.TempDir()` fixture with one row per loader case:
+  `skills/SKILL.md`, `skills/<dir>`, a symlinked skill directory, nested `commands/<sub>/<file>.md`, `commands/<dir>/SKILL.md`,
+  a symlinked command file, nested agents, manifest `skills` / `commands` / `agents` as a string, a list and a `source` object, a
+  manifest path escaping the root, a `docs/ja/skills/` copy, an `.agents/skills/` copy): for `CollectAll` (installed, synced and
+  Claude Desktop channels) and `CollectTarget(<plugin>)`, exactly the expected children — kind, name, `Plugin`, and a hash equal to
+  `TreeHash` / `FileHash` of that path — and none for the copies, the escaping path or the symlinked command. Red on the base: no
+  child artifacts at all
+- [ ] `TestGate_NamespacedSkillHashIsTheChildsHash` (`cmd/aguard`): `PreToolUse[Skill]` `p:s1` over a fixture root audits the
+  directory whose hash the child `p:s1` carries in `scan --json` of the same root. Red on the base: no such child
+- [ ] `TestApply_PluginAndChildrenAreOneUnit` (`internal/score`): a plugin with one medium and six clean children scores the
+  environment exactly as the plugin alone (94 for the fixture `scan`, 88 for `check <plugin>`); a child with a qualified high LLM
+  finding lowers the unit's effective score and caps `overall_effective` at 69 while `overall` does not move; the
+  `TestApply_EffectiveNeverExceedsOverall` property still holds. Red on the base: 98 and 98 once the children exist (the S2 rows)
+- [ ] `TestRender_ChildDuplicatesAreShownOnce` (`internal/report`): the variant-1 fixture prints `EXEC-001` at `s1/SKILL.md:6`
+  once in the terminal, markdown and HTML reports and once in SARIF, counts it once in "N findings need a look", and keeps it on
+  both artifacts in JSON; a child finding on a file the plugin row does not name (the mirror case) is printed on the child
+- [ ] `TestReputation_ChildrenInheritAGoodMatch` (`cmd/aguard`): a fixture plugin whose tree hash is a GOOD entry has every
+  child's deterministic findings suppressed and counted in the one `REP-GOOD` note; the same tree with one byte changed suppresses
+  nothing on the plugin or its children
+- [ ] `llm preview --json` over the fixture plugin plans the passes of each child's kind and no triage of a finding the plugin row
+  shows; over the real `~/.claude`, 300 → 583 calls (recorded with the build that ships, not this design's scratch build)
+- [ ] P-038's rows move as decided: `check <plugin with skills/p1/SKILL.md> --llm --fail-on-llm high` answers from the judge (stub
+  answering: exit 0 and no `LLM-000` "asked nothing"; closed port: exit 4 with P-026's reason, the calls failed); a plugin with no
+  loadable skill, command or agent still exits 4 and is still counted; plain directories still exit 4
+- [ ] **Reverse assertions**: the plugin tree artifact's entry in `scan --json` and `check --json` is byte-identical to the base
+  (name, path, hash, findings, score) on the fixtures and on the real `~/.claude`; `overall` 69 → 69 on the real `~/.claude`, 94 → 94
+  and 88 → 88 on the fixture; `check <plugin> --fail-on {critical,high,medium,low}` exit codes unchanged on both variants;
+  `SessionStart`, `aguard approve <plugin>` and hygiene outputs unchanged on the fixtures; `TestZeroDial_*`,
+  `TestHashGolden`, `TestContentHashGolden`, `TestAsksNothingOf_FollowsPlanFor` green unchanged
+- [ ] Docs: README pair (inventory line), `docs/architecture*.md`, `docs/llm-judge*.md` (what the judge reads of a plugin),
+  `docs/install-gate*.md` if a sentence about plugin skills moves, `docs/rules.md` via `make docs`, spec §4 (the B4 row and its
+  "still not split" note), §5.3 (units), §8 (`plugin` field), `issues/023` (A done; C open; D), `issues/006`/`008`/`017` index lines,
+  and the `.claude/rules/pipeline.md` bullet that says splitting dilutes (it now has a unit rule to point at)
+- [ ] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no toolchain switch; no new dependency
