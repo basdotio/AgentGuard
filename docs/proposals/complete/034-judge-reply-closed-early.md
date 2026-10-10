@@ -65,33 +65,33 @@ change.
 
 ## Done criteria
 
-- [ ] `TestParseVerdict_ReadsOneObject` (`internal/judge/reply_test.go`, table-driven) pins: a clean object, and one with
+- [x] `TestParseVerdict_ReadsOneObject` (`internal/judge/reply_test.go`, table-driven) pins: a clean object, and one with
   prose or a code fence around it, decode as today; the closed-early shape decodes with every member present and is
   marked repaired, including when `evidence` holds nested braces and `}` inside strings; closed early where the joined
   object would repeat a member (`flagged`, or `Flagged` — `encoding/json` matches names without case) is refused; two
   complete objects `{…}{…}` and `{…},{…}` with different `flagged` are refused, never first-wins; closed early with no
   final `}` is refused; trailing garbage after a repaired object is refused. **Red on the base**: the closed-early rows
   fail with `invalid character ',' after top-level value`, and the no-final-brace rows return the first half
-- [ ] `TestRun_ClosedEarlyReplyIsAnswered` (`internal/judge/reply_test.go`; httptest endpoint, real `NewHTTP`, the
+- [x] `TestRun_ClosedEarlyReplyIsAnswered` (`internal/judge/reply_test.go`; httptest endpoint, real `NewHTTP`, the
   style of `padding_test.go`): one call's reply is closed early and flagged with a quote of the directive; the run
   counts it as answered — `Stats.Failed` 0, `Stats.Repaired` 1, no `LLM-000`, and the verdict's grounded `LLM-*`
   finding is present. **Red on the base**: `Failed` 1, an `LLM-000` "failed on 1 call(s)", no finding
-- [ ] `FuzzParseVerdict`: never panics; whenever it succeeds, an independent oracle agrees — unrepaired: the text from
+- [x] `FuzzParseVerdict`: never panics; whenever it succeeds, an independent oracle agrees — unrepaired: the text from
   the first `{` to the last `}` is one object and what follows the first value does not begin with `,`; repaired:
   removing exactly one `}` from the reply leaves an object (from the first `{` to the last `}`) with no repeated member
   name that decodes to the same verdict
-- [ ] **Reverse assertion**: every existing test in `internal/judge`, `internal/report`, `cmd/aguard` and `baselines/`
+- [x] **Reverse assertion**: every existing test in `internal/judge`, `internal/report`, `cmd/aguard` and `baselines/`
   passes, and no existing `_test.go` file changes (`git diff --stat origin/main -- '*_test.go'` lists only new files
   and additions); a reply that fails today for any other reason still fails with today's error text (table rows: no
   JSON, a truncated object, `{…}{…}`, `{…},{…}`, a member of the wrong type)
-- [ ] Request bytes do not change: `prompt_version_test.go` and `excerpt_version_test.go` pass unchanged, and
+- [x] Request bytes do not change: `prompt_version_test.go` and `excerpt_version_test.go` pass unchanged, and
   `PromptVersion()` / `ExcerptVersion` keep their values (no diff in `prompt*.go`, `excerpt.go`, `ground.go`, `egress.go`,
   `triage.go`)
-- [ ] The count is not silent: the JSON `judge` block carries `repaired` beside `failed` and `skipped` (always present
+- [x] The count is not silent: the JSON `judge` block carries `repaired` beside `failed` and `skipped` (always present
   when the block is, like them); the report's judge line adds the count only when it is above 0; the inbox total sums it;
   the benchmark ledger's `judge_usage` and `run.yaml` carry it when it is above 0 (question 9), so a row folded without
   a repair is byte-identical — the judgefold goldens and committed `baselines/results/` do not change
-- [ ] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no new dependency
+- [x] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no new dependency
 
 ## Out of scope
 
@@ -180,4 +180,29 @@ Asked during stage 2:
 
 ## Done
 
-Filled in at delivery.
+```
+Merged: PR to be opened (2026-10-10; find the sha with git log --grep P-034 after the merge)
+Released: pending release
+Evidence: TestParseVerdict_ReadsOneObject and TestRun_ClosedEarlyReplyIsAnswered (internal/judge/reply_test.go), red on
+  the base: 9 of 30 table rows fail — the six closed-early rows refused with "invalid character ',' after top-level
+  value", the three whose continuation lost its brace accepted as their first half — and the run counts the answered
+  call as failed, with an LLM-000 "failed on 1 call(s)" and no finding. Green after: 30 of 30 rows; Failed 0,
+  Repaired 1, no LLM-000, the grounded finding present
+Evidence: TestE2E_ClosedEarlyRepliesAreAnsweredAndCounted (cmd/aguard/judge_repair_test.go): through scanEnv, with every
+  judge reply closed early, failed 0, repaired = calls - triage_calls > 0, no LLM-000, advisory leads present;
+  TestE2E_RepairedIsAlwaysInTheJudgeBlock: "repaired":0 in a clean run's JSON; TestScanInbox_RepairedAddsUp: the
+  Downloads total over two items is failed 0, repaired = calls - triage_calls > 0
+Evidence: FuzzParseVerdict, 60 s, 453,325 execs, no failure; its oracle removes one `}` at every position and never
+  calls the reader's helpers
+Evidence (reverse assertion): the 21 table rows that pass on the base pass after — clean replies read as legacyParse
+  (the reader before this change) reads them, refused replies carry its error byte for byte;
+  TestRun_CleanRepliesAreNotRepaired counts 0 on a clean run; TestJudgeLine_RepairedOnlyWhenAny: with none repaired
+  the line is unchanged; git diff --numstat origin/main -- '*_test.go': existing test files only gain lines
+  (usage_test.go 26/0, judgeusage_test.go 20/0, plain_test.go 25/0), and every existing test passes under make verify
+Evidence (request bytes): prompt_version_test.go and excerpt_version_test.go have no diff and pass, so PromptVersion()
+  and ExcerptVersion keep their values
+Evidence (not done): git diff --stat origin/main...HEAD -- internal/judge/{prompt,prompt_version,excerpt,ground,egress,
+  triage}.go internal/collect internal/detect internal/gate internal/reputation internal/report/sarif.go go.mod go.sum
+  docs/rules.md baselines/results baselines/judgefold baselines/cmd → empty
+Verify: make verify → "verify: all gates passed" (go1.23.5, no toolchain switch; go directive go 1.23.5)
+```
