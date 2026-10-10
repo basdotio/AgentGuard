@@ -241,3 +241,20 @@ approval the gate recorded for `p:s1` already sits under the child's hash.
 - **Not "approving a plugin approves its skills"** or the reverse: approvals stay keyed by the hash of the bytes approved
 - Exit 0 from `check <plugin> --llm --fail-on-llm` means P-026's "every planned question was asked and answered", over the
   children; it does not mean every file of the plugin was read by the model
+
+## Work items
+
+Implementation waits for the maintainer's answers to the open questions marked "needs the maintainer".
+
+| W | In one sentence | Commit message (no sha; a rebase changes it) |
+|---|---|---|
+| 1 | The collect, gate-alignment, score, render, reputation, preview and P-038 tests above, with their reverse rows, run red on the base | `collect, score, report, cmd: tests — a plugin's skills, commands and agents are never artifacts of their own (P-044)` |
+| 2 | `pluginContents` following the 2.1.107 loader, called by the three plugin channels and `CollectTarget`; `ArtifactReport.Plugin`; `BundledCommands` / `BundledAgents` | `collect: a plugin's skills, commands and agents become artifacts of their own (P-044)` |
+| 3 | Children inherit their plugin's GOOD reputation match | `cmd: a plugin's children inherit its reputation match (P-044)` |
+| 4 | The environment average runs over units: a plugin with its children is one entry | `score: a plugin and its children are one unit of the environment average (P-044)` |
+| 5 | One "the plugin row already shows this" predicate; renderers list children under their plugin and print a duplicate once; SARIF the same | `report: a child finding its plugin already shows is printed once (P-044)` |
+| 6 | Triage skips what the plugin row shows; the `LLM-000` count and `check`'s exit 4 count a plugin only when no child got a question; the quarantined label | `judge, cmd: a plugin whose contents were judged is not "asked nothing about" (P-044)` |
+| 7 | `SessionStart`, `Summarize` and hygiene skip children | `gate, hygiene: children of a plugin are not listed twice (P-044)` |
+| 8 | `detect.rulesEpoch` + 1 and `make docs` | `detect: bump rulesEpoch — plugin children carry findings (P-044)` |
+| 9 | The docs listed in Done criteria; `issues/023` and the issue index | `docs: a plugin's skills, commands and agents are judged as artifacts of their own (P-044)` |
+| 10 | "Done" in this file, the index | `proposals: P-044 (P-044)` |
