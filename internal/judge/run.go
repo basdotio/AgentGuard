@@ -15,6 +15,7 @@ import (
 	"github.com/basdotio/AgentGuard/internal/detect"
 	"github.com/basdotio/AgentGuard/internal/model"
 	"github.com/basdotio/AgentGuard/internal/parse"
+	"github.com/basdotio/AgentGuard/internal/score"
 )
 
 // Options tunes how a judge run talks to the endpoint. The zero value is usable — defaults()
@@ -394,9 +395,25 @@ const crossFileChainRule = "EXFIL-002"
 func buildTasks(arts []model.ArtifactReport, samples int, eg egress) []task {
 	var tasks []task
 	group := 0
+	fam := score.Families(arts)
 	for i := range arts {
 		for _, t := range planFor(i, arts[i], eg) {
 			if t.kind == taskTriage {
+				// A plugin's child repeats the plugin tree's findings (P-044). One its plugin row already
+				// shows is triaged there, and its copy on the child is not printed, so a second label
+				// would be a call nobody reads: the child's triage asks only about what the plugin lacks.
+				if fam.Child(i) {
+					var own []model.Finding
+					for _, f := range staticFindings(arts[i].Findings) {
+						if !fam.ShownByPlugin(i, f) {
+							own = append(own, f)
+						}
+					}
+					if len(own) == 0 {
+						continue
+					}
+					t.items = triageItems(own, eg)
+				}
 				// Triage produces display labels, not findings — there is no vote to take, and
 				// paying N times for a label that cannot move a number would be waste.
 				tasks = append(tasks, t)

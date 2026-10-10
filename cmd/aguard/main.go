@@ -1016,19 +1016,21 @@ func failGate(out model.ScanResult, failOn, failOnLLM string, mayEscalate bool) 
 // kind the judge has no pass for (a plugin tree, an unrecognised directory), or "". For such a target
 // the judge plans no question — at most a triage call, whose labels never reach this gate — so judgeGap
 // sees a run that answered everything it planned, and the gate used to exit 0 on a target the judge
-// never read (P-038).
+// never read (P-038). Since P-044 a plugin's skills, commands and agents are artifacts of their own, so a
+// plugin holding one is answered through it; judge.Unasked decides, for this gate and for the note.
 //
 // The target is the artifact at the checked path: a single-target check reports the path as typed
-// as both its root and its one artifact's path, and archiveView rewrites both to the archive. A scan,
-// or a check of a directory laid out as a root, has no artifact at its root path — an environment is
-// not a target, and there a plugin's skills are judged nowhere, so counting its plugins would make the
-// gate exit 4 on every machine with one installed. Those are disclosed by the judge's LLM-000 note.
+// as both its root and its artifact's path (a plugin's children carry their own), and archiveView
+// rewrites both to the archive. A scan, or a check of a directory laid out as a root, has no artifact
+// at its root path — an environment is not a target, and its unasked artifacts are disclosed by the
+// judge's LLM-000 note, never turned into exit 4.
 func unaskedTarget(out model.ScanResult) string {
 	if out.Root == "" {
 		return ""
 	}
-	for _, a := range out.Artifacts {
-		if a.Path == out.Root && judge.AsksNothingOf(a.Kind) {
+	unasked := judge.Unasked(out.Artifacts)
+	for i, a := range out.Artifacts {
+		if a.Path == out.Root && unasked[i] {
 			return fmt.Sprintf("the judge asked nothing about the target: it has no pass for a %s (1 artifact), "+
 				"so no question about its content was put to the model (the report's LLM-000 note has the detail)", a.Kind)
 		}
