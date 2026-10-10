@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/basdotio/AgentGuard/internal/detect"
 	"github.com/basdotio/AgentGuard/internal/model"
 )
 
@@ -15,13 +16,69 @@ import (
 const maxEvidenceBytes = 1000
 
 // boundedEvidence cuts already-redacted evidence to maxEvidenceBytes on a character boundary, the
-// ellipsis included. The caller redacts FIRST (invariant #3), so a token straddling the cut is already
-// <REDACTED> and leaves no head behind.
+// ellipsis included, and settles it. The caller redacts FIRST (invariant #3), so a token straddling the cut
+// is already <REDACTED> and leaves no head behind.
 func boundedEvidence(red string) string {
-	if len(red) <= maxEvidenceBytes {
-		return red
+	ev, _ := settle(red, maxEvidenceBytes, func(s string, limit int) string { return capBytes(s, limit-len(ellipsis)) })
+	return ev
+}
+
+// maxRedactRounds bounds fixRedact's loop.
+const maxRedactRounds = 4
+
+// fixRedact returns s as it is sent: sendable, then redacted until Redact leaves it unchanged. Redact is
+// idempotent by contract, so that is one pass and one comparison; the bound only keeps a broken contract
+// from looping, and FuzzPlanFields would then report the field.
+func fixRedact(s string) string {
+	s = sendable(s)
+	for i := 0; i < maxRedactRounds; i++ {
+		r := detect.Redact(s)
+		if r == s {
+			return s
+		}
+		s = r
 	}
-	return capBytes(red, maxEvidenceBytes-len(ellipsis))
+	return s
+}
+
+// settle is the last step of building a field that is one text (P-037): f — already redacted — cut to max
+// by the field's own cap (recap) if it is longer, then the whole field redacted to a fixed point
+// (fixRedact), and, when that lengthened it past max, cut again at a limit that tightens every round, since
+// a cut can itself end in a shape Redact rewrites (`--token …`). It reports whether it cut at all.
+//
+// Every field was assembled from parts redacted one at a time and then joined, separated or cut, and
+// nothing made the result a fixed point: a pattern reading across a join, or a run that looks like a token
+// only once cut, was left for a second pass — which would have changed what had been sent. The fallback,
+// an empty field, is a fixed point within every cap; reaching it takes a cut that Redact rewrites at every
+// limit tried.
+func settle(f string, max int, recap func(string, int) string) (string, bool) {
+	cut := false
+	for limit := max; ; limit -= max/16 + 1 {
+		if len(f) > max {
+			if limit <= 0 {
+				return "", true
+			}
+			f, cut = recap(f, limit), true
+		}
+		s := fixRedact(f)
+		if len(s) <= max {
+			return s, cut
+		}
+		f = s
+	}
+}
+
+// settleExcerpt is settle for a head/tail excerpt within maxExcerptBytes, with its line map: the re-cut is
+// capHeadTail again, and the map follows the text (fixRedact never adds or removes a line).
+func settleExcerpt(text string, lm []int) (string, []int) {
+	out, _ := settle(text, maxExcerptBytes, func(s string, limit int) string {
+		s, lm = capHeadTail(s, lm, limit)
+		return s
+	})
+	if out == "" {
+		return "", nil
+	}
+	return out, lm
 }
 
 // span is where one unit's text sits in a field built from whole lines: its first line and how many.
@@ -49,7 +106,7 @@ func joined(sep string) func([]string) (string, []span) {
 }
 
 // fitUnits is how a field assembled from several units' texts meets its cap (P-037): whole texts, from the
-// first, as many as render within max — never one cut in half, since each is a unit grounding checks a
+// first, as many as render — and settle — within max — never one cut in half, since each is a unit grounding checks a
 // quote against, and the rest are left out and counted for the caller to disclose. It returns the field,
 // the text of each unit as it stands in the field, and how many texts were left out.
 //
@@ -63,8 +120,12 @@ func fitUnits(texts []string, max int, render func([]string) (string, []span)) (
 	}
 	for ; n > 0; n-- {
 		field, spans := render(texts[:n])
-		if len(field) <= max {
-			return field, reread(field, spans), len(texts) - n
+		// The last step is the whole field redacted to a fixed point (settle's reason). Redact replaces
+		// within a line and never adds or removes one, so each unit is still the same lines of the field
+		// and is read back from it: the units hold exactly the bytes sent, headers and separators in none.
+		// A count that moved anyway cannot be read back, and the field is cut again instead.
+		if s := fixRedact(field); len(s) <= max && strings.Count(s, "\n") == strings.Count(field, "\n") {
+			return s, reread(s, spans), len(texts) - n
 		}
 	}
 	return "", nil, len(texts)

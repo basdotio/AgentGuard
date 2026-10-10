@@ -368,3 +368,33 @@ func FuzzSendable(f *testing.F) {
 		}
 	})
 }
+
+// TestSettle_EndsAtAFixedPointWithinItsCap (P-037): settle's re-cut can itself end in a shape Redact rewrites
+// and lengthens (`--token <REDAC` becomes `--token <REDACTED>`; `--token …` takes the mark for its value), so
+// it tightens the limit until the result holds. With every re-cut a field uses, text built to lengthen under
+// redaction ends within its cap, valid and a fixed point.
+func TestSettle_EndsAtAFixedPointWithinItsCap(t *testing.T) {
+	recaps := map[string]func(string, int) string{
+		"prefix":    detect.RunePrefix,
+		"marked":    func(s string, limit int) string { return capBytes(s, limit-len(ellipsis)) },
+		"head/tail": func(s string, limit int) string { out, _ := capHeadTail(s, nil, limit); return out },
+	}
+	inputs := []string{
+		strings.Repeat("--token a ", 400),
+		strings.Repeat("--token a\n", 400),
+		strings.Repeat("x", 990) + " --token " + strings.Repeat("y", 50),
+		strings.Repeat("-u a:b ", 600),
+		strings.Repeat("中", 300) + "--password=" + strings.Repeat("😀", 300),
+	}
+	for name, recap := range recaps {
+		for i, in := range inputs {
+			for _, max := range []int{maxEvidenceBytes, maxDeclaredBytes, 200} {
+				got, _ := settle(in, max, recap)
+				if got == "" || len(got) > max || !utf8.ValidString(got) || detect.Redact(got) != got {
+					t.Errorf("%s, input %d, cap %d: %d bytes, valid=%v, fixed point=%v", name, i, max, len(got),
+						utf8.ValidString(got), detect.Redact(got) == got)
+				}
+			}
+		}
+	}
+}
