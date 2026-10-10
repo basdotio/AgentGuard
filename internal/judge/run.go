@@ -445,7 +445,7 @@ func planFor(i int, a model.ArtifactReport, eg egress) []task {
 		ask(Request{Mode: ModeIntent, Declared: declared, Behavior: behavior}, intentUnits)
 
 		body, bodyLM := condense("SKILL.md", eg.redact(skill.Body), false)
-		body, bodyLM = capHeadTail(body, bodyLM, maxExcerptBytes)
+		body, bodyLM = settleExcerpt(capHeadTail(body, bodyLM, maxExcerptBytes))
 		// The description is the second side here too: "beyond what it says it is for" is a
 		// far sharper question than "contains instructions", which every skill body does.
 		ask(Request{Mode: ModeInjection, Declared: declared, Behavior: body},
@@ -491,7 +491,7 @@ func planFor(i int, a model.ArtifactReport, eg egress) []task {
 		// pass scans (detect.ConnectorText), capped head+tail like any excerpt.
 		if text := detect.ConnectorText(a.Connector); text != "" {
 			text, lm := condense(a.Name+".txt", eg.redact(text), false)
-			text, _ = capHeadTail(text, lm, maxExcerptBytes)
+			text, _ = settleExcerpt(capHeadTail(text, lm, maxExcerptBytes))
 			ask(Request{Mode: ModeInjection,
 				Declared: declaredPurpose("Remote MCP connector \""+a.Name+"\": the tool list its server sent (names, descriptions, parameter descriptions)", eg),
 				Behavior: text}, []sourceUnit{{file: detect.Redact(a.Name) + " (connector)", text: text, firstLine: 0, collapsed: true}})

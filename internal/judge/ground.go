@@ -26,7 +26,7 @@ import (
 // results are pinned to a digest TOGETHER with this value, so changing either alone is red. A change
 // the fixture does not exercise still relies on the editor; a forgotten bump lets two reports claim
 // the same excerpts while the judge was shown different text.
-const ExcerptVersion = 2
+const ExcerptVersion = 3
 
 // A model can produce a fluent, plausible, entirely invented finding. Nothing downstream can
 // tell that apart from a real one — same shape, same severity, same confident sentence. So a

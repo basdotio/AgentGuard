@@ -32,9 +32,10 @@ const (
 
 // declaredPurpose prepares the declared side of a request: scrub and redact, THEN cap — the
 // redact-before-truncate order every excerpt keeps — cutting on a rune boundary so a description
-// in any language never ends in half a character.
+// in any language never ends in half a character, and settled as every field is (settle).
 func declaredPurpose(s string, eg egress) string {
-	return detect.RunePrefix(eg.redact(s), maxDeclaredBytes)
+	d, _ := settle(eg.redact(s), maxDeclaredBytes, detect.RunePrefix)
+	return d
 }
 
 // readAtMost reads up to max bytes of a file (never the whole thing) — the memory guard for
@@ -73,7 +74,7 @@ func singleFileExcerpt(path string, eg egress) (string, []sourceUnit) {
 	}
 	// Prose: blank runs collapse (padding hides here too) but nothing is a "comment" to drop.
 	text, lm := condense(path, eg.redact(string(raw)), false)
-	text, lm = capHeadTail(text, lm, maxExcerptBytes)
+	text, lm = settleExcerpt(capHeadTail(text, lm, maxExcerptBytes))
 	return text, []sourceUnit{{file: detect.Redact(filepath.Base(path)), text: text, firstLine: 1, lineMap: lm}}
 }
 
@@ -275,6 +276,9 @@ func hookExcerpt(file string, h model.Hook, eg egress) (declared, behavior strin
 // An array's lines are first read together as one argv (argvView), so the element after `--api-key`
 // is redacted with its flag rather than alone (P-036).
 //
+// The joined excerpt is then settled like every field (settle, P-037); a re-cut that settling needed is
+// named in shortened too.
+//
 // shortened says what was left out, empty when nothing was: the caller discloses it (LLM-000),
 // since a real configuration fits and one that does not has been shaped.
 func mcpExcerpt(a model.ArtifactReport, eg egress) (text string, units []sourceUnit, shortened string) {
@@ -300,8 +304,14 @@ func mcpExcerpt(a model.ArtifactReport, eg egress) (text string, units []sourceU
 		out = append(out, l)
 		used += len(l) + 1
 	}
-	text = strings.Join(out, "\n")
+	text, recut := settle(strings.Join(out, "\n"), maxExcerptBytes, func(s string, limit int) string {
+		t, _ := capHeadTail(s, nil, limit)
+		return t
+	})
 	var cut []string
+	if recut {
+		cut = append(cut, fmt.Sprintf("cut to the %d-byte excerpt after the final redaction", maxExcerptBytes))
+	}
 	if capped > 0 {
 		cut = append(cut, fmt.Sprintf("%d value(s) cut to %d bytes", capped, maxConfigLineBytes))
 	}
@@ -484,11 +494,12 @@ func capabilityDigest(a model.ArtifactReport, eg egress) (digest string, units [
 }
 
 // boundedRedact redacts s (best-effort, see judge.go header), strips the home, then caps it to max
-// bytes on a character boundary. Redaction happens BEFORE truncation so a secret straddling the cap can't survive as a
-// sub-threshold partial, and before the scrub so it sees each run whole (egress.go). Used for the
-// one-line behaviors: a hook's command or URL, an MCP server's configuration.
+// bytes on a character boundary, and settles it. Redaction happens BEFORE truncation so a secret
+// straddling the cap can't survive as a sub-threshold partial, and before the scrub so it sees each run
+// whole (egress.go). Used for the one-line behaviors: a hook's command or URL.
 func boundedRedact(s string, max int, eg egress) string {
-	return detect.RunePrefix(eg.redact(s), max)
+	b, _ := settle(eg.redact(s), max, detect.RunePrefix)
+	return b
 }
 
 // behaviorExcerpt walks a skill dir and returns a bounded, REDACTED concatenation of its
@@ -542,11 +553,34 @@ func behaviorExcerpt(dir string, eg egress) (string, []sourceUnit) {
 		return nil
 	})
 
-	var b strings.Builder
-	for _, u := range units {
-		b.WriteString("# " + u.file + "\n")
-		b.WriteString(u.text)
-		b.WriteString("\n\n")
+	// Each file fits the budget as walked; settled as one field, a file the final redaction pushed past it is
+	// left out like any file past the budget (fitUnits), and the rest are read back from what is sent.
+	files, texts := make([]string, len(units)), make([]string, len(units))
+	for k, u := range units {
+		files[k], texts[k] = u.file, u.text
 	}
-	return b.String(), units
+	text, sent, _ := fitUnits(texts, maxExcerptBytes, headed(files))
+	units = units[:len(sent)]
+	for k := range sent {
+		units[k].text = sent[k]
+	}
+	return text, units
+}
+
+// headed renders the intent pass's behavior: each file's text under a `# <file>` line, with a blank line
+// after it, and says where each text sits.
+func headed(files []string) func([]string) (string, []span) {
+	return func(texts []string) (string, []span) {
+		var b strings.Builder
+		spans := make([]span, len(texts))
+		line := 0
+		for k, t := range texts {
+			b.WriteString("# " + files[k] + "\n")
+			spans[k] = span{line + 1, strings.Count(t, "\n") + 1}
+			b.WriteString(t)
+			b.WriteString("\n\n")
+			line += strings.Count(t, "\n") + 3
+		}
+		return b.String(), spans
+	}
 }
