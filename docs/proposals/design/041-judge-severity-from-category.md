@@ -193,6 +193,7 @@ into; running the 127 server-source samples through `check --llm` (P-004) so the
 | 7 | This file's "Done", the index | `proposals: P-041 (P-041)` |
 
 ## Open questions
+   **Decided (2026-10-10)**: as recommended.
 
 1. **The table itself.** **Recommendation**:
    - injection (`LLM-003`): `exfiltration`, `credential-read`, `remote-execution`, `safety-disable`,
@@ -206,22 +207,35 @@ into; running the 127 server-source samples through `check --llm` (P-004) so the
    - collusion (`LLM-006`): `credential-to-network` → high; `other` → medium
    The high rows are the behaviours the task sentences already name as what to flag; the medium rows are the escape
    valves. Measured in W6, not argued.
+   **Decided (2026-10-10)**: as recommended.
+
 2. **Keep the model's severity word anywhere?** **Recommendation**: yes, read and shown — the `[severities: …]` vote
    list becomes `[tool: high; model said: medium, medium, high]` — never weighed. It is the only way a later run can
    check the table against what the model would have said, and it costs nothing.
+   **Decided (2026-10-10)**: as recommended.
+
 3. **Should `LLM-003` simply be fixed at high, like `LLM-007`?** **Recommendation**: no. `other-directive` at medium is
    the valve for "a directive beyond the purpose that is not one of the five"; fixing high would make every such
    finding gate. If W6 shows `other-directive` is rare and its uses are real, a follow-up can close the valve.
+   **Decided (2026-10-10)**: as recommended.
+
 4. **Add `permission-override` to the capability pass?** **Recommendation**: yes. A hook that answers the permission
    prompt itself is the static `PERM-008` shape; the one static-missed malicious hook in the measurement is exactly
    that, and nothing on the benign side was.
+   **Decided (2026-10-10)**: as recommended.
+
 5. **Does an unknown category count toward the majority?** **Recommendation**: yes, as medium. The majority is about
    "did the model see it", the category about "how heavy"; an unknown category is a weight question, not a sight one.
+   **Decided (2026-10-10)**: as recommended.
+
 6. **Acceptance when the two `samples: 3` runs disagree on one of the four samples?** **Recommendation**: both runs must
    escalate all four; one miss is a red that is read (which category the model chose) before the table is touched —
    the fix is a wording line in the category list, not a lower bar.
+   **Decided (2026-10-10)**: as recommended.
+
 7. **Order against P-037.** **Recommendation**: merge after P-037; both move `prompt_version`, and this proposal's W3
    rebases cleanly onto P-037's payload changes since it does not touch the builders.
+   **Decided (2026-10-10)**: as recommended.
 
 ## Done
 
