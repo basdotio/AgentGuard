@@ -26,13 +26,13 @@ func TestWilson_MatchesTheCorpus(t *testing.T) {
 
 // TestCell_FollowsTheFigureRule: a rate is printed only when its Wilson half-width is at most 15
 // points (the corpus's FigureThresholdPoints); otherwise the count alone. For an all-zero result
-// that is n >= 22 — but 3 of 12 and 20 of 40 are counts too, which "n < 22" would have missed.
+// that is n >= 22 — but 17 of 35 is a count too (±16 pts), which "n < 22" would have printed as a rate.
 func TestCell_FollowsTheFigureRule(t *testing.T) {
 	cases := []struct {
 		k, n int
 		rate bool
 	}{
-		{0, 22, true}, {0, 21, false}, {3, 12, false}, {20, 40, false}, {3, 2480, true}, {0, 0, false},
+		{0, 22, true}, {0, 21, false}, {3, 12, false}, {17, 35, false}, {20, 40, true}, {3, 2480, true}, {0, 0, false},
 	}
 	for _, tc := range cases {
 		got := Cell(tc.k, tc.n)
