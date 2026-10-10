@@ -86,3 +86,42 @@ func TestPlan_MCPExcerptWithoutSecretFlagsIsUnchanged(t *testing.T) {
 		}
 	}
 }
+
+// TestPlan_MCPWidenedFlagSecretsAreRedacted (P-040): a flag the patterns now recognise by its last word
+// announces the element after it in the mcp-config payload too, through the same redact.Announced the
+// P-036 rows above go through — no flag list of the judge's own. Before, `["--key", "<short key>"]` and
+// `["--db-pass", "<pw>"]` went to the judge as two lines with the value in the clear. A path after
+// `--private-key` is the exemption's: it is which key file the server reads, and the judge should see it.
+func TestPlan_MCPWidenedFlagSecretsAreRedacted(t *testing.T) {
+	for _, c := range []struct{ flag, secret string }{
+		{"--key", "k7Qp2xLm9Rt4Vw8Z"},
+		{"--private-key", "Pk9Xw2Lm7Qt4Vz"},
+		{"--secret-key", "Sk3Lq8Vw2Rt5"},
+		{"--db-pass", "Hx7Lq2Vw9Rt4"},
+		{"--db-password", "hunter2"},
+		{"--client-secret", "S3cR3tV"},
+		{"--pat", "Pt8Kw3Lx9Qm2"},
+		{"--bearer", "Br4Qx9Lm"},
+		{"--credentials", "Cr7Vw2Lq9"},
+	} {
+		got := mcpPayload(t, `{"command":"srv","args":["--verbose","`+c.flag+`","`+c.secret+`","--port","8080"]}`)
+		if strings.Contains(got, c.secret) {
+			t.Errorf("%s: the value after the flag reached the judge:\n%s", c.flag, got)
+		}
+		if want := "args=" + c.flag + " <REDACTED>"; !strings.Contains(got, want) {
+			t.Errorf("%s: payload is missing %q:\n%s", c.flag, want, got)
+		}
+		if !strings.Contains(got, "args=--port\nargs=8080") {
+			t.Errorf("%s: the pair after it must keep its own lines:\n%s", c.flag, got)
+		}
+		if again := detect.Redact(got); again != got {
+			t.Errorf("%s: the payload is not a fixed point of Redact:\n%s\n---\n%s", c.flag, got, again)
+		}
+	}
+	got := mcpPayload(t, `{"command":"srv","args":["--private-key","~/.ssh/id_ed25519","--key-file","./k.pem"]}`)
+	for _, w := range []string{"args=--private-key\nargs=~/.ssh/id_ed25519", "args=--key-file\nargs=./k.pem"} {
+		if !strings.Contains(got, w) {
+			t.Errorf("a key file path is evidence, not a secret: payload is missing %q:\n%s", w, got)
+		}
+	}
+}
