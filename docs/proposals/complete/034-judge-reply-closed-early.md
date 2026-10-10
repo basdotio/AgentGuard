@@ -182,7 +182,7 @@ Asked during stage 2:
 
 ```
 Merged: PR #53 (2026-10-10; find the sha with git log --grep P-034)
-Released: pending release
+Released: v0.20.1
 Evidence: TestParseVerdict_ReadsOneObject and TestRun_ClosedEarlyReplyIsAnswered (internal/judge/reply_test.go), red on
   the base: 9 of 30 table rows fail — the six closed-early rows refused with "invalid character ',' after top-level
   value", the three whose continuation lost its brace accepted as their first half — and the run counts the answered
