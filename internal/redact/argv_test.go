@@ -98,7 +98,8 @@ func TestAnnounced(t *testing.T) {
 		{"--client-secret", "abcdefghijklmnop==", 0, true}, // a key word inside the flag (looseAssignRE)
 		{"-u", "admin:pass word", len("admin:"), true},
 		{"--user", "admin:pw", len("admin:"), true},
-		{"--password", " lead", 1, true}, // the separator class takes the space; it is not the secret
+		{"--password", " lead", 1, true},          // the separator class takes the space; it is not the secret
+		{"--password", `"quoted value"`, 1, true}, // a quoted value (P-043): the opening quote is the kept head
 		// Reverse: nothing announced.
 		{"--verbose", "plain word", 0, false},
 		{"-y", "@scope/pkg", 0, false},
@@ -106,10 +107,9 @@ func TestAnnounced(t *testing.T) {
 		{"-u", "root", 0, false},
 		{"positional", "correct horse", 0, false}, // not a flag
 		{"", "correct horse", 0, false},
-		{"--api-key=abc", "positional", 0, false},  // the flag was rewritten itself
-		{"--header", "token=abcd1234", 0, false},   // the element says it alone
-		{"--token", marker, 0, false},              // already replaced
-		{"--password", `"quoted value"`, 0, false}, // the patterns cannot start a value at a quote
+		{"--api-key=abc", "positional", 0, false}, // the flag was rewritten itself
+		{"--header", "token=abcd1234", 0, false},  // the element says it alone
+		{"--token", marker, 0, false},             // already replaced
 	}
 	for _, c := range cases {
 		start, ok := Announced(c.flag, c.arg)

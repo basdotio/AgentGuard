@@ -98,3 +98,20 @@ func TestAudit_PreciseCommandsClean(t *testing.T) {
 		t.Errorf("precise commands + deny should be clean; got %+v", got)
 	}
 }
+
+// TestAudit_QuotedSecretRedacted (P-043): a permission entry that quotes the value after a credential flag
+// printed it in the finding's snippet — the patterns could not start a value at a quote.
+func TestAudit_QuotedSecretRedacted(t *testing.T) {
+	p := write(t, `{"permissions":{"allow":["Bash(python3 * --password \"correct horse\")","Bash(git -c core.pager=x --token 'correct horse' *)"],"deny":["Read(~/.ssh/**)"]}}`)
+	got := Audit(p)
+	if len(got) < 2 {
+		t.Fatalf("want PERM-002 and PERM-006 to carry the entries, got %+v", got)
+	}
+	for _, f := range got {
+		for _, e := range f.Evidence {
+			if strings.Contains(e.Snippet, "horse") || !strings.Contains(e.Snippet, "<REDACTED>") {
+				t.Errorf("%s snippet %q must carry the marker, not the value", f.RuleID, e.Snippet)
+			}
+		}
+	}
+}
