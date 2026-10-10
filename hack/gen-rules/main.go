@@ -92,17 +92,17 @@ var permission = []entry{
 // `overall_effective`, never in `overall`, and `--fail-on` cannot see them. Hand-maintained.
 var llm = []entry{
 	{"LLM-001", 10, model.SevMedium, true, "Intent mismatch",
-		"The declared purpose and what the scripts actually do do not line up. Severity is the model's own, clamped to at most high."},
+		"The declared purpose and what the scripts actually do do not line up. The severity is the tool's, from the category the model names (exfiltration, credential read, remote execution, safety disable, concealed directive, software source, file deletion, privilege → high; other → medium), one step lower when the declared purpose states the behaviour, except a changed software source."},
 	{"LLM-003", 1, model.SevMedium, true, "Hidden prompt injection",
-		"A directive aimed at the agent, phrased to dodge keyword rules. Runs on skills, CLAUDE.md, subagents, slash commands and hooks."},
+		"A directive aimed at the agent, phrased to dodge keyword rules. Runs on skills, CLAUDE.md, subagents, slash commands and hooks. The severity is the tool's, from the category the model names (exfiltration, credential read, remote execution, safety disable, concealed directive → high; other directive → medium)."},
 	{"LLM-004", 6, model.SevMedium, true, "Decoded obfuscated payload",
-		"An embedded base64/hex blob was decoded — never executed — and the model was asked what it does."},
+		"An embedded base64/hex blob was decoded — never executed — and the model was asked what it does. The severity is the tool's, from the category the model names (network, remote execution, credential read, file deletion → high; other → medium)."},
 	{"LLM-006", 3, model.SevMedium, true, "Cross-file capability chain",
-		"Different files of one artifact collect and send between them."},
+		"Different files of one artifact collect and send between them. The severity is the tool's: credential-to-network → high; any other chain → medium."},
 	{"LLM-007", 1, model.SevHigh, true, "Artifact tried to instruct the analyzer",
 		"While being examined, the content addressed the analysis model — telling it what to conclude, or to ignore its instructions. Legitimate content has no reason to talk to a scanner. Unlike every other verdict the SEVERITY IS THE TOOL'S, not the model's: a hijacked model would rate its own capture low."},
 	{"LLM-008", 2, model.SevMedium, true, "Hook capability exceeds its interception point",
-		"The hook command does more than intercepting its own event requires."},
+		"The hook command does more than intercepting its own event requires. The severity is the tool's, from the category the model names (network, credential, install, permission override → high; file write, process control, other → medium)."},
 	{"LLM-009", 5, model.SevMedium, true, "MCP server configuration risk",
 		"Unpinned package, unknown publisher, remote endpoint, or credentials passed through env. Advisory only: reported with the model's severity but never escalates, whatever the vote — on 500 real configs it was the only judge rule to flag benign input."},
 }
