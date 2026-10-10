@@ -181,7 +181,7 @@ approval the gate recorded for `p:s1` already sits under the child's hash.
 - [ ] `TestApply_PluginAndChildrenAreOneUnit` (`internal/score`): a plugin with one medium and six clean children scores the
   environment exactly as the plugin alone (94 for the fixture `scan`, 88 for `check <plugin>`); a child with a qualified high LLM
   finding lowers the unit's effective score and caps `overall_effective` at 69 while `overall` does not move; the
-  `TestApply_EffectiveNeverExceedsOverall` property still holds. Red on the base: 98 and 98 once the children exist (the S2 rows)
+  `TestApply_EffectiveNeverExceedsOverall` property still holds. Red on the base: children averaged per artifact give 98 and 98 (the S2 rows)
 - [ ] `TestRender_ChildDuplicatesAreShownOnce` (`internal/report`): the variant-1 fixture prints `EXEC-001` at `s1/SKILL.md:6`
   once in the terminal, markdown and HTML reports and once in SARIF, counts it once in "N findings need a look", and keeps it on
   both artifacts in JSON; a child finding on a file the plugin row does not name (the mirror case) is printed on the child
@@ -203,3 +203,41 @@ approval the gate recorded for `p:s1` already sits under the child's hash.
   "still not split" note), §5.3 (units), §8 (`plugin` field), `issues/023` (A done; C open; D), `issues/006`/`008`/`017` index lines,
   and the `.claude/rules/pipeline.md` bullet that says splitting dilutes (it now has a unit rule to point at)
 - [ ] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no toolchain switch; no new dependency
+
+## Out of scope
+
+- **The plugin tree artifact and the canonical hash**: same name, path, `TreeHash`, findings and score as today;
+  `internal/collect/hash.go` and `internal/detect/contenthash.go` untouched (P-043 works there); `internal/redact` untouched
+- **Plain directories (C)**: no change; they stay counted in P-038's note and exit 4 on a `check` target
+- **No new judge pass**: `planFor`'s switch, the payloads and `ExcerptVersion` do not change; the `plugin` kind keeps no pass of
+  its own, so `noPassKinds` and `TestAsksNothingOf_FollowsPlanFor` do not change
+- **Plugin hooks and MCP servers**: not folded into the plugin unit (that would move today's `overall`, measured above), and not
+  split in `check <plugin>` (that would change `check`'s `--fail-on` answer for a plugin whose hook command trips a hook-only rule
+  such as `HOOK-001`). Both are follow-ups (open question 4)
+- **The gate**: no resolution change. A plugin command passed to the Skill tool still answers `GATE-000`; that, and its wording
+  ("no plugin bundle … provides it" when the bundle exists), are a follow-up
+- **What A still does not collect**: `output-styles/` and a manifest `outputStyles`, inline `content` commands in the manifest,
+  manifest-declared `mcpServers`. They stay read as text in the plugin tree; the `LLM-000` note keeps the plugin counted when it
+  has inline commands, since the judge read nothing of them
+- **Pruning the tree read to the loading surface** (`issues/017`): the plugin tree keeps reading mirror copies and `tests/`
+- **Enabled or disabled plugins**: every installed plugin is collected, as today
+- **`check <file>` of an agent** still routes as `instruction` (only `commands/` is recognised by `singleFileKind`); a child agent
+  is a `subagent` with the same `FileHash`. Not changed here
+- **The Downloads (inbox) judge**: a plugin found there gets its children like any `check` target and never enters `overall`, as
+  today; nothing else changes there
+- No Go dependency, no `go` directive change, no rule severity change
+
+## Must not claim
+
+- **Not "the judge covers plugins"**: it reads the skills, commands and agents a plugin loads, as Claude Code 2.1.107 lists them.
+  It still reads nothing of a plugin's scripts outside its skill directories, its docs, its output styles or its inline manifest
+  commands, and plugin hooks and MCP servers only through their own passes
+- **Not that the loader table is Claude Code's contract**: it was read from one installed build (2.1.107) and can move with an
+  update; the fixture test pins this repository's reading of it, not Claude Code
+- **Not "the score did not change" as a law**: `overall` is unchanged while a child's deterministic findings are a subset of its
+  plugin's (measured: all of them). A child-only finding lowers its unit — that is the point, not a regression
+- **No precision claim from the corpus**: it has no plugin-shaped sample, so nothing here measures how often the judge is right
+  about plugin contents
+- **Not "approving a plugin approves its skills"** or the reverse: approvals stay keyed by the hash of the bytes approved
+- Exit 0 from `check <plugin> --llm --fail-on-llm` means P-026's "every planned question was asked and answered", over the
+  children; it does not mean every file of the plugin was read by the model
