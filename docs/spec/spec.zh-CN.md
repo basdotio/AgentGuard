@@ -61,7 +61,7 @@ aguard version                                         # 版本 + 与已装插�
 - **全局 flags**:`--root`(默认 `~/.claude`)、`--config`(判定模型配置)、`--quiet`。
 - **LLM 判定默认关**:`scan` 与 `check` 都需显式 `--llm` 才启用意图判定(B1),两边是同一个开关、发同一份脱敏摘录、走同一个 `analyze()`。`check` 的输入是装前的不可信内容,这**不构成**拒绝 `--llm` 的理由:`scan --llm` 本来就对 `~/Downloads` 里还没装的候选逐个走 `check` 的路径去判(§4.1);注入想要的降分方向由 §5.2.1 的单向性封死(只能让攻击者自己的 artifact 更可疑);`--fail-on` 照旧只看确定性发现。**加载时闸门(§17)和 `aguard approve` 恒静态**,不读这个开关。(2026-10-08 P-004;此前 `check` 拒绝 `--llm`,唯一的绕路 `scan --root <目标>` 会自动读目标自带的 `.aguardignore`。)
 - **两个闸门开关是分开的**:`--fail-on` 只看确定性发现(`overall` 侧,§5.3),**任何 LLM 输出都动不了它**;`--fail-on-llm` 看含升级的一侧,**默认空=关**,要自愿承担 LLM 误报风险才打开。**已实现**;需**两次**主动选择(传 flag **且** `llm.authority: escalate`),只传 flag 而未授权是**报错拒绝**而非静默忽略 —— 永不触发的闸门比没有闸门更糟。`check` 有同一个 flag、同一套语义(P-004)。**两个阈值连同授权在采集之前校验**:打错的级别或缺授权是退出码 2,判官一个请求都不发、报告不印;不会因为确定性发现先命中 `--fail-on` 而被一个退出码 1 盖住(`check` 默认 `--fail-on high`,以前这是常态)。**判官没能回答不是通过**(P-026):设了 `--fail-on-llm`、没有闸门命中,但判官没跑(没传 `--llm`、`llm.enabled: false`、端点被拒、key 拿不到)或跑短了(`JudgeSummary.Failed > 0` 或 `Skipped > 0`)→ 退出码 `4`,stderr 一行写原因(`--quiet` 下也印),报告内容不变。只看判官摘要自己的计数:摘录被截短、`LLM-005` 丢弃的判决都算回答了。优先级 `2` > `1` > `4` > `0`;只设 `--fail-on` 时永远不看判官状态;下载目录不卡门,它的判官摘要也不参与。
-- **退出码**:`0` 无高危;`1` 有 ≥ `--fail-on`(或 `--fail-on-llm`)级别发现;`2` 运行错误(**2 不是通过,扫描没有发生**,例如 `--root` 打错);`3` 仅 `clean`:部分执行,每条被拒的都点名;`4` 仅 `--fail-on-llm`:闸门无法评估(判官没跑或跑短了;或 `check` 的目标是判官没有任何一趟的种类 —— plugin、无法识别的目录,P-038),**4 不是通过**。被信号中断以 `128 + 信号号` 结束。经 npm launcher 运行时逐位透传。
+- **退出码**:`0` 无高危;`1` 有 ≥ `--fail-on`(或 `--fail-on-llm`)级别发现;`2` 运行错误(**2 不是通过,扫描没有发生**,例如 `--root` 打错);`3` 仅 `clean`:部分执行,每条被拒的都点名;`4` 仅 `--fail-on-llm`:闸门无法评估(判官没跑或跑短了;或 `check` 的目标是判官没有可问的 —— 无法识别的目录,或里面没有任何可加载 skill、命令、子 agent 的 plugin,P-038/P-044),**4 不是通过**。被信号中断以 `128 + 信号号` 结束。经 npm launcher 运行时逐位透传。
 - **隐私**:脱敏发生在 **detect 阶段**(见 §16),判定器与报告消费的是**同一份已脱敏视图**——secret 值全程 `<REDACTED>`,只报 key 名 + 位置(§8 Evidence)。
 
 ---
@@ -88,7 +88,7 @@ aguard version                                         # 版本 + 与已装插�
 **配置文件作用域(B4)**:hooks/permissions/MCP 不止一个来源,按优先级枚举并**标注每条 finding 来自哪个作用域**:
 `<root>/settings.json` → `<root>/settings.local.json` → 项目级 `.claude/settings.json` / `settings.local.json` → 项目 `.mcp.json` → `~/.claude.json`。P0 至少覆盖用户级 + 当前工作目录项目级。
 
-> 实现现状(2026-09-15):plugin 整棵树扫成一个 artifact,**同时**它自带的 hook 按 (event, matcher, command) 拆成独立 hook artifact(走 `settings.json` 同一个 builder,`HOOK-001`、脚本跟进、判官 hook pass 全都适用),自带的 MCP server(插件根 `.mcp.json`/`mcp.json`)拆成独立 mcp artifact,**按配置里的 key(`MCPServer`,经 `detect.MCPServerKey`)找条目**;**带不带 `mcpServers` 外壳都认**(P-029,2026-10-10 实测 Claude Code 2.1.107:插件 MCP 文件按 `doc.mcpServers || doc` 读,外壳缺失或为 JS 假值时顶层就是 server 表、照样启动;外壳键区分大小写;无外壳时只有带 `command` 或 `type` 的对象才算 server;用户级/项目级配置不认无外壳形式,不按此读),规则和判官的 MCP 配置那一趟都跑 —— artifact 名带 ` (plugin …)` 后缀,2026-10-09 之前(P-021)规则和判官按名字找、找不到,每个插件 server 都是零 unit 的 100 分。一条 hook 命令、一个插件 MCP server 条目因此都出现两次(树里的文本 + 独立 artifact),报告按 (artifact, rule) 折叠,两行说的是不同粒度的事;宁可重复,不要让树扫描依赖 hook 解析成功。**仍未拆**的是插件自带的 skills/commands(只当树里的文本读),记在 `issues/006`;判官对插件整树没有任何一趟,所以这些 skill/command 在 `scan --llm` 里哪里都不被判(P-038 实测,`issues/023`)。插件 manifest(`.claude-plugin/plugin.json`)里声明的 `mcpServers`(内联、路径、数组、MCPB)以及数组形式的外壳,Claude Code 会启动(内联、路径、数组外壳三种 2026-10-10 实测),**仍未采集**(数组外壳照旧出解析失败的 artifact)。
+> 实现现状(2026-09-15):plugin 整棵树扫成一个 artifact,**同时**它自带的 hook 按 (event, matcher, command) 拆成独立 hook artifact(走 `settings.json` 同一个 builder,`HOOK-001`、脚本跟进、判官 hook pass 全都适用),自带的 MCP server(插件根 `.mcp.json`/`mcp.json`)拆成独立 mcp artifact,**按配置里的 key(`MCPServer`,经 `detect.MCPServerKey`)找条目**;**带不带 `mcpServers` 外壳都认**(P-029,2026-10-10 实测 Claude Code 2.1.107:插件 MCP 文件按 `doc.mcpServers || doc` 读,外壳缺失或为 JS 假值时顶层就是 server 表、照样启动;外壳键区分大小写;无外壳时只有带 `command` 或 `type` 的对象才算 server;用户级/项目级配置不认无外壳形式,不按此读),规则和判官的 MCP 配置那一趟都跑 —— artifact 名带 ` (plugin …)` 后缀,2026-10-09 之前(P-021)规则和判官按名字找、找不到,每个插件 server 都是零 unit 的 100 分。一条 hook 命令、一个插件 MCP server 条目因此都出现两次(树里的文本 + 独立 artifact),报告按 (artifact, rule) 折叠,两行说的是不同粒度的事;宁可重复,不要让树扫描依赖 hook 解析成功。插件自带的 skills、commands、子 agent 自 P-044 起也**各自成为 artifact**(`scan` 和 `check <插件>` 都采;`Plugin` 字段指回插件 artifact 的名字;名字 `<bundle>:<leaf> (plugin …)`,与闸门解析 `plugin:skill` 同一个 leaf;skill 用该目录的树哈希,命令/子 agent 用文件哈希,即 `aguard hash` 与闸门算的那个)。**只采 Claude Code 2.1.107 会加载的**(从安装的二进制里读出的加载器):`skills/SKILL.md`,否则 `skills/<x>/SKILL.md` 一层(`<x>` 可以是软链);`commands/` 下递归的 `.md`,含 `SKILL.md` 的目录算一个 skill 形的命令且不再下钻,软链条目跳过;`agents/` 下递归的 `.md`,软链跳过;manifest 的 `skills`/`commands`/`agents` 路径(字符串、数组,`commands` 还可以是带 `source` 的对象)在默认目录**之外追加**,出插件根的路径拒收。`docs/<语言>/`、`.agents/` 这类镜像副本不采(`issues/017`)。判官按子项的种类问(§5.2);静态发现插件树和子项两边都有,人读的渲染器和 SARIF 只在插件那一行印一次(`score.Family.ShownByPlugin`,判官的分诊同一个谓词),环境分把插件和子项算作一个单元(§5.3),信誉 GOOD 命中插件树哈希时子项一并压制(字节在命中的树里),闸门的 SessionStart、`approve` 和 hygiene 跳过子项。`check <插件>` **仍不拆** hook 和 MCP(`issues/023` 的后续)。插件 manifest(`.claude-plugin/plugin.json`)里声明的 `mcpServers`(内联、路径、数组、MCPB)以及数组形式的外壳,Claude Code 会启动(内联、路径、数组外壳三种 2026-10-10 实测),**仍未采集**(数组外壳照旧出解析失败的 artifact)。
 >
 > **plugin 的来源不止 `installed_plugins.json`。** Claude 桌面版(Cowork 和桌面版里的 Code 标签)在 Customize 里装的插件和 skill 同步到 `~/Library/Application Support/Claude/local-agent-mode-sessions/`,启动 CLI 时用 `--plugin-dir` 塞进去,**不经过** manifest;只读 root 的扫描对它们全盲,而这正是非技术用户的安装路径。`collect/desktop.go` 按 home 定位,布局是未文档化的观察结果(2026-09-04,macOS),只允许单向 best-effort:目录不存在 → 什么都不出;在但读不了 → `IO-000`/`COV-000`/`SCOPE-001`。桌面版的 skills 包**按单个 skill 采**(整包哈希一上传就变,单 skill 树哈希才稳)。同名 bundle 多份时按内容哈希去重,最新会话优先。
 >
@@ -214,7 +214,7 @@ type Rule struct {
 | **intent** | Skill | **静态先行**:有静态发现 或 信誉库未知 | detect + reputation | 已实现 |
 | **collusion** | Skill | **静态先行**:`EXFIL-002` 粗筛命中 | 静态跨文件粗筛(§5.1) | 已实现(`LLM-006`,只发能力摘要不发全文) |
 | triage | 任意有静态发现的 kind | **静态先行**(本质如此) | detect / permcheck 的 findings | 已实现(含 permission) |
-| **无** | Plugin / Directory / Quarantined | — | — | **没有任何一趟**(至多分诊,分诊标签到不了 `--fail-on-llm`)。每次 `--llm` 一条 `LLM-000` 按种类计数点名(`judge.AsksNothingOf`,表由 `TestAsksNothingOf_FollowsPlanFor` 钉在 `planFor` 上);`check` 的目标是其中之一时 `--fail-on-llm` 退出 `4`(P-038)。该问什么见 `issues/023`。Permission 不在此列:它的风险由 permcheck 判,设计上没有要问判官的问题 |
+| **无** | Plugin / Directory / Quarantined | — | — | **没有任何一趟**(至多分诊,分诊标签到不了 `--fail-on-llm`)。插件的 skill、命令、子 agent 是各自的 artifact,按上面各自的种类问(P-044),所以插件**只有在没有任何可加载子项时**才算"什么都没问"。每次 `--llm` 一条 `LLM-000` 按种类计数点名(`judge.Unasked` 读 `judge.AsksNothingOf`,表由 `TestAsksNothingOf_FollowsPlanFor` 钉在 `planFor` 上;隔离区标成「已不再加载」);`check` 的目标是其中之一时 `--fail-on-llm` 退出 `4`(P-038)。目录该问什么仍见 `issues/023`。Permission 不在此列:它的风险由 permcheck 判,设计上没有要问判官的问题 |
 
 - **注入检测禁止静态门控**(本条是硬要求,不是偏好)。若所有 pass 都拿静态命中当触发条件,LLM 就只能对「静态已经发现的东西」发二次意见 —— **恰好丧失建它的目的**:静态看不见的注入永远不会被送去判。注入 pass 作用域是单文件、成本低,无条件跑得起。
 - **静态门控的那几路**(intent / collusion / triage)作用域是整棵树、贵,静态信号是合理先验。
@@ -291,12 +291,18 @@ MCP 配置按 `detect.ConfigLines` 渲染成 `key=value` 行(与静态读同一�
              score            = clamp(100 − penalty, 0, 100)                  // floor=0,不为负
              penalty⁺         = 同上,但额外计入合格 LLM 发现
              score_effective  = min(score, clamp(100 − penalty⁺, 0, 100))
-环境总分:     overall          = round(加权平均(各 artifact.score))       + 木桶封顶(只看确定性发现)
+环境总分:     overall          = round(加权平均(各单元的 score))          + 木桶封顶(只看确定性发现)
              overall_effective = min(overall,
-                                     round(加权平均(score_effective))     + 木桶封顶(含合格 LLM 发现))
+                                     round(加权平均(各单元的 score_effective)) + 木桶封顶(含合格 LLM 发现))
+单元:         一个 artifact;插件和它的子项(Plugin 字段指回它的 skill/命令/子 agent)合成一个单元,
+             单元分 = 把它们的发现合在一起按「每 artifact」那两行算
              木桶封顶:任一 artifact 出现 critical → ≤ 49(高危);任一 high(无 critical)→ ≤ 69(中危)
 风险等级:     ≥85 低危 · 70–84 关注 · 50–69 中危 · <50 高危        // 两个数共用同一张分级表
 ```
+- **插件和子项是一个单元(P-044)**。子项读的是插件树已经读过的字节,各自平均会把插件稀释掉(实测 94 → 98、`check <插件>` 88 → 98,
+  就是 `issues/008` 当年放弃拆产物的 86 → 97);合成单元后重复的发现不加罚分(同维度取最高),子项独有的发现照样算,子项上合格的 LLM
+  发现经单元进 `overall_effective`。只要子项的确定性发现是插件的子集(真机上 28 条全是),`overall` 与拆之前逐字节相同。每 artifact 的
+  `score`/`score_effective` 定义不变。插件的 hook 和 MCP 仍各算一项(并入单元会改今天的分,`issues/023` 的后续)。
 - **`min(...)` 是结构性保证,不是算术必要**。多加发现本来就只会加罚分,但把单向性写成**代码形状**,可以让"LLM 把分数改高了"从一类可能的 bug 变成不可表达的状态。配一条 `overall_effective ≤ overall` 恒成立的属性测试(§13)。
 - **不开 `--llm` 时 `overall_effective == overall`**;两个数在报告与 JSON 中**并列输出**,各自标明含义(§8/§9)。
 - **§10 的 attestation 载荷只取 `overall`** —— 上链的数必须能被第三方用同一份内容离线复算,含 LLM 的数做不到。
@@ -372,6 +378,7 @@ type ArtifactReport struct {
     Findings []Finding
     Advisory []AdvisoryLabel // триаж标签:展示通道,永不进 Findings(§5.2.1 铁律 #2)
     Reputation *ReputationMatch `json:",omitempty"` // 命中内嵌信誉名单时的审计元数据,让 100 分的「被信任」和「本来干净」在数据里分得开
+    Plugin    string     `json:"plugin,omitempty"` // 插件的 skill/命令/子 agent(P-044):它所在插件 artifact 的 Name,由 collect 填,不来自内容;单元、只印一次、跳过子项都读它,不读名字后缀
     Hook      Hook       `json:"-"` // KindHook:事件/matcher/命令,以及原样的条目 JSON(Entry,内容哈希绑它),扫描内部输入,不序列化
     Connector *Connector `json:"-"` // KindConnector:通告的工具清单(name/description/参数 description),不序列化;报告带的是关于它的发现,不是它的副本
     MCPServer string     `json:"-"` // KindMCP:server 在 mcpServers 里的 key;插件自带的 server 的 Name 带 " (plugin …)" 后缀,按 key 找条目要用它
@@ -395,6 +402,7 @@ type ScanResult struct {
     Sandbox   *SandboxInfo  `json:",omitempty"` // 在云端沙箱里跑时的判断依据(§4.2);nil = 本机
 }
 
+// EnvSummary 的 BundledSkills / BundledCommands / BundledAgents 数插件里作为子项采到的 skill、命令、子 agent(P-044),不进 Skills/Commands/Subagents。
 // EnvSummary 的计数里另有 Connectors(桌面版会话见过的远程 connector 数),与 MCPServers(本机配置文件里的)分开。
 ```
 
@@ -505,14 +513,14 @@ v1 写的 `internal/rules/` 从未存在:规则表就在 `detect/rules_data.go`,
 
 ## 13. 测试计划(≥80% 覆盖,TDD)
 
-- **单测**:每个 collector/parser/rule/score/hygiene 纯函数,table-driven。
+- **单测**:每个 collector/parser/rule/score/hygiene 纯函数,table-driven。插件子项的采集按 Claude Code 加载器逐种情形一行 fixture(`TestPluginContents_FollowClaudeCodesLoader`,P-044)。
 - **恶意样本 fixtures**:`testdata/` 造 10 维度各若干"应命中"skill/hook/mcp + "良性应放行"样本(防误报)。断言 findings 精确到 rule + 行号。
 - **judge 测试**:mock LLM,验 nonce barrier 生效(注入 artifact 内的"忽略指令"不改变判定)、schema 解析、无 key 时跳过。
 - **隐私测试**:含假 secret 的 fixture,断言输出中值被 REDACTED、绝不出现明文。
 - **端到端**:对 `testdata/fake-claude-home/` 跑 `scan --json`,快照比对;真实机冒烟(只读)。
-- **退出码**:`--fail-on` 各级别验证(闸门/CI 契约);`--fail-on-llm` 在判官没跑/跑短时为 `4`、`check` 的目标是判官没有一趟的种类时也为 `4`(`scan` 不因此变,只出 `LLM-000`)、命中时仍为 `1`、只设 `--fail-on` 时与判官状态无关(`TestFailGate_LLMGateNotEvaluable`、`TestFailOnLLM_ExitCodesWhenTheJudgeIsBlind`、`TestFailOnLLM_TargetTheJudgeAsksNothingAbout`、`TestFailOnLLM_ScanKeepsItsCodeAndNamesWhatWasNotAsked`)。
+- **退出码**:`--fail-on` 各级别验证(闸门/CI 契约);`--fail-on-llm` 在判官没跑/跑短时为 `4`、`check` 的目标是判官没有一趟的种类时也为 `4`(插件里有可加载子项时不算,P-044)(`scan` 不因此变,只出 `LLM-000`)、命中时仍为 `1`、只设 `--fail-on` 时与判官状态无关(`TestFailGate_LLMGateNotEvaluable`、`TestFailOnLLM_ExitCodesWhenTheJudgeIsBlind`、`TestFailOnLLM_TargetTheJudgeAsksNothingAbout`、`TestFailOnLLM_ScanKeepsItsCodeAndNamesWhatWasNotAsked`)。
 - **不变量测试(B2,§16)**:①"若被执行会落地标记文件"的 fixture,断言标记始终不存在(证明不执行);②越界 symlink fixture(skill 内软链到 `/etc/passwd`),断言其内容绝不出现在任何输出;③含假 secret 的会话日志 fixture,断言 zombie 检查读取后仍脱敏。④配置里**开着**判官,把判官的 transport(测试接缝 `judge.Transport`)和 `http.DefaultTransport` 换成计数器:先断言 §16.4 的三条出网路径确实被看见(正对照),再断言其余每个命令入口零次请求(`TestZeroDial_OnlyTheJudgeConnects`);计数器看不见自带 transport 的 client,本模块产品代码的这一块(判官包在内,只许 `NewHTTP` 那一个 client)由源码检查 `TestZeroDial_NoClientOutsideTheJudge` 补上;依赖在自己代码里造的不在内(§16.4)。⑤判官的 client 对端点回的跨源重定向(https 降成 http、换主机、换端口、子域)一跳都不发,调用失败、不重试,经 `LLM-000` 进报告,静态结果不变;同源的照跟,10 跳上限保留(`TestNewHTTP_RefusesCrossOriginRedirects`、`TestNewHTTP_SameOriginRedirectsAndPlainCallsUnchanged`,端到端 `TestE2E_JudgeRedirectIsRefusedAndReported`、`TestLLMTest_RedirectIsRefused`)。
-- **评分测试**:确定性输入→固定分(可复现);critical 触发木桶封顶;floor=0 不为负;**开不开 `--llm`,`overall` 逐位相同**(§16.7 的可复现性契约)。
+- **评分测试**:确定性输入→固定分(可复现);critical 触发木桶封顶;floor=0 不为负;插件和子项是一个单元,子项不稀释插件、子项的合格 LLM 发现照样进 `overall_effective`(`TestApply_PluginAndChildrenAreOneUnit`,P-044);**开不开 `--llm`,`overall` 逐位相同**(§16.7 的可复现性契约)。
 - **单向升级测试(§16.7)**(已实现):①任意 finding 组合下 `overall_effective ≤ overall` 恒成立(属性测试);②证据落地不通过的 LLM finding 被丢弃且计入 `LLM-005`;③`authority: advisory` 下即使有 flagged 发现,升级也是 no-op;④k-of-n:3 次采样中 1 次 flagged **不**升级、2 次 flagged 升级;⑤`--fail-on` 不受任何 LLM 发现影响,`--fail-on-llm` 默认关;⑥铁律 #2 回归:LLM 仍无法删除/降级静态发现。
 
 ---

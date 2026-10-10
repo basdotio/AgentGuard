@@ -63,6 +63,10 @@ paths:
   `ask`,会话自动接受,skill 照常加载,全程零显示 —— 一个决定被吞掉的闸门是在**无声地** fail open,
   而下一条说了这个包唯一不许出现的就是"安静"。`default`/`plan` 不动;**不认识的模式一律不升级**,
   否则 Claude Code 每出个新模式就变成一堵拒绝墙。
+- **插件的子项(`Plugin` 字段非空,P-044)永远不是判决里的那个 artifact,也不进 SessionStart 的列表。** `Summarize` 选"最差 artifact"时
+  跳过它们 —— 选中一个分更低的子项,`aguard approve <插件>` 就会把子项的哈希存成对插件的批准;SessionStart 跳过它们,因为子项的每条
+  阻断规则都已经在插件那一行上。另一头是对齐的:`PreToolUse[Skill]` 解析 `plugin:skill` 得到的目录和哈希,正是扫描报告里那个子项的
+  (`TestGate_NamespacedSkillHashIsTheChildsHash`),所以加载时记下的批准,和报告里点名的是同一样东西。
 - **只有判成 `ask` 时才 `pend`。** 拒绝没有"你答应了"这条路径,停一条永远兑现不了的判决,是在一个
   每次风险加载都会写的文件里攒垃圾。
 - **`systemMessage` 在 VSCode 扩展里不渲染**(实测),所以干净路径那行提示可能根本没人看见。

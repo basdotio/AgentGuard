@@ -7,6 +7,7 @@ import (
 
 	"github.com/basdotio/AgentGuard/internal/detect"
 	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/score"
 )
 
 // noPassKinds are the artifact kinds planFor has no pass for, in the order the note names them.
@@ -34,6 +35,28 @@ func AsksNothingOf(kind model.ArtifactKind) bool {
 	return false
 }
 
+// Unasked reports, per artifact of arts, whether the judge asks nothing about it: its kind has no pass
+// (AsksNothingOf) and, for a plugin, none of its children (score.Families, P-044) is of a kind that has
+// one. A plugin's skills, commands and agents are artifacts of their own with their kind's questions, so
+// a plugin holding one of them is answered through it; a plugin holding none is still asked nothing.
+// The LLM-000 note below and the --fail-on-llm gate (cmd/aguard unaskedTarget) both read this, so what
+// the report discloses and what the exit code says cannot disagree. Like AsksNothingOf it goes by kind:
+// a child of a judged kind with nothing to send counts as judged (P-038's decision 1).
+func Unasked(arts []model.ArtifactReport) []bool {
+	out := make([]bool, len(arts))
+	judgedChild := map[int]bool{}
+	fam := score.Families(arts)
+	for j, a := range arts {
+		if p := fam.Parent(j); p >= 0 && !AsksNothingOf(a.Kind) && a.Kind != model.KindPermission {
+			judgedChild[p] = true
+		}
+	}
+	for i, a := range arts {
+		out[i] = AsksNothingOf(a.Kind) && !(a.Kind == model.KindPlugin && judgedChild[i])
+	}
+	return out
+}
+
 // maxUnaskedLabels bounds how many artifacts the note names; the counts per kind cover the rest.
 const maxUnaskedLabels = 3
 
@@ -44,8 +67,9 @@ func unaskedNote(arts []model.ArtifactReport) (model.Finding, bool) {
 	count := map[model.ArtifactKind]int{}
 	var labels []string
 	total := 0
-	for _, a := range arts {
-		if !AsksNothingOf(a.Kind) {
+	unasked := Unasked(arts)
+	for i, a := range arts {
+		if !unasked[i] {
 			continue
 		}
 		count[a.Kind]++
@@ -59,7 +83,12 @@ func unaskedNote(arts []model.ArtifactReport) (model.Finding, bool) {
 	}
 	var kinds []string
 	for _, k := range noPassKinds {
-		if count[k] > 0 {
+		switch {
+		case count[k] > 0 && k == model.KindQuarantined:
+			// Moved out of the load path by `clean`: counted so the omission is not silent, labelled so
+			// it does not read as a loaded gap (issues/023, direction D).
+			kinds = append(kinds, fmt.Sprintf("%s (%d, no longer loaded)", k, count[k]))
+		case count[k] > 0:
 			kinds = append(kinds, fmt.Sprintf("%s (%d)", k, count[k]))
 		}
 	}

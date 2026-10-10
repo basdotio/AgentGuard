@@ -14,9 +14,9 @@
 | [003](003-generated-dir-contents-unscanned.md) | 生成/vendor 目录内容不扫描 | 覆盖缺口 | 中 | **已修复**（拆谓词；第三方树不读是设计决定） |
 | [004](004-unknown-extension-unscanned.md) | 未知扩展名文件只通报不扫描 | 覆盖缺口 | 中 | **已修复** |
 | [005](005-scan-root-unowned-entries.md) | `scan --root` 对无主顶层条目既不扫也不报 | 覆盖缺口 | 高 | **已修复**（松散文件已读；目录不读是设计决定） |
-| [006](006-plugin-hooks-coarse-audit.md) | plugin 内置 hooks 未按 (event, command) 细审 | 覆盖缺口 | 中 | **已修复**（hooks 已细审；skills/commands/MCP 仍粗） |
+| [006](006-plugin-hooks-coarse-audit.md) | plugin 内置 hooks 未按 (event, command) 细审 | 覆盖缺口 | 中 | **已修复**（hooks、MCP（P-021）、skills/commands/子 agent（P-044）都已各自采集） |
 | [007](007-regex-precision-awaiting-ast.md) | EXEC/OBF 维度用正则替身，精度受限 | 检测精度 | 中 | 进行中 |
-| [008](008-monorepo-attribution.md) | 大型 monorepo 按单一产物打分，发现无法归因 | 归因粒度 | 低 | 部分修复（报告已给宽度；拆产物**主动放弃**） |
+| [008](008-monorepo-attribution.md) | 大型 monorepo 按单一产物打分，发现无法归因 | 归因粒度 | 低 | 部分修复（报告已给宽度；插件已拆产物且不稀释分数，P-044；单 skill 的 monorepo 仍不拆） |
 | [009](009-claude-code-only.md) | 仅支持 Claude Code，多平台未抽象 | 平台限制 | 低 | 未修复（已排期：先配置层，制品层条件性） |
 | [010](010-hook-script-follow-depth.md) | hook/权限引用脚本只跟读一层 | 覆盖缺口 | 低 | 设计取舍 |
 | [011](011-prose-instruction-exec-underscan.md) | 散文体指令文件不跑 EXEC/OBF/FS 规则 | 检测精度 | 中 | 部分修复（slash command 已跑全量；其余仍是散文） |
@@ -31,7 +31,7 @@
 | [020](020-interactive-picker-withdrawn.md) | `clean --ask` 方向键选择器审查后撤回并重做（11 项缺陷） | 安全缺陷 / 功能撤回 | 高 | **已修复**；已按收集→对账→一次执行重做，方向键待下一轮 |
 | [021](021-judge-triage-by-static-severity-rejected.md) | 只在静态报到 medium 以上时才问判官：实测否决（保住 14/62，丢 77%） | 功能范围 | — | **不规划**（前提实测不成立）|
 | [022](022-plugin-install-case-collision-macos.md) | macOS 上 CLI 装不上插件：插件名与 marketplace 名只差大小写（上游 bug） | 分发缺陷 | 高 | **已修复**（0.17.0 改名 `aguard`；上游 bug 仍在） |
-| [023](023-judge-asks-nothing-of-plugins-and-directories.md) | 判官对 plugin 整树和无法识别的目录一个问题都不问（`scan` 里插件的 skill/命令/子 agent 也不被判） | 覆盖缺口 | 中 | 未修复（P-038 已披露，`check` 目标退出 4；该问什么未定） |
+| [023](023-judge-asks-nothing-of-plugins-and-directories.md) | 判官对 plugin 整树和无法识别的目录一个问题都不问（`scan` 里插件的 skill/命令/子 agent 也不被判） | 覆盖缺口 | 中 | 部分修复（插件已做：子项各自采集、按种类判，P-044；隔离区已通报；普通目录未定） |
 
 ## 判定口径
 

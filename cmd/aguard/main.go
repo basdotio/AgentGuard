@@ -138,6 +138,25 @@ func checkTarget(path string, o scanOpts) (model.ScanResult, error) {
 	return analyze(path, res, o)
 }
 
+// suppressScoring removes a's scoring findings (dimension-0 notes are kept), raises maxSev to the
+// highest one removed, and returns how many it removed.
+func suppressScoring(a *model.ArtifactReport, maxSev *model.Severity) int {
+	kept := []model.Finding{} // keep JSON `[]`, never null
+	n := 0
+	for _, f := range a.Findings {
+		if f.Dimension == 0 { // keep coverage/parse notes
+			kept = append(kept, f)
+			continue
+		}
+		n++
+		if f.Severity.Rank() > maxSev.Rank() {
+			*maxSev = f.Severity
+		}
+	}
+	a.Findings = kept
+	return n
+}
+
 // applyReputation matches each artifact's canonical hash against a reputation list. GOOD →
 // suppress that artifact's scoring findings (record a REP-GOOD note mirroring the highest
 // suppressed severity, §12 honesty). MALICIOUS → append a REP-BAD critical finding. Returns
@@ -146,8 +165,16 @@ func checkTarget(path string, o scanOpts) (model.ScanResult, error) {
 // db is a parameter rather than a Load() call inside, so that the verdict handling is testable
 // against a synthetic list: the shipped blocklist is empty pending curation, and it must not
 // take a fake entry in a scoring data file to keep this branch covered.
+//
+// A plugin's children (P-044) inherit a GOOD match on its tree hash: their bytes are inside the tree
+// that matched hash-exactly, so the review covered them, and without this the reviewed findings in
+// a matched plugin's skills reappeared on the children under hashes no entry carries (18 of 253 in
+// the shipped list). They are suppressed and counted in the plugin's one REP-GOOD note. Only GOOD is
+// inherited — a MALICIOUS plugin already carries its critical — and a child whose own hash matches
+// an entry answers to that entry.
 func applyReputation(db *reputation.DB, arts []model.ArtifactReport) []model.Finding {
 	var notes []model.Finding
+	fam := score.Families(arts)
 	for i := range arts {
 		e, ok := db.Match(arts[i].Hash)
 		if !ok {
@@ -155,25 +182,26 @@ func applyReputation(db *reputation.DB, arts []model.ArtifactReport) []model.Fin
 		}
 		switch e.Verdict {
 		case reputation.Good:
-			var kept []model.Finding
-			maxSev, n := model.Severity(""), 0
-			for _, f := range arts[i].Findings {
-				if f.Dimension == 0 { // keep coverage/parse notes
-					kept = append(kept, f)
+			mark := func(n int) *model.ReputationMark {
+				return &model.ReputationMark{
+					Verdict: e.Verdict, Entry: e.Name, Publisher: e.Publisher, Version: e.Version,
+					Source: e.Source, SHA: e.SHA, Path: e.Path, Reviewed: e.Reviewed, Suppressed: n,
+				}
+			}
+			maxSev := model.Severity("")
+			n, inChildren := suppressScoring(&arts[i], &maxSev), 0
+			arts[i].Reputation = mark(n)
+			for j := range arts {
+				if fam.Parent(j) != i {
 					continue
 				}
-				n++
-				if f.Severity.Rank() > maxSev.Rank() {
-					maxSev = f.Severity
+				if _, own := db.Match(arts[j].Hash); own {
+					continue
 				}
-			}
-			if kept == nil {
-				kept = []model.Finding{} // keep JSON `[]`, never null
-			}
-			arts[i].Findings = kept
-			arts[i].Reputation = &model.ReputationMark{
-				Verdict: e.Verdict, Entry: e.Name, Publisher: e.Publisher, Version: e.Version,
-				Source: e.Source, SHA: e.SHA, Path: e.Path, Reviewed: e.Reviewed, Suppressed: n,
+				nj := suppressScoring(&arts[j], &maxSev)
+				arts[j].Reputation = mark(nj)
+				n += nj
+				inChildren += nj
 			}
 			if n > 0 {
 				sev := maxSev
@@ -184,7 +212,12 @@ func applyReputation(db *reputation.DB, arts []model.ArtifactReport) []model.Fin
 				// commit the review was done on. "superpowers@claude-plugins-official" in the
 				// artifact name is where the user installed it from; this is who we trusted.
 				why := fmt.Sprintf("%s:%s matches reputation allowlist entry %s", arts[i].Kind, arts[i].Name, entryLabel(e))
-				why += fmt.Sprintf("; %d finding(s) suppressed, highest severity=%s.", n, maxSev)
+				if inChildren > 0 {
+					why += fmt.Sprintf("; %d finding(s) suppressed (%d of them in its skills, commands or agents, which are part of "+
+						"the tree that matched), highest severity=%s.", n, inChildren, maxSev)
+				} else {
+					why += fmt.Sprintf("; %d finding(s) suppressed, highest severity=%s.", n, maxSev)
+				}
 				// The entry's review travels with the suppression, so "why was this trusted?"
 				// is answered in the report and not in a maintainer's memory.
 				if e.Reason != "" {
@@ -983,19 +1016,21 @@ func failGate(out model.ScanResult, failOn, failOnLLM string, mayEscalate bool) 
 // kind the judge has no pass for (a plugin tree, an unrecognised directory), or "". For such a target
 // the judge plans no question — at most a triage call, whose labels never reach this gate — so judgeGap
 // sees a run that answered everything it planned, and the gate used to exit 0 on a target the judge
-// never read (P-038).
+// never read (P-038). Since P-044 a plugin's skills, commands and agents are artifacts of their own, so a
+// plugin holding one is answered through it; judge.Unasked decides, for this gate and for the note.
 //
 // The target is the artifact at the checked path: a single-target check reports the path as typed
-// as both its root and its one artifact's path, and archiveView rewrites both to the archive. A scan,
-// or a check of a directory laid out as a root, has no artifact at its root path — an environment is
-// not a target, and there a plugin's skills are judged nowhere, so counting its plugins would make the
-// gate exit 4 on every machine with one installed. Those are disclosed by the judge's LLM-000 note.
+// as both its root and its artifact's path (a plugin's children carry their own), and archiveView
+// rewrites both to the archive. A scan, or a check of a directory laid out as a root, has no artifact
+// at its root path — an environment is not a target, and its unasked artifacts are disclosed by the
+// judge's LLM-000 note, never turned into exit 4.
 func unaskedTarget(out model.ScanResult) string {
 	if out.Root == "" {
 		return ""
 	}
-	for _, a := range out.Artifacts {
-		if a.Path == out.Root && judge.AsksNothingOf(a.Kind) {
+	unasked := judge.Unasked(out.Artifacts)
+	for i, a := range out.Artifacts {
+		if a.Path == out.Root && unasked[i] {
 			return fmt.Sprintf("the judge asked nothing about the target: it has no pass for a %s (1 artifact), "+
 				"so no question about its content was put to the model (the report's LLM-000 note has the detail)", a.Kind)
 		}

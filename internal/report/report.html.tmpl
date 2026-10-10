@@ -274,6 +274,8 @@
       <div class="tile"><div class="v">{{.Env.Plugins}}</div><div class="k">Plugins</div></div>
       <div class="tile"><div class="v">{{.Env.Skills}}</div><div class="k">Skills</div></div>
       {{if .Env.BundledSkills}}<div class="tile"><div class="v">{{.Env.BundledSkills}}</div><div class="k">Skills inside plugins</div></div>{{end}}
+      {{if .Env.BundledCommands}}<div class="tile"><div class="v">{{.Env.BundledCommands}}</div><div class="k">Commands inside plugins</div></div>{{end}}
+      {{if .Env.BundledAgents}}<div class="tile"><div class="v">{{.Env.BundledAgents}}</div><div class="k">Agents inside plugins</div></div>{{end}}
       <div class="tile"><div class="v">{{.Env.MCPServers}}</div><div class="k">MCP servers</div></div>
       <div class="tile"><div class="v">{{.Env.Connectors}}</div><div class="k">Remote connectors</div></div>
       <div class="tile"><div class="v">{{.Env.Hooks}}</div><div class="k">Hooks</div></div>

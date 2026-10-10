@@ -118,12 +118,12 @@ func PluginInstalls(root, home string) map[string]PluginInstall {
 // install-symlink skill guard applies (§16.2). A stale entry whose directory is gone is
 // skipped: there is nothing loaded and nothing to audit.
 //
-// Coverage boundary: the plugin tree is scanned as ONE artifact (its bundled skills, commands and
-// MCP config are read as text by the detect engine). Spec §4 asks for those to be re-collected under
-// their own kinds; that finer attribution is still not done for skills/commands/MCP.
-//
-// HOOKS ARE THE EXCEPTION, and now get the same per-(event, matcher, command) treatment settings.json
-// hooks do — see collectPluginHooks.
+// Coverage boundary: the plugin tree is scanned as ONE artifact (everything in it is read as text by
+// the detect engine), and spec §4 (B4) asks for its parts to be re-collected under their own kinds as
+// well: its skills, commands and agents (pluginContents, P-044), its hooks per (event, matcher,
+// command) the way settings.json hooks are (collectPluginHooks), and its MCP servers
+// (collectPluginMCP). What is still only text in the tree: output styles, inline manifest commands,
+// manifest-declared MCP servers.
 func collectPlugins(root, home string, env *model.EnvSummary) ([]model.ArtifactReport, []model.Finding) {
 	var out []model.ArtifactReport
 	var notes []model.Finding
@@ -198,9 +198,14 @@ func collectPlugins(root, home string, env *model.EnvSummary) ([]model.ArtifactR
 				})
 				continue
 			}
-			out = append(out, artifact(model.KindPlugin, pluginName(name, inst.Version), real, TreeHash(real, real)))
+			parent := pluginName(name, inst.Version)
+			out = append(out, artifact(model.KindPlugin, parent, real, TreeHash(real, real)))
 			env.Plugins++
-			env.BundledSkills += bundledSkills(real)
+			// Its skills, commands and agents, as artifacts of their own named the way the gate resolves
+			// them (`<bundle>:<leaf>`, the bundle being this key's half before "@"), see plugincontents.go.
+			pc, pcn := pluginContents(real, parent, bundleName(name), " (plugin "+name+")", env)
+			out = append(out, pc...)
+			notes = append(notes, pcn...)
 
 			// The plugin's OWN hooks, re-collected per (event, matcher, command) through the same
 			// builder settings.json goes through. The tree is already scanned as text above, but a hook
@@ -234,24 +239,13 @@ func collectPlugins(root, home string, env *model.EnvSummary) ([]model.ArtifactR
 	return out, notes
 }
 
-// bundledSkills counts the skills a plugin bundle ships (<bundle>/skills/*/SKILL.md). They are
-// scanned inside the plugin's tree and never become artifacts of their own — this is a count
-// for the inventory line, not a change of attribution.
-func bundledSkills(bundle string) int {
-	ents, err := os.ReadDir(filepath.Join(bundle, "skills"))
-	if err != nil {
-		return 0
+// bundleName is the plugin's namespace in a `plugin:skill` name: an installed_plugins.json key's half
+// before "@marketplace", or a desktop label's — the same split PluginInstalls keys the gate's lookup by.
+func bundleName(key string) string {
+	if i := strings.IndexByte(key, '@'); i > 0 {
+		return key[:i]
 	}
-	n := 0
-	for _, e := range ents {
-		if !e.IsDir() {
-			continue
-		}
-		if fi, err := os.Stat(filepath.Join(bundle, "skills", e.Name(), "SKILL.md")); err == nil && fi.Mode().IsRegular() {
-			n++
-		}
-	}
-	return n
+	return key
 }
 
 // pluginName labels a plugin artifact "<name>@<marketplace> (version)" — the version
@@ -488,7 +482,9 @@ func collectSyncedPlugins(root, home string, env *model.EnvSummary) ([]model.Art
 			}
 			out = append(out, artifact(model.KindPlugin, pluginName(pl.Name(), ""), real, TreeHash(real, real)))
 			env.Plugins++
-			env.BundledSkills += bundledSkills(real)
+			pc, pcn := pluginContents(real, pluginName(pl.Name(), ""), pl.Name(), " (synced plugin "+pl.Name()+")", env)
+			out = append(out, pc...)
+			notes = append(notes, pcn...)
 			ph, phn := collectPluginHooks(real, " (synced plugin "+pl.Name()+")", env)
 			out = append(out, ph...)
 			notes = append(notes, phn...)

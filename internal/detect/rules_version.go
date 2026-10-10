@@ -36,7 +36,7 @@ import (
 // Nothing enforces this mechanically. Hashing the source would move on every comment edit, which
 // is the false alarm this value exists to avoid; the cost is that a forgotten bump lets two
 // reports claim the same rules while different detection code produced them.
-const rulesEpoch = 1
+const rulesEpoch = 2 // 2: a plugin's skills, commands and agents are artifacts of their own and carry findings (P-044)
 
 // rulesVersionLen is how many hex digits of the sha256 the version keeps.
 const rulesVersionLen = 12

@@ -7,9 +7,11 @@ package main
 // question it planned", and P-026's exit 4 never fires — `check ./plugin --llm --fail-on-llm high`
 // exited 0 on a SKILL.md asking the agent to send the user's home directory away, the sentence
 // the judge exists to read. A check target of such a kind is now not evaluable (exit 4), and every
-// --llm run names the artifacts it asked nothing about in one LLM-000. scan keeps its exit code:
-// in a scan a plugin's skills are judged nowhere, so counting them would make every machine with
-// a plugin exit 4 whatever the judge said.
+// --llm run names the artifacts it asked nothing about in one LLM-000. scan keeps its exit code.
+//
+// P-044 narrowed it: a plugin's skills, commands and agents are artifacts of their own and get
+// their kind's questions, so a plugin with at least one of them is answered (P-026's rules then
+// apply to those calls); a plugin with none still exits 4 and is still named in the note.
 
 import (
 	"net/http/httptest"
@@ -70,26 +72,34 @@ func TestFailOnLLM_TargetTheJudgeAsksNothingAbout(t *testing.T) {
 	cfg := map[string]string{"ok": writeGateJudgeConfig(t, ok.URL, true), "closed": writeGateJudgeConfig(t, closed.URL, true)}
 	gate := []string{"--llm", "--fail-on-llm", "high", "--fail-on", "critical"}
 
+	bare := filepath.Join(base, "bare")
+	mustWriteFile(t, filepath.Join(bare, ".claude-plugin", "plugin.json"), `{"name":"bare","version":"1.0.0"}`)
+	mustWriteFile(t, filepath.Join(bare, "scripts", "notes.md"), "# Notes\n"+unaskedSentence)
+
 	for _, tc := range []struct {
 		name, target, cfg string
 		args              []string
 		code              int
-		kind              string // the kind the stderr line and the note must name; "" = no note, empty stderr
+		note              string // the kind the LLM-000 "asked nothing about" note must name; "" = no such note
+		reason            string // what the one stderr line must say on exit 4
 	}{
-		{"plugin directory", plugin, "ok", gate, 4, "plugin"},
-		{"plugin directory, closed port", plugin, "closed", gate, 4, "plugin"},
-		{"plugin directory, trailing slash", plugin + "/", "ok", gate, 4, "plugin"},
-		{"plugin as a zip", zip, "ok", gate, 4, "plugin"},
-		{"plain directory", plain, "ok", gate, 4, "directory"},
-		// Triage labels the static medium and cannot reach --fail-on-llm: it is not a question.
-		{"plugin with one static medium", triaged, "ok", gate, 4, "plugin"},
+		// P-044: a plugin's skill is an artifact of its own and is judged, so the plugin is answered.
+		{"plugin directory", plugin, "ok", gate, 0, "", ""},
+		{"plugin directory, closed port", plugin, "closed", gate, 4, "", "call(s) failed"},
+		{"plugin directory, trailing slash", plugin + "/", "ok", gate, 0, "", ""},
+		{"plugin as a zip", zip, "ok", gate, 0, "", ""},
+		{"plain directory", plain, "ok", gate, 4, "directory", "asked nothing about the target"},
+		// A plugin with no loadable skill, command or agent: still nothing for the judge to ask.
+		{"plugin with no loadable contents", bare, "ok", gate, 4, "plugin", "asked nothing about the target"},
+		{"plugin with one static medium", triaged, "ok", gate, 0, "", ""},
 		// Reverse: a target the judge has questions for, answered, is an answer.
-		{"skill, answered, no finding", skill, "ok", gate, 0, ""},
-		// Reverse: --fail-on alone never reads the judge's state (the note is still there).
-		{"plugin, --fail-on only, working endpoint", plugin, "ok", []string{"--llm", "--fail-on", "high"}, 0, ""},
-		{"plugin, --fail-on only, closed port", plugin, "closed", []string{"--llm", "--fail-on", "high"}, 0, ""},
+		{"skill, answered, no finding", skill, "ok", gate, 0, "", ""},
+		// Reverse: --fail-on alone never reads the judge's state.
+		{"plugin, --fail-on only, working endpoint", plugin, "ok", []string{"--llm", "--fail-on", "high"}, 0, "", ""},
+		{"plugin, --fail-on only, closed port", plugin, "closed", []string{"--llm", "--fail-on", "high"}, 0, "", ""},
+		{"bare plugin, --fail-on only", bare, "ok", []string{"--llm", "--fail-on", "high"}, 0, "plugin", ""},
 		// Precedence: a gate that fired is an answer.
-		{"plugin with one static medium, --fail-on-llm medium", triaged, "ok", []string{"--llm", "--fail-on-llm", "medium", "--fail-on", "critical"}, 1, ""},
+		{"plugin with one static medium, --fail-on-llm medium", triaged, "ok", []string{"--llm", "--fail-on-llm", "medium", "--fail-on", "critical"}, 1, "", ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			args := append(append([]string{"check", tc.target}, tc.args...), "--config", cfg[tc.cfg], "--json", "--quiet")
@@ -99,15 +109,11 @@ func TestFailOnLLM_TargetTheJudgeAsksNothingAbout(t *testing.T) {
 			}
 			out := decodeScan(t, so)
 			notes := unaskedNotes(out)
-			wantKind := tc.kind
-			if wantKind == "" && tc.target != skill {
-				wantKind = "plugin" // the note does not depend on the gate flags
-			}
 			switch {
-			case wantKind == "" && len(notes) != 0:
+			case tc.note == "" && len(notes) != 0:
 				t.Errorf("a target the judge asked about got an unasked note: %+v", notes)
-			case wantKind != "" && (len(notes) != 1 || !strings.Contains(notes[0].Why, wantKind)):
-				t.Errorf("want one LLM-000 naming %q, got %+v", wantKind, notes)
+			case tc.note != "" && (len(notes) != 1 || !strings.Contains(notes[0].Why, tc.note)):
+				t.Errorf("want one LLM-000 naming %q, got %+v", tc.note, notes)
 			}
 			if tc.code != 4 {
 				if se != "" {
@@ -115,40 +121,49 @@ func TestFailOnLLM_TargetTheJudgeAsksNothingAbout(t *testing.T) {
 				}
 				return
 			}
-			if strings.Count(se, "\n") != 1 || !strings.Contains(se, "(exit 4)") ||
-				!strings.Contains(se, "asked nothing about the target") || !strings.Contains(se, tc.kind) {
-				t.Errorf("stderr must be one line saying (exit 4), the judge asked nothing about the target, and %q; got:\n%s", tc.kind, se)
+			if strings.Count(se, "\n") != 1 || !strings.Contains(se, "(exit 4)") || !strings.Contains(se, tc.reason) ||
+				(tc.note != "" && !strings.Contains(se, tc.note)) {
+				t.Errorf("stderr must be one line saying (exit 4), %q and %q; got:\n%s", tc.reason, tc.note, se)
 			}
 		})
 	}
 }
 
 // TestFailOnLLM_ScanKeepsItsCodeAndNamesWhatWasNotAsked pins the scan side of the boundary: an
-// environment is not a target, so an installed plugin — whose skills a scan judges nowhere — is
-// named in the note and leaves the exit code alone; an environment of judged kinds gets no note.
+// environment is not a target, so an installed plugin with nothing loadable is named in the note and
+// leaves the exit code alone; a plugin holding a skill, and an environment of judged kinds, get no note.
 func TestFailOnLLM_ScanKeepsItsCodeAndNamesWhatWasNotAsked(t *testing.T) {
 	ok, _ := countingServer(t)
 	cfg := writeGateJudgeConfig(t, ok.URL, true)
-	env := func(withPlugin bool) string {
+	env := func(plugin string) string {
 		home := t.TempDir()
 		root := filepath.Join(home, ".claude")
 		mustWriteFile(t, filepath.Join(root, "skills", "s1", "SKILL.md"), "---\nname: s1\ndescription: Formats markdown tables.\n---\nFormat the table the user gives you.\n")
-		if withPlugin {
-			dir := writePluginTree(t, filepath.Join(root, "plugins", "cache", "m", "demo", "1.0.0"), false)
+		if plugin != "" {
+			dir := filepath.Join(root, "plugins", "cache", "m", "demo", "1.0.0")
+			if plugin == "skill" {
+				writePluginTree(t, dir, false)
+			} else {
+				mustWriteFile(t, filepath.Join(dir, ".claude-plugin", "plugin.json"), `{"name":"demo","version":"1.0.0"}`)
+				mustWriteFile(t, filepath.Join(dir, "scripts", "notes.md"), "# Notes\n"+unaskedSentence)
+			}
 			mustWriteFile(t, filepath.Join(root, "plugins", "installed_plugins.json"),
 				`{"version":2,"plugins":{"demo@m":[{"installPath":"`+dir+`","version":"1.0.0"}]}}`)
 		}
 		return root
 	}
 	for _, tc := range []struct {
-		name       string
-		withPlugin bool
+		name   string
+		plugin string // "" none, "skill" a plugin holding a skill, "bare" one holding no loadable contents
+		note   bool
 	}{
-		{"environment with an installed plugin", true},
-		{"environment of judged kinds only", false},
+		// P-044: the plugin's skill is judged as an artifact of its own, so the plugin is not "asked nothing".
+		{"environment with an installed plugin holding a skill", "skill", false},
+		{"environment with an installed plugin holding nothing loadable", "bare", true},
+		{"environment of judged kinds only", "", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			so, se, code := runAguard(t, "scan", "--root", env(tc.withPlugin), "--inbox", "off",
+			so, se, code := runAguard(t, "scan", "--root", env(tc.plugin), "--inbox", "off",
 				"--llm", "--fail-on-llm", "high", "--config", cfg, "--json", "--quiet")
 			if code != 0 || se != "" {
 				t.Fatalf("exit %d with stderr %q, want 0 and nothing: a scan is not a check target", code, se)
@@ -158,7 +173,7 @@ func TestFailOnLLM_ScanKeepsItsCodeAndNamesWhatWasNotAsked(t *testing.T) {
 				t.Fatalf("the judge must have run and answered every call: %+v", out.Judge)
 			}
 			notes := unaskedNotes(out)
-			if !tc.withPlugin {
+			if !tc.note {
 				if len(notes) != 0 {
 					t.Errorf("an environment the judge asked about in full got an unasked note: %+v", notes)
 				}
