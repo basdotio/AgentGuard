@@ -264,7 +264,13 @@ names a credential withheld. It stays out of `Redact` because that is the exit f
 snippet. In the same step, between that redaction and the home replacement, a run of more than
 128 bytes of whitespace or invisible characters inside a line becomes the one space grounding reads
 it as, so padding cannot spend an excerpt's byte caps and push a directive out of what is sent; the
-folded text is redacted once more, since the fold can join what the run kept apart.
+folded text is redacted once more, since the fold can join what the run kept apart. Last, every field
+a request carries (declared purpose, behavior, triage evidence) is redacted once more as a whole, to a
+fixed point, and cut again if that lengthened it (`judge/bounds.go`, P-037): every cut falls on a
+character boundary (`detect.RunePrefix`), bytes that are not UTF-8 go as the U+FFFD the request's JSON
+would carry, behavior stays within 6,000 bytes on every pass (the deobfuscation and collusion fields
+drop whole payloads or digest lines from the end, disclosed as `LLM-000`), and one finding's evidence
+within 1,000.
 
 Two properties matter more than the passes:
 

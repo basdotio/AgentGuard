@@ -38,7 +38,10 @@ Bearer 头,明文 http 等于把它送上网),setup/test/judge 三处都过它,j
 的 `Why` 现在带最多三条没落地的引文(截 120 字符,再过一次 Redact),用来区分"模型在转述"和"摘录切掉了它要引的那行"。
 **判官的两个版本号**(P-031):`ExcerptVersion`(`ground.go`)是**手动**的 —— 改了 `planFor` 给哪些 artifact 跑哪几趟、摘录怎么切
 (condense / capHeadTail / lineMap / 解码上限 / 声明用途和 hook、MCP、connector 的渲染 / 家目录替换与脱敏顺序)或引文怎么落地,**同一个提交里加一**,
-并把 `excerpt_version_test.go` 钉的 {版本, 摘要} 一起换掉;只换摘要不加版本,两份报告就会自称同样的摘录。`PromptVersion` 是**算出来的**,不要手改,
+并把 `excerpt_version_test.go` 钉的 {版本, 摘要} 一起换掉;只换摘要不加版本,两份报告就会自称同样的摘录。
+**`internal/redact` 下的任何改动都会改摘录字节**(每个字段最后都整段过 `Redact`,P-037),同一个提交里也要给 `ExcerptVersion` 加一。
+**新字段、新的拼接或截断,最后一步必须走 `settle`(单段)或 `fitUnits`(多 unit,整块丢、按行读回 unit)**,截断只用 `detect.RunePrefix`;
+`FuzzPlanFields` 只看得见 `buildTasks` 产出的字段,绕过它们拼进 `Request` 的文本它不会替你发现。`PromptVersion` 是**算出来的**,不要手改,
 也不要让 nonce、被扫内容或模型名进它(那三样是占位);`prompt_version.go` 里 triage 的两条消息是 `Triage` 内联拼法的复述,改 `triage.go` 的拼法
 要一起改(`TestPromptVersion_HashesWhatTheClientSends` 逐字节比真客户端发的请求体)。`Request`/`chatRequest` 加字段、加新 `Mode`,都要在测试里表态。
 **趟数按 artifact 种类选**(`judge/run.go` 里的 mode 表,不是固定四趟):injection(`LLM-003`,
