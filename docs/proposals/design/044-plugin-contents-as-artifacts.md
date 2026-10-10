@@ -151,8 +151,8 @@ approval the gate recorded for `p:s1` already sits under the child's hash.
 5. **Report.** Children are listed under their plugin. A child's deterministic finding that its plugin also carries (same rule,
    same evidence file and line) is not printed again — terminal, markdown, HTML, SARIF — and is not counted again in the headline
    counts; JSON carries every finding of every artifact. One exported predicate decides "the plugin row already shows this",
-   used by the renderers and by the judge (item 6), so the two cannot disagree. The 6 mirror-copy cases are printed on the child:
-   its row names the copy that loads.
+   used by the renderers and by the judge (item 6), so the two cannot disagree. The 6 mirror-copy cases are printed on the child too:
+   its row names the copy that loads, the plugin row the copy the tree walk met first.
 6. **Judge.** No new pass; `planFor` and `ExcerptVersion` do not move. Children get the passes of their kind (a skill: intent,
    injection, and explain or collusion when their triggers fire; a command or an agent: injection). Triage on a child skips the
    findings the plugin row already shows (the plugin's own triage asks about them): 598 → 583 calls here.
@@ -179,7 +179,8 @@ approval the gate recorded for `p:s1` already sits under the child's hash.
 - [ ] `TestGate_NamespacedSkillHashIsTheChildsHash` (`cmd/aguard`): `PreToolUse[Skill]` `p:s1` over a fixture root audits the
   directory whose hash the child `p:s1` carries in `scan --json` of the same root. Red on the base: no such child
 - [ ] `TestApply_PluginAndChildrenAreOneUnit` (`internal/score`): a plugin with one medium and six clean children scores the
-  environment exactly as the plugin alone (94 for the fixture `scan`, 88 for `check <plugin>`); a child with a qualified high LLM
+  environment exactly as it does without the children (94 for the fixture `scan`, plugin plus its hook; 88 for
+  `check <plugin>`); a child with a qualified high LLM
   finding lowers the unit's effective score and caps `overall_effective` at 69 while `overall` does not move; the
   `TestApply_EffectiveNeverExceedsOverall` property still holds. Red on the base: children averaged per artifact give 98 and 98 (the S2 rows)
 - [ ] `TestRender_ChildDuplicatesAreShownOnce` (`internal/report`): the variant-1 fixture prints `EXEC-001` at `s1/SKILL.md:6`
