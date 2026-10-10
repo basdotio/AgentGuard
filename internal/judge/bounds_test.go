@@ -350,3 +350,20 @@ func FuzzPlanFields(f *testing.F) {
 		checkFields(t, "fuzz", buildTasks(arts, 1, newEgress("/home/fz")))
 	})
 }
+
+// FuzzSendable (P-037): sendable is what the endpoint reads — the client's encoding/json round trip,
+// byte for byte — and is valid UTF-8; valid input comes back as it is.
+func FuzzSendable(f *testing.F) {
+	for _, s := range []string{"", "plain", "中😀", "a\xffb", "\xe4\xb8", "\xf0\x9f\x98", "\xed\xa0\x80", "\x80\x80\x80\x80", "�", "a b"} {
+		f.Add(s)
+	}
+	f.Fuzz(func(t *testing.T, s string) {
+		got := sendable(s)
+		if want := asReceived(t, s); got != want {
+			t.Errorf("sendable(%q) = %q, the endpoint reads %q", s, got, want)
+		}
+		if !utf8.ValidString(got) || utf8.ValidString(s) && got != s {
+			t.Errorf("sendable(%q) = %q", s, got)
+		}
+	})
+}

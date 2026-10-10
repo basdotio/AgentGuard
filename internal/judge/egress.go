@@ -176,9 +176,11 @@ func (e egress) scrubCut(s string, clipped bool) string {
 // type comment for the scrub. The fold comes after the first Redact because the entropy rule weighs a
 // whole run: a token it redacts alone, joined by the fold to a low-entropy tail, would pass. The
 // second Redact sees what the fold joined (a key id split by zero-width characters), and the scrub
-// runs last so a home split the same way is stripped once whole.
+// runs last so a home split the same way is stripped once whole. Before any of it, bytes that are not
+// UTF-8 become what the endpoint will read in their place (sendable), so every cap after this measures
+// the text that is sent.
 func (e egress) redact(s string) string {
-	r := detect.Redact(s)
+	r := detect.Redact(sendable(s))
 	if f := foldPadding(r); f != r {
 		r = detect.Redact(f)
 	}
@@ -317,3 +319,26 @@ func pathByte(c byte) bool { return alnum(c) || c == '.' || c == '_' || c == '-'
 
 // entropyByte mirrors the class of detect's entropy token rule: the bytes one redacted run can span.
 func entropyByte(c byte) bool { return alnum(c) || c == '+' || c == '/' || c == '_' || c == '-' }
+
+// sendable returns s as the endpoint reads it. The client marshals each request with encoding/json,
+// which writes every byte that is not part of valid UTF-8 as U+FFFD; a file in Latin-1, or a name with a
+// stray byte, reached the endpoint so while grounding compared a quote against the raw bytes (P-037).
+// Replaced here, one U+FFFD per byte exactly as encoding/json does it, the text a quote is checked
+// against is the text that was received. Valid UTF-8 is returned as it is.
+func sendable(s string) string {
+	if utf8.ValidString(s) {
+		return s
+	}
+	var b strings.Builder
+	b.Grow(len(s) + 8)
+	for i := 0; i < len(s); {
+		r, w := utf8.DecodeRuneInString(s[i:])
+		if r == utf8.RuneError && w == 1 {
+			b.WriteString(string(utf8.RuneError))
+		} else {
+			b.WriteString(s[i : i+w])
+		}
+		i += w
+	}
+	return b.String()
+}

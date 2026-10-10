@@ -18,7 +18,6 @@ package judge
 import (
 	"context"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/basdotio/AgentGuard/internal/detect"
 	"github.com/basdotio/AgentGuard/internal/model"
@@ -147,18 +146,14 @@ const (
 // ellipsis marks where bounded text was cut.
 const ellipsis = "…"
 
-// capBytes bounds s to max bytes, cutting on a rune boundary (a cut mid-rune would put invalid
-// UTF-8 in the report) and marking the cut with an ellipsis. Callers redact FIRST, so a secret
+// capBytes bounds s to max bytes, cutting on a rune boundary (detect.RunePrefix: a cut mid-rune would
+// put invalid UTF-8 in the report) and marking the cut with an ellipsis. Callers redact FIRST, so a secret
 // straddling the cut cannot survive as a sub-threshold fragment (invariant #3).
 func capBytes(s string, max int) string {
 	if len(s) <= max {
 		return s
 	}
-	cut := max
-	for cut > 0 && !utf8.RuneStart(s[cut]) {
-		cut--
-	}
-	return s[:cut] + ellipsis
+	return detect.RunePrefix(s, max) + ellipsis
 }
 
 // modeRow is what a mode's verdict is: the pass a reader knows it by, the rule ID it carries, the

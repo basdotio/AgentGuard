@@ -34,15 +34,7 @@ const (
 // redact-before-truncate order every excerpt keeps — cutting on a rune boundary so a description
 // in any language never ends in half a character.
 func declaredPurpose(s string, eg egress) string {
-	s = eg.redact(s)
-	if len(s) <= maxDeclaredBytes {
-		return s
-	}
-	cut := maxDeclaredBytes
-	for cut > 0 && !utf8.RuneStart(s[cut]) {
-		cut--
-	}
-	return s[:cut]
+	return detect.RunePrefix(eg.redact(s), maxDeclaredBytes)
 }
 
 // readAtMost reads up to max bytes of a file (never the whole thing) — the memory guard for
@@ -221,12 +213,9 @@ func capHeadTail(text string, lm []int, max int) (string, []int) {
 		used += len(lines[j-1]) + 1
 	}
 	if i == 0 && j == len(lines) {
-		// One line wider than either budget (minified code): a prefix is all there is.
-		first := lines[0]
-		if len(first) > max {
-			first = first[:max]
-		}
-		return first, lm[:1]
+		// One line wider than either budget (minified code): a prefix is all there is, ending on a
+		// character boundary.
+		return detect.RunePrefix(lines[0], max), lm[:1]
 	}
 	out := make([]string, 0, i+1+len(lines)-j)
 	outLM := make([]int, 0, cap(out))
@@ -400,11 +389,8 @@ func capLine(s string, max int) string {
 	if len(s) <= max {
 		return s
 	}
-	cut := max
-	for cut > 0 && !utf8.RuneStart(s[cut]) {
-		cut--
-	}
-	return s[:cut] + fmt.Sprintf(" … (%d bytes omitted)", len(s)-cut)
+	cut := detect.RunePrefix(s, max)
+	return cut + fmt.Sprintf(" … (%d bytes omitted)", len(s)-len(cut))
 }
 
 // credentialKeyRE and credentialSegmentRE recognise a configuration key that names a credential.
@@ -486,15 +472,11 @@ func capabilityDigest(a model.ArtifactReport, eg egress) (string, []sourceUnit) 
 }
 
 // boundedRedact redacts s (best-effort, see judge.go header), strips the home, then caps it to max
-// bytes. Redaction happens BEFORE truncation so a secret straddling the cap can't survive as a
+// bytes on a character boundary. Redaction happens BEFORE truncation so a secret straddling the cap can't survive as a
 // sub-threshold partial, and before the scrub so it sees each run whole (egress.go). Used for the
 // one-line behaviors: a hook's command or URL, an MCP server's configuration.
 func boundedRedact(s string, max int, eg egress) string {
-	red := eg.redact(s)
-	if len(red) > max {
-		red = red[:max]
-	}
-	return red
+	return detect.RunePrefix(eg.redact(s), max)
 }
 
 // behaviorExcerpt walks a skill dir and returns a bounded, REDACTED concatenation of its
