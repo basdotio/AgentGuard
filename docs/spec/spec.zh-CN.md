@@ -362,6 +362,7 @@ type ArtifactReport struct {
                           //   sha256(<域> 0x00 <规范 JSON>),域 aguard:{hook,mcp,permission,settings-env}:v1;
                           //   hook 与 mcp 哈希整个条目;不含任何路径和 artifact 名;secret 先过 Redact 的凭据那一半
                           //   (不含高熵兜底),且替换不许拿走结构字符(shell 元字符、授权通配、URL 分隔符);
+                          //   参数数组里被 flag 认出的元素(redact.Announced)整个换掉,不只换到第一个空白(P-039);
                           //   hook/permission 带上跟进脚本的 sha256,读不到按原因记 unresolved/outside-home/unreadable。
                           //   parse 失败的 artifact 仍为 ""(""=没读过,永不匹配批准或信誉)。
     Score          int   // 0–100,只由确定性发现计算
@@ -554,7 +555,8 @@ v1 写的 `internal/rules/` 从未存在:规则表就在 `detect/rules_data.go`,
    (`curl -u user:pass`、`--password=`),这一形态与 `scheme://user:pw@host` 同等对待。参数数组(MCP 的 `args`)里
    flag 和值是两个元素:`redact.Argv` 把跟在 flag 后面的元素和 flag 合成一条命令行来认(同一组模式,不另列 flag 名单),
    认出的元素从第一个被换掉的字节到元素末尾整个换掉;判官的 MCP 摘录把它写在 flag 那一行(`args=--api-key <REDACTED>`,P-036)。
-   内容哈希自 P-009 起就按 `flag value` 配对数组元素,两边认的是同一批元素。
+   内容哈希问的是同一个判定(`redact.Announced`,`Argv` 自己也调它),忘掉的是同一段:认出的元素从第一个被换掉的字节到末尾
+   整个不进摘要(P-039;以前哈希照模式读,`"--password", "correct horse"` 留下尾巴 ` horse`),带结构字符的那段除外(§8)。
    与 §5.1「只报位置 + key 名」对应:**替换只作用于值那一半,key 名必须存活** —— 运维要行动,靠的是"哪一项
    泄了",把整行连名字一起抹掉是保护了值、废掉了发现。
    **实现只有一份**,在叶子包 `internal/redact`(`redact.Secrets` 两遍;内容哈希只取凭据那一遍 `redact.Credentials`),
