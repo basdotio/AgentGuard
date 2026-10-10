@@ -32,8 +32,11 @@ func Redact(s string) string { return redact.Secrets(s) }
 func RedactArgv(args []string) []string { return redact.Argv(args) }
 
 // redactCredentials is Redact without the entropy catch-all — redact.Credentials, the half the
-// content hash takes (contenthash.go; why only that half is explained on redact.Secrets).
-func redactCredentials(s string) string { return redact.Credentials(s) }
+// content hash takes (contenthash.go; why only that half is explained on redact.Secrets) — with each
+// replacement offered to keep first (redact.CredentialsKeeping: the guard decides per replacement, P-043).
+func redactCredentials(s string, keep func(match, repl string) bool) string {
+	return redact.CredentialsKeeping(s, keep)
+}
 
 // announcedArg is redact.Announced: whether a flag announces the argument after it, and where in that
 // argument the value starts. The content hash forgets that span whole, as RedactArgv does for the
