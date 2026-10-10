@@ -180,6 +180,12 @@ aguard scan --llm --config config.yaml
 - 判官不可用绝不静默。端点不通或配错,报告带一条 **`LLM-000`** 覆盖 note("failed on N call(s);
   first error: …"),静态结果不受影响。"判官没开"永远不能伪装成"没问题"。
 - `--llm` 但 `llm.enabled: false` → 一条 `LLM-000` note 说明按静态跑了。
+- **回复怎么读。** 判决是一个 JSON 对象:回复里从第一个 `{` 到最后一个 `}` 的那段,所以前后的说明文字或代码围栏
+  不碍事。只修一种失误:模型用一个多余的 `}` 提前一个成员把对象合上、然后接着往下写
+  (`{"flagged": false, …, "evidence": "…"}, "barrier_evidence": ""}`)——答案是完整的,于是去掉那一个 `}`;
+  前提是去掉之后恰好是一个对象、后面只有空白或一个收尾围栏、没有哪个成员名出现两次(不分大小写比较)。
+  第一个对象之后以逗号开头的其他任何东西、以及含两个对象的回复,这次调用一律失败:绝不只读前半个,因为后半个
+  可能带着另一个 `flagged`。修过的回复是回答了,不是失败;判官区块把它记为 `repaired`。
 - LLM 严重度封顶:模型永远吐不出 `critical`(advisory 猜测不能冒充确认的 critical)。
 
 ## 规则 ID 速查
@@ -305,8 +311,9 @@ em 空格(U+2003)、不换行空格和 tab 一样折叠,所以用它们垫开的
 
 开了 `--llm`,摘要会多一行说判官自己 —— `LLM judge ran over N artifact(s) in M call(s) and had nothing
 to add`、`… and added K advisory leads`,或 `LLM judge did not run: <原因>` —— 并且 "LLM judge leads"
-那一节即使为空也会出现,里面就是这一行。JSON 里对应 `judge` 字段(`ran`、`reason`、`artifacts`、`calls`、
-`failed`、`skipped`、`findings`、`endpoint`),外加成本:`triage_calls`(`calls` 里属于 triage 的部分——
+那一节即使为空也会出现,里面就是这一行。有回复用到了"提前合上"的修补时,这一行在失败数旁边写出几个
+(`(0 failed, 0 skipped, 1 repaired)`);一个都没有时和以前一样。JSON 里对应 `judge` 字段(`ran`、`reason`、
+`artifacts`、`calls`、`failed`、`skipped`、`repaired`——和前两个一样总是出现——`findings`、`endpoint`),外加成本:`triage_calls`(`calls` 里属于 triage 的部分——
 triage 只问一次,判官的题问 `samples` 次)、`retries`、`prompt_tokens` / `completion_tokens`——端点没报用量时
 后两个键不出现,而不是写一个看起来像测量值的 0。不开 `--llm` 这些一律不出现。以前"判官跑了没发现"和"判官
 没跑"在报告上长得一样,而这正是读一份干净报告的人最需要分清的一件事。

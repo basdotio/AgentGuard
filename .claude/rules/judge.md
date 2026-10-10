@@ -55,5 +55,10 @@ hook capability(`LLM-008`,维度 2)、MCP config(`LLM-009`,维度 5,**只提示*
 (建表 + `max_calls` 截断 + shortened 注记),客户端和预览都用 `judgePayload`/`triagePayload` 渲染栅栏里的文本,趟名和规则 ID 都读
 `modeInfo`。**不要在 `cmd/` 里另写一份渲染,也不要给预览单独的截断或排序**——预览一旦和发出去的字节不同,就成了会漂移的第二实现。
 `TestPlan_PayloadsAreWhatTheClientSends`(真 `NewHTTP` + httptest)和 `TestLLMPreview_MatchesWhatScanAndCheckSend`(二进制,真跑)逐字节钉着。
+**读回复只修一种形状**(`reply.go`,P-034):对象被一个多余的 `}` 提前一个成员合上(`{…}, "m": …}`),才去掉那个 `}` 当一个对象读,
+且之后只剩空白或收尾围栏、成员名不重复(`EqualFold`,和 encoding/json 匹配字段的方式一样)。**不要改成"解码第一个值、忽略后面"**:
+第一个对象后面以逗号开头的那段正是另一个 `flagged` 或 barrier 引文所在,只读前半个就是替判官换了答案(不变量 #4),`{…}{…}` 同理。
+干净回复仍按最外层 `{…}` 读,一个字节不变(`TestParseVerdict_ReadsOneObject` 拿旧读法当参照,`FuzzParseVerdict` 用独立判据);
+`Verdict.repaired` 不导出,模型写不进来,`Run` 数进 `repaired`。改读法不动 `PromptVersion`/`ExcerptVersion`(两者都不覆盖回复解析),由 `tool_version` 标识。
 完整参考:[docs/llm-judge.md](../../docs/llm-judge.md)。
 

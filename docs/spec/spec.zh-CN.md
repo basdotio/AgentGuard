@@ -386,7 +386,7 @@ type ScanResult struct {
     OverallEffective int  // 含合格 LLM 发现;恒 ≤ Overall;不开 --llm 时二者相等
     ToolVersion string
     RulesVersion string // 规则表版本(§5.1),json:"rules_version",总是出现:tool_version 标的是提交,不是规则;只覆盖确定性检测(Overall 的来源),判官不在内,由 `judge` 摘要的 prompt_version/excerpt_version 标识(P-031);两份报告的它不同 = 规则变了,相同 = 规则表相同(不等于检测逻辑相同,见 §5.1 的 epoch 纪律)
-    Judge     *JudgeSummary `json:",omitempty"` // --llm 时必填:跑没跑、判了几个、几次调用(其中 triage 几次、重试几次)、端点自报的 token(没报则缺省)、补了几条、没跑的原因(§16.8 用在判官自己身上:「跑了没发现」和「没跑」以前在报告上一模一样)、是哪个判官(`prompt_version`/`excerpt_version` 每个块都有,`model`/`samples` 配好判官才有,都取实际生效的值;密钥、请求头、`authority` 不记;P-031,§5.2)
+    Judge     *JudgeSummary `json:",omitempty"` // --llm 时必填:跑没跑、判了几个、几次调用(其中 triage 几次、重试几次;回复靠"提前合上"的修补才读出来的几次,`repaired`,P-034)、端点自报的 token(没报则缺省)、补了几条、没跑的原因(§16.8 用在判官自己身上:「跑了没发现」和「没跑」以前在报告上一模一样)、是哪个判官(`prompt_version`/`excerpt_version` 每个块都有,`model`/`samples` 配好判官才有,都取实际生效的值;密钥、请求头、`authority` 不记;P-031,§5.2)
     Inbox     *InboxReport  `json:",omitempty"` // 下载目录那条流水线的结果(§4.1),永不进 Overall
     Locations []Location    `json:",omitempty"` // 扫了哪里,各标 read/absent/off(§4.3);check 不填
     Sandbox   *SandboxInfo  `json:",omitempty"` // 在云端沙箱里跑时的判断依据(§4.2);nil = 本机
