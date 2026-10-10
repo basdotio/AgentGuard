@@ -181,7 +181,7 @@ Asked during stage 2:
 ## Done
 
 ```
-Merged: PR to be opened (2026-10-10; find the sha with git log --grep P-034 after the merge)
+Merged: PR #53 (2026-10-10; find the sha with git log --grep P-034)
 Released: pending release
 Evidence: TestParseVerdict_ReadsOneObject and TestRun_ClosedEarlyReplyIsAnswered (internal/judge/reply_test.go), red on
   the base: 9 of 30 table rows fail — the six closed-early rows refused with "invalid character ',' after top-level
