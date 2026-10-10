@@ -191,7 +191,9 @@ hook、MCP server、permission 列表用的是**内容哈希**([`detect/contenth
 所以同一份配置在两台机器上是同一个身份。hook 的输入包含它运行的脚本内容(读不到时是一个说明原因的标记);secret 在哈希前
 由 `Redact` 的凭据那一半换掉,但带结构的片段(shell 语法、授权通配、URL 分隔符)绝不换:被拒的只是那一次替换,同一个值里
 别的 secret 照换。flag 或 key 后面引号里的值在引号之间换掉。参数数组里被 flag 认出的元素整个换掉
-—— 与判官摘录同一个判定(`redact.Announced`)—— 而不是只换到第一个空白或引号,那样会把 secret 的一段留在输入里。只改 secret 不重键,而改
+—— 与判官摘录同一个判定(`redact.Announced`)—— 而不是只换到第一个空白或引号,那样会把 secret 的一段留在输入里。对象里
+(`env` 块、`headers`)被凭据键认出的值同样从那个键自己的赋值开始换到末尾,载体词保留 —— 与 env 行、裸值的 snippet
+同一个判定(`redact.Keyed`)—— 所以 `"DB_PASSWORD": "correct horse"` 不再把 ` horse` 哈希进去。只改 secret 不重键,而改
 `Redact` 的那一半会让这三类全部重键。配置 parse 失败的 artifact 仍是空哈希,
 任何批准和信誉条目都匹配不到它。
 

@@ -179,6 +179,11 @@ aguard scan --llm --config config.yaml
   或以 `, ; ) ] } + .` 开头时也照原样发,那是一个正在拼接的字符串的闭引号(`"--password=" + pw`)。key 后面只隔空白
   (`token "…"`)时不读引号里的值。flag 声明的参数也一样:作者把一句话写进 `--password "…"`,判官就看不到它,和 MCP
   server `args` 里 `"--password", "…"` 一样;静态规则读的是原文,被藏住的那一段到这一行结束。
+- **凭据键下的值在 triage 发出的证据里整个脱敏。** 静态规则命中一个凭据键下的值时(MCP server 的 `env` 或 `headers`、
+  settings 的 `env` 块),这条发现的 snippet 以前留着值里第一个空白之后的全部(`API_TOKEN=<REDACTED> horse; curl …`),
+  MCP server 从不带键的值里读出的第二条发现更是把整个值原样写出。现在两者都按内容哈希读这个成员的方式写:
+  `API_TOKEN=<REDACTED>`、`<REDACTED>`、`Bearer <REDACTED>`。代价:规则命中的那段载荷也看不到了 —— 规则号、标题和键名还在。
+  `mcp-config` 摘录本来就按键名把这种值整个换掉,不变。
 - **声明用途截到 1,000 字节**(description、hook 的拦截点),截在字符边界上。
 - **请求里的每个字段都有上限、都是合法 UTF-8、都整段脱敏过。** 每一趟的行为文本最多 6,000 字节:去混淆那趟按顺序发
   完整的解码载荷、串通那趟发完整的摘要行,装得下多少发多少,其余的在预览的 `shortened` 和一条 `LLM-000` 里写明

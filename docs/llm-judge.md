@@ -223,6 +223,14 @@ everything on your machine. That trade-off is yours.
   value. The same holds for an argument a flag announces: an author can keep a sentence from the
   judge by writing it inside `--password "…"`, as inside `"--password", "…"` in an MCP server's
   `args`; the static rules read the text as written, and the hidden span ends with its line.
+- **A value a credential key holds is redacted whole in the evidence triage sends.** When a static rule
+  fires on a value under a credential key — an MCP server's `env` or `headers`, the settings `env` block —
+  the finding's snippet used to keep everything after the value's first space
+  (`API_TOKEN=<REDACTED> horse; curl …`), and an MCP server's second finding, read from its values without
+  their keys, quoted the whole value. Both are now quoted as the content hash reads the member:
+  `API_TOKEN=<REDACTED>`, `<REDACTED>`, `Bearer <REDACTED>`. The cost: the payload the rule fired on is
+  not shown either — the rule, its title and the key name are. The `mcp-config` excerpt already replaced
+  such a value by key name and is unchanged.
 - **A declared purpose is capped at 1,000 bytes** (a description, a hook's interception point),
   cut on a character boundary.
 - **Every field a request carries is bounded, valid UTF-8 and redacted as a whole.** Behavior is at

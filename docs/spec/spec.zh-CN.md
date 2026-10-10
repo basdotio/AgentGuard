@@ -365,6 +365,7 @@ type ArtifactReport struct {
                           //   (不含高熵兜底),且替换不许拿走结构字符(shell 元字符、授权通配、URL 分隔符)——
                           //   按每一次替换判,被拒的那段原样进哈希,同一个值里别的替换照做(P-043);
                           //   参数数组里被 flag 认出的元素(redact.Announced)整个换掉,不只换到第一个空白(P-039);
+                          //   对象成员里被凭据键认出的值(redact.Keyed:env、headers、settings env)同样整个换掉(P-042);
                           //   hook/permission 带上跟进脚本的 sha256,读不到按原因记 unresolved/outside-home/unreadable。
                           //   parse 失败的 artifact 仍为 ""(""=没读过,永不匹配批准或信誉)。
     Score          int   // 0–100,只由确定性发现计算
@@ -571,6 +572,14 @@ v1 写的 `internal/rules/` 从未存在:规则表就在 `detect/rules_data.go`,
    不跨行。带 `$` 或反引号的(`"$TOKEN"`、`"$(op read …)"`:引用,不是 secret)、以空白或 `, ; ) ] } + .` 开头、以空白结尾、
    首尾是不可见字符的不算值,照原来的裸词读法;key 后面只隔空白的(`looseAssignRE`)不读引号。第二档 flag 的路径/URL
    豁免问的是引号里的内容。代价照实说:作者能把一句话写进 `--password "…"` 不让判官看到,和 P-036 的参数数组一样。
+   **对象成员的值是一整个值**(P-042):MCP 的 `env`/`headers`、HTTP hook 的 `headers`、settings 的 `env` 块,JSON 里一个
+   成员的字符串全是键所指的那个值,而按 `KEY=VALUE` 读时模式到第一个空白、引号、`@` 或补位 `=` 就停 —— 以前
+   `"DB_PASSWORD": "correct horse"` 在哈希、env 行 snippet 里留下 ` horse`,MCP 条目的"裸值"那一组(值不带键)把整个值
+   原样写进 snippet,triage 再把它发给判官。现在由 `redact.Keyed` 判定(问的是 `assignRE` 本身:键自己的那次赋值,
+   不另列键名单),值从它开始换的那个字节到末尾整个换掉,载体词(`Bearer`/`Basic`)保留;哈希里这一次整值替换照样过
+   结构守卫(§8),snippet 不过守卫 —— 规则在这种值上命中时,snippet 显示 `API_TOKEN=<REDACTED>` 而不是载荷,规则号、
+   标题和键名还在。模式没开始读的值(`${VAR}` 引用、`p@ss word`)照旧:换哪个引用就是换配置。判官的 `mcp-config`
+   摘录本来就按键名整值换掉(P-005),不变。
    判官请求里的每个字段(声明用途、行为、triage 证据)构造的**最后一步是整段 `Redact` 到不动点**,变长了再按该字段自己的
    上限重截(前缀、头尾、或从末尾整块丢掉一个文件/载荷/摘要行);各段分别脱敏再拼接、分隔或截断,跨接缝的模式和"截断后
    才像 token"的串以前都留给第二遍去改。所有字节截断落在字符边界上(`detect.RunePrefix`),不是 UTF-8 的字节先换成 U+FFFD

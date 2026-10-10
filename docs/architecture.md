@@ -239,7 +239,10 @@ hashing, but never a span that carries structure (shell syntax, a grant wildcard
 delimiter): that one replacement is refused and the value's other secrets are still replaced. A
 quoted value after a flag or a key is replaced between its quotes. In an argument array, an element a flag announces is replaced whole — the same decision
 the judge's excerpt takes (`redact.Announced`) — not only up to its first space or quote, which
-left a fragment of the secret in the input. Changing only a secret does not re-key; changing that half of `Redact` re-keys all
+left a fragment of the secret in the input. In an object (an `env` block, `headers`), a value its credential key
+announces is likewise replaced from where that key's assignment starts to its end, carrier word kept — the same
+decision the env-line and bare-value snippets take (`redact.Keyed`) — so `"DB_PASSWORD": "correct horse"` no longer
+hashes ` horse`. Changing only a secret does not re-key; changing that half of `Redact` re-keys all
 three kinds. Artifacts whose config did
 not parse keep the empty hash, which no approval or reputation entry can match.
 

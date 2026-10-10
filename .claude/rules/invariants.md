@@ -60,6 +60,8 @@
    - **参数数组按它拼成的命令行认**(`redact.Argv`,判官经 `detect.RedactArgv`,P-036):`["--api-key", "<key>"]` 逐个元素
      脱敏时 flag 和值永远不在同一个串里,短 key 原样出去。再渲染一个数组就用它;**不要在调用方自己判断前一个元素是不是 secret flag** —— 那是第二份 flag 名单。
      内容哈希要的是凭据那一半加结构守卫,不能直接调 `Argv`,所以问的是同一个判定 `redact.Announced`(P-039),忘掉的是同一段。
+     **对象成员(`env`、`headers`)按键自己的那次赋值认**(`redact.Keyed`,问的是 `assignRE`,P-042):哈希、env 行和裸值的
+     snippet(`unit.views`)忘掉同一段;**不要再列一份凭据键名单**(判官 `maskCredentialValue` 那份更宽的是 P-005 的,只管它的摘录)。
      **哪些 flag 算声明,名单只在 `flagSecretRE`**(`internal/redact/flags.go`,P-040):第二档(最后一个词是凭据名)对路径、URL、
      `--no-*`、下一行的值放行 —— 去掉这条豁免,哈希就忘掉 `--private-key` 指向哪个文件,换文件不重问。加 flag 先量误报(P-040 的表)。
      **引号里的值是同三条模式的另一种值形**(`internal/redact/quoted.go`,P-043),不是第二套模式:带 `$`/反引号、像闭引号的不算值。
