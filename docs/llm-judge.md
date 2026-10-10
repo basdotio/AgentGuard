@@ -224,6 +224,15 @@ everything on your machine. That trade-off is yours.
   report carries an **`LLM-000`** coverage note ("failed on N call(s); first error: …"), and
   the static result is unaffected. "Judge off" can never masquerade as "no issues."
 - `--llm` with `llm.enabled: false` → an `LLM-000` note saying it ran static-only.
+- **How a reply is read.** The verdict is one JSON object: the text from the reply's first `{` to its
+  last `}`, so prose or a code fence around it does no harm. One slip is repaired: a model that closes
+  its object one member early with a stray `}` and keeps writing
+  (`{"flagged": false, …, "evidence": "…"}, "barrier_evidence": ""}`) gave a complete answer, and that
+  brace is dropped — only when the result is one object, followed by nothing but whitespace or a
+  closing fence, with no member named twice (names compared without case). Anything else after the
+  first object that starts with a comma, and any reply holding two objects, fails the call: the
+  first half is never read alone, because the second may carry a different `flagged`. A repaired
+  reply is an answer, not a failure; the judge block counts it as `repaired`.
 - LLM severities are capped: the model can never emit a `critical` (an advisory guess must
   never present as a confirmed critical).
 
@@ -395,8 +404,10 @@ a "consensus" of 1-of-3.
 With `--llm` the summary carries one line about the judge itself — `LLM judge ran over N
 artifact(s) in M call(s) and had nothing to add`, `… and added K advisory leads`, or `LLM judge
 did not run: <reason>` — and the "LLM judge leads" section is present even when empty, carrying
-that line. JSON has the same as `judge` (`ran`, `reason`, `artifacts`, `calls`, `failed`,
-`skipped`, `findings`, `endpoint`), plus what it cost: `triage_calls` (the part of `calls` that
+that line. When some replies needed the closed-early repair, the line says how many beside the
+failures (`(0 failed, 0 skipped, 1 repaired)`); with none it reads as before. JSON has the same as
+`judge` (`ran`, `reason`, `artifacts`, `calls`, `failed`, `skipped`, `repaired` — always present, like
+the two before it — `findings`, `endpoint`), plus what it cost: `triage_calls` (the part of `calls` that
 was triage, asked once where a question is asked `samples` times), `retries`, and
 `prompt_tokens` / `completion_tokens` — the last two absent when the endpoint reported no usage,
 rather than a 0 that would read as a measurement. Without `--llm` none of this appears: a judge that ran and
