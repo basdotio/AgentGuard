@@ -74,6 +74,10 @@ type Stats struct {
 	Retries int // retry attempts across all calls
 	Failed  int // calls that ended in an error after retries
 	Skipped int // calls never issued: budget exhausted or run deadline hit
+	// Repaired is the part of the answered judge calls whose reply closed its object one member
+	// early and was read by dropping that brace (parseVerdict, P-034). They are answers, not
+	// failures; counted so the repair is never silent.
+	Repaired int
 	// TriageCalls is the part of Calls that was triage. A judge question is asked `Samples`
 	// times and triage once, so without this split what one question costs can only be guessed.
 	TriageCalls int
@@ -152,6 +156,7 @@ type result struct {
 	barrier    *model.Finding // the data block addressed the analyzer (LLM-007)
 	ungrounded bool           // something was claimed but couldn't be quoted — dropped
 	unquoted   string         // the quote that failed to ground, clipped — for the LLM-005 note
+	repaired   bool           // the reply was read only by the closed-early repair (P-034)
 }
 
 // groundedFinding turns a verdict into a finding ONLY if the text it quotes can be located in
@@ -272,6 +277,9 @@ func Run(ctx context.Context, c Client, arts []model.ArtifactReport, opts Option
 				firstErr = r.err
 			}
 			continue
+		}
+		if r.repaired {
+			stats.Repaired++
 		}
 		switch t.kind {
 		case taskJudge:
@@ -676,6 +684,7 @@ func execute(ctx context.Context, c Client, t task, opts Options) result {
 			var v Verdict
 			if v, err = c.Judge(cctx, t.req); err == nil {
 				res.finding, res.barrier, res.ungrounded, res.unquoted = groundedFinding(t, v)
+				res.repaired = v.repaired
 			}
 		case taskTriage:
 			res.labels, err = c.Triage(cctx, t.label, t.items)

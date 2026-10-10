@@ -122,3 +122,28 @@ func TestText_SummaryLeadsForBothReaders(t *testing.T) {
 		t.Error("verbose view must keep the full evidence path")
 	}
 }
+
+// TestJudgeLine_RepairedOnlyWhenAny: a reply read by the closed-early repair is an answer, so it is
+// not a failure — but the judge line says how many needed it, and says nothing when none did, so a
+// run without a repair reads exactly as it did before the count existed (P-034).
+func TestJudgeLine_RepairedOnlyWhenAny(t *testing.T) {
+	cases := []struct {
+		j    model.JudgeSummary
+		want string
+	}{
+		{model.JudgeSummary{Ran: true, Artifacts: 2, Calls: 5},
+			"LLM judge ran over 2 artifact(s) in 5 call(s) and had nothing to add."},
+		{model.JudgeSummary{Ran: true, Artifacts: 2, Calls: 5, Repaired: 1},
+			"LLM judge ran over 2 artifact(s) in 5 call(s) (0 failed, 0 skipped, 1 repaired) and had nothing to add."},
+		{model.JudgeSummary{Ran: true, Artifacts: 2, Calls: 5, Failed: 1, Repaired: 2, Findings: 1},
+			"LLM judge ran over 2 artifact(s) in 5 call(s) (1 failed, 0 skipped, 2 repaired) and added 1 advisory lead."},
+		{model.JudgeSummary{Ran: true, Artifacts: 2, Calls: 5, Skipped: 1},
+			"LLM judge ran over 2 artifact(s) in 5 call(s) (0 failed, 1 skipped) and had nothing to add."},
+	}
+	for _, c := range cases {
+		j := c.j
+		if got := judgeLine(&j); got != c.want {
+			t.Errorf("judgeLine(%+v)\n got %q\nwant %q", c.j, got, c.want)
+		}
+	}
+}
