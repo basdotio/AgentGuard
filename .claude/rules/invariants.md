@@ -60,6 +60,8 @@
    - **参数数组按它拼成的命令行认**(`redact.Argv`,判官经 `detect.RedactArgv`,P-036):`["--api-key", "<key>"]` 逐个元素
      脱敏时 flag 和值永远不在同一个串里,短 key 原样出去。再渲染一个数组就用它;**不要在调用方自己判断前一个元素是不是 secret flag** —— 那是第二份 flag 名单。
      内容哈希要的是凭据那一半加结构守卫,不能直接调 `Argv`,所以问的是同一个判定 `redact.Announced`(P-039),忘掉的是同一段。
+     **哪些 flag 算声明,名单只在 `flagSecretRE`**(`internal/redact/flags.go`,P-040):第二档(最后一个词是凭据名)对路径、URL、
+     `--no-*`、下一行的值放行 —— 去掉这条豁免,哈希就忘掉 `--private-key` 指向哪个文件,换文件不重问。加 flag 先量误报(P-040 的表)。
    - **判官请求的每个字段,最后一步是整段 `Redact` 到不动点**(`settle`/`fitUnits`,P-037):声明用途、行为、triage 证据各段分别
      脱敏后再拼、再截,整段再过一次,变长了按该字段自己的上限重截;字节截断一律用 `detect.RunePrefix` 落在字符边界上。
      `FuzzPlanFields` 钉着每个字段 `Redact(f)==f`、合法 UTF-8、不超上限,且每个 unit 的文本都在发出去的字段里。
