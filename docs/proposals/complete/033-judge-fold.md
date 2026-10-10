@@ -24,7 +24,7 @@ or tries to check a judge number this repository already publishes.
 
 The four committed runs cannot simply be re-folded to check them: their `run.yaml` names a release asset
 `aguard-judge-raw-2026-09.tar.gz` (sha256 `10a7ba6e…faa4eafd`) "attached as a release asset", and no release of this
-repository or of the corpus carries it (measured 2026-10-10). The only copy of their `raw/` is the one P-022 measured
+repository or of the corpus carries it, and the maintainer confirmed on 2026-10-10 that the archive is lost. The only copy of their `raw/` is the one P-022 measured
 against: the former repository's tree just before its P-039 moved `raw/` out. So a fold tool's committed regression
 cannot rest on those runs; it has to rest on fixtures produced by the real binary, plus a proof that the tool's schema
 is exactly the committed one.
@@ -61,37 +61,44 @@ corpus scorer reads either.
 
 ## Done criteria
 
-- [ ] `TestSchema_RoundTripsTheCommittedJudgeFiles` (`baselines/judgefold/schema_test.go`): every line of the four
+- [x] `TestSchema_RoundTripsTheCommittedJudgeFiles` (`baselines/judgefold/schema_test.go`): every line of the four
   committed `judge.jsonl` (2,086) decodes into the tool's row type and re-encodes to the same bytes; a vote with no
   `kind` stays without one, `votes`/`triage_calls`/`questions` stay absent on the two `samples: 1` runs, `llm_notes`
-  keeps its key order
-- [ ] `TestJudgefold_Golden` (`baselines/cmd/judgefold/golden_test.go`): the aguard binary built from this tree, driven
+  keeps its key order (`TestSchema_NotesKeepTheirOrder`)
+- [x] `TestJudgefold_Golden` (`baselines/cmd/judgefold/golden_test.go`): the aguard binary built from this tree, driven
   through `aguard.Adapter.Scan` against a scripted endpoint on 127.0.0.1 (three passes per question, answers chosen per
   pass), then folded with the binary deleted: a question flagged 3 of 3 escalates and flips `judge`; 1 of 3 is a vote
   with `escalates: false` that changes no verdict; an `LLM-009` at `high` sets `judge_any` and never `judge`; a sample
   whose calls failed is incomplete in the first directory and the retry directory's complete answer replaces its whole
   row; a sample cut by `max_calls` stays incomplete, is counted in the table header and listed in `incomplete.jsonl`; a
   `check`-routed sample is scored without a judge. `judge.jsonl`, `verdicts.jsonl`, `ledger.jsonl` and
-  `per-kind-rule.txt` equal the golden bytes
-- [ ] `TestRebuild_EqualsScan` (`baselines/adapter/aguard/rebuild_test.go`): for a `scan`-routed and a `check`-routed
-  sample, the row `Rebuild` makes from raw/ equals the row `Scan` returned, field for field, `judge_usage` included
-- [ ] `TestSelect_*` (`baselines/judgefold/select_test.go`): the first complete answer wins in argument order; an
-  incomplete first attempt is replaced as a whole (no vote of it survives); with no complete attempt the first one is
-  kept and marked; a sample with no raw/ takes a `no-verdict` row from a directory's `ledger.jsonl`, and with none at all
-  `ledger.Check` reports it, only `incomplete.jsonl` is written and the exit code is 1
-- [ ] `TestWilson_MatchesTheCorpus`, `TestCell_*` (`baselines/judgefold/table_test.go`): Wilson 9/10 is
-  [0.596, 0.982] like the corpus's own test; a cell prints a rate only when the half-width is at most 15 points (0/22
-  prints a rate, 0/21 and 3/12 print the count alone); the header names the corpus/aguard kind swap and the incomplete count
-- [ ] `TestSource_*` (`baselines/corpus/source_test.go`): each arm of the corpus's source definition; with
-  `AGUARD_CORPUS` set, every source the port assigns equals the sample set `corpus samples --source <s>` prints
-- [ ] `TestJudgefold_ImportsNoNetwork`: `go list -deps ./baselines/cmd/judgefold` contains no `net` or `net/…` package
-- [ ] Reverse assertion: every existing test in `baselines/adapter/aguard`, `baselines/cmd/baseline`, `baselines/run` and
+  `per-kind-rule.txt` equal the golden bytes (`golden_values_test.go`, regenerated with `JUDGEFOLD_WRITE_GOLDEN=1`)
+- [x] `TestRebuild_EqualsScan` (`baselines/adapter/aguard/rebuild_test.go`): for a `scan`-routed and a `check`-routed
+  sample, the row `Rebuild` makes from raw/ equals the row `Scan` returned, field for field, `judge_usage` included;
+  `TestRebuild_RefusesBytesThatAreNotAScan`: a truncated raw file is an error, not a row
+- [x] `TestSelect_FirstCompleteAnswerWins`, `TestSelect_NoCompleteAnswerIsMarked` (`baselines/judgefold/select_test.go`):
+  the first complete answer wins in argument order; an incomplete first attempt is replaced as a whole (no vote of it
+  survives); with no complete attempt the first one is kept and marked with the attempt count.
+  `TestJudgefold_ResumesAndRefusesAHole` (`baselines/cmd/judgefold/main_test.go`): a sample with no raw/ takes a
+  `no-verdict` row from a directory's `ledger.jsonl`; with none at all `ledger.Check` reports it, only
+  `incomplete.jsonl` is written and the exit code is 1; a second directory supplying it gives exit 0 and every file.
+  `TestJudgefold_RefusesARawFileNoSampleOwns`: a raw file outside the work list is exit 2, naming it
+- [x] `TestWilson_MatchesTheCorpus`, `TestCell_FollowsTheFigureRule`, `TestTable_CountsWhatTheJudgeFlagged`
+  (`baselines/judgefold/table_test.go`): Wilson 9/10 is [0.596, 0.982] like the corpus's own test; a cell prints a rate
+  only when the half-width is at most 15 points (0/22 and 20/40 print a rate; 0/21, 3/12 and 17/35 the count alone);
+  FP needs an escalated vote, FP_any any vote, recall the malicious side, hard negatives their own line; the header
+  names the corpus/aguard kind swap and the incomplete count
+- [x] `TestSource_EachArmOfTheCorpusRule`, `TestSource_TheAnnotationMustBeTheSamples`, `TestSource_AgreesWithTheCorpus`
+  (`baselines/corpus/source_test.go`): each arm of the corpus's source definition; with `AGUARD_CORPUS` set, every
+  source the port assigns equals the sample set `corpus samples --source <s>` prints
+- [x] `TestJudgefold_ImportsNoNetwork`: `go list -deps ./baselines/cmd/judgefold` contains no `net` or `net/…` package
+- [x] Reverse assertion: every existing test in `baselines/adapter/aguard`, `baselines/cmd/baseline`, `baselines/run` and
   `baselines/ledger` passes without a character changed; the driver's static output on a corpus subset is byte-identical
-  before and after (`ledger.jsonl`, `verdicts.jsonl`; `run.yaml` apart from `started_at`)
-- [ ] Measured, not committed: folded from the former repository's raw/ of the four committed runs, `judge.jsonl` equals
+  before and after (`ledger.jsonl`, `verdicts.jsonl`; `run.yaml` and `scorecard.txt` apart from the start time)
+- [x] Measured, not committed: folded from the former repository's raw/ of the four committed runs, `judge.jsonl` equals
   the committed rows 2,086/2,086 apart from the new `kind` and the 40 key-order rows above, and `verdicts.jsonl` equals
   the committed rows once both are sorted by sample
-- [ ] `make verify` green; `go.mod` line 2 still `go 1.23.5`, no new dependency
+- [x] `make verify` green; the `go` directive in `go.mod` still `go 1.23.5`, no new dependency
 
 ## Out of scope
 
@@ -150,7 +157,7 @@ corpus scorer reads either.
 3. **Which small-denominator rule?** The plan assumed "n < 22: counts, no rate".
    **Recommendation**: the corpus's actual rule (`FigureThresholdPoints = 15` in its `harness/internal/score`): a rate
    only when the Wilson 95% half-width is at most 15 points, otherwise the count alone with the half-width. "n < 22" is
-   that rule for an all-zero result only (`tripwire.MinimumN`); 3/12 has n < 22 and 3/40 has not, and both are counts.
+   that rule for an all-zero result only (`tripwire.MinimumN`): 17/35 has n >= 22 and is a count (±16 points), 20/40 is a rate.
    **Decided (2026-10-10)**: as recommended.
 4. **What does "an artifact of that kind on which that question was asked" count, when raw/ records questions per
    sample and not per artifact?**
@@ -192,3 +199,33 @@ corpus scorer reads either.
     `run.SumJudgeUsage` totals in the table header; no `run.yaml`, whose attribution is the operator's (or the
     driver's) to write.
     **Decided (2026-10-10)**: as recommended.
+
+Found while implementing:
+
+11. **The committed `ledger.jsonl` files disagree with each other.** The two `samples: 1` runs' ledgers carry the
+    judge-predicate verdict and severity (819/819 equal their `verdicts.jsonl`); the two s3 runs' ledgers carry the
+    static fold (224/224 equal the fold's rebuilt rows on outcome, verdict, flags, detail and severity).
+    **Recommendation**: the fold's `ledger.jsonl` is the driver's — static, the adapter's own rows, byte-identical to
+    what the driver writes for a finished run — and nothing committed is rewritten (Out of scope).
+    **Decided (2026-10-10)**: as recommended.
+12. **Per-stratum tables.** The s3 runs' `strata.json` says never to pool their two strata, and the fold refuses a work
+    list that does not own every raw/ file (a stray file is an operator mistake far more often than a choice), so a
+    per-stratum table needs a raw/ holding only that stratum.
+    **Recommendation**: leave it as a follow-up (a `-subset` work list for the table alone); this item folds whole runs.
+    **Decided (2026-10-10)**: as recommended.
+
+## Done
+
+```
+Merged: PR to be opened (2026-10-10; find the sha with git log --grep P-033 after the merge)
+Released: pending release
+Evidence: W1 red at compile time on origin/main 0bffbdb — baselines/judgefold: undefined: Answer, Fold, Options, Vote, Wilson, Cell, Table, Meta; baselines/adapter/aguard: b.Rebuild undefined (type *Adapter has no field or method Rebuild); baselines/corpus: undefined: ReadAnnotation; baselines/cmd/judgefold: no non-test Go files in baselines/judgefold — green after W2–W6
+Evidence: TestSchema_RoundTripsTheCommittedJudgeFiles: 2,086 of 2,086 committed judge.jsonl lines re-encode to their own bytes
+Evidence: TestJudgefold_Golden (baselines/cmd/judgefold/golden_test.go): real binary + adapter + scripted endpoint on 127.0.0.1, three directories (run, retry, shard), fold with the binary deleted: 3 of 3 escalates and flips judge, 1 of 3 votes without escalating, LLM-009 high sets judge_any only, the retry replaces the failed attempt's row, the max_calls cut stays incomplete ("the judge skipped 5 planned call(s)") and is the one line of incomplete.jsonl, the check-routed sample is complete with judge_calls 0; four outputs equal golden_values_test.go, stable over 3 runs and under -race; a one-character change to a golden line fails the test
+Evidence: TestRebuild_EqualsScan (scan and check route), TestSelect_*, TestJudgefold_ResumesAndRefusesAHole (exit 1, only incomplete.jsonl; then exit 0 with all five files), TestJudgefold_RefusesARawFileNoSampleOwns (exit 2), TestWilson_MatchesTheCorpus, TestCell_FollowsTheFigureRule, TestTable_CountsWhatTheJudgeFlagged, TestJudgefold_ImportsNoNetwork
+Evidence: TestSource_AgreesWithTheCorpus with AGUARD_CORPUS at corpus 97e5af00: 3,539 samples, 20 sources, every source's sample set equal to `corpus samples --source <s>`
+Evidence: measured, not committed — judgefold over the raw/ of the four committed runs (the former repository's tree before its P-039, the copy P-022 used; -judge-samples 1, 1, 3, 3): every field of the committed rows equal 2,086/2,086; byte-identical once kind and the new fields are dropped 224/224 (s3), 224/224 (s3-votes), 799/819 and 799/819 (samples:1 runs: the 20 rows each whose llm_notes the one-off script key-sorted); verdicts.jsonl equal once both are sorted, 819/819/224/224; incomplete 20, 20, 9, 3 — every one a failed judge call, matching the s3 runs' run.yaml (failed 10 on 9 samples; failed 3 on 3); s3 usage header calls 1769 · failed 10 · skipped 0 · triage_calls 104 · basis derived, the totals P-022 measured
+Evidence: reverse assertion — the static driver on a 40-sample corpus subset (10 routed to check), origin/main source against this branch, same binary: ledger.jsonl and verdicts.jsonl byte-identical, run.yaml and scorecard.txt differ only in the start time, raw/ equal once scanned_at is dropped (40/40); judgefold over that run writes a ledger.jsonl byte-identical to the driver's own (40 rows) and marks the 30 scan-routed samples "the judge did not run"; every pre-existing baselines test passes unchanged
+Evidence: Out of scope — git diff --stat origin/main -- internal cmd/aguard baselines/results docs/rules.md go.mod go.sum docs/corpus-benchmark.zh-CN.md baselines/adapter/ccaudit baselines/adapter/cisco baselines/adapter/sarif is empty
+Evidence: make verify: all gates passed (golangci-lint 0 issues); go version go1.23.5 (no toolchain switch); go directive still go 1.23.5; no new dependency
+```
