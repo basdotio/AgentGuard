@@ -154,8 +154,8 @@ one pattern set in `internal/redact` a quote-aware value form (`"…"` with POSI
 
 ## Done criteria
 
-The quoted value form of questions 1–6 is the design; implementation starts on top of P-040 once it merges and
-re-measures every number above there before recording it. "An announcer" below means a flag `flagSecretRE` names
+The quoted value form of questions 1–6 and the per-replacement guard of question 7 are the design; implementation
+starts on top of P-040 (merged, 78678a8) and re-measures every number above there before recording it. "An announcer" below means a flag `flagSecretRE` names
 (the eight, plus whatever P-040 adds), `-u` / `--user` with a `user:` part, or a credential key followed by `=` or `:`.
 
 - [ ] `TestQuotedValues` (`internal/redact`, table-driven): after each announcer — `--password`, `--token`,
@@ -183,22 +183,28 @@ re-measures every number above there before recording it. "An announcer" below m
   (`printf 'aguard:hook:v1\0%s' … | shasum -a 256`). **Red on the base**: the inputs hold `correct horse`. The six
   existing constants (inputs and digests) do not change by a byte
 - [ ] **Content hash rotation** (same package): two hooks, and two permission lists, whose quoted secret differs
-  anywhere hash the same as the one written `<REDACTED>` — red on the base; the unquoted control hashes as on the base;
-  and, **reverse**, a quoted value holding a structure character (`--password 'P@ss#1'`, `--token "a*b"`) still enters
-  the input as written — the guard (`guardedView`) is not weakened — green on the base and the branch
+  anywhere hash the same as the one written `<REDACTED>` — red on the base; the unquoted control hashes as on the base
+- [ ] **The guard is per replacement** (`TestContentHash_GuardRefusesOneReplacement`, `internal/detect`): in
+  `mytool --password 'P@ss#1' --token hunter2` and `Bash(curl -u admin:* --token hunter2)` the span holding a structure
+  character stays as written and `hunter2` is not in the digest input; two such entries differing only in the
+  `--token` value hash the same. **Red on the base** for the grant (the base refuses the whole string, `hunter2`
+  included). **Reverse**: the span itself is still never forgotten — `--password 'P@ss#1'` against `'P@ss#2'`, `-u
+  admin:*` against `-u admin:hunter2`, and every pair of `TestContentHash_ReplacementNeverTakesStructure` still re-key;
+  green on the base and the branch
 - [ ] **Judge payload** (`internal/judge`): a `.claude` fixture with one hook per quoted form sends no byte of any value
   in its `injection`, `capability` and `triage` payloads, each a fixed point of `detect.Redact`; red on the base (27 of
   31 payloads here)
 - [ ] **Static snippet** (`internal/detect`): the `HOOK-001` / `EXEC-001` snippets of those hooks and the `PERM-002` /
   `PERM-006` snippets of `Bash(python3 * --password "V")` / `Bash(git -c core.pager=x --token 'V' *)` carry
   `"<REDACTED>"`; red on the base
-- [ ] `ExcerptVersion` + 1 over what P-040 leaves on `main`, pinned with the golden fixture now carrying a quoted pair
+- [ ] `ExcerptVersion` 4 → 5 (P-040 left 4), in the same commit as the redact change, pinned with the golden fixture now carrying a quoted pair
   (`TestExcerptVersion_IsPinnedWithItsGolden`); `rulesEpoch` unchanged
 - [ ] **Reverse assertion, corpus level** (scratch replay, not committed): against the binary P-040 leaves on `main`,
   exactly the changes measured here re-measured there (0 of 4,704 hashes, 1 of 1,618 findings, 12 of 8,770 payloads on
   2112aab), each one listed and explained; every other hash, finding and payload byte-identical; `~/.claude` 0 of 184
   hashes, 0 of 813 findings, 0 of 302 payloads
-- [ ] Re-key count recorded: reputation entries (0 of 18 here), corpus and `~/.claude` hashes, stored approvals
+- [ ] Re-key count recorded, for the guard and for the quoted form separately: reputation entries (0 of 18 here),
+  corpus and `~/.claude` hashes, stored approvals
 - [ ] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no new dependency; no toolchain switch
 
 ## Out of scope
@@ -215,9 +221,10 @@ re-measures every number above there before recording it. "An announcer" below m
   start unquoted** (`abc"def ghi"`) and **JSON-escaped quotes in raw JSON text** (`\"…\"`; 10 occurrences
   measured, 9 of them an expansion, a placeholder, an empty string or after a flag no pattern names) keep the base's
   reading
-- **The content hash code**: `internal/detect/contenthash.go` (the structure guard included), `internal/collect/hash.go`,
-  `internal/reputation` and `internal/gate` get zero diff. The hash reads `Credentials` and inherits the change, as
-  `redact.Argv` and `redact.Announced` do; a per-replacement guard (question 7) is a follow-up
+- **The content hash definition**: the domains, the canonical JSON, `viewElement`'s whole-element rule and the structure
+  sets stay; in `internal/detect/contenthash.go` only `guardedView` changes, from one decision per string to one per
+  replacement (question 7). `internal/collect/hash.go`, `internal/reputation` and `internal/gate` get zero diff. The
+  hash reads `Credentials` and inherits the quoted form, as `redact.Argv` and `redact.Announced` do
 - **Env and header values held as a JSON object member** (`"env": {"DB_PASSWORD": "correct horse"}`): P-042's. The
   joined `KEY=VALUE` view the hash builds for them holds no quote; only a value that itself starts with a quote is
   read by the quoted form
@@ -234,9 +241,8 @@ re-measures every number above there before recording it. "An announcer" below m
   (spec §16.3)
 - Not that the content hash forgets every quoted secret: the structure guard refuses a replacement that takes a shell
   structure character, so a quoted password holding `#`, `*`, `?`, `&`, `;`, `|`, `<`, `>`, `(`, `)`, `[`, `]`, `{`,
-  `}` or `\` enters the digest input as written, as on the base. When the same string also holds another announced
-  secret, the refusal now puts that one in as written too, where the base replaced it (question 7; measured: 0 such
-  strings, since no hashed string in either population holds a quoted value)
+  `}` or `\` enters the digest input as written, as on the base — but on its own now: the string's other secrets are
+  replaced (question 7)
 - Not that the measurement found or protected a secret: configuration in neither population holds a quoted value
   after an announcer, and the text changes are placeholders, templates and example values. The numbers show what the
   rule costs, not what it saves
@@ -247,10 +253,10 @@ re-measures every number above there before recording it. "An announcer" below m
 
 | W | In one sentence | Commit message (no sha; a rebase changes it) |
 |---|---|---|
-| 1 | The tests: the quoted rows and their reverse rows in `internal/redact`, the moved `TestAnnounced` row, the content-hash golden case and rotation pairs, the snippet and judge-payload fixtures (red on the base), the structure-guard reverse rows (green on both) | `redact: tests — a quoted value after a credential flag or key is not redacted (P-043)` |
-| 2 | The quoted value form in `internal/redact/redact.go`: one double-quoted and one single-quoted fragment and one predicate, used by the value groups of `flagSecretRE`, `flagUserPassRE` and `assignRE`, with a replacement that keeps the quotes and the carrier | `redact: a quoted value after a credential flag or key is forgotten whole (P-043)` |
-| 3 | `ExcerptVersion` + 1, the golden fixture carrying a quoted pair | `judge: bump ExcerptVersion for quoted values (P-043)` |
-| 4 | The `docs/llm-judge` pair, spec §16.3, the invariant #3 note and `.claude/rules/hash.md` (the quoted gap it lists as open is closed; the guard residual of question 7 named) | `docs: a quoted value after a credential flag or key is redacted (P-043)` |
+| 1 | The tests: the quoted rows and their reverse rows in `internal/redact`, the moved `TestAnnounced` row, the content-hash golden case and rotation pairs, the per-replacement guard rows, the snippet and judge-payload fixtures (red on the base), the structure-guard reverse rows (green on both) | `redact: tests — a quoted value after a credential flag or key is not redacted (P-043)` |
+| 2 | The structure guard per replacement: `redact.CredentialsKeeping` offers each replacement to a predicate, `Credentials` is it with none, and `guardedView` refuses only the replacements that take structure | `detect: the content hash refuses a replacement that takes structure, not the whole string (P-043)` |
+| 3 | The quoted value form in `internal/redact/redact.go`: one double-quoted and one single-quoted fragment and one predicate, used by the value groups of `flagSecretRE`, `flagUserPassRE` and `assignRE`, with a replacement that keeps the quotes and the carrier; `ExcerptVersion` 4 → 5 and the golden fixture carrying a quoted pair, in the same commit | `redact: a quoted value after a credential flag or key is forgotten whole (P-043)` |
+| 4 | The `docs/llm-judge` pair, spec §16.3, the invariant #3 note and `.claude/rules/hash.md` (the quoted gap it lists as open is closed; the guard is per replacement) | `docs: a quoted value after a credential flag or key is redacted (P-043)` |
 
 ## Open questions
 
@@ -315,12 +321,18 @@ re-measures every number above there before recording it. "An announcer" below m
    **Recommendation**: accept it here; measured, no hashed string in either population holds a quoted value at all, so
    0 strings are affected. Name it in Must not claim, pin with a reverse row that the guard still refuses a replacement
    taking `#`, and record the per-replacement guard as a follow-up with its own re-key count.
-   **Decided (2026-10-10)**: as recommended
+   **Decided (2026-10-10)**: as recommended. **Decided again (2026-10-11), by the maintainer: not as recommended —
+   option A.** The regression is not accepted: in this proposal the guard becomes per replacement — a replacement whose
+   span holds a structure character is refused on its own, and the other replacements in the string still apply — so
+   `mytool --password 'P@ss#1' --token hunter2` keeps `'P@ss#1'` and replaces `hunter2`. Goldens for strings without
+   such a span stay byte-identical; the re-key (every hashed string in which the base refused one replacement and
+   another would have applied) is measured and stated (`.claude/rules/hash.md`)
 8. **Does it hide text from the judge?** A flag or key now forgets everything up to the closing quote, so an author
    can put a sentence the judge will not see inside `--password "…"`. That is already true of a bare word, and of a
    whole argv element after `--password` since P-036; the static rules read the raw text, not the redacted one; the
    span ends at the line. Measured: one changed occurrence in the corpus is prose. **Recommendation**: accept, and
-   state it in the `docs/llm-judge` pair next to the argv rule. **Decided (2026-10-10)**: as recommended
+   state it in the `docs/llm-judge` pair next to the argv rule. **Decided (2026-10-10)**: as recommended; confirmed by
+   the maintainer (2026-10-11): accept and document
 9. **Versions and landing order?** What the judge's passes send changes for text with a quoted pair, so
    `ExcerptVersion` goes up by one from what P-040 leaves; a snippet is evidence formatting, the finding set does not
    change (0 of 1,618 and 0 of 813 findings added or removed), so `rulesEpoch` stays (`rules_version.go`: not for
