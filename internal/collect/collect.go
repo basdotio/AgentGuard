@@ -146,7 +146,8 @@ func singleFileKind(path string) model.ArtifactKind {
 //
 //   - a single file                       → one artifact (scanned per its role)
 //   - a dir containing SKILL.md           → one skill artifact (whole-tree scanned)
-//   - a dir containing a plugin manifest  → one plugin artifact (whole-tree scanned)
+//   - a dir containing a plugin manifest  → one plugin artifact (whole-tree scanned), plus its skills,
+//     commands and agents as artifacts of their own (P-044)
 //   - a dir that looks like a root        → CollectAll (see looksLikeRoot)
 //   - any other dir                       → one directory artifact (whole-tree scanned)
 //
@@ -174,7 +175,14 @@ func CollectTarget(path string) (Result, error) {
 		return single(model.KindSkill, TreeHash(path, path), model.EnvSummary{Skills: 1})
 	}
 	if _, perr := os.Stat(filepath.Join(path, pluginManifest)); perr == nil {
-		return single(model.KindPlugin, TreeHash(path, path), model.EnvSummary{Plugins: 1, BundledSkills: bundledSkills(path)})
+		// The plugin tree, then its skills, commands and agents (P-044). Only those: `check <plugin>`
+		// does not split the plugin's hooks and MCP servers the way a scan does (issues/023 follow-up).
+		res, _ := single(model.KindPlugin, TreeHash(path, path), model.EnvSummary{Plugins: 1})
+		name := filepath.Base(path)
+		kids, notes := pluginContents(path, name, name, " (plugin "+name+")", &res.Env)
+		res.Artifacts = append(res.Artifacts, kids...)
+		res.Notes = append(res.Notes, notes...)
+		return res, nil
 	}
 	if looksLikeRoot(path) {
 		return CollectAll(path), nil

@@ -70,6 +70,9 @@ func TestCollectDesktop_PluginsAndSkillsAreCollected(t *testing.T) {
 
 	var names []string
 	for _, s := range desktopByKind(res, model.KindSkill) {
+		if s.Plugin != "" {
+			continue // the plugin's own skill, a child of it (P-044); the skills bundle is collected per skill
+		}
 		names = append(names, s.Name)
 		if s.Hash == "" {
 			t.Errorf("desktop skill %s has no canonical tree hash", s.Name)
@@ -266,7 +269,7 @@ func TestCollectDesktop_OlderSessionBundlesAreNotDoubleCounted(t *testing.T) {
 	res := CollectAll(root)
 	var names []string
 	for _, a := range res.Artifacts {
-		if a.Kind == model.KindSkill {
+		if a.Kind == model.KindSkill && a.Plugin == "" {
 			names = append(names, a.Name)
 		}
 	}

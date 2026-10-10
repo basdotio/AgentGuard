@@ -200,6 +200,13 @@ type ArtifactReport struct {
 	// Findings and Score is applied once, in cmd/aguard.applyReputation, and the REP-GOOD /
 	// REP-BAD note is still the record a reader is meant to see first.
 	Reputation *ReputationMark `json:"reputation,omitempty"`
+	// Plugin is set on a plugin's skill, command or agent collected as an artifact of its own
+	// (P-044): the Name of the plugin artifact whose tree holds it. Set by the collector, never by
+	// content. The environment average counts a plugin and its children as one unit, the human
+	// renderers print a child's finding its plugin row already shows once, and the gate's session
+	// start, `approve` and hygiene skip children — all through score.Families, never by parsing the
+	// " (plugin …)" name suffix, which a plugin author controls.
+	Plugin string `json:"plugin,omitempty"`
 }
 
 // ReputationMark names the reputation entry an artifact matched and what the match did.
@@ -461,12 +468,17 @@ type EnvSummary struct {
 	// configured in files on this machine.
 	Connectors  int `json:"connectors"`
 	Quarantined int `json:"quarantined"`
-	// BundledSkills counts SKILL.md files that live INSIDE plugins. Their content is scanned as
-	// part of the plugin tree (one artifact, one hash, one score), so they are not in Skills —
+	// BundledSkills counts the skills that live INSIDE plugins. Their content is scanned as part of
+	// the plugin tree and, since P-044, as artifacts of their own too; they are not in Skills —
 	// and an inventory that said `skills=0 plugins=1` about a plugin holding three skills sent
-	// a reviewer to publish "it does not recurse". Counted here so the line can say
-	// what was read without changing how it is attributed.
+	// a reviewer to publish "it does not recurse". Counted here so the inventory line can say
+	// what was read.
 	BundledSkills int `json:"bundled_skills"`
+	// BundledCommands and BundledAgents count the commands and agents inside plugins, each an
+	// artifact of its own with Plugin set (P-044) and, like BundledSkills, not in Commands or
+	// Subagents: those count what the root itself holds.
+	BundledCommands int `json:"bundled_commands"`
+	BundledAgents   int `json:"bundled_agents"`
 }
 
 // ScanResult is the full immutable output of a scan (spec §8). Serialized by --json;
