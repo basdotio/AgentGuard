@@ -160,7 +160,10 @@ aguard scan --llm --config config.yaml
   按这个顺序:`command=…`、`args=…`、`env.NAME=…`、`url=…`、`headers.NAME=…`,其余的键排序后跟在后面。每行截到 500 字节、
   整段截到 6,000 字节;任何一处截了,发出去的文本里会写明,报告里也多一条点名该 server 的 `LLM-000`(正常的配置装得下)。
   键名是凭据名的值(`…PASS`、`…PWD`、`…TOKEN`、`…KEY`、`…SECRET`,带 auth / cred / cookie / private 的)不管长什么样都换成 `<REDACTED>`,
-  其余的值照常过脱敏。以前只发值、不发键,`DB_PASS` 下的 `hunter2` 出去时就是一个孤零零的 `hunter2`。
+  其余的值照常过脱敏。以前只发值、不发键,`DB_PASS` 下的 `hunter2` 出去时就是一个孤零零的 `hunter2`。数组(`args`)按它拼成的那条
+  命令行脱敏:跟在一个声明了凭据的 flag(`--api-key`、`--access-token`、`--token`、`--password`、`--secret`、`-u` / `--user user:pass` …)
+  后面的那个元素换掉,并写在 flag 那一行上:`args=--api-key <REDACTED>`。以前每个元素单独脱敏,`--api-key` 后面一个短 key 原样发出去。
+  脱敏不认识的 flag(`--key`、`-p`)后面的值照旧发出。
 - **声明用途截到 1,000 字节**(description、hook 的拦截点),截在字符边界上。
 - **非本地端点 → 一条 `LLM-002` 告警**进报告,因为脱敏后的 skill 内容离开了本机。
 - **判官看到的是压缩后的摘录,不是文件。** 每个 skill 最多 6000 字节行为文本(每文件 2000):连续空行折成一行、

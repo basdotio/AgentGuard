@@ -57,6 +57,8 @@
      `detect.Redact` 是它的一行委托,detect 及其上游(judge、permcheck、hygiene、clean、gate)都经它;collect 在 detect 之下、
      import 不到 detect,直接调 `redact.Secrets`。**不要在别处再写一套模式** —— collect 的笔记以前就因为够不着 detect,
      把 `@import` 行、插件键、hook 事件键原样印进报告(P-018)。
+   - **参数数组按它拼成的命令行认**(`redact.Argv`,判官经 `detect.RedactArgv`,P-036):`["--api-key", "<key>"]` 逐个元素
+     脱敏时 flag 和值永远不在同一个串里,短 key 原样出去。再渲染一个数组就用它;**不要在调用方自己判断前一个元素是不是 secret flag** —— 那是第二份 flag 名单。
    - 笔记的划线:进 snippet 的、从文件正文或配置值抄来的那段过它,同一段也进 `Why` 的印同一份;扫描器自己从磁盘列出的名字、
      就是该发现 `Evidence.File` 的路径不归它(全引擎问题,未定)。**不要逐条笔记各自另划一条线**。
 4. **两个分数:`Overall` 纯确定性,`OverallEffective` 含 LLM 单向升级**(spec v1.1 §5.2.1/§5.3,
