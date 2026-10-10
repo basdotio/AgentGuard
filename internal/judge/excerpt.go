@@ -283,6 +283,9 @@ func hookExcerpt(file string, h model.Hook, eg egress) (declared, behavior strin
 // excerpt on every run. Each line is masked (maskCredentialValue), redacted and scrubbed BEFORE it
 // is capped, so a cap can split neither a secret nor the home.
 //
+// An array's lines are first read together as one argv (argvView), so the element after `--api-key`
+// is redacted with its flag rather than alone (P-036).
+//
 // shortened says what was left out, empty when nothing was: the caller discloses it (LLM-000),
 // since a real configuration fits and one that does not has been shaped.
 func mcpExcerpt(a model.ArtifactReport, eg egress) (text string, units []sourceUnit, shortened string) {
@@ -290,7 +293,7 @@ func mcpExcerpt(a model.ArtifactReport, eg egress) (text string, units []sourceU
 	if len(lines) == 0 {
 		return "", nil, ""
 	}
-	lines = mcpLeadFirst(lines)
+	lines = mcpLeadFirst(argvView(lines))
 	budget := maxExcerptBytes - len(omittedLinesMarker) - 8
 	out := make([]string, 0, len(lines))
 	used, capped, dropped := 0, 0, 0
@@ -319,6 +322,44 @@ func mcpExcerpt(a model.ArtifactReport, eg egress) (text string, units []sourceU
 	return text, []sourceUnit{{
 		file: detect.Redact(filepath.Base(a.Path)), text: text, firstLine: 0, collapsed: true,
 	}}, strings.Join(cut, ", ")
+}
+
+// argvView reads every run of lines that share a key as one argument vector (detect.RedactArgv), so an
+// element a flag announces as a credential is redacted with its flag (P-036). ConfigLines renders an
+// array as one `key=value` line per element, in order, and an object's keys are unique and sorted, so a
+// run of one key is one array. Redacted one line at a time, as the lines are below, `args=--api-key`
+// and `args=<key>` each look like nothing, and a short key was sent as written.
+//
+// An announced element is written on its flag's line — `args=--api-key <REDACTED>`, the pair as the
+// command line reads it — not on a line of its own. As `args=<REDACTED>` under `args=--api-key` the text
+// would not be a fixed point of the redactor: read across the newline, the flag pattern takes
+// `args=<REDACTED>` for the flag's value, and a second Redact pass would change what was sent.
+//
+// Every other line is returned as it came, so an entry with no such pair sends byte for byte what it
+// did before. A literal dotted key (`"a.b"`) beside an object `a` holding `b` can make one run of two
+// arrays; the cost is at most one over-redacted value.
+func argvView(lines []string) []string {
+	out := make([]string, 0, len(lines))
+	for i := 0; i < len(lines); {
+		key, _, keyed := strings.Cut(lines[i], "=")
+		j := i + 1
+		for keyed && j < len(lines) && strings.HasPrefix(lines[j], key+"=") {
+			j++
+		}
+		vals := make([]string, j-i)
+		for k := range vals {
+			vals[k] = strings.TrimPrefix(lines[i+k], key+"=")
+		}
+		for k, v := range detect.RedactArgv(vals) {
+			if k > 0 && v != detect.Redact(vals[k]) {
+				out[len(out)-1] += " " + v
+				continue
+			}
+			out = append(out, lines[i+k])
+		}
+		i = j
+	}
+	return out
 }
 
 // maxConfigLineBytes caps one `key=value` line of the MCP excerpt — a value or a key — so no single

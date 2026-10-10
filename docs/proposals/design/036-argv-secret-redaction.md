@@ -73,9 +73,9 @@ The content hash, static snippets and `internal/collect` are not touched.
 ## Done criteria
 
 - [ ] `TestPlan_MCPArgvSecretsAreRedacted` (`internal/judge/plan_test.go`): an MCP entry with the seven pairs measured
-  above; the planned `mcp-config` payload contains none of the seven values, carries `args=--api-key` followed by
-  `args=<REDACTED>` (and `args=admin:<REDACTED>` for `-u` / `--user`), and is a fixed point of `detect.Redact` — the
-  property the corpus replay checks. **Red on the base**: every value is in the payload, and a second `Redact` changes it
+  above; the planned `mcp-config` payload contains none of the seven values, carries `args=--api-key <REDACTED>`
+  (and `args=-u admin:<REDACTED>` for `-u`, likewise `--user`; question 7), and is a fixed point of `detect.Redact` —
+  the property the corpus replay checks. **Red on the base**: every value is in the payload, and a second `Redact` changes it
 - [ ] `TestArgv` (`internal/redact/redact_test.go`, table-driven): an element after each flag spelling `flagSecretRE`
   knows (`--password`, `--passwd`, `--passphrase`, `--pass`, `--token`, `--secret`, `--api-key`, `--api_key`,
   `--apikey`, `--access-token`, `--access_token`) becomes `<REDACTED>`; after `-u` / `--user` a `user:pass` element
@@ -161,3 +161,13 @@ The content hash, static snippets and `internal/collect` are not touched.
 6. **`ExcerptVersion`?** What the `mcp-config` pass sends changes for an entry with a pair. **Recommendation**: bump to
    2, as `.claude/rules/judge.md` requires, and add an `--api-key` pair to the golden fixture so the pin exercises the
    change. **Decided (2026-10-10)**: as recommended
+
+Asked during implementation (stage 2):
+
+7. **One line or two for a redacted pair?** Written as `args=--api-key` then `args=<REDACTED>`, the payload holds no
+   secret but is still not a fixed point of `Redact`: read across the newline, `flagSecretRE` takes `args=<REDACTED>`
+   for the flag's value, and a second pass rewrites it to `<REDACTED>` — the corpus replay would keep counting the two
+   payloads. **Recommendation**: write an announced element on its flag's line, `args=--api-key <REDACTED>`, the pair
+   as one command line reads it; an element no flag announces keeps its own line, so an entry without a pair is
+   unchanged. `redact.Argv` itself keeps one output element per input element; the merge is the excerpt's rendering.
+   **Decided (2026-10-10)**: as recommended
