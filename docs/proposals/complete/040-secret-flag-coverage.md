@@ -134,18 +134,20 @@ and the content hash all read — no second flag list — by the flags the measu
 Rule B with the exemption (questions 1–4) is the design; implementation starts on top of P-039 and re-measures every
 number below there before recording it.
 
-- [ ] `TestFlagSecrets` (`internal/redact`, table-driven): for each spelling rule B adds — `--key`, `--private-key`,
-  `--secret-key`, `--access-key`, `--auth-key`, `--app-key`,
-  `--license-key`, `--master-key`, `--encryption-key`, `--signing-key`, `--client-key`, `--db-pass`, `--db-password`,
-  `--admin_password`, `--user_pass`, `--keychain-password`, `--certificate-passphrase`, `--pwd`, `--db-pwd`,
-  `--client-secret`, `--token-secret`, `--webhook-secret`, `--pat`, `--bearer`, `--credential`, `--credentials`, in
-  lower and upper case — a made-up value of 8, 11, 16 and 20 characters with no known prefix is gone from
-  `Secrets(flag+" "+v)`, `Secrets(flag+"="+v)` and `Argv([flag, v])`, the flag survives, and each output is a fixed
-  point of `Secrets`. **Red on the base** for every flag: in all three readings for the flags the base never redacts
+- [x] `TestFlagSecrets` (`internal/redact/flags_test.go`, table-driven): for each of the 28 spellings rule B adds
+  (`widenedFlags`: `--key`, `--private-key`, `--secret-key`, `--access-key`, `--auth-key`, `--app-key`, `--license-key`,
+  `--master-key`, `--encryption-key`, `--signing-key`, `--client-key`, `--db-pass`, `--db-password`, `--db-passwd`,
+  `--db-pwd`, `--pwd`, `--admin_password`, `--user_pass`, `--keychain-password`, `--certificate-passphrase`,
+  `--client-secret`, `--client_secret`, `--token-secret`, `--webhook-secret`, `--pat`, `--bearer`, `--credential`,
+  `--credentials`), in lower and upper case, a made-up value of 8, 11, 16 and 20 characters with no known prefix is gone
+  from `Secrets("tool "+flag+" "+v)`, `Secrets("tool "+flag+"="+v)` and `Argv([srv, flag, v, --verbose])`, the flag
+  survives, and each output is a fixed point of `Secrets`. **Red on the base** for every flag: in all three readings for the flags the base never redacts
   (`--key`, `--private-key`, `--secret-key`, `--db-pass`, `--pat`, `--pwd`, …), and in the space and argv readings
   under 12 characters for those `looseAssignRE` already takes from 12 (`--db-password`, `--client-secret`, `--bearer`)
-- [ ] **Reverse assertion, unit level** (same test): the string comes out unchanged from `Secrets`, and the pair
-  unchanged from `Argv`, after every flag the measurement found to carry a non-credential — `--key-id`,
+- [x] **Reverse assertion, unit level** (`TestFlagSecrets_Reverse`): the string comes out unchanged from `Secrets`
+  (the `=` reading skipped only where `assignRE` takes it alone, before and after alike: `--page-token=…`), the pair
+  unchanged from `Argv`, and a widened flag reads no value across a line break (question 7), after every flag the
+  measurement found to carry a non-credential — `--key-id`,
   `--secret-id`, `--secret_arn`,
   `--key-file`, `--secret-file`, `--password-file`, `--vault-password-file`, `--password-stdin`, `--token-endpoint`,
   `--token-type`, `--keyring`, `--keychain`, `--keyword`, `--meta_key`, `--space-key`, `--assignment-key`,
@@ -153,22 +155,22 @@ number below there before recording it.
   flag when the value is a path or URL (`--private-key ./id.pem`, `--private-key ~/.ssh/id_rsa`, `--key /obj/path`,
   `--credentials https://…`); and the short flags `-p 8080`, `mkdir -p dir`, `-p<attached>`, `-P x`, `-k x`, `-t x`
   keep their values
-- [ ] **The eight named flags are byte-identical**: `TestArgv`'s P-036 rows pass unchanged except its two reverse rows
+- [x] **The eight named flags are byte-identical** (`TestFlagSecrets_NamedFlagsUnchanged`): `TestArgv`'s P-036 rows pass unchanged except its two reverse rows
   that pinned this gap (`--db-password hunter2` and `run --key <v>`), which move to the positive half;
   `--password ./x`, `--token https://…` are still redacted (the exemption applies only to what rule B adds)
-- [ ] **Content hash** (`internal/detect`): two MCP entries that differ only in the value after `--key` (or `--db-pass`)
+- [x] **Content hash** (`internal/detect`): two MCP entries that differ only in the value after `--key` (or `--db-pass`)
   hash the same — red on the base, where they differ — and two that differ only in the path after `--private-key`
   hash differently (the exemption keeps a swapped key file visible to an approval). `TestContentHashGolden` unchanged
-- [ ] **Judge payload** (`internal/judge`): a `.mcp.json` with one server per newly covered flag sends none of the
+- [x] **Judge payload** (`internal/judge`): a `.mcp.json` with one server per newly covered flag sends none of the
   values in its `mcp-config` payload and writes each pair on the flag's line (`args=--key <REDACTED>`), a fixed point
   of `detect.Redact`; red on the base
-- [ ] **Reverse assertion, corpus level** (scratch replay, not committed): against the binary P-039 leaves on `main`,
+- [x] **Reverse assertion, corpus level** (scratch replay, not committed): against the binary P-039 leaves on `main`,
   exactly the payloads this proposal measured change (5 of 8,770 here, every one by `--key` or `--token-secret`);
   every other payload, every finding and every artifact hash is byte-identical
-- [ ] **Re-key count recorded**: reputation entries and `~/.claude` hashes affected (0 of 18 and 0 of 177 here); the
+- [x] **Re-key count recorded**: reputation entries and `~/.claude` hashes affected (0 of 18 and 0 of 177 here); the
   `ExcerptVersion` bump pinned with a golden fixture that now carries a `--key` pair
   (`TestExcerptVersion_IsPinnedWithItsGolden`); `rulesEpoch` unchanged, since no finding changes
-- [ ] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no new dependency
+- [x] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no new dependency
 
 ## Out of scope
 
@@ -206,9 +208,8 @@ number below there before recording it.
 | W | In one sentence | Commit message (no sha; a rebase changes it) |
 |---|---|---|
 | 1 | The tests: the newly covered spellings and their reverse rows in `internal/redact`, the content-hash pair, the judge payload (red on the base) | `redact: tests — a value after a credential flag the patterns do not know is not redacted (P-040)` |
-| 2 | Widen `flagSecretRE` by rule B with the path/URL/`--no-` exemption; the two P-036 reverse rows that pinned the gap move to the positive half | `redact: a flag whose last word names a credential announces its value (P-040)` |
-| 3 | `ExcerptVersion` + 1, with the golden fixture carrying a `--key` pair | `judge: bump ExcerptVersion for the widened flag set (P-040)` |
-| 4 | The `docs/llm-judge` pair, spec §16.3, the invariant #3 note and the hash rules' list of what `Redact` does not recognise | `docs: which flags announce a credential (P-040)` |
+| 2 | Widen `flagSecretRE` by rule B with the exemption (`internal/redact/flags.go`); the two P-036 reverse rows that pinned the gap move to the positive half; `ExcerptVersion` 3 → 4 with the golden fixture carrying a `--key` pair, in the same commit (`.claude/rules/judge.md` since P-037: any change under `internal/redact` changes the excerpt bytes) | `redact: a flag whose last word names a credential announces its value (P-040)` |
+| 3 | The `docs/llm-judge` pair, spec §16.3, the invariant #3 note and the hash rules' list of what `Redact` does not recognise | `docs: which flags announce a credential (P-040)` |
 
 ## Open questions
 
@@ -266,3 +267,56 @@ number below there before recording it.
    elements are announced: both re-key the same three kinds. **Recommendation**: implement after P-039 merges, on top
    of it, re-measure the corpus replay and the re-key counts there, and ship both in one release so users re-approve
    once. **Decided (2026-10-10)**: as recommended
+
+Asked during implementation (stage 3):
+
+7. **Does a widened flag read its value across a line break?** The patterns' separator is `[=\s]+`, so a newline counts.
+   The judge's MCP excerpt writes an element no flag announces on its own line, and since P-037 every field ends with a
+   whole-field `Redact`: `args=--private-key` / `args=~/.ssh/id_ed25519` was read as `--private-key` followed by the
+   value `args=~/.ssh/id_ed25519`, which is not a path (it starts with `args=`), and the kept line became `<REDACTED>`
+   — `TestPlan_MCPWidenedFlagSecretsAreRedacted` caught it. In a script or a markdown file the next line is
+   likewise the next command, not the flag's argument. **Recommendation**: a second-tier flag announces nothing when
+   the separator holds a line break; the eight named flags keep reading across it, as P-036 pinned
+   (`tool --password\nhunter2` is still redacted). **Decided (2026-10-10)**: as recommended
+8. **Is the third work item (`ExcerptVersion`) its own commit?** Since P-037, `.claude/rules/judge.md` requires the bump
+   in the same commit as any change under `internal/redact`. **Recommendation**: fold it into W2; the docs become W3.
+   **Decided (2026-10-10)**: as recommended
+
+## Done
+
+```
+Merged: PR to be opened (2026-10-10; find the sha with git log --grep P-040 after the merge)
+Released: pending release
+Evidence: red on the base with W1 alone (commit "redact: tests — …", on 2112aab): TestFlagSecrets fails for every one
+  of the 28 widened spellings; TestContentHash_WidenedFlagValuesAreNotDigestInputs fails its 5 "same" cases (`--key`,
+  `--db-pass`, a 7-character `--client-secret`, `--private-key=<v>`, a hook's `--db-password`: the value reached the
+  digest input and moved the hash); TestPlan_MCPWidenedFlagSecretsAreRedacted sends the value for 9 of 9 flags. All
+  three green after W2
+Evidence: reverse — TestFlagSecrets_Reverse, TestFlagSecrets_NamedFlagsUnchanged, the "differ" half of the
+  content-hash test (paths after `--private-key`, a URL after `--credentials`, `--key-file`, `--token-endpoint`, `-p`)
+  and the key-file half of the judge test green on the base and on the branch; TestContentHashGolden unchanged and
+  green. The two P-036 TestArgv reverse rows that pinned this gap (`--db-password hunter2`, `run --key <v>`) failed
+  on W2 as predicted in the design and moved to the positive half
+Evidence: ExcerptVersion — with the fix alone the golden digest stayed 870e91b426266cd3 (the fixture held no widened
+  pair); with a `--key` pair added it is d689185d4bdf37de without the fix and b94da7ba8cb9c053 with it, pinned as
+  {4, b94da7ba8cb9c053}
+Evidence: corpus replay on 2112aab (3,539 samples placed by baselines/adapter/aguard.Stage, `scan --json` and
+  `llm preview --json`, scratch, not committed): 5 of 8,770 judge payloads change, all skill `injection` excerpts
+  (`--key` in 4 samples, `--token-secret` in 1, every value a placeholder); 0 of 4,704 artifact hashes, 0 of 1,618
+  findings and 0 of 164 scan notes change. Same 5 as the design's measurement on 6cab205
+Evidence: ~/.claude on both binaries (`scan --json` and `llm preview --json`, `--inbox off`): 177 artifacts (28 MCP,
+  29 hook, 2 permission), 0 hashes, 0 of 782 findings and 0 of 280 payloads change, overall 69 on both;
+  `scan --root ~/.claude --quiet` prints nothing on either. Re-key: 0 of 18 reputation entries (plugin and Claude
+  Desktop tree hashes), no stored approvals on this machine
+Evidence: not done — `git diff --stat origin/main -- internal/detect/contenthash.go internal/collect
+  internal/reputation internal/gate internal/detect/rules_version.go docs/rules.md baselines go.mod go.sum` is empty
+Verify: make verify → "verify: all gates passed" (go1.23.5, no toolchain switch; go.mod unchanged, `go 1.23.5`)
+```
+
+Follow-ups left out on purpose:
+
+- A command-aware rule for short flags (`mysql -p<pw>`, `sqlcmd -P`, `bcp -P`, `sshpass -p`): `Secrets` sees a string,
+  and the command is in view only to its callers (an MCP entry's `command`, a hook line's first word)
+- `key` after an open or two-word qualifier (`--etherscan-key`, `--data-key`, `--api-private-key`) and compounds without
+  a separator (`--dbpass`): not covered; a vendor key of 24 characters or more is taken by the entropy floor
+- `MYSQL_PASS=…`: `credKeys` has no `pass`; a pattern change that re-keys env blocks, its own proposal
