@@ -46,7 +46,7 @@ func judgeUsage(out []byte, res model.ScanResult) *ledger.JudgeUsage {
 	}
 
 	u := &ledger.JudgeUsage{
-		Basis: ledger.UsageReported, Calls: j.Calls, Failed: j.Failed, Skipped: j.Skipped,
+		Basis: ledger.UsageReported, Calls: j.Calls, Failed: j.Failed, Skipped: j.Skipped, Repaired: j.Repaired,
 		TriageCalls:      j.TriageCalls,
 		Retries:          reported("retries", j.Retries),
 		PromptTokens:     reported("prompt_tokens", j.PromptTokens),

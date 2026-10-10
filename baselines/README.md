@@ -117,7 +117,10 @@ deterministic finding — the inference the four committed judge runs used, and 
 `skipped` is 0: a `max_calls` budget or the run deadline cuts the tail of the plan, which is where
 each artifact's triage call sits. A total is written only when every judged sample supplied its
 part; retries or tokens some sample did not report have no total, and `tokens_unreported_samples`
-counts the samples that made calls without reporting tokens. Questions asked are
+counts the samples that made calls without reporting tokens. `repaired` is the part of `calls` whose
+reply the judge read only by dropping the stray `}` of an object closed one member early (P-034): an
+answered call, not a failed one. It appears in a row and in `run.yaml` only when above 0; a binary that
+does not print it predates the repair, so its count is 0. Questions asked are
 `(calls − triage_calls) / samples`, with `samples` from the judge config (the summary does not
 carry it), exact only when `skipped` is 0; a `judge.jsonl` folded from a new run takes
 `triage_calls` from the ledger rather than inferring it. `raw/` holds the bytes the binary
