@@ -558,6 +558,13 @@ v1 写的 `internal/rules/` 从未存在:规则表就在 `detect/rules_data.go`,
    认出的元素从第一个被换掉的字节到元素末尾整个换掉;判官的 MCP 摘录把它写在 flag 那一行(`args=--api-key <REDACTED>`,P-036)。
    内容哈希问的是同一个判定(`redact.Announced`,`Argv` 自己也调它),忘掉的是同一段:认出的元素从第一个被换掉的字节到末尾
    整个不进摘要(P-039;以前哈希照模式读,`"--password", "correct horse"` 留下尾巴 ` horse`),带结构字符的那段除外(§8)。
+   **哪些 flag 算声明了凭据,只有 `flagSecretRE` 一处**(P-040),分两档:原来点名的八个(`--password`、`--token`、
+   `--api-key` …)后面不论是什么都换掉;第二档是**最后一个词**是凭据名的 flag —— 密码类或 `secret` 前面带任意限定词
+   (`--db-pass`、`--client-secret`),`key` 单独或前面带一个凭据限定词(`--private-key`、`--secret-key`、`--license-key`),
+   以及单独的 `--pat`、`--bearer`、`--credential(s)`;它们的值是 URL 或路径(`/`、`./`、`../`、`~/` 开头,或密钥文件扩展名)、
+   flag 是 `--no-*`、或值在下一行时不换 —— 路径是"读哪个密钥文件"的证据,哈希也必须留着它,换了密钥文件才会重问。
+   凭据词不在最后的(`--key-file`、`--secret-id`、`--token-endpoint`)、`key` 前面是开放限定词的(`--space-key`)、
+   `token` 组合词、单字母 flag(`-p`)都不在内;实测见 P-040。
    判官请求里的每个字段(声明用途、行为、triage 证据)构造的**最后一步是整段 `Redact` 到不动点**,变长了再按该字段自己的
    上限重截(前缀、头尾、或从末尾整块丢掉一个文件/载荷/摘要行);各段分别脱敏再拼接、分隔或截断,跨接缝的模式和"截断后
    才像 token"的串以前都留给第二遍去改。所有字节截断落在字符边界上(`detect.RunePrefix`),不是 UTF-8 的字节先换成 U+FFFD

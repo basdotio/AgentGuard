@@ -57,8 +57,9 @@ skill 与 plugin 用树哈希(按相对路径排序 + 每个文件的 sha256);�
   以前 `"--password", "correct horse"` 的摘要输入是 `<REDACTED> horse`,拿词表就能从公开的哈希撞出尾巴,身份也跟着尾巴走。
   被忘掉的那段带结构字符时整体替换作废,退回原来的 `flag value` 读法(尾巴照留)。改它只重键带这种值的条目,域后缀不动。
 - **剩下的口子要说实话**:被换掉的那一段如果本身被拿去解码或求值(配置在批准时就在"解码一个凭据名变量再执行"),换掉
-  那段载荷哈希不变。`Redact` 认不出的 secret(`MYSQL_PASS=…`、`--db-password …`、`-p<pw>`)原样进摘要输入 —— 补它要改
-  `redactCredentials`,即重键,另开。同样另开的(P-039 实测):shell 行里引号括起的值(hook command、permission 条目里的
+  那段载荷哈希不变。`Redact` 认不出的 secret(`MYSQL_PASS=…`、`-p<pw>`、`--dbpass …`、不足 12 字符的 `--auth-token …`)原样进
+  摘要输入 —— 补它要改 `redactCredentials`,即重键,另开(P-040 补了最后一个词是凭据名的 flag,`--db-password`、`--key`,
+  路径和 URL 值照留)。同样另开的(P-039 实测):shell 行里引号括起的值(hook command、permission 条目里的
   `--password "correct horse"`)整段原样进输入;env/header 里带空格的凭据值(`DB_PASSWORD=correct horse`)留着尾巴。
   MCP 的哈希只覆盖配置条目,不覆盖 server 的代码。
 - **规范 JSON 不是 RFC 8785**:`UseNumber` 保留数字原文、键按 UTF-8 字节排序、`SetEscapeHTML(false)`。谁要在别处重算这个哈希,

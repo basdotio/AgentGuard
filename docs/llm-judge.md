@@ -204,8 +204,12 @@ everything on your machine. That trade-off is yours.
   redacted as the command line it forms: an element after a flag that announces a credential
   (`--api-key`, `--access-token`, `--token`, `--password`, `--secret`, `-u` / `--user user:pass`, …) is
   replaced and written on the flag's line, `args=--api-key <REDACTED>`. Each element used to be
-  redacted alone, and a short key after `--api-key` was sent as written. A flag the redaction does
-  not know (`--key`, `-p`) still sends its value.
+  redacted alone, and a short key after `--api-key` was sent as written. A flag whose last word
+  names a credential announces its value too (`--key`, `--private-key`, `--db-pass`,
+  `--client-secret`), unless the value is a path or a URL — `--private-key ~/.ssh/id_rsa` is sent
+  as written, because which key file a server reads is evidence, not a secret. Single-letter flags
+  (`-p`) and `token` compounds under 12 characters (`--auth-token`) still send their value: `-p` is
+  a port, a prompt or `mkdir -p` far more often than a password.
 - **A declared purpose is capped at 1,000 bytes** (a description, a hook's interception point),
   cut on a character boundary.
 - **Every field a request carries is bounded, valid UTF-8 and redacted as a whole.** Behavior is at

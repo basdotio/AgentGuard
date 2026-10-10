@@ -168,7 +168,9 @@ aguard scan --llm --config config.yaml
   其余的值照常过脱敏。以前只发值、不发键,`DB_PASS` 下的 `hunter2` 出去时就是一个孤零零的 `hunter2`。数组(`args`)按它拼成的那条
   命令行脱敏:跟在一个声明了凭据的 flag(`--api-key`、`--access-token`、`--token`、`--password`、`--secret`、`-u` / `--user user:pass` …)
   后面的那个元素换掉,并写在 flag 那一行上:`args=--api-key <REDACTED>`。以前每个元素单独脱敏,`--api-key` 后面一个短 key 原样发出去。
-  脱敏不认识的 flag(`--key`、`-p`)后面的值照旧发出。
+  最后一个词是凭据名的 flag 也算声明(`--key`、`--private-key`、`--db-pass`、`--client-secret`),值是路径或 URL 时除外 ——
+  `--private-key ~/.ssh/id_rsa` 照原样发出,server 读哪个密钥文件是证据,不是 secret。单字母 flag(`-p`)和不足 12 个字符的
+  `token` 组合词(`--auth-token`)后面的值照旧发出:`-p` 是端口、提示词或 `mkdir -p` 的次数远多于密码。
 - **声明用途截到 1,000 字节**(description、hook 的拦截点),截在字符边界上。
 - **请求里的每个字段都有上限、都是合法 UTF-8、都整段脱敏过。** 每一趟的行为文本最多 6,000 字节:去混淆那趟按顺序发
   完整的解码载荷、串通那趟发完整的摘要行,装得下多少发多少,其余的在预览的 `shortened` 和一条 `LLM-000` 里写明
