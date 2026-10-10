@@ -76,13 +76,13 @@ fold: >-
     from which a question no sample flagged (k = 0, which leaves no finding) is recovered. The
     severity an escalated finding carries is its FIRST agreeing sample's (internal/judge/run.go
     tally), so at temperature 0.8 it is itself a draw; the other samples' severities are not in raw/.
-    Regenerate from raw/ — nothing here is hand-typed except this file.
+    Folded from raw/ when the run was taken; raw/ is not in this repository (see raw_archive), so this cannot be redone here. Nothing here is hand-typed except this file.
 counts:
     scored: 224
     no_verdict: 0
     error: 0
 work_list_size: 224
-raw_archive:                          # raw/ left the tree in P-039: 6.2 MB of model output quoting malicious samples,
-    asset: aguard-judge-raw-2026-09.tar.gz   # attached as a release asset; holds the raw/ of all four judge runs
-    sha256: 10a7ba6eb7e70f336da4616cfb7ff02a0e59749f8868e7ffb1e84ea2faa4eafd
-    note: the fold above is reproducible from the archive alone; judge.jsonl here is derived from it
+raw_archive:                          # raw/ left the tree in P-039 (6.2 MB of model output quoting malicious samples)
+    asset: aguard-judge-raw-2026-09.tar.gz   # never attached to a release (checked 2026-10-10); raw/ itself survives only in the former repository's history, before its P-039
+    sha256: 10a7ba6eb7e70f336da4616cfb7ff02a0e59749f8868e7ffb1e84ea2faa4eafd   # of the archive as built; nothing published has it
+    note: the fold above was made from that raw/ when the run was taken; this repository does not carry raw/, so a reader here cannot re-run it, and judge.jsonl and verdicts.jsonl are the record of what the judge returned
