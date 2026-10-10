@@ -59,7 +59,14 @@ const carrier = `(?:(?:bearer|basic|token)\s+)?`
 // not a non-password, and at 7 characters it used to reach the report — and, with `--llm`
 // against a remote endpoint, the network — in the clear. 12 is the right floor for a value
 // with NO key vouching for it; that is entropyTokenRE's job and its threshold is unchanged.
-var assignRE = regexp.MustCompile(`(?i)(` + credKeys + `)(["']?\s*[:=]\s*["']?` + carrier + `)([A-Za-z0-9/+_.\-]{4,})`)
+//
+// After the separator the value is quoted — `"carrier body"` or `'carrier body'` (quoted.go, P-043), groups
+// 3–5 and 6–8 — or bare, groups 9–10: the separator's optional quote, the carrier and the bare word, as
+// before. A quoted body the fragments refuse (an expansion, a code-shaped quote) leaves the bare reading.
+var assignRE = regexp.MustCompile(`(?i)(` + credKeys + `)(["']?\s*[:=]\s*)(?:` +
+	`"(` + carrier + `)(` + dqBody + `)("|(?m:$))` +
+	`|'(` + carrier + `)(` + sqBody + `)('|(?m:$))` +
+	`|(["']?` + carrier + `)([A-Za-z0-9/+_.\-]{4,}))`)
 
 // looseAssignRE is the same pair separated by whitespace ALONE (`Authorization Bearer abc…`).
 // With no `:`/`=` the shape also fits ordinary English — "the secret sauce is" — so it keeps
@@ -91,7 +98,13 @@ var carrierWords = map[string]bool{"bearer": true, "basic": true, "token": true}
 // so "is this line a network command" is not a question it can ask.
 // The `-u` arm carries a left boundary so it is a FLAG and not the tail of a word
 // (`sort-u a:b`); the boundary sits inside group 1, which the replacement echoes back.
-var flagUserPassRE = regexp.MustCompile(`(?i)((?:^|\s)-u\s+|--user[=\s]+)([^\s'":]*:)([^\s'"]+)`)
+//
+// The pair may be quoted (P-043): `-u "admin:pass word"` keeps `"admin:` and its closing quote, groups 2–4
+// (double) and 5–7 (single); the bare pair is groups 8–9, as before.
+var flagUserPassRE = regexp.MustCompile(`(?i)((?:^|\s)-u\s+|--user[=\s]+)(?:` +
+	`("` + quotedUser + `)(` + dqTail + `)("|(?m:$))` +
+	`|('` + quotedUser + `)(` + sqTail + `)('|(?m:$))` +
+	`|([^\s'":]*:)([^\s'"]+))`)
 
 // entropyTokenRE finds long opaque tokens; those with high Shannon entropy are redacted
 // as a catch-all for keyword-less / bespoke secrets (spec §16.3 "high-entropy strings").
@@ -134,9 +147,9 @@ func Credentials(s string) string { return CredentialsKeeping(s, nil) }
 // replacement keeps the guard and loses only the span it guards.
 func CredentialsKeeping(s string, keep func(match, repl string) bool) string {
 	out := replaceEach(urlCredRE, s, func(g []string) string { return g[1] + marker + g[3] }, keep)
-	out = replaceEach(flagUserPassRE, out, func(g []string) string { return g[1] + g[2] + marker }, keep)
+	out = replaceEach(flagUserPassRE, out, userPass, keep)
 	out = replaceEach(flagSecretRE, out, flagValue, keep) // flags.go
-	out = replaceEach(assignRE, out, valueHalf, keep)
+	out = replaceEach(assignRE, out, assignValue, keep)
 	out = replaceEach(looseAssignRE, out, valueHalf, keep)
 	for _, re := range redactPatterns {
 		out = replaceEach(re, out, func([]string) string { return marker }, keep)
@@ -157,9 +170,36 @@ func redactEntropy(s string) string {
 	})
 }
 
+// userPass replaces the password of a flagUserPassRE hit g, quoted or bare; the user survives.
+func userPass(g []string) string {
+	switch {
+	case g[3] != "":
+		return g[1] + g[2] + marker + g[4]
+	case g[6] != "":
+		return g[1] + g[5] + marker + g[7]
+	}
+	return g[1] + g[8] + marker
+}
+
+// assignValue is valueHalf for assignRE, whose value may be quoted: the quotes and a carrier inside them
+// stay, and the four-character floor and the literals are asked of the body.
+func assignValue(g []string) string {
+	lead, v, tail := g[9], g[10], ""
+	switch {
+	case g[4] != "":
+		lead, v, tail = `"`+g[3], g[4], g[5]
+	case g[7] != "":
+		lead, v, tail = `'`+g[6], g[7], g[8]
+	}
+	if lv := strings.ToLower(v); len(v) < 4 || keywordValues[lv] || carrierWords[lv] {
+		return g[0]
+	}
+	return g[1] + g[2] + lead + marker + tail
+}
+
 // valueHalf replaces the VALUE half of a key/value hit, keeping the key and the separator so the
 // report still names WHICH setting held a secret, and leaving language literals alone (see
-// keywordValues). g is a match of a pattern with the key/separator/value group layout of assignRE.
+// keywordValues). g is a match of looseAssignRE: key, separator, value.
 func valueHalf(g []string) string {
 	if v := strings.ToLower(g[3]); keywordValues[v] || carrierWords[v] {
 		return g[0]

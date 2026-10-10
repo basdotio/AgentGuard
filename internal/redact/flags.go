@@ -41,7 +41,7 @@ var flagSecretRE = regexp.MustCompile(`(?i)(--(` +
 	`(?:[a-z0-9]+[-_])*(?:password|passwd|passphrase|pass|pwd|secret)` +
 	`|(?:(?:api|app|private|secret|access|auth|client|license|master|encryption|signing)[-_]?)?key` +
 	`|token|api[_-]?key|access[_-]?token|pat|bearer|credentials?` +
-	`)[=\s]+)([^\s'"]+)`)
+	`)[=\s]+)(` + dqValue + `|` + sqValue + `|[^\s'"]+)`) // the value: quoted (quoted.go, P-043) or a bare word
 
 // namedFlagRE is the first tier: the flags flagSecretRE named before P-040, whose value is redacted
 // whatever its shape.
@@ -50,8 +50,10 @@ var namedFlagRE = regexp.MustCompile(`(?i)^(?:password|passwd|passphrase|pass|to
 // keyFileRE is a value that names a file holding a key rather than being one.
 var keyFileRE = regexp.MustCompile(`(?i)\.(?:pem|key|crt|cer|der|p12|pfx|jks|pub|gpg|asc|json|txt|env)$`)
 
-// flagValue replaces the value of a flagSecretRE hit g, except where a second-tier flag is
-// followed by something that is plainly not a secret, or by nothing on its own line.
+// flagValue replaces the value of a flagSecretRE hit g — between its quotes when it is quoted (P-043) —
+// except where a second-tier flag is followed by something that is plainly not a secret, or by nothing on
+// its own line. The exemption reads the body, so `--private-key "~/my keys/id.pem"` stays as
+// `--private-key ~/.ssh/id_rsa` does.
 //
 // The line rule is the second tier's too. Across a line break the next word is the next line, not the
 // flag's argument: the judge's MCP excerpt writes an element a flag does not announce on its own line
@@ -60,11 +62,11 @@ var keyFileRE = regexp.MustCompile(`(?i)\.(?:pem|key|crt|cer|der|p12|pfx|jks|pub
 // the line the exemption kept. The eight named flags keep reading across it, as P-036 pinned.
 func flagValue(g []string) string {
 	if !namedFlagRE.MatchString(g[2]) {
-		if sep := g[1][len("--")+len(g[2]):]; strings.ContainsAny(sep, "\n\r") || notASecret(g[2], g[3]) {
+		if sep := g[1][len("--")+len(g[2]):]; strings.ContainsAny(sep, "\n\r") || notASecret(g[2], unquote(g[3])) {
 			return g[0]
 		}
 	}
-	return g[1] + marker
+	return g[1] + requote(g[3])
 }
 
 // notASecret is the exemption of the second tier (P-040): a `--no-*` switch takes no value (the word
