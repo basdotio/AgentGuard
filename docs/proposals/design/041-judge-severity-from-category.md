@@ -193,7 +193,6 @@ into; running the 127 server-source samples through `check --llm` (P-004) so the
 | 7 | This file's "Done", the index | `proposals: P-041 (P-041)` |
 
 ## Open questions
-   **Decided (2026-10-10)**: as recommended.
 
 1. **The table itself.** **Recommendation**:
    - injection (`LLM-003`): `exfiltration`, `credential-read`, `remote-execution`, `safety-disable`,
