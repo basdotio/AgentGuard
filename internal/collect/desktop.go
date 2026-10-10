@@ -264,9 +264,12 @@ func collectDesktop(home string, env *model.EnvSummary) ([]model.ArtifactReport,
 				continue
 			}
 			seenContent[key] = true
-			out = append(out, artifact(model.KindPlugin, pluginName(label, bundleVersion(real)), real, hash))
-			env.BundledSkills += bundledSkills(real)
+			parent := pluginName(label, bundleVersion(real))
+			out = append(out, artifact(model.KindPlugin, parent, real, hash))
 			env.Plugins++
+			pc, pcn := pluginContents(real, parent, bundleName(label), " (plugin "+label+")", env)
+			out = append(out, pc...)
+			notes = append(notes, pcn...)
 			// Same per-(event, matcher, command) treatment installed plugins get; see collectPlugins
 			// for why a hook read only as text is a hook that misses everything hook-specific.
 			ph, phn := collectPluginHooks(real, " (plugin "+label+")", env)

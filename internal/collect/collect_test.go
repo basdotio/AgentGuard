@@ -342,8 +342,16 @@ func TestCollectTarget_Routing(t *testing.T) {
 			if err != nil {
 				t.Fatalf("CollectTarget: %v", err)
 			}
-			if len(res.Artifacts) != 1 {
-				t.Fatalf("got %d artifacts, want exactly 1: %+v", len(res.Artifacts), res.Artifacts)
+			// One artifact for the target. A plugin's skills, commands and agents follow it as children
+			// of their own (P-044), so they are not a second routing answer.
+			var own []model.ArtifactReport
+			for _, a := range res.Artifacts {
+				if a.Plugin == "" {
+					own = append(own, a)
+				}
+			}
+			if len(own) != 1 {
+				t.Fatalf("got %d artifacts, want exactly 1: %+v", len(own), res.Artifacts)
 			}
 			if got := res.Artifacts[0].Kind; got != tc.want {
 				t.Errorf("kind = %q, want %q", got, tc.want)
@@ -501,7 +509,8 @@ func TestCollect_UnresolvedNoteIsAggregatedNotPerEntry(t *testing.T) {
 }
 
 // TestBundledSkillsAreCounted pins the collect half of the bundled-skills count: a plugin bundling three skills reports
-// BundledSkills=3 while Skills stays 0 and the plugin is still ONE artifact with ONE hash.
+// BundledSkills=3 while Skills stays 0; the plugin is still ONE tree artifact with ONE hash, and since P-044 its three
+// skills follow it as children (`plugin` set), which is what BundledSkills now counts.
 func TestBundledSkillsAreCounted(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "plug")
 	mustWrite(t, filepath.Join(dir, pluginManifest), `{"name":"p"}`)
@@ -513,8 +522,14 @@ func TestBundledSkillsAreCounted(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res.Env.BundledSkills != 3 || res.Env.Skills != 0 || res.Env.Plugins != 1 || len(res.Artifacts) != 1 {
-		t.Errorf("env=%+v artifacts=%d, want bundled=3 skills=0 plugins=1 artifacts=1", res.Env, len(res.Artifacts))
+	kids := 0
+	for _, a := range res.Artifacts[1:] {
+		if a.Plugin == "p" || a.Plugin == "plug" {
+			kids++
+		}
+	}
+	if res.Env.BundledSkills != 3 || res.Env.Skills != 0 || res.Env.Plugins != 1 || res.Artifacts[0].Kind != model.KindPlugin || kids != 3 {
+		t.Errorf("env=%+v artifacts=%d children=%d, want bundled=3 skills=0 plugins=1, the plugin and its 3 skills", res.Env, len(res.Artifacts), kids)
 	}
 }
 
