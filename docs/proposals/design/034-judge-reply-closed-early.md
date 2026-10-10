@@ -89,8 +89,8 @@ change.
   `triage.go`)
 - [ ] The count is not silent: the JSON `judge` block carries `repaired` beside `failed` and `skipped` (always present
   when the block is, like them); the report's judge line adds the count only when it is above 0; the inbox total sums it;
-  the benchmark ledger's `judge_usage` carries it when the binary printed it, and `run.yaml` totals it only when every
-  judged sample did (committed `baselines/results/` refold byte-identically — the existing golden tests)
+  the benchmark ledger's `judge_usage` and `run.yaml` carry it when it is above 0 (question 9), so a row folded without
+  a repair is byte-identical — the judgefold goldens and committed `baselines/results/` do not change
 - [ ] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no new dependency
 
 ## Out of scope
@@ -168,6 +168,15 @@ change.
 8. **Retry instead of repair?** **Recommendation**: no. A retry is one more request to the endpoint, at temperature 0 it may return
    the same text, and at the sampling temperature it changes which answer is counted; the repair is deterministic and
    reads the answer the model gave. **Decided (2026-10-10)**: as recommended
+
+Asked during stage 2:
+
+9. **The ledger's `repaired`: a pointer like `retries`, or an int?** Question 6 recommended a pointer. Implemented that
+   way, the judgefold golden test (`baselines/cmd/judgefold`) failed: its synthetic raw/ is printed with today's JSON
+   types, so every judged row gained `"repaired":0`. **Recommendation**: an int, omitted when 0, in the row and in
+   `run.yaml`. `retries` is a pointer because an older binary did retry without counting; a binary that does not print
+   `repaired` predates the repair and made none, so its count is exactly 0 and absence is the truth, not a gap. Rows
+   and totals without a repair stay byte-identical, and no golden changes. **Decided (2026-10-10)**: as recommended
 
 ## Done
 
