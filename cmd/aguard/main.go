@@ -555,7 +555,7 @@ func writeHTML(path string, out model.ScanResult) error {
 }
 
 // failOnLLMFlagHelp is shared by scan and check for the same reason as mdFlagHelp.
-const failOnLLMFlagHelp = "exit 1 when a finding INCLUDING qualified LLM ones is at/above this level, exit 4 when the judge could not answer for every artifact (did not run, a call failed or was never made); needs config llm.authority: escalate (default: off)"
+const failOnLLMFlagHelp = "exit 1 when a finding INCLUDING qualified LLM ones is at/above this level, exit 4 when the judge could not answer for every artifact (did not run, a call failed or was never made) or, on check, has no pass for the target (a plugin, an unrecognised directory); needs config llm.authority: escalate (default: off)"
 
 // mdFlagHelp is shared by scan and check: the two must describe the same flag the same way.
 const mdFlagHelp = "also write the report as GitHub-flavoured markdown to this path, for a pull request comment or an issue (\"-\" = stdout, replacing the terminal report); same content as the terminal, --verbose does not change it"
@@ -950,9 +950,9 @@ func (e *failExit) Error() string {
 // failure where it had a broken gate.
 //
 // --fail-on-llm also has a third answer, exit 4: no gate fired, but the judge could not answer for
-// every artifact (judgeGap). It used to be 0 — the code a judge that looked and found nothing gets
-// — so a pipeline that asked the judge to gate it went green exactly when the judge was blind
-// (P-026). Order is 2 (refused, above) > 1 (a gate fired: an answer, however much the judge
+// every artifact (judgeGap), or has no question for the target of a check (unaskedTarget, P-038).
+// It used to be 0 — the code a judge that looked and found nothing gets — so a pipeline that asked
+// the judge to gate it went green exactly when the judge was blind (P-026). Order is 2 (refused, above) > 1 (a gate fired: an answer, however much the judge
 // managed) > 4 > 0, and --fail-on alone never reads the judge's state.
 func failGate(out model.ScanResult, failOn, failOnLLM string, mayEscalate bool) error {
 	sev, llmSev, err := validateFailGates(failOn, failOnLLM, mayEscalate)
@@ -968,11 +968,39 @@ func failGate(out model.ScanResult, failOn, failOnLLM string, mayEscalate bool) 
 	if report.HasAtLeastEffective(out, llmSev) {
 		return &failExit{code: 1}
 	}
-	if gap := judgeGap(out.Judge); gap != "" {
+	gap := judgeGap(out.Judge)
+	if gap == "" {
+		gap = unaskedTarget(out)
+	}
+	if gap != "" {
 		return &failExit{code: exitNotEvaluable,
 			msg: fmt.Sprintf("--fail-on-llm could not be evaluated (exit %d): %s", exitNotEvaluable, gap)}
 	}
 	return nil
+}
+
+// unaskedTarget says why the judge's half of the answer is missing for the target of a check whose
+// kind the judge has no pass for (a plugin tree, an unrecognised directory), or "". For such a target
+// the judge plans no question — at most a triage call, whose labels never reach this gate — so judgeGap
+// sees a run that answered everything it planned, and the gate used to exit 0 on a target the judge
+// never read (P-038).
+//
+// The target is the artifact at the checked path: a single-target check reports the path as typed
+// as both its root and its one artifact's path, and archiveView rewrites both to the archive. A scan,
+// or a check of a directory laid out as a root, has no artifact at its root path — an environment is
+// not a target, and there a plugin's skills are judged nowhere, so counting its plugins would make the
+// gate exit 4 on every machine with one installed. Those are disclosed by the judge's LLM-000 note.
+func unaskedTarget(out model.ScanResult) string {
+	if out.Root == "" {
+		return ""
+	}
+	for _, a := range out.Artifacts {
+		if a.Path == out.Root && judge.AsksNothingOf(a.Kind) {
+			return fmt.Sprintf("the judge asked nothing about the target: it has no pass for a %s (1 artifact), "+
+				"so none of its content was put to the model (the report's LLM-000 note has the detail)", a.Kind)
+		}
+	}
+	return ""
 }
 
 // judgeGap says why the judge's half of the --fail-on-llm answer is missing, or "" when the judge
