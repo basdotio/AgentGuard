@@ -217,7 +217,7 @@ Found while implementing:
 ## Done
 
 ```
-Merged: PR to be opened (2026-10-10; find the sha with git log --grep P-033 after the merge)
+Merged: PR #52 (2026-10-10; find the sha with git log --grep P-033)
 Released: pending release
 Evidence: W1 red at compile time on origin/main 0bffbdb — baselines/judgefold: undefined: Answer, Fold, Options, Vote, Wilson, Cell, Table, Meta; baselines/adapter/aguard: b.Rebuild undefined (type *Adapter has no field or method Rebuild); baselines/corpus: undefined: ReadAnnotation; baselines/cmd/judgefold: no non-test Go files in baselines/judgefold — green after W2–W6
 Evidence: TestSchema_RoundTripsTheCommittedJudgeFiles: 2,086 of 2,086 committed judge.jsonl lines re-encode to their own bytes
