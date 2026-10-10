@@ -89,6 +89,10 @@ func (j *scriptedJudge) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	body, _ := io.ReadAll(r.Body)
 	_ = json.Unmarshal(body, &req)
 	var text strings.Builder
+	system := ""
+	if len(req.Messages) > 0 {
+		system = req.Messages[0].Content
+	}
 	for _, m := range req.Messages {
 		text.WriteString(m.Content)
 		text.WriteString("\n")
@@ -102,7 +106,10 @@ func (j *scriptedJudge) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	verdict := map[string]any{"flagged": false, "severity": "low", "summary": "nothing", "evidence": ""}
 	if m := markerRe.FindStringSubmatch(text.String()); m != nil {
 		quote := strings.TrimSpace(m[0])
-		flag := map[string]any{"flagged": true, "severity": "high", "summary": "scripted", "evidence": quote}
+		// The finding's severity is the tool's, from the category the reply names (P-041): the
+		// first name a pass offers is always a high row, the last its medium valve.
+		first, last := offeredCategories(system)
+		flag := map[string]any{"flagged": true, "category": first, "severity": "high", "summary": "scripted", "evidence": quote}
 		switch m[1] {
 		case "ALL":
 			verdict = flag
@@ -111,6 +118,7 @@ func (j *scriptedJudge) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				verdict = flag
 			}
 		case "MEDIUM":
+			flag["category"] = last
 			flag["severity"] = "medium"
 			verdict = flag
 		case "FAIL":
@@ -300,4 +308,30 @@ func containsRule(rs []string, r string) bool {
 		}
 	}
 	return false
+}
+
+// offeredCategories reads the closed category list a pass's system prompt offers (P-041) and returns
+// its first and last names: the first row of every table is high, the last its medium valve. A
+// prompt that offers none (the MCP pass) yields empty names, which the tool reads as medium.
+func offeredCategories(system string) (first, last string) {
+	const marker = "set category to EXACTLY ONE of these names, the one that best describes what you found: "
+	i := strings.Index(system, marker)
+	if i < 0 {
+		return "", ""
+	}
+	list := system[i+len(marker):]
+	if j := strings.Index(list, ". The tool sets"); j >= 0 {
+		list = list[:j]
+	}
+	var names []string
+	for _, item := range strings.Split(list, "; ") {
+		name, _, ok := strings.Cut(item, " = ")
+		if ok {
+			names = append(names, strings.TrimSpace(name))
+		}
+	}
+	if len(names) == 0 {
+		return "", ""
+	}
+	return names[0], names[len(names)-1]
 }

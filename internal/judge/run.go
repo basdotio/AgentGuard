@@ -157,6 +157,9 @@ type result struct {
 	ungrounded bool           // something was claimed but couldn't be quoted — dropped
 	unquoted   string         // the quote that failed to ground, clipped — for the LLM-005 note
 	repaired   bool           // the reply was read only by the closed-early repair (P-034)
+	// modelSeverity is the word the model wrote, clamped: shown beside the tool's severity in the
+	// vote list, never weighed (P-041).
+	modelSeverity model.Severity
 }
 
 // groundedFinding turns a verdict into a finding ONLY if the text it quotes can be located in
@@ -533,6 +536,9 @@ type ballot struct {
 	// flagged holds the samples that flagged AND grounded, in sample order. Only these are
 	// votes: a verdict whose quote isn't in the source can't support anything.
 	flagged []model.Finding
+	// modelSevs is, per entry of flagged, the word the model wrote — the vote list prints it
+	// beside the tool's severity so a later run can check the table against it (P-041).
+	modelSevs []model.Severity
 	// barriers holds the samples that reported (and could quote) an instruction aimed at the
 	// analyzer. Voted on exactly like the verdict: this signal is strong, but "strong" is not
 	// a reason to skip the bar.
@@ -555,6 +561,7 @@ func (b *ballot) cast(r result) {
 	}
 	if r.finding != nil {
 		b.flagged = append(b.flagged, *r.finding)
+		b.modelSevs = append(b.modelSevs, r.modelSeverity)
 	}
 	if r.barrier != nil {
 		b.barriers = append(b.barriers, *r.barrier)
@@ -568,8 +575,8 @@ func (b *ballot) cast(r result) {
 // lets the judge add. What consensus withholds is influence, not visibility — and the reader
 // is told the vote so the weaker signal reads as weaker.
 func (b *ballot) result(samples int) (verdict, barrier *model.Finding, dropped bool) {
-	verdict = tally(b.flagged, samples)
-	barrier = tally(b.barriers, samples)
+	verdict = tally(b.flagged, b.modelSevs, samples)
+	barrier = tally(b.barriers, nil, samples)
 	if verdict == nil && barrier == nil {
 		dropped = b.ungrounded
 	}
@@ -588,14 +595,23 @@ func (b *ballot) result(samples int) (verdict, barrier *model.Finding, dropped b
 var advisoryOnly = map[string]bool{"LLM-009": true}
 
 // tally turns one group's votes into at most one finding, recording the count for the reader.
-func tally(votes []model.Finding, samples int) *model.Finding {
+// modelSevs, when given, is the model's own word per vote: "[severities: a, b, c]" then lists
+// those words, exactly as before P-041 (the benchmark's fold reads that bracket), and a trailing
+// "[tool: <severity>]" names the finding's severity, which severityFor set from the category.
+// Without it (the barrier finding, whose severity was always the tool's) the list is the votes'
+// severities and nothing follows.
+func tally(votes []model.Finding, modelSevs []model.Severity, samples int) *model.Finding {
 	if len(votes) == 0 {
 		return nil
 	}
 	f := votes[0] // first sample wins: deterministic, since samples merge in order
 	f.Escalates = len(votes) >= majority(samples) && !advisoryOnly[f.RuleID]
 	if samples > 1 {
-		f.Why += fmt.Sprintf(" [%d of %d samples agreed] [severities: %s]", len(votes), samples, voteSeverities(votes))
+		if modelSevs != nil {
+			f.Why += fmt.Sprintf(" [%d of %d samples agreed] [severities: %s] [tool: %s]", len(votes), samples, joinSeverities(modelSevs), f.Severity)
+		} else {
+			f.Why += fmt.Sprintf(" [%d of %d samples agreed] [severities: %s]", len(votes), samples, voteSeverities(votes))
+		}
 		if !f.Escalates && !advisoryOnly[f.RuleID] {
 			f.Why += " — below the consensus bar, so it is shown but carries no weight"
 		}
@@ -611,11 +627,19 @@ func tally(votes []model.Finding, samples int) *model.Finding {
 // samples were could not be read back from any report — and a rerun could not compare "the first
 // vote's severity" with "the majority's" on one raw output.
 func voteSeverities(votes []model.Finding) string {
-	sevs := make([]string, len(votes))
+	sevs := make([]model.Severity, len(votes))
 	for i, v := range votes {
-		sevs[i] = string(v.Severity)
+		sevs[i] = v.Severity
 	}
-	return strings.Join(sevs, ", ")
+	return joinSeverities(sevs)
+}
+
+func joinSeverities(sevs []model.Severity) string {
+	out := make([]string, len(sevs))
+	for i, s := range sevs {
+		out[i] = string(s)
+	}
+	return strings.Join(out, ", ")
 }
 
 // hasFinding reports whether an artifact already carries a given static rule.
@@ -685,6 +709,7 @@ func execute(ctx context.Context, c Client, t task, opts Options) result {
 			if v, err = c.Judge(cctx, t.req); err == nil {
 				res.finding, res.barrier, res.ungrounded, res.unquoted = groundedFinding(t, v)
 				res.repaired = v.repaired
+				res.modelSeverity = clampSeverity(v.Severity)
 			}
 		case taskTriage:
 			res.labels, err = c.Triage(cctx, t.label, t.items)
