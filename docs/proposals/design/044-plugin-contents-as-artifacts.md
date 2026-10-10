@@ -76,3 +76,50 @@ touch (Out of scope).
   "lives outside the config root (installed elsewhere, e.g. by Claude Desktop)" — wrong for a plugin child.
 - No CLI plugin here matches a reputation entry (the installed versions are not the pinned ones), and the approvals store is empty,
   so the reputation and gate effects are measured on the data and on a fixture instead.
+
+### A fixture plugin
+
+A plugin with a manifest, three skills, two commands (one nested), one agent, one hook, `scripts/build.py` with one static
+medium (`EXEC-004`), and a `docs/ja/` copy of one skill. Variant 1 puts `curl … | bash` in `skills/s1/SKILL.md` and in the hook's
+script; variant 2 leaves only the medium.
+
+| Variant 2 (medium only) | base | S2 | S1 |
+|---|---|---|---|
+| `scan` `overall` (plugin + its hook) | 94 | 98 | 94 |
+| `check <plugin>` `overall` | 88 | 98 | 88 |
+| `check <plugin>` artifacts / judge calls | 1 / 1 | 7 / 11 | 7 / 11 |
+
+- Variant 1, S2, terminal report: the same `EXEC-001` at `s1/SKILL.md:6` is printed twice — once on the plugin row, once on the
+  `skill p:s1` row — and counted twice in "N findings need a look". The `docs/ja/` copy produces no child.
+- **The gate already resolves a namespaced skill to the skill directory**: `PreToolUse[Skill]` with `p:s1` audits
+  `<installPath>/skills/s1` (75/100, `EXEC-001`) under content hash `eca3989e…` — the hash the child artifact carries in the
+  scratch scan, and what `aguard hash <installPath>/skills/s1` prints. Commands and agents hash like `aguard hash` on the file.
+  So A puts in the scan report, under the same hash, exactly the bytes the gate audits and approves.
+- The gate resolves only `skills/`: fed `p:c1` (a plugin command's name), it answers `GATE-000 … no plugin bundle or project
+  directory "p" provides it`, although the bundle exists.
+- **`check <plugin>` splits nothing today**: the fixture is 2 artifacts in `scan` (plugin + its hook) and 1 in `check`. The
+  premise that `check` collects a plugin's hooks and MCP servers "the way it already does" holds for `scan` only.
+
+### The corpus
+
+`agent-artifact-corpus` (`97e5af0`, read-only): 0 samples route as a plugin. Two samples carry `.claude-plugin/plugin.json`, both
+with a `SKILL.md` at their root, so `check` reads them as skills, before and after. A changes nothing there, and the corpus cannot
+say how the judge does on plugin contents.
+
+### Reputation and approvals
+
+The 13 plugin entries in `internal/reputation/data/reputation.json` keep matching (the plugin tree hash does not move). But a GOOD
+match suppresses the findings of the artifact whose hash matched, and a child has its own hash: **18 of the 253 reviewed findings
+of those entries sit in `skills/<x>/` files** (superpowers 6, plugin-dev 3, receipts 2, skill-creator 5, hookify 2; none in
+`commands/` or `agents/`) and would reappear, unsuppressed, on the children of a matched plugin. The 5 Claude Desktop entries are
+per skill already and do not move. An approval of a plugin tree hash keeps covering the plugin artifact and covers no child; an
+approval the gate recorded for `p:s1` already sits under the child's hash.
+
+### How plugin hooks are handled today (the precedent)
+
+- The hook **command** is read twice: as text in the plugin tree, and as the hook artifact, where hook-specific rules run. On the
+  real `~/.claude`, 29 plugin hooks and 27 plugin MCP servers carry 9 scoring findings, all `HOOK-001`, none duplicated on a tree.
+- The hook's **script** is not read a second time for the hook: the hook gets a `COV-000` "Hook script attributed to its plugin,
+  not to the hook" and the findings live once, on the plugin.
+- Plugin hooks and MCP servers count in the environment average as artifacts of their own (56 here). Folding them into a plugin
+  unit would move today's numbers (real average before the cap 95 → 94, fixture `scan` 94 → 88), so this proposal does not.
