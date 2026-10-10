@@ -258,3 +258,43 @@ Implementation waits for the maintainer's answers to the open questions marked "
 | 8 | `detect.rulesEpoch` + 1 and `make docs` | `detect: bump rulesEpoch — plugin children carry findings (P-044)` |
 | 9 | The docs listed in Done criteria; `issues/023` and the issue index | `docs: a plugin's skills, commands and agents are judged as artifacts of their own (P-044)` |
 | 10 | "Done" in this file, the index | `proposals: P-044 (P-044)` |
+
+## Open questions
+
+Questions 1–6 change what a user sees beyond "the judge now reads plugin contents" and **need the maintainer**; they carry a
+recommendation and no decision yet. Questions 7–12 are covered by the task and are decided as recommended.
+
+1. **How do the children enter the environment score?** (needs the maintainer)
+   - S2, counted like plugin hooks and MCP servers: no formula change, and the dilution `issues/008` measured (86 → 97) and
+     abandoned splitting for: real `~/.claude` average 95 → 97 under the cap, fixture `scan` 94 → 98, `check <plugin>` 88 → 98.
+   - S1, a plugin and its children are one unit: `overall` byte-identical while children's findings are a subset of the plugin's;
+     a child's qualified LLM finding reaches `overall_effective` through its unit; spec §5.3's "average of the artifacts" becomes
+     "average of the units".
+   **Recommendation**: S1. A plugin is one install: nobody removes one skill from it, and a score that rises because the scanner
+   looked closer is the false comfort the 86 → 97 note exists to prevent. It also answers `issues/008`'s reason for abandoning the
+   split, so 008's direction 1 can be recorded as done for plugins.
+2. **How is a finding that sits in both the plugin tree and a child reported?** (needs the maintainer)
+   - Both everywhere (the hook-command precedent): the terminal report prints the same `file:line` twice and counts it twice.
+   - Drop it from the child at the source: the child's score then differs from what the gate and `check <path>` say about the same
+     bytes (fixture: 100 in the scan, 75 at load), and the collusion and triage passes lose their inputs.
+   - Keep it on both in JSON; print it once everywhere a person reads (terminal, markdown, HTML, SARIF), on the plugin row.
+   **Recommendation**: the third — the hook-script precedent ("attributed to its plugin") applied at the renderer, with the
+   artifacts themselves left honest, and one predicate shared with the judge's triage.
+3. **Do children inherit their plugin's reputation match?** (needs the maintainer)
+   **Recommendation**: yes, GOOD only. Without it the 18 reviewed findings in 5 entries reappear on children under hashes nobody
+   reviewed, although their bytes are inside the tree that matched hash-exactly. It is the one place this proposal widens what a
+   reputation entry suppresses — to bytes the entry already covered — so it is the maintainer's call (`.claude/rules/reputation.md`).
+4. **`check <plugin>`: children only, or also its hooks and MCP servers?** (needs the maintainer)
+   The task assumed `check` already splits hooks and MCP servers; it does not (measured). Splitting them too would give `check` the
+   hook and MCP passes and the hook-only rules, and could turn `check <plugin> --fail-on medium` from 0 into 1 for a plugin whose
+   hook command chains shells.
+   **Recommendation**: children only here; record "`check <plugin>` collects what `scan` collects for a plugin" and "plugin hooks
+   and MCP servers join the plugin unit" as follow-ups in `issues/023`, each with its own measurement.
+5. **Schema additions** (needs the maintainer): `ArtifactReport.Plugin` (`plugin` in JSON, omitted when empty) and
+   `EnvSummary.BundledCommands` / `BundledAgents`. Additive; nothing existing changes shape.
+   **Recommendation**: add them. Without a parent link the score, the report and the note would have to recover the relation from
+   the name suffix, which a plugin author controls.
+6. **Does this narrow P-038's exit 4?** (needs the maintainer)
+   **Recommendation**: yes: a `check` target plugin with at least one child that got a question is answered (P-026's rules then
+   apply to those calls); one with no loadable skill, command or agent still exits 4. P-038's decision 2 anticipated this ("when
+   `issues/023` gives plugin contents their own questions, the scan side shrinks to what is genuinely unjudged").
