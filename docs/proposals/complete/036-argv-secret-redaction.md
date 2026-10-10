@@ -72,31 +72,31 @@ The content hash, static snippets and `internal/collect` are not touched.
 
 ## Done criteria
 
-- [ ] `TestPlan_MCPArgvSecretsAreRedacted` (`internal/judge/plan_test.go`): an MCP entry with the seven pairs measured
+- [x] `TestPlan_MCPArgvSecretsAreRedacted` (`internal/judge/plan_test.go`): an MCP entry with the seven pairs measured
   above; the planned `mcp-config` payload contains none of the seven values, carries `args=--api-key <REDACTED>`
   (and `args=-u admin:<REDACTED>` for `-u`, likewise `--user`; question 7), and is a fixed point of `detect.Redact` —
   the property the corpus replay checks. **Red on the base**: every value is in the payload, and a second `Redact` changes it
-- [ ] `TestArgv` (`internal/redact/redact_test.go`, table-driven): an element after each flag spelling `flagSecretRE`
+- [x] `TestArgv` (`internal/redact/redact_test.go`, table-driven): an element after each flag spelling `flagSecretRE`
   knows (`--password`, `--passwd`, `--passphrase`, `--pass`, `--token`, `--secret`, `--api-key`, `--api_key`,
   `--apikey`, `--access-token`, `--access_token`) becomes `<REDACTED>`; after `-u` / `--user` a `user:pass` element
   becomes `user:<REDACTED>`; a value holding a space or a quote is replaced to the end of the element, never only up to
   it; `Argv(Argv(x)) == Argv(x)`, the output has as many elements as the input, and joining the output with a space or
   a newline gives a fixed point of `Secrets`
-- [ ] **Reverse assertion, unit level** (`TestArgv`): an element that follows no flag, or a flag that announces no
+- [x] **Reverse assertion, unit level** (`TestArgv`): an element that follows no flag, or a flag that announces no
   credential (`--verbose plainword`, `--version 1.2.3`, `-y @scope/pkg`, `--port 8080`, `-u root` without a colon,
   `--api-key=<v>` in one element followed by a positional), comes out exactly as `Secrets` gives it alone
-- [ ] **Reverse assertion, excerpt level** (`TestPlan_MCPExcerptWithoutSecretFlagsIsUnchanged`): for MCP entries
+- [x] **Reverse assertion, excerpt level** (`TestPlan_MCPExcerptWithoutSecretFlagsIsUnchanged`): for MCP entries
   without such a pair, the payload is byte-identical to the per-line rendering the base sends (each `MCPConfigLines`
   line masked and redacted alone), so a configuration with no secret flag sends what it sent before
-- [ ] **Reverse assertion, corpus level** (scratch replay, not committed): over the 3,539 samples, the second
+- [x] **Reverse assertion, corpus level** (scratch replay, not committed): over the 3,539 samples, the second
   `Secrets` pass changes 2 payloads before and 0 after; every other planned payload and every artifact hash is
   byte-identical between the base binary and this branch's
-- [ ] **No re-key**: `TestContentHashGolden` and every content-hash test pass unchanged, and
+- [x] **No re-key**: `TestContentHashGolden` and every content-hash test pass unchanged, and
   `git diff --stat origin/main -- internal/detect/contenthash.go internal/collect internal/reputation internal/gate`
   is empty: no stored approval and no reputation entry is invalidated
-- [ ] `ExcerptVersion` is 2, pinned with the digest of the golden fixture whose MCP entry now carries an `--api-key`
+- [x] `ExcerptVersion` is 2, pinned with the digest of the golden fixture whose MCP entry now carries an `--api-key`
   pair (`TestExcerptVersion_IsPinnedWithItsGolden`)
-- [ ] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no new dependency
+- [x] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no new dependency
 
 ## Out of scope
 
@@ -171,3 +171,42 @@ Asked during implementation (stage 2):
    as one command line reads it; an element no flag announces keeps its own line, so an entry without a pair is
    unchanged. `redact.Argv` itself keeps one output element per input element; the merge is the excerpt's rendering.
    **Decided (2026-10-10)**: as recommended
+
+## Done
+
+```
+Merged: PR to be opened (2026-10-10; find the sha with git log --grep P-036 after the merge)
+Released: pending release
+Evidence: TestPlan_MCPArgvSecretsAreRedacted (internal/judge/argv_test.go): red on the base with the test alone (commit
+  "judge: tests — …"): all 9 rows send the value, 8 of them are not a fixed point of Redact (`-u` is, and still leaks);
+  green after W3
+Evidence: `aguard llm preview --root <fixture> --inbox off --json`, eight servers: 7 of 7 made-up values in the
+  mcp-config payloads on the base → 0 on the branch (`args=--api-key <REDACTED>`, `args=-u admin:<REDACTED>`); the
+  control server `--verbose plainword --version 1.2.3` byte-identical; the eight content hashes identical on both
+  binaries, and identical again for a second fixture with all seven values changed (the hash already pairs, P-009)
+Evidence: corpus replay (3,539 samples placed by baselines/adapter/aguard.Stage, `llm preview --json`, scratch, not
+  committed): payloads changed by a second redact.Secrets pass 2 → 0 of 8,770 (the Context7_authenticated and Supabase
+  mcp-config payloads of ben-conn-spacehendrix-clauder-mcp); 8,768 payloads and all 4,704 artifact hashes byte-identical
+  between the base binary and the branch's
+Evidence: reverse — TestPlan_MCPExcerptWithoutSecretFlagsIsUnchanged green on the base and the branch; TestArgv's
+  reverse rows (`--verbose plainword`, `--version 1.2.3`, `-y @scope/pkg`, `--port 8080`, `-u root`, `--api-key=<v>`
+  then a positional, `--key <v>`, `--db-password hunter2`) equal Secrets of each element; with argvView wired and the
+  golden fixture not yet carrying a pair, TestExcerptVersion_IsPinnedWithItsGolden stayed green on digest
+  47f51be199b21e6a; with the `--api-key` pair added the fixture digest is 62df741d4f245be1 without the fix and
+  270922b0e0fc4223 with it, pinned as {2, 270922b0e0fc4223}
+Evidence: no re-key — TestContentHashGolden unchanged and green; `scan --root ~/.claude --json --inbox off` gives the
+  same JSON on both binaries (184 artifacts, 28 of them MCP servers, overall 69; scanned_at aside); reputation.json's
+  18 entries are plugins and Claude Desktop skills (by name and source), and no hash of any kind moved, so 0 reputation entries and 0 stored gate
+  approvals are invalidated
+Evidence: not done — `git diff --stat origin/main -- internal/detect/contenthash.go internal/detect/contenthash_test.go
+  internal/collect internal/reputation internal/gate internal/redact/redact.go internal/redact/redact_test.go baselines
+  go.mod go.sum docs/rules.md` is empty
+Verify: make verify → "verify: all gates passed" (go1.23.5, no toolchain switch; go.mod line 2 `go 1.23.5`)
+```
+
+Follow-ups left out on purpose:
+
+- The content hash reads a flag's value as the regex does, so `"--password", "correct horse"` hashes the tail
+  ` horse`. Replacing the whole element there re-keys those entries, which needs its own proposal.
+- Flags the patterns do not know (`--key`, `-p`, `--db-pass` with a value under 12 characters) still send their value
+  and enter the hash. Widening `flagSecretRE` is a pattern change that re-keys, so it needs its own proposal.
