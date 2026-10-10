@@ -217,8 +217,8 @@ approval the gate recorded for `p:s1` already sits under the child's hash.
 - **The gate**: no resolution change. A plugin command passed to the Skill tool still answers `GATE-000`; that, and its wording
   ("no plugin bundle … provides it" when the bundle exists), are a follow-up
 - **What A still does not collect**: `output-styles/` and a manifest `outputStyles`, inline `content` commands in the manifest,
-  manifest-declared `mcpServers`. They stay read as text in the plugin tree; the `LLM-000` note keeps the plugin counted when it
-  has inline commands, since the judge read nothing of them
+  manifest-declared `mcpServers`. They stay read as text in the plugin tree by the static rules, and the judge reads none of them
+  (Must not claim says so); measured: none of the 11 plugins on the real `~/.claude` has any of them
 - **Pruning the tree read to the loading surface** (`issues/017`): the plugin tree keeps reading mirror copies and `tests/`
 - **Enabled or disabled plugins**: every installed plugin is collected, as today
 - **`check <file>` of an agent** still routes as `instruction` (only `commands/` is recognised by `singleFileKind`); a child agent
