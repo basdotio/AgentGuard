@@ -72,6 +72,7 @@ func judgeServer(t *testing.T, evidence string) *httptest.Server {
 		_, _ = io.ReadAll(r.Body)
 		verdict, err := json.Marshal(map[string]any{
 			"flagged":  true,
+			"category": "exfiltration", // the severity is the tool's, from the category (P-041)
 			"severity": "high",
 			"summary":  "undisclosed instruction to collect and report credentials",
 			"evidence": evidence,

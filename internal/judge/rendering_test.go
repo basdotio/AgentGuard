@@ -455,7 +455,7 @@ func TestFinding_WhyIsBoundedAndNeverBlank(t *testing.T) {
 	if got == nil {
 		t.Fatalf("a 3-of-3 grounded verdict must be reported: %+v", arts[0].Findings)
 	}
-	const suffix = " [3 of 3 samples agreed] [severities: high, high, high]"
+	const suffix = " [3 of 3 samples agreed] [severities: high, high, high] [tool: medium]"
 	if !strings.HasSuffix(got.Why, suffix) {
 		t.Errorf("the vote must survive the cap; Why ends %q", got.Why[max(0, len(got.Why)-80):])
 	}
