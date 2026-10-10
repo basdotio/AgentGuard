@@ -181,7 +181,7 @@ is a fixed point of `Redact`, valid UTF-8 and within its cap. Bumps `ExcerptVers
 ## Done
 
 ```
-Merged: PR #58 (2026-10-10; find the sha with git log --grep P-037 after the merge)
+Merged: PR #58 (2026-10-10; find the sha with git log --grep P-037)
 Released: pending release
 Evidence: red on the base with the tests alone (commit "judge: tests — …"): TestPlan_ExplainAndDigestFitTheExcerpt 6,435 and
   11,934 bytes, nothing shortened, no LLM-000; TestPlan_CutsFallOnCharacterBoundaries 29 of 40 (surface, character, offset)
