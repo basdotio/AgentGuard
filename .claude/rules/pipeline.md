@@ -166,6 +166,7 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
 - **`--fail-on-llm` 有第三个答案:退出码 4**(`failGate` + `judgeGap`,P-026)。没有闸门命中、但判官没跑或跑短了(`Judge` 为 nil、`!Ran`、`Failed>0`、`Skipped>0`)是 4 不是 0 —— 以前是 0,靠判官卡门的 CI 恰在判官看不见时变绿。
   **别让它碰 `--fail-on`**(只设 `--fail-on` 时永不读判官状态,那是可复现契约);**别把截短的摘录、`LLM-005`、下载目录的判官摘要算进来**
   (都是回答过了,算进来 4 会在任何大文件上响,然后没人再看);**1 先于 4**(命中的闸门就是答案)。`TestFailGate_LLMGateNotEvaluable` 两向都钉。
+  P-038 加了第四个理由:**`check` 的目标本身是 `judge.AsksNothingOf` 的种类**(plugin/directory/quarantined)也是 4;`scan` 和 root 形的 `check` **不**因此退 4,只出一条 `LLM-000` 计数——CLI 装的插件整树是一个 plugin 产物,按 scan 退 4 会让每台装了插件的机器都红(issues/023)。triage 不算问题。
 
 每个包都是围绕 [internal/model/model.go](../../internal/model/model.go) 中不可变类型的一个
 (近似)纯函数阶段。
