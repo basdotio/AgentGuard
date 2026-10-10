@@ -158,15 +158,16 @@ The quoted value form of questions 1–6 and the per-replacement guard of questi
 starts on top of P-040 (merged, 78678a8) and re-measures every number above there before recording it. "An announcer" below means a flag `flagSecretRE` names
 (the eight, plus whatever P-040 adds), `-u` / `--user` with a `user:` part, or a credential key followed by `=` or `:`.
 
-- [ ] `TestQuotedValues` (`internal/redact`, table-driven): after each announcer — `--password`, `--token`,
+- [x] `TestQuotedValues` (`internal/redact`, table-driven): after each announcer — `--password`, `--token`,
   `--api-key`, one flag P-040 adds (`--key`), `-u admin:`, `--user=admin:`, `API_TOKEN=`, `"password": `,
   `password: `, `export DB_PASSWORD=` — the made-up values `"correct horse"`, `'correct horse'`, `"hunter2xyz"`,
   `"P@ss!w0rd"`, `"ab\"cd ef"` (an escaped quote) and an unterminated `"correct horse` at the end of a line are gone
   from `Secrets` and `Credentials`; the announcer, the quotes and the user survive (`"<REDACTED>"`,
   `"admin:<REDACTED>"`, unterminated `"<REDACTED>`), a carrier word stays (`"Authorization": "Bearer correct horse"` →
-  `"Bearer <REDACTED>"`), and every output is a fixed point of `Secrets`. **Red on the base** for every row: the value
-  whole after a flag or `-u`, its tail after a key
-- [ ] **Reverse assertion, unit level** (same test): `Secrets` returns the base's output byte for byte for expansions
+  `"Bearer <REDACTED>"`), and every output is a fixed point of `Secrets`. **Red on the base** for 146 of its 164 rows: the
+  value whole after a flag or `-u`, its tail after a key; the other 18 are a single bare word after `=` or `:`, which
+  `assignRE` already took
+- [x] **Reverse assertion, unit level** (same test): `Secrets` returns the base's output byte for byte for expansions
   (`--password "$PW"`, `"${PW}"`, `"$(op read x)"`, `` "`cat f`" ``, `'Bearer $token'`, `-u "$U:$P"`,
   `"Authorization": "Bearer $TOKEN"`), for quotes that close a string (`"--password=" + pw`, `print("token:", t)`,
   `'Bearer ' + token`, `date -u '+%Y-%m-%dT%H:%M:%SZ'`), for bodies whose first or last character is a space or
@@ -174,38 +175,39 @@ starts on top of P-040 (merged, 78678a8) and re-measures every number above ther
   `token: "yes"`, `password: "pw1"`), for a whitespace-only key (`token "abcdefghijklmnop"`), for a flag no pattern names
   (`--author "A B"`) and for every string without a quote; a quoted value stops at a newline and the next line comes
   out unchanged. `TestArgv` and the bare rows of `TestAnnounced` pass unchanged
-- [ ] **`redact.Announced` agrees** (`TestAnnounced`): the P-039 reverse row `{"--password", "\"quoted value\""}`
+- [x] **`redact.Announced` agrees** (`TestAnnounced`): the P-039 reverse row `{"--password", "\"quoted value\""}`
   moves to the positive half as `{…, 1, true}` — the element's opening quote is the kept head, everything after it is
   forgotten — and `Argv` still equals `Announced` plus `Secrets` of the head for every row
-- [ ] **Content hash golden** (`TestContentHashGolden`, `internal/detect`): a new case, a settings file with the hook
+- [x] **Content hash golden** (`TestContentHashGolden`, `internal/detect`): a new case, a settings file with the hook
   `mytool --password "correct horse" ; true` and the permission entry `Bash(mytool --token 'correct horse' *)`: both
   canonical inputs pinned with `\"<REDACTED>\"` / `'<REDACTED>'` and both digests as literals computed by hand
   (`printf 'aguard:hook:v1\0%s' … | shasum -a 256`). **Red on the base**: the inputs hold `correct horse`. The six
   existing constants (inputs and digests) do not change by a byte
-- [ ] **Content hash rotation** (same package): two hooks, and two permission lists, whose quoted secret differs
+- [x] **Content hash rotation** (same package): two hooks, and two permission lists, whose quoted secret differs
   anywhere hash the same as the one written `<REDACTED>` — red on the base; the unquoted control hashes as on the base
-- [ ] **The guard is per replacement** (`TestContentHash_GuardRefusesOneReplacement`, `internal/detect`): in
+- [x] **The guard is per replacement** (`TestContentHash_GuardRefusesOneReplacement`, `internal/detect`): in
   `mytool --password 'P@ss#1' --token hunter2` and `Bash(curl -u admin:* --token hunter2)` the span holding a structure
   character stays as written and `hunter2` is not in the digest input; two such entries differing only in the
   `--token` value hash the same. **Red on the base** for the grant (the base refuses the whole string, `hunter2`
   included). **Reverse**: the span itself is still never forgotten — `--password 'P@ss#1'` against `'P@ss#2'`, `-u
   admin:*` against `-u admin:hunter2`, and every pair of `TestContentHash_ReplacementNeverTakesStructure` still re-key;
   green on the base and the branch
-- [ ] **Judge payload** (`internal/judge`): a `.claude` fixture with one hook per quoted form sends no byte of any value
-  in its `injection`, `capability` and `triage` payloads, each a fixed point of `detect.Redact`; red on the base (27 of
-  31 payloads here)
-- [ ] **Static snippet** (`internal/detect`): the `HOOK-001` / `EXEC-001` snippets of those hooks and the `PERM-002` /
+- [x] **Judge payload** (`internal/judge`): one hook per quoted form and a skill quoting values in `SKILL.md` and a
+  script send no byte of any value in their `injection` and `capability` (hooks) and `intent` and `injection` (skill)
+  payloads, each a fixed point of `detect.Redact`; red on the base (27 of 31 payloads of the CLI fixture above). A
+  `triage` payload quotes the static snippets, pinned by the next criterion
+- [x] **Static snippet** (`internal/detect`): the `HOOK-001` / `EXEC-001` snippets of those hooks and the `PERM-002` /
   `PERM-006` snippets of `Bash(python3 * --password "V")` / `Bash(git -c core.pager=x --token 'V' *)` carry
   `"<REDACTED>"`; red on the base
-- [ ] `ExcerptVersion` 4 → 5 (P-040 left 4), in the same commit as the redact change, pinned with the golden fixture now carrying a quoted pair
+- [x] `ExcerptVersion` 4 → 5 (P-040 left 4), in the same commit as the redact change, pinned with the golden fixture now carrying a quoted pair
   (`TestExcerptVersion_IsPinnedWithItsGolden`); `rulesEpoch` unchanged
-- [ ] **Reverse assertion, corpus level** (scratch replay, not committed): against the binary P-040 leaves on `main`,
+- [x] **Reverse assertion, corpus level** (scratch replay, not committed): against the binary P-040 leaves on `main`,
   exactly the changes measured here re-measured there (0 of 4,704 hashes, 1 of 1,618 findings, 12 of 8,770 payloads on
   2112aab), each one listed and explained; every other hash, finding and payload byte-identical; `~/.claude` 0 of 184
   hashes, 0 of 813 findings, 0 of 302 payloads
-- [ ] Re-key count recorded, for the guard and for the quoted form separately: reputation entries (0 of 18 here),
+- [x] Re-key count recorded, for the guard and for the quoted form separately: reputation entries (0 of 18 here),
   corpus and `~/.claude` hashes, stored approvals
-- [ ] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no new dependency; no toolchain switch
+- [x] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no new dependency; no toolchain switch
 
 ## Out of scope
 
@@ -230,7 +232,8 @@ starts on top of P-040 (merged, 78678a8) and re-measures every number above ther
   read by the quoted form
 - **Detection**: no rule, severity, score weight or `rulesEpoch` changes; `docs/rules.md` does not change. `PERM-001`
   does not fire on a quoted value (`inlineSecret` wants `[:=]` and twelve non-space bytes) — a detection gap, follow-up
-- `internal/judge` changes only `ExcerptVersion` and its golden fixture; `baselines/results/` does not change by a byte
+- `internal/judge` changes only `ExcerptVersion`, its golden fixture and a test; `baselines/results/` does not change by
+  a byte
 
 ## Must not claim
 
@@ -339,3 +342,35 @@ starts on top of P-040 (merged, 78678a8) and re-measures every number above ther
    evidence formatting). **Recommendation**: implement after P-040 merges, on top of it, re-measure the corpus replay
    and the re-key counts there, and ship in the same release as P-039 and P-040 so a user whose hook or permission
    list holds such a value re-approves once. **Decided (2026-10-10)**: as recommended
+
+## Done
+
+```
+Merged: PR to be opened (2026-10-11; find the sha with git log --grep P-043 after the merge)
+Released: pending release
+Evidence: TestQuotedValues (internal/redact/quoted_test.go) red on the base with the tests alone (commit "redact: tests —
+  …"): 146 of 164 rows sent the value whole after a flag or -u, or its tail after a key (the other 18, one bare word
+  after = or :, assignRE already took); TestAnnounced's moved row gave 0,false; green after W3, every output a fixed
+  point of Secrets. TestContentHashGolden's two new cases (internal/detect/contenthash_test.go) red on the base — the
+  inputs held `correct horse`, digests 6c426f439cba… and 6f8158c75e16… — and green after W3 with the hand-computed
+  e95c6fefbbee… (hook) and 5f5236398963… (permission); the six existing constants did not move
+Evidence: TestContentHash_GuardRefusesOneReplacement (contenthash_quoted_test.go) red on the base for
+  `Bash(curl -u admin:* --token hunter2xyz)` and `curl -u admin:$(cat pw) -H "Authorization: Bearer hunter2xyz"` (the
+  base put hunter2xyz into the input), green after W2; its `--password 'P@ss#1' --token hunter2xyz` row green on the
+  base, after W2 and after W3 — the regression of question 7 never lands. TestContentHash_QuotedValuesAreNotDigestInputs,
+  TestHookSnippet_QuotedValueRedacted, TestAudit_QuotedSecretRedacted (internal/permcheck) and
+  TestPlan_QuotedSecretValuesAreRedacted (internal/judge) red on the base, green after W3
+Evidence: reverse — TestQuotedValues_Reverse (35 strings: expansions, closing quotes, invisible edges, floors, the
+  whitespace-only key, P-040's exemption and line rule) and the guard's reverse rows green on the base and the branch;
+  TestArgv, TestFlagSecrets*, TestContentHash_ReplacementNeverTakesStructure and every earlier golden unchanged and
+  green. The excerpt fixture with the new quoted line digests 214c127884710869 under the base patterns and
+  81da07b7125b515b under the quoted form: ExcerptVersion 4 → 5 pinned with it
+Evidence: re-measured on 78678a8 (P-040 merged). Corpus replay, base against the guard alone: 0 of 4,704 hashes, 0 of
+  1,618 findings, 0 of 8,770 payloads; base against the branch: 0 of 4,704 hashes, 1 of 1,618 findings, 12 of 8,770
+  payloads — the same 12 samples measured on 2112aab. ~/.claude: 0 of 184 hashes, 0 of 813 findings, 0 of 302
+  payloads for both binaries; `scan --root ~/.claude --quiet` exits 0 with identical output on both. Re-key: 0 of 18
+  reputation entries, 0 corpus and 0 ~/.claude hashes, 0 stored approvals
+Evidence: not done — `git diff --stat origin/main -- internal/collect internal/reputation internal/gate docs/rules.md
+  baselines/results` is empty; in internal/detect/contenthash.go only guardedView and a comment change
+Verify: make verify — verify: all gates passed (2026-10-11); go.mod line 2 go 1.23.5; no new dependency
+```
