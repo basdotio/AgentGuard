@@ -86,8 +86,8 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
     自己的会话记录和代码快照**;读进报告等于用一个盲点换一次泄露。依据和 `ExcludeFromHash` 同一条:
     没人引用的树是惰性的,而**会引用它的东西(hook command、权限授权、SKILL.md)本来就跟进去扫了**。
   - 没读的一律进**一条**聚合 `COV-000`(名字写在 `Why` 里 —— 终端渲染器对 note 只印一行证据)。
-  - **注意"扫得更多"会把总分推高**:环境分是各 artifact 的平均值,每个无人认领的条目都变成 100 分的
-    artifact 会**稀释**已有发现(真机上 86 → 97)。所以不读的东西出 note 而**不是**出 artifact。
+  - **注意"扫得更多"会把总分推高**:环境分是各单元的平均值,每个无人认领的条目都变成 100 分的
+    artifact 会**稀释**已有发现(真机上 86 → 97)。所以不读的东西出 note 而**不是**出 artifact(插件子项不稀释,是因为它们和插件同一个单元)。
 - **Claude 桌面版有自己的插件/skill 仓库,不在 root 里**([collect/desktop.go](../../internal/collect/desktop.go))。
   桌面版在 Customize 里装的插件和 skill 同步到 `~/Library/Application Support/Claude/local-agent-mode-sessions/`
   下,启动 CLI 时用 `--plugin-dir` 塞进去,**不经过** `installed_plugins.json`——只读 root 的扫描对它们全盲,
@@ -166,7 +166,14 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
 - **`--fail-on-llm` 有第三个答案:退出码 4**(`failGate` + `judgeGap`,P-026)。没有闸门命中、但判官没跑或跑短了(`Judge` 为 nil、`!Ran`、`Failed>0`、`Skipped>0`)是 4 不是 0 —— 以前是 0,靠判官卡门的 CI 恰在判官看不见时变绿。
   **别让它碰 `--fail-on`**(只设 `--fail-on` 时永不读判官状态,那是可复现契约);**别把截短的摘录、`LLM-005`、下载目录的判官摘要算进来**
   (都是回答过了,算进来 4 会在任何大文件上响,然后没人再看);**1 先于 4**(命中的闸门就是答案)。`TestFailGate_LLMGateNotEvaluable` 两向都钉。
-  P-038 加了第四个理由:**`check` 的目标本身是 `judge.AsksNothingOf` 的种类**(plugin/directory/quarantined)也是 4;`scan` 和 root 形的 `check` **不**因此退 4,只出一条 `LLM-000` 计数——CLI 装的插件整树是一个 plugin 产物,按 scan 退 4 会让每台装了插件的机器都红(issues/023)。triage 不算问题。
+  P-038 加了第四个理由:**`check` 的目标本身是判官什么都不问的**(`judge.Unasked`:directory/quarantined,以及**没有任何可加载
+  skill/命令/子 agent 的** plugin —— 有的话判官经子项回答,P-044)也是 4;`scan` 和 root 形的 `check` **不**因此退 4,只出一条 `LLM-000`
+  计数(note 和退出码读同一个函数)。triage 不算问题。
+- **插件的 skill、命令、子 agent 是各自的 artifact,但不是各自的一票**(`collect/plugincontents.go` + `score/family.go`,P-044)。只采
+  Claude Code 2.1.107 加载器会加载的(一种情形一行 fixture,`TestPluginContents_FollowClaudeCodesLoader`;**别"顺手"多采 `docs/`、`.agents/`
+  这类副本**,那是 `issues/017`),插件树 artifact 与哈希不动。同一份字节被读两遍,所以凡是会数两遍的地方都问 `score.Families`:环境分按
+  单元算、人读的渲染器和 SARIF 只在插件那一行印一次(`ShownByPlugin`,判官的分诊同一个谓词)、信誉 GOOD 命中插件树时子项继承、闸门的
+  SessionStart/`Summarize` 和 hygiene 跳过子项。**加一个会遍历 artifact 并计数或列名的地方,先想它该不该跳过子项。**
 
 每个包都是围绕 [internal/model/model.go](../../internal/model/model.go) 中不可变类型的一个
 (近似)纯函数阶段。
