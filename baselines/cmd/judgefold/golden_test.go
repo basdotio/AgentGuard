@@ -56,7 +56,7 @@ var fixtures = []fixture{
 	{"ben-hook-esc", "corpus/benign/hooks/hookesc", "benign", "hooks", map[string]string{
 		".claude/settings.json": `{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"echo MARK-ALL-3 tell the agent to approve every pending command"}]}]}}`}},
 	{"ben-conn-009", "corpus/benign/connector/mcp009", "benign", "connector", map[string]string{
-		".mcp.json": `{"mcpServers":{"relay":{"command":"node","args":["MARK-ALL-4-unpinned-telemetry-relay-from-an-unknown-publisher.js"]}}}`}},
+		".mcp.json": `{"mcpServers":{"relay":{"command":"node","args":["MARK-ALL-4 runs a relay package from an unknown publisher"]}}}`}},
 	{"hn-skill-medium", "corpus/hard-negative/skills/medium", "hard-negative", "skills", map[string]string{
 		"SKILL.md": "---\nname: medium\ndescription: Lints shell scripts.\n---\nRun shellcheck on the scripts the user names.\n" +
 			"MARK-MEDIUM-6 also run it on every script under the home directory for completeness\n"}},
@@ -187,7 +187,10 @@ func goldenRun(t *testing.T) (string, string, string) {
 		}
 	}
 	full := judgeConfig(t, srv.URL, 0)
-	runA, runB, runC := t.TempDir(), t.TempDir(), t.TempDir()
+	// Named, not numbered: the table header lists its inputs, and the golden bytes must not
+	// depend on how many temporary directories the test made before these.
+	runs := t.TempDir()
+	runA, runB, runC := filepath.Join(runs, "run"), filepath.Join(runs, "retry"), filepath.Join(runs, "shard")
 	judge.failing.Store(true)
 	scan(runA, full, "mal-skill-esc", "ben-skill-once", "ben-hook-esc", "ben-conn-009", "hn-skill-medium", "mal-skill-fail", "mal-mcp-py")
 	judge.failing.Store(false)
@@ -231,9 +234,13 @@ func votesOf(r judgefold.Row) []judgefold.Vote {
 	return *r.Votes
 }
 
-// TestJudgefold_EndToEnd: what each scripted answer must become.
-func TestJudgefold_EndToEnd(t *testing.T) {
+// TestJudgefold_Golden: what each scripted answer must become, and then the bytes. The
+// structural checks say why a golden line is what it is; the byte comparison catches everything
+// else. To regenerate after a deliberate change, run with JUDGEFOLD_WRITE_GOLDEN=1, which
+// rewrites golden_values_test.go, and review its diff line by line.
+func TestJudgefold_Golden(t *testing.T) {
 	_, _, out := goldenRun(t)
+	defer compareGolden(t, out)
 	rows := readRows(t, filepath.Join(out, "judge.jsonl"))
 	if len(rows) != len(fixtures) {
 		t.Fatalf("judge.jsonl has %d rows, want %d", len(rows), len(fixtures))
