@@ -86,8 +86,17 @@ func (r Request) twoSided() bool {
 
 // Verdict is the model's structured judgment (mode-agnostic). Parsed from its JSON reply.
 type Verdict struct {
-	Flagged  bool   `json:"flagged"`  // intent: undisclosed behavior; injection: hidden directive found
-	Severity string `json:"severity"` // low|medium|high (advisory — never critical)
+	Flagged bool `json:"flagged"` // intent: undisclosed behavior; injection: hidden directive found
+	// Category is the kind of thing the model found, one name from the pass's closed list
+	// (severity.go). It is what sets the finding's severity; an unknown or missing name is
+	// medium. Disclosed, on the intent pass only, says the declared purpose stated the behaviour
+	// (one step lower, except a changed software source). P-041.
+	Category  string `json:"category"`
+	Disclosed bool   `json:"disclosed"`
+	// Severity is the model's own word. It is recorded (the vote list shows it beside the
+	// tool's) and never decides a finding's severity, except on a pass without a category table
+	// (LLM-009, advisory-only), where it is clamped to at most high.
+	Severity string `json:"severity"`
 	Summary  string `json:"summary"`  // one-line explanation
 	Evidence string `json:"evidence"` // the specific triggering text
 	// BarrierEvidence carries the directive the fenced data aimed at the ANALYZER, quoted
@@ -122,10 +131,12 @@ type Client interface {
 	Triage(ctx context.Context, artifact string, items []TriageItem) ([]model.AdvisoryLabel, error)
 }
 
-// clampSeverity maps a model-reported severity to a safe advisory level. Unknown →
-// medium; anything the model calls "critical" is capped to high, because an LLM guess
-// must never present as a confirmed critical. Case and surrounding space carry no meaning:
-// "High" is the model saying high, and reading it as unknown silently lowered its claim.
+// clampSeverity maps the model's severity word to a safe advisory level. Unknown → medium;
+// anything the model calls "critical" is capped to high, because an LLM guess must never present
+// as a confirmed critical. Case and surrounding space carry no meaning: "High" is the model saying
+// high, and reading it as unknown silently lowered its claim. Since P-041 the word decides a
+// finding's severity only on a pass without a category table (severityFor); elsewhere it is the
+// "model said" half of the vote list.
 func clampSeverity(s string) model.Severity {
 	switch strings.ToLower(strings.TrimSpace(s)) {
 	case "low":
@@ -206,7 +217,7 @@ func finding(r Request, v Verdict) *model.Finding {
 	return &model.Finding{
 		RuleID:    ruleID,
 		Dimension: dim,
-		Severity:  clampSeverity(v.Severity),
+		Severity:  severityFor(r.Mode, v),
 		Title:     title,
 		Why:       why,
 		Source:    model.SrcLLM,
