@@ -71,9 +71,12 @@ func Escalating(f model.Finding) bool {
 
 // artifactScore = clamp(100 − Σ_dimension max(severity penalty), 0, 100). Advisory static
 // findings (dim 7/8) DO score, at their (low) severity.
-func artifactScore(a model.ArtifactReport, keep filter) int {
+func artifactScore(a model.ArtifactReport, keep filter) int { return findingsScore(a.Findings, keep) }
+
+// findingsScore is the per-artifact formula over any set of findings — an artifact's, or a unit's.
+func findingsScore(fs []model.Finding, keep filter) int {
 	maxByDim := map[int]int{}
-	for _, f := range a.Findings {
+	for _, f := range fs {
 		if !keep(f) {
 			continue
 		}
@@ -88,15 +91,17 @@ func artifactScore(a model.ArtifactReport, keep filter) int {
 	return clamp(100-total, 0, 100)
 }
 
-// overallScore is the environment number: the average artifact score, then a leaky-bucket cap —
-// any critical drags the whole environment to ≤49 (High), any high (no critical) to ≤69.
-func overallScore(arts []model.ArtifactReport, keep filter) int {
+// overallScore is the environment number: the average UNIT score, then a leaky-bucket cap — any
+// critical drags the whole environment to ≤49 (High), any high (no critical) to ≤69. A unit is an
+// artifact, except that a plugin and its children are one (family.go, P-044): their findings are scored
+// together, so a duplicate adds nothing and a clean child cannot dilute its plugin's.
+func overallScore(units [][]model.Finding, keep filter) int {
 	worst := model.Severity("")
 	sum, n := 0, 0
-	for _, a := range arts {
-		sum += artifactScore(a, keep)
+	for _, u := range units {
+		sum += findingsScore(u, keep)
 		n++
-		for _, f := range a.Findings {
+		for _, f := range u {
 			if keep(f) && f.Severity.Rank() > worst.Rank() {
 				worst = f.Severity
 			}
@@ -127,8 +132,9 @@ func Apply(r *model.ScanResult) {
 		r.Artifacts[i].Score = s
 		r.Artifacts[i].ScoreEffective = min(s, artifactScore(r.Artifacts[i], Escalating))
 	}
-	r.Overall = overallScore(r.Artifacts, Deterministic)
-	r.OverallEffective = min(r.Overall, overallScore(r.Artifacts, Escalating))
+	units := Families(r.Artifacts).units()
+	r.Overall = overallScore(units, Deterministic)
+	r.OverallEffective = min(r.Overall, overallScore(units, Escalating))
 }
 
 func clamp(v, lo, hi int) int {

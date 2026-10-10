@@ -107,3 +107,22 @@ func TestApply_PluginAndChildrenAreOneUnit(t *testing.T) {
 		})
 	}
 }
+
+// TestFamilies_LinkByNameThenPath: the link is the collector's Plugin field; when two plugin artifacts
+// share a name (two install channels), the one whose path holds the child is its plugin; a name no
+// plugin carries links nothing; a plugin is never a child.
+func TestFamilies_LinkByNameThenPath(t *testing.T) {
+	arts := []model.ArtifactReport{
+		{Kind: model.KindPlugin, Name: "p", Path: "/a/p"},
+		{Kind: model.KindPlugin, Name: "p", Path: "/b/p"},
+		{Kind: model.KindSkill, Name: "p:s", Path: "/b/p/skills/s", Plugin: "p"},
+		{Kind: model.KindSkill, Name: "q:s", Path: "/c/q/skills/s", Plugin: "q"},
+		{Kind: model.KindPlugin, Name: "r", Path: "/r", Plugin: "p"},
+	}
+	f := Families(arts)
+	for i, want := range []int{-1, -1, 1, -1, -1} {
+		if got := f.Parent(i); got != want {
+			t.Errorf("Parent(%d) = %d, want %d", i, got, want)
+		}
+	}
+}
