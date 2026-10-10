@@ -169,41 +169,42 @@ approval the gate recorded for `p:s1` already sits under the child's hash.
 
 ## Done criteria
 
-- [ ] `TestPluginContents_FollowClaudeCodesLoader` (`internal/collect`, new, `t.TempDir()` fixture with one row per loader case:
+- [x] `TestPluginContents_FollowClaudeCodesLoader` (`internal/collect`, new, `t.TempDir()` fixture with one row per loader case:
   `skills/SKILL.md`, `skills/<dir>`, a symlinked skill directory, nested `commands/<sub>/<file>.md`, `commands/<dir>/SKILL.md`,
   a symlinked command file, nested agents, manifest `skills` / `commands` / `agents` as a string, a list and a `source` object, a
   manifest path escaping the root, a `docs/ja/skills/` copy, an `.agents/skills/` copy): for `CollectAll` (installed, synced and
   Claude Desktop channels) and `CollectTarget(<plugin>)`, exactly the expected children — kind, name, `Plugin`, and a hash equal to
   `TreeHash` / `FileHash` of that path — and none for the copies, the escaping path or the symlinked command. Red on the base: no
   child artifacts at all
-- [ ] `TestGate_NamespacedSkillHashIsTheChildsHash` (`cmd/aguard`): `PreToolUse[Skill]` `p:s1` over a fixture root audits the
+- [x] `TestGate_NamespacedSkillHashIsTheChildsHash` (`cmd/aguard`): `PreToolUse[Skill]` `p:s1` over a fixture root audits the
   directory whose hash the child `p:s1` carries in `scan --json` of the same root. Red on the base: no such child
-- [ ] `TestApply_PluginAndChildrenAreOneUnit` (`internal/score`): a plugin with one medium and six clean children scores the
+- [x] `TestApply_PluginAndChildrenAreOneUnit` (`internal/score`): a plugin with one medium and six clean children scores the
   environment exactly as it does without the children (94 for the fixture `scan`, plugin plus its hook; 88 for
   `check <plugin>`); a child with a qualified high LLM
   finding lowers the unit's effective score and caps `overall_effective` at 69 while `overall` does not move; the
   `TestApply_EffectiveNeverExceedsOverall` property still holds. Red on the base: children averaged per artifact give 98 and 98 (the S2 rows)
-- [ ] `TestRender_ChildDuplicatesAreShownOnce` (`internal/report`): the variant-1 fixture prints `EXEC-001` at `s1/SKILL.md:6`
+- [x] `TestRender_ChildDuplicatesAreShownOnce` (`internal/report`): the variant-1 fixture prints `EXEC-001` at `s1/SKILL.md:6`
   once in the terminal, markdown and HTML reports and once in SARIF, counts it once in "N findings need a look", and keeps it on
   both artifacts in JSON; a child finding on a file the plugin row does not name (the mirror case) is printed on the child
-- [ ] `TestReputation_ChildrenInheritAGoodMatch` (`cmd/aguard`): a fixture plugin whose tree hash is a GOOD entry has every
+- [x] `TestReputation_ChildrenInheritAGoodMatch` (`cmd/aguard`): a fixture plugin whose tree hash is a GOOD entry has every
   child's deterministic findings suppressed and counted in the one `REP-GOOD` note; the same tree with one byte changed suppresses
   nothing on the plugin or its children
-- [ ] `llm preview --json` over the fixture plugin plans the passes of each child's kind and no triage of a finding the plugin row
+- [x] `TestBuildTasks_ChildDuplicateIsNotTriagedTwice` (`internal/judge`): the plan gives each child the passes of its kind and no triage of a finding the plugin row
   shows; over the real `~/.claude`, 300 → 588 calls with the build that ships (283 questions + 5 triage calls about findings only a child carries)
-- [ ] P-038's rows move as decided: `check <plugin with skills/p1/SKILL.md> --llm --fail-on-llm high` answers from the judge (stub
+- [x] P-038's rows move as decided: `check <plugin with skills/p1/SKILL.md> --llm --fail-on-llm high` answers from the judge (stub
   answering: exit 0 and no `LLM-000` "asked nothing"; closed port: exit 4 with P-026's reason, the calls failed); a plugin with no
   loadable skill, command or agent still exits 4 and is still counted; plain directories still exit 4
-- [ ] **Reverse assertions**: the plugin tree artifact's entry in `scan --json` and `check --json` is byte-identical to the base
+- [x] **Reverse assertions**: the plugin tree artifact's entry in `scan --json` and `check --json` is byte-identical to the base
   (name, path, hash, findings, score) on the fixtures and on the real `~/.claude`; `overall` 69 → 69 on the real `~/.claude`, 94 → 94
   and 88 → 88 on the fixture; `check <plugin> --fail-on {critical,high,medium,low}` exit codes unchanged on both variants;
-  `SessionStart`, `aguard approve <plugin>` and hygiene outputs unchanged on the fixtures; `TestZeroDial_*`,
+  `SessionStart`, `aguard approve <plugin>` and hygiene outputs unchanged (`TestSessionStart_DoesNotListAPluginsChildren`,
+  `TestSummarize_NeverPicksAPluginsChild`, `TestAnalyze_SkipsAPluginsChildren`); `TestZeroDial_*`,
   `TestHashGolden`, `TestContentHashGolden`, `TestAsksNothingOf_FollowsPlanFor` green unchanged
-- [ ] Docs: README pair (inventory line), `docs/architecture*.md`, `docs/llm-judge*.md` (what the judge reads of a plugin),
-  `docs/install-gate*.md` if a sentence about plugin skills moves, `docs/rules.md` via `make docs`, spec §4 (the B4 row and its
+- [x] Docs: README pair (inventory line), `docs/architecture*.md`, `docs/llm-judge*.md` (what the judge reads of a plugin),
+  `docs/rules.md` via `make docs` (`docs/install-gate*.md`: no sentence moved), spec §4 (the B4 row and its
   "still not split" note), §5.3 (units), §8 (`plugin` field), `issues/023` (A done; C open; D), `issues/006`/`008`/`017` index lines,
   and the `.claude/rules/pipeline.md` bullet that says splitting dilutes (it now has a unit rule to point at)
-- [ ] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no toolchain switch; no new dependency
+- [x] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no toolchain switch; no new dependency
 
 ## Out of scope
 
@@ -331,3 +332,39 @@ six as recommended on 2026-10-11. Questions 7–12 are covered by the task and a
     **Recommendation**: bump `detect.rulesEpoch`: the same input now yields deterministic findings on more artifacts, which is the
     change P-002's epoch exists to announce.
     **Decided (2026-10-11)**: as recommended.
+
+## Done
+
+```
+Merged: PR to be opened (2026-10-11; find the sha with git log --grep P-044 after the merge)
+Released: pending release
+Evidence: TestPluginContents_FollowClaudeCodesLoader / _ManifestObjectCommands (internal/collect), TestApply_PluginAndChildrenAreOneUnit
+  (internal/score), TestRender_ChildDuplicatesAreShownOnce (internal/report), TestBuildTasks_ChildDuplicateIsNotTriagedTwice and
+  TestUnaskedNote_APluginWhoseContentsWereJudged (internal/judge), TestGate_NamespacedSkillHashIsTheChildsHash and
+  TestReputation_ChildrenInheritAGoodMatch (cmd/aguard), TestSessionStart_DoesNotListAPluginsChildren and
+  TestSummarize_NeverPicksAPluginsChild (internal/gate), TestAnalyze_SkipsAPluginsChildren (internal/hygiene), and P-038's
+  TestFailOnLLM_TargetTheJudgeAsksNothingAbout / _ScanKeepsItsCodeAndNamesWhatWasNotAsked moved to the decided rows — committed
+  first and run on the base code (7a38d8e): red for the stated reasons — no child artifact (45 "missing child" lines, env
+  bundled_commands 0), overall 98/98, 98/98, 95, 97 where 94, 88, 88, 94 are wanted, the duplicate printed 4/6/2 times where 2/3/1
+  are (text/markdown/HTML) and twice in SARIF, the child triaged on EXEC-001, the plugin with a judged skill counted as "asked
+  nothing" and `check <plugin> --llm --fail-on-llm high` exiting 4 where 0 (stub) or P-026's 4 (closed port) is wanted, the
+  child's findings left unsuppressed, session start listing p:s1, Summarize picking the child, hygiene naming children — and
+  green after
+Evidence: the real ~/.claude (scan --inbox off), base 7a38d8e -> this branch: artifacts 184 -> 362 (178 children: 105 skills,
+  51 commands, 22 agents; the 311 copies that never load are not collected), all 184 earlier artifacts byte-identical in JSON
+  (the 11 plugin tree entries included), overall 69 -> 69, overall_effective 69 -> 69, scoring findings in JSON 806 -> 834
+  (+28, the children's copies: 22 printed once on their plugin row, 6 on the copy that loads), reputation marks and the one
+  REP-GOOD unchanged, hygiene items 17 -> 17, stored approvals 0 -> 0, `scan --quiet` exit 0 -> 0, rules_version
+  43f245966105 -> d74bca61f0da, `llm preview` 300 -> 588 calls (+105 intent, +105 injection on skills, +51 commands,
+  +22 agents, +5 triage of findings only a child carries)
+Evidence (reverse assertion): the medium-only fixture, scan overall 94 -> 94 and check <plugin> 88 -> 88 (children averaged per
+  artifact would give 98 and 98); artifacts 2 -> 8 and 1 -> 7; `check <plugin> --fail-on critical/high/medium/low` exits
+  0/1/1/1 and 0/0/1/1 on the two fixture variants, before and after; the plugin entry byte-identical; without a mirror copy
+  the terminal report is unchanged (one EXEC-001 row, "2 findings need a look"); a plain directory and a plugin with no
+  loadable contents still exit 4; TestZeroDial_*, TestHashGolden, TestContentHashGolden, TestAsksNothingOf_FollowsPlanFor
+  green unchanged
+Evidence (not done): git diff --stat origin/main...HEAD -- internal/collect/hash.go internal/detect/contenthash.go
+  internal/redact go.mod go.sum internal/judge/excerpt.go internal/judge/prompt_version.go internal/reputation/data -> empty;
+  planFor untouched (ExcerptVersion unchanged)
+Verify: make verify -> "verify: all gates passed"; go.mod still go 1.23.5; go version go1.23.5, no toolchain switch; no new dependency
+```
