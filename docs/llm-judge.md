@@ -65,6 +65,13 @@ Two things about that table are deliberate:
 
 Everything is **source-agnostic**: official or not, every artifact is judged on its content.
 
+**What it asks nothing about.** Three kinds have no pass: a **plugin** tree, a **directory** whose layout matched nothing
+known (`aguard check <dir>`, or a folder under `skills/` without a `SKILL.md`), and **quarantined** content under
+`.aguard-trash`. No question about their content is put to the model — at most their static findings are triaged — and every `--llm`
+run says so in one `LLM-000` note, counting them per kind. In a scan this matters most for plugins: a plugin's hooks and MCP
+servers are judged as artifacts of their own, its skills, commands and agents are not. Permission blocks get triage only,
+by design: an allow list is configuration the static rules decide, and the note does not list them.
+
 **What the MCP pass is not:** whether a server's *tools* are poisoned is invisible without
 connecting to that server, which this tool never does. Only the configuration is judged, and
 the prompt says so — a verdict here is never a statement about the server's behavior.
@@ -245,7 +252,7 @@ everything on your machine. That trade-off is yours.
 
 | ID | Meaning |
 |----|---------|
-| `LLM-000` | Coverage note: the judge didn't fully run (unreachable / not enabled / partial). |
+| `LLM-000` | Coverage note: the judge didn't fully run (unreachable / not enabled / partial), or has no pass for some artifacts (plugin, directory, quarantined). |
 | `LLM-001` | Intent mismatch (dim 10). |
 | `LLM-002` | Privacy warning: the configured endpoint is not local. |
 | `LLM-003` | Hidden prompt injection in instruction text (dim 1). |
@@ -364,7 +371,14 @@ A shortened excerpt or a discarded (ungrounded) verdict is still an answer and d
 0 under `--fail-on-llm` means the judge was asked every question it planned and answered each one,
 not that it read every byte.
 
-Both flags mean the same thing on `scan` and on `check`. A pull-request job that wants the
+**A target the judge has no question for is not a pass either.** `aguard check ./plugin --llm --fail-on-llm high` on a plugin
+or a plain folder (also as a `.zip`) exits **4**: the judge plans no question about it (a triage label is not one — it never
+reaches this gate), so exit 0 would read as an answer the run never had. A `scan`, or a `check` of a directory laid out as a
+config root, keeps its exit code: an environment is not a target, and since a plugin's skills are judged nowhere in a scan,
+counting them would make every machine with a plugin exit 4 whatever the judge said. There the `LLM-000` note is the
+disclosure — exit 0 from `scan --fail-on-llm` does not mean a plugin's skills were judged.
+
+Both flags mean the same thing on `scan` and on `check`, apart from that target rule. A pull-request job that wants the
 judge's say runs `aguard check ./skill --llm --fail-on-llm high`: a deterministic high still
 fails it through `--fail-on` (`high` by default on `check`), and a qualified LLM high fails it
 through `--fail-on-llm`. The load-time gate takes neither — it never consults a model.

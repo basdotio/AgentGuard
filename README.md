@@ -196,7 +196,8 @@ what a CI job sees never depends on which flag a human passed.
 
 **Exit codes**: `0` below threshold · `1` a finding at/above `--fail-on` · `2` runtime error
 (and, for `clean` only, `3` = acted partially, with every refusal named; with `--fail-on-llm` only, `4` = the gate could not be
-evaluated — the judge did not run, or a call failed or was never made — with the reason on stderr; `4` is not a pass, and a
+evaluated — the judge did not run, a call failed or was never made, or (on `check`) it has no pass for the target, a plugin
+or a plain folder — with the reason on stderr; `4` is not a pass, and a
 finding at either threshold still exits `1`). A run stopped by a
 signal ends as `128 + signal` — `130` for Ctrl-C, `141` for a closed output pipe — through the
 npm launcher exactly as for the bare binary.

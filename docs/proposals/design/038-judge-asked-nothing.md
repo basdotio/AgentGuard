@@ -142,7 +142,7 @@ endpoint `check` exits 0 — the triage label answered, the sentence was never p
 5. **Precedence and wording.** **Recommendation**: unchanged order 2 > 1 > 4 > 0; among the reasons for 4, P-026's (did not run,
    ran short) are reported first, since they are true of the whole run. The stderr line keeps P-026's form:
    `--fail-on-llm could not be evaluated (exit 4): the judge asked nothing about the target: it has no pass for a plugin (1
-   artifact), so none of its content was put to the model (the report's LLM-000 note has the detail)`.
+   artifact), so no question about its content was put to the model (the report's LLM-000 note has the detail)`.
    **Decided (2026-10-10)**: as recommended.
 6. **Does this overturn P-026's decision 5** ("a summary that ran over zero planned calls is evaluable")?
    **Recommendation**: it narrows it, for the target of a `check` only. Zero calls over a target of a judged kind with nothing to
