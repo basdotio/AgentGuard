@@ -119,8 +119,8 @@ corpus scorer reads either.
 
 ## Must not claim
 
-- Do not call any number in `per-kind-rule.txt` a gate, a tier, a threshold for a decision, or a cost; it is a
-  description of one run, on one model, one day, one sampling, like every judge number here
+- Do not present any number in `per-kind-rule.txt` as more than what it is: a description of one run, on one model,
+  one day, one sampling, like every judge number here
 - Do not say the four committed `judge.jsonl` files were regenerated or verified in this repository: the reproduction
   ran on a copy of raw/ that is not in this repository and is not committed
 - Do not say the per-(kind, rule) denominator counts the questions actually asked of each artifact: raw/ records the
