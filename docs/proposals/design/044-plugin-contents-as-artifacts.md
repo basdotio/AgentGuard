@@ -245,8 +245,6 @@ approval the gate recorded for `p:s1` already sits under the child's hash.
 
 ## Work items
 
-Implementation waits for the maintainer's answers to the open questions marked "needs the maintainer".
-
 | W | In one sentence | Commit message (no sha; a rebase changes it) |
 |---|---|---|
 | 1 | The collect, gate-alignment, score, render, reputation, preview and P-038 tests above, with their reverse rows, run red on the base | `collect, score, report, cmd: tests — a plugin's skills, commands and agents are never artifacts of their own (P-044)` |
@@ -262,10 +260,10 @@ Implementation waits for the maintainer's answers to the open questions marked "
 
 ## Open questions
 
-Questions 1–6 change what a user sees beyond "the judge now reads plugin contents" and **need the maintainer**; they carry a
-recommendation and no decision yet. Questions 7–12 are covered by the task and are decided as recommended.
+Questions 1–6 change what a user sees beyond "the judge now reads plugin contents" and were put to the maintainer, who decided all
+six as recommended on 2026-10-11. Questions 7–12 are covered by the task and are decided as recommended.
 
-1. **How do the children enter the environment score?** (needs the maintainer)
+1. **How do the children enter the environment score?**
    - S2, counted like plugin hooks and MCP servers: no formula change, and the dilution `issues/008` measured (86 → 97) and
      abandoned splitting for: real `~/.claude` average 95 → 97 under the cap, fixture `scan` 94 → 98, `check <plugin>` 88 → 98.
    - S1, a plugin and its children are one unit: `overall` byte-identical while children's findings are a subset of the plugin's;
@@ -274,31 +272,37 @@ recommendation and no decision yet. Questions 7–12 are covered by the task and
    **Recommendation**: S1. A plugin is one install: nobody removes one skill from it, and a score that rises because the scanner
    looked closer is the false comfort the 86 → 97 note exists to prevent. It also answers `issues/008`'s reason for abandoning the
    split, so 008's direction 1 can be recorded as done for plugins.
-2. **How is a finding that sits in both the plugin tree and a child reported?** (needs the maintainer)
+   **Decided (2026-10-11)**: as recommended.
+2. **How is a finding that sits in both the plugin tree and a child reported?**
    - Both everywhere (the hook-command precedent): the terminal report prints the same `file:line` twice and counts it twice.
    - Drop it from the child at the source: the child's score then differs from what the gate and `check <path>` say about the same
      bytes (fixture: 100 in the scan, 75 at load), and the collusion and triage passes lose their inputs.
    - Keep it on both in JSON; print it once everywhere a person reads (terminal, markdown, HTML, SARIF), on the plugin row.
    **Recommendation**: the third — the hook-script precedent ("attributed to its plugin") applied at the renderer, with the
    artifacts themselves left honest, and one predicate shared with the judge's triage.
-3. **Do children inherit their plugin's reputation match?** (needs the maintainer)
+   **Decided (2026-10-11)**: as recommended.
+3. **Do children inherit their plugin's reputation match?**
    **Recommendation**: yes, GOOD only. Without it the 18 reviewed findings in 5 entries reappear on children under hashes nobody
    reviewed, although their bytes are inside the tree that matched hash-exactly. It is the one place this proposal widens what a
    reputation entry suppresses — to bytes the entry already covered — so it is the maintainer's call (`.claude/rules/reputation.md`).
-4. **`check <plugin>`: children only, or also its hooks and MCP servers?** (needs the maintainer)
+   **Decided (2026-10-11)**: as recommended.
+4. **`check <plugin>`: children only, or also its hooks and MCP servers?**
    The task assumed `check` already splits hooks and MCP servers; it does not (measured). Splitting them too would give `check` the
    hook and MCP passes and the hook-only rules, and could turn `check <plugin> --fail-on medium` from 0 into 1 for a plugin whose
    hook command chains shells.
    **Recommendation**: children only here; record "`check <plugin>` collects what `scan` collects for a plugin" and "plugin hooks
    and MCP servers join the plugin unit" as follow-ups in `issues/023`, each with its own measurement.
-5. **Schema additions** (needs the maintainer): `ArtifactReport.Plugin` (`plugin` in JSON, omitted when empty) and
+   **Decided (2026-10-11)**: as recommended.
+5. **Schema additions**: `ArtifactReport.Plugin` (`plugin` in JSON, omitted when empty) and
    `EnvSummary.BundledCommands` / `BundledAgents`. Additive; nothing existing changes shape.
    **Recommendation**: add them. Without a parent link the score, the report and the note would have to recover the relation from
    the name suffix, which a plugin author controls.
-6. **Does this narrow P-038's exit 4?** (needs the maintainer)
+   **Decided (2026-10-11)**: as recommended.
+6. **Does this narrow P-038's exit 4?**
    **Recommendation**: yes: a `check` target plugin with at least one child that got a question is answered (P-026's rules then
    apply to those calls); one with no loadable skill, command or agent still exits 4. P-038's decision 2 anticipated this ("when
    `issues/023` gives plugin contents their own questions, the scan side shrinks to what is genuinely unjudged").
+   **Decided (2026-10-11)**: as recommended.
 7. **Quarantined (D): what is the smallest disclosure?**
    **Recommendation**: none beyond a label. P-038's note already counts quarantined artifacts (none on the real `~/.claude`); its
    kind label becomes `quarantined (N, no longer loaded)` so a reader does not take the count for a loaded gap. No pass, and triage
