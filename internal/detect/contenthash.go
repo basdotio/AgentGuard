@@ -39,12 +39,17 @@ import (
 //     of its tree hash.
 //   - Secrets are replaced before hashing (see guardedView). The hash is published in the JSON
 //     report and stored in the approvals file, and a digest over a low-entropy secret is a commitment
-//     anyone can brute-force. Consequence, intended: changing ONLY a replaced secret does not re-key.
+//     anyone can brute-force — a fragment of one too: an argument a flag announces is forgotten whole,
+//     not up to its first space (viewElement). Consequence, intended: changing ONLY a replaced secret
+//     does not re-key.
 //     The rule that keeps that from becoming "changing the code does not re-key": a replacement may
 //     forget a secret, never structure.
 //   - A followed script is folded in by its sha256, or by a marker saying why it could not be.
 
-// Domains. The version suffix is the definition's: bump it with any change to what goes in.
+// Domains. The version suffix is the definition's shape — which fields go in, how they are encoded, the
+// markers: bump it when that changes, since every entry of the kind then re-keys. A change to what the
+// replacement of secrets forgets re-keys only the entries holding such a secret, keeps the suffix and is
+// named in its proposal with what it re-keys (P-039: an argument a flag announces, forgotten whole).
 const (
 	domainHook        = "aguard:hook:v1"
 	domainMCP         = "aguard:mcp:v1"
@@ -320,7 +325,7 @@ func skeleton(s, structure string) string {
 // redactTree returns a copy of a decoded JSON value with every string replaced by its view. A string
 // under an object key is viewed as `KEY=VALUE` — for an env block the key is the signal, and
 // `hunter2` alone announces nothing while `DB_PASSWORD=hunter2` does. A string right after an array
-// element that starts with "-" is viewed as `flag value` (`["--api-key", "…"]`).
+// element that starts with "-" is viewed with that flag (`["--api-key", "…"]`, viewElement).
 func redactTree(v any, key string, mode viewMode) any {
 	switch t := v.(type) {
 	case string:
@@ -341,17 +346,51 @@ func redactTree(v any, key string, mode viewMode) any {
 				prev = ""
 				continue
 			}
-			flag := ""
-			if strings.HasPrefix(prev, "-") {
-				flag = prev
-			}
-			out[i] = viewString(flag, " ", s, mode)
+			out[i] = viewElement(prev, s, mode)
 			prev = s
 		}
 		return out
 	default:
 		return v // json.Number, bool, nil
 	}
+}
+
+// viewElement views a string in an array, after the string prev. When prev is a flag that announces it
+// as a credential (announcedArg — the decision RedactArgv takes for the judge's excerpt), the element is
+// forgotten from the first announced byte to its END (P-039). In an argument vector the element is one
+// argument, all of it the value, while the patterns stop a value at whitespace or a quote: the joined
+// reading below kept the tail ` horse` of `"--password", "correct horse"` in the digest input, where a
+// word list recovers it from the published hash, and the identity then followed that fragment.
+//
+// The whole-element replacement may forget a secret, never structure: when the forgotten span holds a
+// structure character it is refused, and the element gets the joined `flag value` reading it had before —
+// never more of the secret in the input than that, and never less structure.
+func viewElement(prev, s string, mode viewMode) string {
+	if v, ok := viewAnnounced(prev, s, mode); ok {
+		return v
+	}
+	flag := ""
+	if strings.HasPrefix(prev, "-") {
+		flag = prev
+	}
+	return viewString(flag, " ", s, mode)
+}
+
+// viewAnnounced is the whole-element replacement, or ok=false. The structure set is the one viewString
+// gives the element; a grant is read alone, as viewString reads it.
+func viewAnnounced(prev, s string, mode viewMode) (string, bool) {
+	structure := literalStructure
+	switch {
+	case mode == viewGrant && grantRE.MatchString(s):
+		return "", false
+	case mode == viewShell:
+		structure = shellStructure
+	}
+	at, ok := announcedArg(prev, s)
+	if !ok || skeleton(s[at:], structure) != "" {
+		return "", false
+	}
+	return guardedView(s[:at], structure) + redacted, true
 }
 
 // viewString views one string in its mode. A grant is unwrapped first; a string in grant mode that

@@ -35,6 +35,11 @@ func RedactArgv(args []string) []string { return redact.Argv(args) }
 // content hash takes (contenthash.go; why only that half is explained on redact.Secrets).
 func redactCredentials(s string) string { return redact.Credentials(s) }
 
+// announcedArg is redact.Announced: whether a flag announces the argument after it, and where in that
+// argument the value starts. The content hash forgets that span whole, as RedactArgv does for the
+// judge (P-039) — the same decision, not a second reading of the flag patterns.
+func announcedArg(flag, arg string) (int, bool) { return redact.Announced(flag, arg) }
+
 // redactClip builds a finding snippet: REDACT FIRST, then bound the length. Every snippet
 // in every finding goes through here — the two steps are collapsed into one call precisely
 // so the order cannot be got wrong at a call site.
