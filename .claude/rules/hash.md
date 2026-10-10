@@ -52,9 +52,15 @@ skill 与 plugin 用树哈希(按相对路径排序 + 每个文件的 sha256);�
   `…admin:hunter2)` 同哈希、`https://other.example:443#@good.example/` 与带密码的同哈希(都是评审实测),守卫之后都重键。
   **后果,有意为之:只改一个被换掉的 secret 不重键**;反过来,**改 `redactCredentials` 会让这三类全部重键**(多问一次,
   不会静默放行),改高熵兜底不会。动 `internal/redact/redact.go` 前先想清楚是哪一半。
+- **参数数组里被 flag 认出的元素整个忘掉**(`viewElement`,P-039)。认没认出、值从哪个字节起,问 `redact.Announced` ——
+  判官的 `redact.Argv` 问的同一个问题;**不要在这里按 flag 模式另读一遍**。模式是给 shell 行写的,值到空白或引号就停:
+  以前 `"--password", "correct horse"` 的摘要输入是 `<REDACTED> horse`,拿词表就能从公开的哈希撞出尾巴,身份也跟着尾巴走。
+  被忘掉的那段带结构字符时整体替换作废,退回原来的 `flag value` 读法(尾巴照留)。改它只重键带这种值的条目,域后缀不动。
 - **剩下的口子要说实话**:被换掉的那一段如果本身被拿去解码或求值(配置在批准时就在"解码一个凭据名变量再执行"),换掉
   那段载荷哈希不变。`Redact` 认不出的 secret(`MYSQL_PASS=…`、`--db-password …`、`-p<pw>`)原样进摘要输入 —— 补它要改
-  `redactCredentials`,即重键,另开。MCP 的哈希只覆盖配置条目,不覆盖 server 的代码。
+  `redactCredentials`,即重键,另开。同样另开的(P-039 实测):shell 行里引号括起的值(hook command、permission 条目里的
+  `--password "correct horse"`)整段原样进输入;env/header 里带空格的凭据值(`DB_PASSWORD=correct horse`)留着尾巴。
+  MCP 的哈希只覆盖配置条目,不覆盖 server 的代码。
 - **规范 JSON 不是 RFC 8785**:`UseNumber` 保留数字原文、键按 UTF-8 字节排序、`SetEscapeHTML(false)`。谁要在别处重算这个哈希,
   照这里的定义,不照 JCS。
 - **parse 失败的 artifact 保持 `""`**(`TestContentHash_ParseErrorArtifactsStayUnhashed`):它没被读过。
