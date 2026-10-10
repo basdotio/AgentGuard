@@ -196,8 +196,8 @@ what a CI job sees never depends on which flag a human passed.
 
 **Exit codes**: `0` below threshold · `1` a finding at/above `--fail-on` · `2` runtime error
 (and, for `clean` only, `3` = acted partially, with every refusal named; with `--fail-on-llm` only, `4` = the gate could not be
-evaluated — the judge did not run, a call failed or was never made, or (on `check`) it has no pass for the target, a plugin
-or a plain folder — with the reason on stderr; `4` is not a pass, and a
+evaluated — the judge did not run, a call failed or was never made, or (on `check`) it has no question for the target: a
+plain folder, or a plugin holding no skill, command or agent — with the reason on stderr; `4` is not a pass, and a
 finding at either threshold still exits `1`). A run stopped by a
 signal ends as `128 + signal` — `130` for Ctrl-C, `141` for a closed output pipe — through the
 npm launcher exactly as for the bare binary.
@@ -353,8 +353,11 @@ This release is a **static** scanner; its ceiling is "surface discovery + cleanu
 - prove malice (only a suspicion level) · observe runtime behavior (remote second-stage payloads, conditional backdoors) · recover the true intent of encrypted/heavily-obfuscated payloads · observe what an MCP endpoint actually does · inspect dependency internals · catch zero-day / unknown techniques.
 
 Coverage caveats worth knowing:
-- A **plugin** is scanned as one tree, so its bundled skills/commands/hooks *are* read, but a
-  plugin-bundled hook is not audited per (event, command) the way a `settings.json` hook is.
+- A **plugin** is scanned as one tree by the rules, and its parts are collected again on their own: its skills,
+  commands and agents (the ones Claude Code loads — so `--llm` judges them; the score counts a plugin and its children
+  as one item, and a finding both carry is printed once), its hooks per (event, command), its MCP servers per server.
+  Its output styles and inline manifest commands are read only as text in the tree; `check <plugin>` does not split
+  its hooks and MCP servers the way `scan` does.
 - A **hook script** is followed one level and only inside your home directory. An out-of-home
   reference is not read, and scores as `HOOK-002`.
 - Under a config root, **top-level directories no collector owns are not read** — on a real
