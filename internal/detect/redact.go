@@ -43,6 +43,11 @@ func redactCredentials(s string, keep func(match, repl string) bool) string {
 // judge (P-039) — the same decision, not a second reading of the flag patterns.
 func announcedArg(flag, arg string) (int, bool) { return redact.Announced(flag, arg) }
 
+// keyedValue is redact.Keyed: whether the key of a JSON member announces its value as a credential, and where in
+// the value it starts. The content hash forgets that span whole, and so do the snippets of an env line and of a
+// bare value (P-042) — one decision, asked of the same pattern, not a second reading of the key.
+func keyedValue(key, value string) (int, bool) { return redact.Keyed(key, value) }
+
 // redactClip builds a finding snippet: REDACT FIRST, then bound the length. Every snippet
 // in every finding goes through here — the two steps are collapsed into one call precisely
 // so the order cannot be got wrong at a call site.

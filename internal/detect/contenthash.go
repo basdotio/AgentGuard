@@ -306,10 +306,13 @@ func scriptDigest(root, home, ownerRoot, ref string) string {
 // every other replacement in the value still applies. It used to be the value's — one refused span put
 // the value in whole, so `Bash(curl -u admin:* --token hunter2)` hashed `hunter2`, and a quoted password
 // with `#` in it would have done the same to every other secret on its line.
-func guardedView(s, structure string) string {
-	return redactCredentials(s, func(match, repl string) bool {
-		return skeleton(match, structure) == skeleton(repl, structure)
-	})
+func guardedView(s, structure string) string { return redactCredentials(s, keepsStructure(structure)) }
+
+// keepsStructure is the guard's decision on one replacement: it may forget a secret, never a character of
+// structure. guardedView offers it every replacement the patterns make; the whole-element and whole-value
+// replacements (viewAnnounced, viewKeyed) are offered to it the same way, as one replacement each.
+func keepsStructure(structure string) func(match, repl string) bool {
+	return func(match, repl string) bool { return skeleton(match, structure) == skeleton(repl, structure) }
 }
 
 // skeleton is the sequence of structure characters in s, ignoring the replacement marker's own.
@@ -325,13 +328,13 @@ func skeleton(s, structure string) string {
 }
 
 // redactTree returns a copy of a decoded JSON value with every string replaced by its view. A string
-// under an object key is viewed as `KEY=VALUE` — for an env block the key is the signal, and
+// under an object key is viewed with that key (viewMember) — for an env block the key is the signal, and
 // `hunter2` alone announces nothing while `DB_PASSWORD=hunter2` does. A string right after an array
 // element that starts with "-" is viewed with that flag (`["--api-key", "…"]`, viewElement).
 func redactTree(v any, key string, mode viewMode) any {
 	switch t := v.(type) {
 	case string:
-		return viewString(key, "=", t, mode)
+		return viewMember(key, t, mode)
 	case map[string]any:
 		out := make(map[string]any, len(t))
 		for k, e := range t {
@@ -389,7 +392,42 @@ func viewAnnounced(prev, s string, mode viewMode) (string, bool) {
 		structure = shellStructure
 	}
 	at, ok := announcedArg(prev, s)
-	if !ok || skeleton(s[at:], structure) != "" {
+	if !ok || !keepsStructure(structure)(s[at:], redacted) {
+		return "", false
+	}
+	return guardedView(s[:at], structure) + redacted, true
+}
+
+// viewMember views a string held under an object key. When the key announces it as a credential (keyedValue —
+// the member question the env snippets ask too), the value is forgotten from the first announced byte to its
+// END (P-042). A member's string is one value, all of it what the key names, while the patterns stop a value at
+// whitespace, a quote, `@` or padding: the `KEY=VALUE` reading below kept the tail ` horse` of
+// `"DB_PASSWORD": "correct horse"` and ` efgh5678` of `"Authorization": "Bearer abcd1234 efgh5678"` in the
+// digest input, where a word list recovers it from the published hash, and the identity followed that fragment.
+//
+// The whole-value replacement is offered to the structure guard as one replacement: when the forgotten span
+// holds a structure character it is refused, and the member gets the `KEY=VALUE` reading it had before, whose
+// own replacements the guard decides one by one — never more of the secret in the input than that, and never
+// less structure.
+func viewMember(key, s string, mode viewMode) string {
+	if v, ok := viewKeyed(key, s, mode); ok {
+		return v
+	}
+	return viewString(key, "=", s, mode)
+}
+
+// viewKeyed is the whole-value replacement, or ok=false. The structure set is the one viewString gives the
+// member; a grant is read alone, as viewString reads it.
+func viewKeyed(key, s string, mode viewMode) (string, bool) {
+	structure := literalStructure
+	switch {
+	case key == "", mode == viewGrant && grantRE.MatchString(s):
+		return "", false
+	case mode == viewShell:
+		structure = shellStructure
+	}
+	at, ok := keyedValue(key, s)
+	if !ok || !keepsStructure(structure)(s[at:], redacted) {
 		return "", false
 	}
 	return guardedView(s[:at], structure) + redacted, true
