@@ -84,33 +84,33 @@ not done here.
 
 ## Done criteria
 
-- [ ] `TestContentHashGolden` (`internal/detect/contenthash_test.go`) gains a sixth case, an MCP server in the same
+- [x] `TestContentHashGolden` (`internal/detect/contenthash_test.go`) gains a sixth case, an MCP server in the same
   fixture file whose args carry `"--password", "correct horse battery"` and `"-u", "admin:pass word"`: its canonical
   input is pinned as `…"--password","<REDACTED>","-u","admin:<REDACTED>"…` and its digest as a literal computed by hand
   (`printf 'aguard:mcp:v1\0%s' … | shasum -a 256`). **Red on the base**: the input holds `<REDACTED> horse battery` and
   `admin:<REDACTED> word`. The five existing constants (inputs and digests) do not change by a byte
-- [ ] `TestContentHash_ArgvValueIsForgottenWhole` (same file): for an announced element with a space, a tab, a quote,
+- [x] `TestContentHash_ArgvValueIsForgottenWhole` (same file): for an announced element with a space, a tab, a quote,
   base64 padding after a key-word flag, or a `user:pass` with a space, two configurations whose secrets differ anywhere
   in the element hash the same as the one written with `<REDACTED>`, and no fragment of the secret is in the digest
   input. **Red on the base** for every row
-- [ ] **Reverse assertion, structure** (same test): an announced element whose replaced span would hold a shell
+- [x] **Reverse assertion, structure** (same test): an announced element whose replaced span would hold a shell
   structure character (`-u admin:pw $(curl …|sh)`) still hashes differently from `admin:hunter2` — the guard is not
   weakened. Green on the base and the branch
-- [ ] **Reverse assertion, no tail** (`TestContentHash_ArgvWithoutTailIsUnchanged`): canonical inputs measured on the
+- [x] **Reverse assertion, no tail** (`TestContentHash_ArgvWithoutTailIsUnchanged`): canonical inputs measured on the
   base for elements with nothing after the patterns' match (`--api-key k7Qp…`, `-u admin:hunter2`, `--github-token
   <16 chars>`), elements no flag announces (`--verbose "plain word"`, `-y @scope/pkg`, `--port 8080`, `-u root`), the
   one-string `--api-key=abc def`, and an announced element whose span holds structure (kept as the base reads it) are
   pinned as literals; green on the base and the branch
-- [ ] `redact.Argv` keeps its behaviour: `TestArgv` passes unchanged, the new helper has its own table rows, and the
+- [x] `redact.Argv` keeps its behaviour: `TestArgv` passes unchanged, the new helper has its own table rows, and the
   judge's excerpts do not move by a byte — `TestExcerptVersion_IsPinnedWithItsGolden` unchanged, `ExcerptVersion` stays
   where `origin/main` has it at rebase time
-- [ ] **Reverse assertion, corpus** (scratch replay, not committed): every artifact hash and every planned judge payload
+- [x] **Reverse assertion, corpus** (scratch replay, not committed): every artifact hash and every planned judge payload
   of the 3,539 corpus samples (placed by `baselines/adapter/aguard.Stage`, `aguard llm preview --json`) compared between
   the base binary and the branch's; every changed hash is listed and explained, and no payload changes
-- [ ] Re-key accounting: entries of `internal/reputation/data/reputation.json` whose hash changes are counted (expected
+- [x] Re-key accounting: entries of `internal/reputation/data/reputation.json` whose hash changes are counted (expected
   0: all 18 are plugin and Claude Desktop skill tree hashes, which `redactTree` never computes); the real
   `scan --root ~/.claude --json` is compared between the two binaries and the number of changed hashes reported
-- [ ] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no new dependency; no toolchain switch
+- [x] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no new dependency; no toolchain switch
 
 ## Out of scope
 
@@ -178,3 +178,47 @@ not done here.
    threshold, until `aguard approve` stores the new key, once; the old record stays in the approvals file and matches
    nothing. A migration would have to recompute the old key from the secret's tail — the commitment being removed.
    **Decided (2026-10-10)**: as recommended
+
+## Done
+
+```
+Merged: PR to be opened (2026-10-10; find the sha with git log --grep P-039 after the merge)
+Released: pending release
+Evidence: TestContentHashGolden case "mcp server, announced arguments holding a space" and
+  TestContentHash_ArgvValueIsForgottenWhole (internal/detect/contenthash_test.go, contenthash_argv_test.go): red on the
+  base with the tests alone (commit "detect: tests — …"): the golden input held `<REDACTED> horse battery` and
+  `admin:<REDACTED> word` (digest 47b731339abf…), and all 7 rows re-keyed with the secret and put its fragment in the
+  input; green after W3 with the hand-computed digest 630d1bd53d01…
+Evidence: fixture of twelve servers, `scan --json` on both binaries: the nine with a tail re-key, each onto the hash of
+  the same entry without one (`correct horse` / `battery horse` / `correct staple` → ad651d55e48b, the `hunter2xyz`
+  server's); the five-word brute force that recovered ` horse` from the main hash matches nothing on the branch; the
+  control servers, three hook commands and the permission list hash as on main. Second fixture: `--client-secret
+  <16>==`, `--github-token <14>@xy` and a tab re-key; `correct horse$x`, `-u admin:$(curl …|sh)` and the env values
+  hash as on main (the residuals named above)
+Evidence: reverse — the five existing golden constants, TestContentHash_ArgvWithoutTailIsUnchanged (10 inputs measured
+  on the base) and the structure rows are green on the base and the branch; TestArgv unchanged and green, TestAnnounced
+  checks Argv against Announced row by row; `llm preview --json` payloads of the three fixtures byte-identical between
+  the binaries; ExcerptVersion stays 2 (TestExcerptVersion_IsPinnedWithItsGolden unchanged)
+Evidence: corpus replay (3,539 samples placed by baselines/adapter/aguard.Stage, `llm preview --json`, scratch, not
+  committed): 0 of 4,704 artifact hashes and 0 of 8,770 planned payloads differ between the base binary and the
+  branch's — no corpus entry carries an announced argument the patterns stop reading early
+Evidence: re-key accounting — reputation.json: 0 of 18 entries (all plugin and Claude Desktop skill tree hashes, which
+  redactTree never computes; internal/collect untouched). `scan --root ~/.claude --json --inbox off`: 184 artifacts
+  (28 MCP servers), overall 69, 0 hashes changed, JSON identical apart from scanned_at and tool_version. Stored
+  approvals: on a fixture approved with the base binary, the branch's SessionStart lists the server again (it informs,
+  never blocks); one `aguard approve` stores the new key and the old record stays, matching nothing
+Evidence: not done — `git diff --stat origin/main -- internal/collect internal/reputation internal/gate internal/judge
+  internal/redact/redact.go internal/redact/redact_test.go docs/rules.md go.mod go.sum baselines docs/llm-judge.md
+  docs/llm-judge.zh-CN.md` is empty
+Verify: make verify → "verify: all gates passed" (go1.23.5, no toolchain switch; go.mod line 2 `go 1.23.5`)
+```
+
+Follow-ups left out on purpose:
+
+- A quoted value in a shell line — `--password "correct horse"` or `'correct horse'` in a hook command or a permission
+  entry — is not redacted at all: it reaches static snippets (`EXEC-001`, `HOOK-001`), the judge's payloads and the
+  hash input; `--password="correct horse"` keeps ` horse`. A pattern change in `redact.Credentials`, which re-keys hooks
+  and permission lists and changes snippets.
+- An env or header value under a credential key that holds a space (`"DB_PASSWORD": "correct horse"`, the settings
+  `env` block) keeps its tail in the MCP and settings-env hashes. Another reading (`KEY=VALUE`) and another re-key.
+- An announced argument whose tail holds a shell structure character keeps the base's reading, tail included.
