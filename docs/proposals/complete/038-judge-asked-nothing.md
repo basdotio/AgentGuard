@@ -155,7 +155,7 @@ endpoint `check` exits 0 — the triage label answered, the sentence was never p
 ## Done
 
 ```
-Merged: PR to be opened (2026-10-10; find the sha with git log --grep P-038 after the merge)
+Merged: PR #57 (2026-10-10; find the sha with git log --grep P-038)
 Released: pending release
 Evidence: TestFailOnLLM_TargetTheJudgeAsksNothingAbout, TestFailOnLLM_ScanKeepsItsCodeAndNamesWhatWasNotAsked,
   TestFailGate_TargetTheJudgeAsksNothingAbout (cmd/aguard/fail_on_llm_unasked_test.go) and TestRun_NamesTheArtifactsNoPassCovers
