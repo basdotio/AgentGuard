@@ -769,7 +769,8 @@ func staticFindings(fs []model.Finding) []model.Finding {
 // the whole line is re-redacted defensively, which can only remove more. The File field is
 // whatever the static pass recorded — an absolute path for EXFIL-005, `<username>/.claude.json`
 // for a config in the home, an encoded project directory for a memory file — so it is scrubbed
-// as a file position; the report keeps its own copy untouched.
+// as a file position; the report keeps its own copy untouched. Each item is then bounded
+// (boundedEvidence, P-037): redacted first, cut second.
 func triageItems(fs []model.Finding, eg egress) []TriageItem {
 	items := make([]TriageItem, 0, len(fs))
 	for _, f := range fs {
@@ -777,7 +778,7 @@ func triageItems(fs []model.Finding, eg egress) []TriageItem {
 		if len(f.Evidence) > 0 {
 			ev = fmt.Sprintf("%s:%d %s", eg.file(f.Evidence[0].File), f.Evidence[0].Line, eg.snippet(f.Evidence[0].Snippet))
 		}
-		items = append(items, TriageItem{RuleID: f.RuleID, Evidence: detect.Redact(ev)})
+		items = append(items, TriageItem{RuleID: f.RuleID, Evidence: boundedEvidence(detect.Redact(ev))})
 	}
 	return items
 }
