@@ -336,7 +336,7 @@ six as recommended on 2026-10-11. Questions 7–12 are covered by the task and a
 ## Done
 
 ```
-Merged: PR to be opened (2026-10-11; find the sha with git log --grep P-044 after the merge)
+Merged: PR #61 (2026-10-11; find the sha with git log --grep P-044)
 Released: pending release
 Evidence: TestPluginContents_FollowClaudeCodesLoader / _ManifestObjectCommands (internal/collect), TestApply_PluginAndChildrenAreOneUnit
   (internal/score), TestRender_ChildDuplicatesAreShownOnce (internal/report), TestBuildTasks_ChildDuplicateIsNotTriagedTwice and
