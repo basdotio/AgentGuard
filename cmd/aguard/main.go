@@ -138,6 +138,25 @@ func checkTarget(path string, o scanOpts) (model.ScanResult, error) {
 	return analyze(path, res, o)
 }
 
+// suppressScoring removes a's scoring findings (dimension-0 notes are kept), raises maxSev to the
+// highest one removed, and returns how many it removed.
+func suppressScoring(a *model.ArtifactReport, maxSev *model.Severity) int {
+	kept := []model.Finding{} // keep JSON `[]`, never null
+	n := 0
+	for _, f := range a.Findings {
+		if f.Dimension == 0 { // keep coverage/parse notes
+			kept = append(kept, f)
+			continue
+		}
+		n++
+		if f.Severity.Rank() > maxSev.Rank() {
+			*maxSev = f.Severity
+		}
+	}
+	a.Findings = kept
+	return n
+}
+
 // applyReputation matches each artifact's canonical hash against a reputation list. GOOD →
 // suppress that artifact's scoring findings (record a REP-GOOD note mirroring the highest
 // suppressed severity, §12 honesty). MALICIOUS → append a REP-BAD critical finding. Returns
@@ -146,8 +165,16 @@ func checkTarget(path string, o scanOpts) (model.ScanResult, error) {
 // db is a parameter rather than a Load() call inside, so that the verdict handling is testable
 // against a synthetic list: the shipped blocklist is empty pending curation, and it must not
 // take a fake entry in a scoring data file to keep this branch covered.
+//
+// A plugin's children (P-044) inherit a GOOD match on its tree hash: their bytes are inside the tree
+// that matched hash-exactly, so the review covered them, and without this the reviewed findings in
+// a matched plugin's skills reappeared on the children under hashes no entry carries (18 of 253 in
+// the shipped list). They are suppressed and counted in the plugin's one REP-GOOD note. Only GOOD is
+// inherited — a MALICIOUS plugin already carries its critical — and a child whose own hash matches
+// an entry answers to that entry.
 func applyReputation(db *reputation.DB, arts []model.ArtifactReport) []model.Finding {
 	var notes []model.Finding
+	fam := score.Families(arts)
 	for i := range arts {
 		e, ok := db.Match(arts[i].Hash)
 		if !ok {
@@ -155,25 +182,26 @@ func applyReputation(db *reputation.DB, arts []model.ArtifactReport) []model.Fin
 		}
 		switch e.Verdict {
 		case reputation.Good:
-			var kept []model.Finding
-			maxSev, n := model.Severity(""), 0
-			for _, f := range arts[i].Findings {
-				if f.Dimension == 0 { // keep coverage/parse notes
-					kept = append(kept, f)
+			mark := func(n int) *model.ReputationMark {
+				return &model.ReputationMark{
+					Verdict: e.Verdict, Entry: e.Name, Publisher: e.Publisher, Version: e.Version,
+					Source: e.Source, SHA: e.SHA, Path: e.Path, Reviewed: e.Reviewed, Suppressed: n,
+				}
+			}
+			maxSev := model.Severity("")
+			n, inChildren := suppressScoring(&arts[i], &maxSev), 0
+			arts[i].Reputation = mark(n)
+			for j := range arts {
+				if fam.Parent(j) != i {
 					continue
 				}
-				n++
-				if f.Severity.Rank() > maxSev.Rank() {
-					maxSev = f.Severity
+				if _, own := db.Match(arts[j].Hash); own {
+					continue
 				}
-			}
-			if kept == nil {
-				kept = []model.Finding{} // keep JSON `[]`, never null
-			}
-			arts[i].Findings = kept
-			arts[i].Reputation = &model.ReputationMark{
-				Verdict: e.Verdict, Entry: e.Name, Publisher: e.Publisher, Version: e.Version,
-				Source: e.Source, SHA: e.SHA, Path: e.Path, Reviewed: e.Reviewed, Suppressed: n,
+				nj := suppressScoring(&arts[j], &maxSev)
+				arts[j].Reputation = mark(nj)
+				n += nj
+				inChildren += nj
 			}
 			if n > 0 {
 				sev := maxSev
@@ -184,7 +212,12 @@ func applyReputation(db *reputation.DB, arts []model.ArtifactReport) []model.Fin
 				// commit the review was done on. "superpowers@claude-plugins-official" in the
 				// artifact name is where the user installed it from; this is who we trusted.
 				why := fmt.Sprintf("%s:%s matches reputation allowlist entry %s", arts[i].Kind, arts[i].Name, entryLabel(e))
-				why += fmt.Sprintf("; %d finding(s) suppressed, highest severity=%s.", n, maxSev)
+				if inChildren > 0 {
+					why += fmt.Sprintf("; %d finding(s) suppressed (%d of them in its skills, commands or agents, which are part of "+
+						"the tree that matched), highest severity=%s.", n, inChildren, maxSev)
+				} else {
+					why += fmt.Sprintf("; %d finding(s) suppressed, highest severity=%s.", n, maxSev)
+				}
 				// The entry's review travels with the suppression, so "why was this trusted?"
 				// is answered in the report and not in a maintainer's memory.
 				if e.Reason != "" {
