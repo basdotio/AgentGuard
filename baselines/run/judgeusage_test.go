@@ -160,3 +160,23 @@ func TestSignatureSaysWhereTheJudgeCostIs(t *testing.T) {
 		}
 	}
 }
+
+// TestSumJudgeUsage_RepairedIsSummed: the run's repaired total is the sum over its samples, and
+// absent from run.yaml when no sample needed the repair (P-034), so such a run writes what it did.
+func TestSumJudgeUsage_RepairedIsSummed(t *testing.T) {
+	rows := []ledger.Row{
+		judged("a", ledger.JudgeUsage{Basis: ledger.UsageReported, Calls: 7, TriageCalls: 1, Retries: intp(0), Repaired: 1}),
+		judged("b", ledger.JudgeUsage{Basis: ledger.UsageReported, Calls: 30, TriageCalls: 1, Retries: intp(0), Repaired: 2}),
+		judged("c", ledger.JudgeUsage{Basis: ledger.UsageReported, Calls: 6, TriageCalls: 1, Retries: intp(0)}),
+	}
+	if got := SumJudgeUsage(rows); got.Repaired != 3 {
+		t.Errorf("repaired = %d; want 3", got.Repaired)
+	}
+	out, err := yaml.Marshal(SumJudgeUsage(rows[2:]))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(out), "repaired") {
+		t.Errorf("run.yaml judge_usage for a run with no repair carries the key:\n%s", out)
+	}
+}

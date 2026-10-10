@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/basdotio/AgentGuard/baselines/corpus"
@@ -188,4 +189,29 @@ func TestScan_LedgerRowCarriesTheJudgeUsage(t *testing.T) {
 func show(u *ledger.JudgeUsage) string {
 	b, _ := json.Marshal(u)
 	return string(b)
+}
+
+// TestJudgeUsage_RepairedIsCarriedWhenAny: a binary that counts closed-early repairs (P-034)
+// prints repaired, and a row whose sample needed one carries it. A row with none — 0 printed, or
+// output from a binary that predates the repair and so made none — has no such key, which keeps
+// every row folded without a repair byte-identical to what it was.
+func TestJudgeUsage_RepairedIsCarriedWhenAny(t *testing.T) {
+	printed := `{"artifacts":[],"judge":{"ran":true,"artifacts":1,"calls":7,"failed":0,"skipped":0,
+  "repaired":2,"findings":0,"triage_calls":1,"retries":0}}`
+	if got := foldDoc(t, printed); got.Repaired != 2 {
+		t.Errorf("repaired = %d; want 2, as printed", got.Repaired)
+	}
+	for name, doc := range map[string]string{
+		"printed 0": `{"artifacts":[],"judge":{"ran":true,"artifacts":1,"calls":7,"failed":0,"skipped":0,
+  "repaired":0,"findings":0,"triage_calls":1,"retries":0}}`,
+		"older binary": budgetCut,
+	} {
+		row, err := json.Marshal(foldDoc(t, doc))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.Contains(string(row), "repaired") {
+			t.Errorf("%s: judge_usage %s carries repaired; want no key when there was no repair", name, row)
+		}
+	}
 }

@@ -124,12 +124,15 @@ const (
 // JudgeUsage is one sample's judge cost. Every count is the tool's own except TriageCalls, which
 // is derived when the tool did not print it, and Basis says which. Retries and the two token
 // counts are pointers because "the tool did not say" is not 0: a derived sample has no retry
-// count, and an endpoint that reports no usage leaves the tokens out.
+// count, and an endpoint that reports no usage leaves the tokens out. Repaired is not a pointer: a
+// binary that does not print it predates the repair (P-034), so its count is exactly 0, and a row
+// with none reads as it did before the count existed.
 type JudgeUsage struct {
 	Basis            string `json:"basis"`
 	Calls            int    `json:"calls"`
 	Failed           int    `json:"failed"`
 	Skipped          int    `json:"skipped"`
+	Repaired         int    `json:"repaired,omitempty"` // answered calls read by the closed-early repair (P-034)
 	TriageCalls      int    `json:"triage_calls"`
 	Retries          *int   `json:"retries,omitempty"`
 	PromptTokens     *int   `json:"prompt_tokens,omitempty"`
