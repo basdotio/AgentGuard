@@ -175,7 +175,7 @@ Asked during implementation (stage 2):
 ## Done
 
 ```
-Merged: PR to be opened (2026-10-10; find the sha with git log --grep P-036 after the merge)
+Merged: PR #55 (2026-10-10; find the sha with git log --grep P-036)
 Released: pending release
 Evidence: TestPlan_MCPArgvSecretsAreRedacted (internal/judge/argv_test.go): red on the base with the test alone (commit
   "judge: tests — …"): all 9 rows send the value, 8 of them are not a fixed point of Redact (`-u` is, and still leaks);
