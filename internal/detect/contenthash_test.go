@@ -81,7 +81,8 @@ func permArtifact(path, name string) model.ArtifactReport {
 // Each fixture also carries the property it is there for: a followed script folded in by its
 // sha256 (299001…cbba is `printf '#!/bin/sh\necho hi\n' | shasum -a 256`), a credential in a
 // URL, a flag value and an env value replaced, a number kept as written (30.0), no HTML escaping
-// (`<REDACTED>` stays literal), keys sorted, an announced argument replaced to its end (P-039).
+// (`<REDACTED>` stays literal), keys sorted, an announced argument replaced to its end (P-039), a
+// quoted value after a flag replaced between its quotes (P-043).
 func TestContentHashGolden(t *testing.T) {
 	home := t.TempDir()
 	root := filepath.Join(home, ".claude")
@@ -94,6 +95,8 @@ func TestContentHashGolden(t *testing.T) {
 		`{"mcpServers":{"db":{"command":"npx","args":["-y","@scope/db-server","--api-key","hunter2-xyz"],`+
 			`"env":{"DB_PASSWORD":"hunter2","LOG_LEVEL":"debug"},"timeout":30.0},`+
 			`"vault":{"command":"npx","args":["-y","@scope/vault-server","--password","correct horse battery","-u","admin:pass word"]}}}`)
+	quoted := writeAt(t, filepath.Join(home, "proj", ".claude", "settings.json"),
+		`{"permissions":{"allow":["Bash(mytool --token 'correct horse' *)"]}}`)
 
 	cases := []struct {
 		name, input, hash string
@@ -128,6 +131,21 @@ func TestContentHashGolden(t *testing.T) {
 			a:     mcpArtifact(claudeJSON, "vault"),
 			input: `{"args":["-y","@scope/vault-server","--password","<REDACTED>","-u","admin:<REDACTED>"],"command":"npx"}`,
 			hash:  "630d1bd53d013b990e69d1b899c40ce2b221cae0699fab5822bed59c1573049e",
+		},
+		{
+			// P-043: a quoted value after a flag is replaced between its quotes. The patterns could not start a
+			// value at a quote, and before this the input held `correct horse` itself: the published hash was a
+			// digest of the password, and changing it re-keyed.
+			name:  "command hook, a quoted value after a flag",
+			a:     hookArtifact(settings, cmdHook("PreToolUse", "Bash", `mytool --password "correct horse" ; true`)),
+			input: `{"entry":{"command":"mytool --password \"<REDACTED>\" ; true","type":"command"},"event":"PreToolUse","matcher":"Bash","scripts":[]}`,
+			hash:  "e95c6fefbbee6e3029bf543c9ced79977572814f1eb80d9d664de23a4779ed0e",
+		},
+		{
+			name:  "permissions, a quoted value after a flag",
+			a:     permArtifact(quoted, "permissions"),
+			input: `{"permissions":{"allow":["Bash(mytool --token '<REDACTED>' *)"]},"scripts":[]}`,
+			hash:  "5f52363989637d9fe97c55b0082b4d8983b64855a4b0af15e04fb12aa428a58c",
 		},
 		{
 			name: "permissions",
