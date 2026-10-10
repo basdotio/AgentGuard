@@ -185,7 +185,8 @@ func TestPlan_ExplainAndDigestFitTheExcerpt(t *testing.T) {
 			_, _, notes := schedule([]model.ArtifactReport{c.art}, Options{}.defaults())
 			disclosed := false
 			for _, n := range notes {
-				disclosed = disclosed || n.RuleID == "LLM-000" && strings.Contains(n.Why, "skill:"+c.art.Name) && strings.Contains(n.Why, c.words)
+				disclosed = disclosed || n.RuleID == "LLM-000" && strings.Contains(n.Why, "skill:"+c.art.Name) &&
+					strings.Contains(n.Why, c.words) && !strings.Contains(n.Why, "MCP configuration")
 			}
 			if !disclosed {
 				t.Errorf("no LLM-000 names skill:%s and its %ss: %+v", c.art.Name, c.words, notes)

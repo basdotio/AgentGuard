@@ -4,6 +4,7 @@ package judge
 import (
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"io/fs"
 	"path/filepath"
 	"regexp"
@@ -141,4 +142,25 @@ func printableText(b []byte) bool {
 		}
 	}
 	return float64(printable)/float64(len([]rune(string(b)))) >= 0.85
+}
+
+// explainExcerpt is the deobfuscation pass's field: the decoded payloads separated by `---` lines, as many
+// as fit the excerpt cap, whole and in order, each with its unit (fitUnits). Eight payloads of 800 bytes
+// came to 6,435 bytes, past the cap the documentation states; the ones left out are named in shortened,
+// which the run discloses (LLM-000) like an MCP configuration cut to fit (P-037).
+func explainExcerpt(payloads []sourceUnit) (text string, units []sourceUnit, shortened string) {
+	texts := make([]string, len(payloads))
+	for k, p := range payloads {
+		texts[k] = p.text
+	}
+	text, sent, left := fitUnits(texts, maxExcerptBytes, joined("\n---\n"))
+	units = make([]sourceUnit, len(sent))
+	for k := range sent {
+		units[k] = payloads[k]
+		units[k].text = sent[k]
+	}
+	if left > 0 {
+		shortened = fmt.Sprintf("%d of %d decoded payload(s) past the %d-byte excerpt not sent", left, len(payloads), maxExcerptBytes)
+	}
+	return text, units, shortened
 }
