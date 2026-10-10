@@ -362,6 +362,9 @@ func schedule(arts []model.ArtifactReport, opts Options) (send, refused []task, 
 	if n, ok := shortenedNote(send); ok {
 		notes = append(notes, n)
 	}
+	if n, ok := unaskedNote(arts); ok {
+		notes = append(notes, n)
+	}
 	return send, refused, notes
 }
 
