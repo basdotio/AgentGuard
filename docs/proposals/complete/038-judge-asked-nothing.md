@@ -156,7 +156,7 @@ endpoint `check` exits 0 — the triage label answered, the sentence was never p
 
 ```
 Merged: PR #57 (2026-10-10; find the sha with git log --grep P-038)
-Released: pending release
+Released: v0.21.0
 Evidence: TestFailOnLLM_TargetTheJudgeAsksNothingAbout, TestFailOnLLM_ScanKeepsItsCodeAndNamesWhatWasNotAsked,
   TestFailGate_TargetTheJudgeAsksNothingAbout (cmd/aguard/fail_on_llm_unasked_test.go) and TestRun_NamesTheArtifactsNoPassCovers
   (internal/judge/unasked_test.go), committed first and run on the base code (6cab205): red on exactly the not-evaluable and

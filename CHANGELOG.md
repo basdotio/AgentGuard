@@ -17,7 +17,43 @@ rate copied into prose goes stale on the next rule. `git tag` and the Releases p
 - Invariants: never executes scanned content, no cross-root symlink reads, secret redaction before storage (+ high-entropy fallback).
 - Single static binary (`CGO_ENABLED=0`), MIT + SPDX, CI, bilingual README.
 
-## v0.2.0 – v0.20.1
+## v0.2.0 – v0.21.0
+
+**v0.21.0 (2026-10-11) — the judge reads the skills, commands and agents a plugin installs, and secrets the redactor used to miss no longer reach the judge, the snippets or the content hash: the key after `--api-key` in an argument array, a quoted password, a credential flag the patterns did not know, the tail of a value that holds a space.**
+
+No rule's severity changed. The environment score is now an average of units, where a plugin and its skills, commands
+and agents are one unit, so listing a plugin's contents does not move the score (69 before and after on a real
+`~/.claude` with eleven plugins). On the `aguard version` line `rules` and `judge-excerpt` change (`judge-excerpt` 1 → 6,
+`judge-prompt` unchanged): what the judge is shown changed, so LLM findings are not comparable with earlier runs. A hook,
+MCP server, permission list or settings `env` whose hash input held one of these secrets gets a new content hash: an
+approval recorded under the old one is listed again at session start, and `aguard approve` records the new one.
+
+- **Plugin contents.** `scan` and `check <plugin>` now collect each plugin's loadable skills, commands and agents as
+  artifacts of their own — the files Claude Code loads, not every `.md` in the tree — so the judge's skill, command and
+  agent passes read them; a plugin used to get at most triage of its static findings, and none at all without one. A
+  finding that sits in both the plugin tree and a child is kept on both in JSON and printed once, on the plugin row;
+  children inherit their plugin's reputation match (GOOD only). The JSON report gains `plugin` on each child and
+  `bundled_commands` / `bundled_agents` in the summary. With `--llm`, a setup with many plugins sends about twice the
+  calls (P-044).
+- **A target the judge has no question for.** Every `--llm` run counts, in one `LLM-000` note, the artifacts whose kind
+  the judge asks nothing about: a plain directory, a quarantined item, a plugin with nothing loadable. `check --llm
+  --fail-on-llm` on such a target exits 4; it used to exit 0, as if the judge had looked and found nothing (P-038).
+- **Secrets on a command line.** In an MCP server's `args`, the value after a credential flag
+  (`["--api-key", "<key>"]`) is redacted as part of one command line; each element used to be redacted alone, and a short
+  key reached the judge as written (P-036). More flags announce a credential: any whose last word is in the password
+  family or `secret` (`--db-password`, `--client-secret`), `key` bare or after one qualifier (`--key`, `--private-key`,
+  `--secret-key`), `--pat`, `--bearer`, `--credential(s)`; for the newly covered ones, a path, a URL, a `--no-*` flag or a
+  value on the next line stays visible (P-040). A quoted value after a credential flag or key (`--password "correct
+  horse"`, `API_TOKEN='P@ss word'`, `curl -u "admin:pass word"`) is redacted inside its quotes; the whole value, or its
+  tail after `="`, used to stay. References such as `"$TOKEN"` are left as written (P-043).
+- **What the judge is sent.** Every field of a judge request is within its stated cap, valid UTF-8 and unchanged by a
+  second redaction pass: cuts land on character boundaries, triage evidence and the deobfuscation and collusion fields are
+  bounded, and each assembled field is redacted as a whole as its last step (P-037).
+- **Content hashes.** The hash of an MCP server, hook, permission list or settings `env` forgets an announced secret from
+  its first byte to its end: `["--password", "correct horse"]`, `"DB_PASSWORD": "correct horse"` and
+  `"Authorization": "Bearer abcd1234 efgh5678"` used to keep ` horse` / ` efgh5678` as digest input, which a word list can
+  recover (P-039, P-042). A snippet of an env line or a credential-keyed value shows `API_TOKEN=<REDACTED>`, also when a
+  rule fired on that value (P-042).
 
 **v0.20.1 (2026-10-10) — a judge reply whose object closes one member early is read instead of failing the call, and a judge benchmark run can be folded, merged and resumed by a tool.**
 

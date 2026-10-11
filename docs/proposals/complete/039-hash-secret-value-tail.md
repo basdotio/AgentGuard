@@ -183,7 +183,7 @@ not done here.
 
 ```
 Merged: PR #56 (2026-10-10; find the sha with git log --grep P-039)
-Released: pending release
+Released: v0.21.0
 Evidence: TestContentHashGolden case "mcp server, announced arguments holding a space" and
   TestContentHash_ArgvValueIsForgottenWhole (internal/detect/contenthash_test.go, contenthash_argv_test.go): red on the
   base with the tests alone (commit "detect: tests — …"): the golden input held `<REDACTED> horse battery` and

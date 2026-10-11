@@ -286,7 +286,7 @@ Asked during implementation (stage 3):
 
 ```
 Merged: PR #59 (2026-10-10; find the sha with git log --grep P-040)
-Released: pending release
+Released: v0.21.0
 Evidence: red on the base with W1 alone (commit "redact: tests — …", on 2112aab): TestFlagSecrets fails for every one
   of the 28 widened spellings; TestContentHash_WidenedFlagValuesAreNotDigestInputs fails its 5 "same" cases (`--key`,
   `--db-pass`, a 7-character `--client-secret`, `--private-key=<v>`, a hook's `--db-password`: the value reached the
