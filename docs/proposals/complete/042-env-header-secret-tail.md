@@ -286,7 +286,10 @@ Evidence: TestEnvSnippet_CredentialValueForgottenWhole (internal/detect/member_s
   three credential-keyed rows — settings env `API_TOKEN=<REDACTED> horse; curl …`, an MCP server's bare value quoted
   whole, a header's bare value whole after its carrier word — green after W5 (`API_TOKEN=<REDACTED>`, `<REDACTED>`,
   `Bearer <REDACTED>`); ExcerptVersion 5 → 6 in that commit, the excerpt fixture's new keyed server giving digest
-  d0f85f5e5000b92e with the base's snippets and 00b1698bccdf10d1 with the branch's
+  8c00ce88a3ae6123 with the branch's snippets. First measured on an unresolved macOS temp root (d0f85f5e5000b92e with
+  the base's snippets, 00b1698bccdf10d1 with the branch's), where the engine names the file `001/.mcp.json` and Linux
+  names it `.mcp.json`; CI caught the difference, and the fixture now resolves its temp root, so one digest holds on
+  every host
 Evidence: reverse — TestContentHash_MemberWithoutTailIsUnchanged (15 inputs measured on the base: references, a key word
   inside a reference, placeholders, literals, `p@ss word`, keys that announce nothing, a URL credential, `#` and `?` in
   the span, a quoted body) green on the base and the branch; the snippet test's rule ids and severities identical on
