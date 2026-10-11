@@ -634,10 +634,17 @@ func tally(votes []model.Finding, modelSevs []model.Severity, categories []strin
 	// The category is a vote too (P-041): when a majority of the agreeing samples named the same
 	// category, the finding carries THAT vote's severity rather than the first sample's. Measured
 	// before this: three votes "other-directive, safety-disable, safety-disable" on a sample that
-	// hides a confirmation bypass read as medium because the first draw was the valve. Ties and
-	// no-majority keep the first vote, so the result is still deterministic in sample order.
-	if i := majorityCategory(categories, samples); i > 0 {
-		f.Severity = votes[i].Severity
+	// hides a confirmation bypass read as medium because the first draw was the valve. With no
+	// majority the finding takes the LOWEST severity among the votes: the samples agree the text
+	// is worth flagging but not on what it is, so no single label may pick the weight (measured:
+	// "credential, process-control, other" on a hard negative read as high under first-vote).
+	// The advisory rule has no table, so its free-text categories are not a vote.
+	if len(categories) > 1 && !advisoryOnly[f.RuleID] {
+		if i := majorityCategory(categories, samples); i >= 0 {
+			f.Severity = votes[i].Severity
+		} else {
+			f.Severity = lowestSeverity(votes)
+		}
 	}
 	if samples == 1 && len(categories) == 1 && categories[0] != "" {
 		f.Why += fmt.Sprintf(" [category: %s]", categories[0])
@@ -889,11 +896,10 @@ func unquotedSuffix(qs []string) string {
 }
 
 // majorityCategory returns the index of the first vote whose category at least majority(samples)
-// of the votes share, or 0 when none does (or when categories were not recorded).
+// of the votes share, or -1 when no category reaches that bar. The caller then falls back to the
+// lowest severity among the votes: the samples agree the text is worth flagging but not on what it
+// is, so no single vote's label may pick the weight.
 func majorityCategory(categories []string, samples int) int {
-	if len(categories) < 2 {
-		return 0
-	}
 	count := map[string]int{}
 	for _, c := range categories {
 		count[c]++
@@ -903,5 +909,16 @@ func majorityCategory(categories []string, samples int) int {
 			return i
 		}
 	}
-	return 0
+	return -1
+}
+
+// lowestSeverity is the least severe level among the votes; votes is never empty here.
+func lowestSeverity(votes []model.Finding) model.Severity {
+	low := votes[0].Severity
+	for _, v := range votes[1:] {
+		if v.Severity.Rank() < low.Rank() {
+			low = v.Severity
+		}
+	}
+	return low
 }

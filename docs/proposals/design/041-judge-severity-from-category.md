@@ -239,6 +239,9 @@ into; running the 127 server-source samples through `check --llm` (P-004) so the
    — amended at W6: the category is itself voted on. When a majority of the agreeing samples named the same category,
    that vote's severity is the finding's; otherwise the first sample's. Measured: the confirmation-bypass sample's three
    votes were `other-directive, safety-disable, safety-disable`, and the first-vote rule read it as medium.
+   — amended again after the second v3 run: with no majority category the finding takes the **lowest** severity among
+   the votes, not the first sample's. Measured: hard negative `hn-hook-anneheartrecord`'s `check-secrets.sh` hook drew
+   `credential, process-control, other` on `LLM-008`, and the first-vote rule reported it high on one of two runs.
 
 6. **Acceptance when the two `samples: 3` runs disagree on one of the four samples?** **Recommendation**: both runs must
    escalate all four; one miss is a red that is read (which category the model chose) before the table is touched —
