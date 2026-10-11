@@ -178,7 +178,7 @@ and never trips `--fail-on`.
 
 | ID | Severity | Title | Why it fires |
 |---|---|---|---|
-| `LLM-001` | medium · advisory | Intent mismatch | The declared purpose and what the scripts actually do do not line up. The severity is the tool's, from the category the model names (exfiltration, credential read, remote execution, safety disable, concealed directive, software source, file deletion, privilege → high; other → medium), one step lower when the declared purpose states the behaviour, except a changed software source. |
+| `LLM-001` | medium · advisory | Intent mismatch | The declared purpose and what the scripts actually do do not line up. The severity is the tool's, from the category the model names (exfiltration, credential read, remote execution, safety disable, concealed directive, software source, persistence, file deletion, privilege → high; other → medium), one step lower when the declared purpose states the behaviour, except a changed software source. |
 
 ## Scan notes (dimension 0)
 

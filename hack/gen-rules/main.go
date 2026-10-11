@@ -92,7 +92,7 @@ var permission = []entry{
 // `overall_effective`, never in `overall`, and `--fail-on` cannot see them. Hand-maintained.
 var llm = []entry{
 	{"LLM-001", 10, model.SevMedium, true, "Intent mismatch",
-		"The declared purpose and what the scripts actually do do not line up. The severity is the tool's, from the category the model names (exfiltration, credential read, remote execution, safety disable, concealed directive, software source, file deletion, privilege → high; other → medium), one step lower when the declared purpose states the behaviour, except a changed software source."},
+		"The declared purpose and what the scripts actually do do not line up. The severity is the tool's, from the category the model names (exfiltration, credential read, remote execution, safety disable, concealed directive, software source, persistence, file deletion, privilege → high; other → medium), one step lower when the declared purpose states the behaviour, except a changed software source."},
 	{"LLM-003", 1, model.SevMedium, true, "Hidden prompt injection",
 		"A directive aimed at the agent, phrased to dodge keyword rules. Runs on skills, CLAUDE.md, subagents, slash commands and hooks. The severity is the tool's, from the category the model names (exfiltration, credential read, remote execution, safety disable, concealed directive → high; other directive → medium)."},
 	{"LLM-004", 6, model.SevMedium, true, "Decoded obfuscated payload",

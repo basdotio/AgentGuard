@@ -31,9 +31,9 @@ type category struct {
 
 // Rows shared by the passes that look for the same behaviours; one spelling, one weight.
 var (
-	catExfiltration   = category{"exfiltration", model.SevHigh, "sends data, files or secrets anywhere outside this machine"}
-	catCredentialRead = category{"credential-read", model.SevHigh, "reads keys, tokens, passwords or credential files it has no stated reason to read"}
-	catRemoteExec     = category{"remote-execution", model.SevHigh, "fetches and runs code, or runs commands the purpose does not call for"}
+	catExfiltration   = category{"exfiltration", model.SevHigh, "sends data, files or secrets to a network destination outside this machine"}
+	catCredentialRead = category{"credential-read", model.SevHigh, "reads keys, tokens, passwords or credential files by path, with no stated reason to"}
+	catRemoteExec     = category{"remote-execution", model.SevHigh, "downloads code or instructions from the network and runs or follows them (a URL plus a shell or interpreter); running a local script by name is NOT this"}
 	catSafetyDisable  = category{"safety-disable", model.SevHigh, "skips, disables or bypasses a safety check, confirmation or permission"}
 	catConcealed      = category{"concealed-directive", model.SevHigh, "an instruction hidden by encoding, invisible characters, unusual phrasing or placement"}
 	catFileDeletion   = category{"file-deletion", model.SevHigh, "deletes or overwrites files beyond its own output"}
@@ -44,22 +44,23 @@ var (
 var categoryTables = map[Mode][]category{
 	ModeInjection: {
 		catExfiltration, catCredentialRead, catRemoteExec, catSafetyDisable, catConcealed,
-		{"other-directive", model.SevMedium, "a directive beyond or against the declared purpose that is none of the above"},
+		{"other-directive", model.SevMedium, "a directive beyond or against the declared purpose that is none of the above, including one that only runs a local script or command"},
 	},
 	ModeIntent: {
 		catExfiltration, catCredentialRead, catRemoteExec, catSafetyDisable, catConcealed,
-		{"software-source", model.SevHigh, "changes where this machine gets software or what runs on it: a registry, index or proxy, git hooks, shell or editor startup files, scheduled jobs or launch agents"},
+		{"software-source", model.SevHigh, "points a package registry, index or proxy at a host that is not the vendor's"},
+		{"persistence", model.SevHigh, "installs a git hook, writes shell or editor startup files, scheduled jobs or launch agents"},
 		catFileDeletion,
 		{"privilege", model.SevHigh, "changes permissions, users, sudoers or ownership"},
 		{"other", model.SevMedium, "undisclosed behaviour that is none of the above"},
 	},
 	ModeCapability: {
-		{"network", model.SevHigh, "sends anything to the network"},
-		{"credential", model.SevHigh, "reads keys, tokens or credential files"},
-		{"install", model.SevHigh, "installs packages or downloads code"},
-		{"permission-override", model.SevHigh, "answers or alters the agent's permission decision, or approves tool calls by itself"},
-		{"file-write", model.SevMedium, "writes files other than its own log or the file the event concerns"},
-		{"process-control", model.SevMedium, "starts, kills or signals other processes"},
+		{"network", model.SevHigh, "the command itself contacts the network: a URL, curl, wget, ssh, nc, a mail or webhook call"},
+		{"credential", model.SevHigh, "the command itself reads a key, token or credential file by path"},
+		{"install", model.SevHigh, "the command itself installs a package or downloads code: pip, npm, brew, a fetch piped to a shell"},
+		{"permission-override", model.SevHigh, "the command answers the permission prompt, writes a permissionDecision, or edits the permission settings"},
+		{"file-write", model.SevMedium, "the command itself writes files other than its own log or the file the event concerns"},
+		{"process-control", model.SevMedium, "starts, kills or signals processes, or runs a local script whose contents are not shown"},
 		{"other", model.SevMedium, "more than the event requires, and none of the above"},
 	},
 	ModeExplain: {
@@ -125,9 +126,23 @@ func categoryPrompt(m Mode) string {
 		}
 		b.WriteString(r.name + " = " + r.what)
 	}
-	b.WriteString(". The tool sets the finding's severity from the category; your severity word is recorded but does not decide it.")
+	b.WriteString(". Name the category for what the text ITSELF shows or tells the agent to do; never infer it from a file or script name, " +
+		"and never from what a script might contain — when all the text shows is that a local file is run, the category is the one " +
+		"that says so (process-control, other-directive or other). The tool sets the finding's severity from the category; your " +
+		"severity word is recorded but does not decide it.")
 	if m == ModeIntent {
 		b.WriteString(" Set disclosed=true only when the DECLARED PURPOSE itself states this behaviour; otherwise false.")
 	}
 	return b.String()
+}
+
+// categoryName is the model's category as the vote list prints it: lower-cased, trimmed, and
+// "unknown" when the reply carried none — so a run can be audited for how often the table's
+// medium default was taken.
+func categoryName(v Verdict) string {
+	cat := strings.ToLower(strings.TrimSpace(v.Category))
+	if cat == "" {
+		return "unknown"
+	}
+	return cat
 }

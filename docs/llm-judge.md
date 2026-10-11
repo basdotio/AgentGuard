@@ -296,13 +296,18 @@ everything on your machine. That trade-off is yours.
   | Pass | high | medium |
   |------|------|--------|
   | injection (`LLM-003`) | exfiltration · credential-read · remote-execution · safety-disable · concealed-directive | other-directive |
-  | intent (`LLM-001`) | the five above · software-source · file-deletion · privilege | other |
+  | intent (`LLM-001`) | the five above · software-source · persistence · file-deletion · privilege | other |
   | hook capability (`LLM-008`) | network · credential · install · permission-override | file-write · process-control · other |
   | deobfuscation (`LLM-004`) | network · remote-execution · credential-read · file-deletion | other |
   | collusion (`LLM-006`) | credential-to-network | other |
 
   On the intent pass a behaviour the declared purpose states (`disclosed: true`) is one step
-  lower — except a changed software source, which the prompt flags disclosed or not. `LLM-007`
+  lower — except a changed software source, which the prompt flags disclosed or not. The prompt
+  tells the model to name the category for what the text itself shows, never for what a script
+  it names might do: a hook that only runs a local file is `process-control` (medium), whatever
+  the file is called. Under `samples: 3` the category is a vote too: when a majority of the
+  agreeing samples named the same category, that vote's severity is the finding's; otherwise the
+  first sample's. `LLM-007`
   was always high by the tool's decision; `LLM-009` has no table (advisory-only) and keeps the
   model's word, clamped to at most high. No pass can emit `critical`.
 
@@ -456,11 +461,11 @@ question is asked three times; a finding needs a **majority** before it may weig
 effective score.
 
 - **Below the bar, a finding is still reported** — with the vote attached
-  (`[1 of 3 samples agreed] [severities: medium] [tool: medium] — below the consensus bar, so it
+  (`[1 of 3 samples agreed] [severities: medium] [categories: other] [tool: medium] — below the consensus bar, so it
   is shown but carries no weight`). "The model wasn't consistent about it" is a different claim from "it isn't
   there", and the judge may only ever add. What consensus withholds is influence, not visibility.
 - **Every agreeing vote's word is on record**, in sample order, right after the count, and the
-  tool's severity after that: `[2 of 3 samples agreed] [severities: high, medium] [tool: high]`.
+  tool's severity after that: `[2 of 3 samples agreed] [severities: high, medium] [categories: exfiltration, exfiltration] [tool: high]`.
   `severities` lists what the model wrote, vote by vote; `tool` is the finding's severity, set from
   the first agreeing vote's category (P-041). The words are kept so a later run can check the
   table against them and see how far apart the samples were. Taking the severity a majority reached instead was measured once, on a run

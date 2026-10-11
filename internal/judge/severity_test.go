@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/basdotio/AgentGuard/internal/model"
@@ -92,6 +93,8 @@ func TestSeverity_IntentDisclosedIsOneStepLower(t *testing.T) {
 		{"other", true, model.SevLow},
 		{"software-source", true, model.SevHigh},
 		{"software-source", false, model.SevHigh},
+		{"persistence", false, model.SevHigh},
+		{"persistence", true, model.SevMedium}, // a disclosed git hook is the legit installer's shape
 	}
 	for _, c := range cases {
 		got := severityFor(ModeIntent, Verdict{Flagged: true, Category: c.category, Disclosed: c.disclosed, Severity: "high"})
@@ -159,7 +162,7 @@ func TestRun_UnknownCategoryCannotRaiseTheWeight(t *testing.T) {
 	if !f.Escalates {
 		t.Errorf("3 of 3 agreeing on an unknown category still reaches the majority: %+v", f)
 	}
-	if !strings.Contains(f.Why, "[3 of 3 samples agreed] [severities: high, high, high] [tool: medium]") {
+	if !strings.Contains(f.Why, "[3 of 3 samples agreed] [severities: high, high, high] [categories: catastrophe, catastrophe, catastrophe] [tool: medium]") {
 		t.Errorf("the vote must list the model's words and then the tool's severity: %q", f.Why)
 	}
 }
@@ -241,5 +244,46 @@ func TestPrompt_EveryTableCategoryIsOffered(t *testing.T) {
 	}
 	if strings.Contains(systemPrompt(ModeMCPConfig, "nonce"), " = ") {
 		t.Error("the MCP config pass must not list categories")
+	}
+}
+
+// TestRun_MajorityCategoryDecidesTheSeverity: with samples, the category a majority of the agreeing
+// votes named sets the severity, not the first draw. Measured: "other-directive, safety-disable,
+// safety-disable" on a confirmation-bypass sample read as medium because the first vote was the
+// valve. A tie, or no majority, keeps the first vote.
+func TestRun_MajorityCategoryDecidesTheSeverity(t *testing.T) {
+	cases := []struct {
+		name string
+		cats []string
+		want model.Severity
+	}{
+		{"valve first, majority high", []string{"other-directive", "safety-disable", "safety-disable"}, model.SevHigh},
+		{"high first, majority valve", []string{"exfiltration", "other-directive", "other-directive"}, model.SevMedium},
+		{"no majority keeps the first", []string{"other-directive", "exfiltration", "credential-read"}, model.SevMedium},
+		{"all agree", []string{"exfiltration", "exfiltration", "exfiltration"}, model.SevHigh},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			var n atomic.Int32
+			client := &scriptedClient{answer: func(r Request) (Verdict, error) {
+				if r.Mode != ModeInjection {
+					return Verdict{}, nil
+				}
+				i := int(n.Add(1)) - 1
+				return Verdict{Flagged: true, Severity: "medium", Category: c.cats[i%len(c.cats)], Summary: "s", Evidence: quotableFrom(r)}, nil
+			}}
+			arts := skillTree(t, 1)
+			Run(context.Background(), client, arts, Options{Concurrency: 1, Samples: 3})
+			f := findingByRule(arts[0], "LLM-003")
+			if f == nil {
+				t.Fatalf("no LLM-003: %+v", arts[0].Findings)
+			}
+			if f.Severity != c.want {
+				t.Errorf("categories %v: severity %s, want %s (%s)", c.cats, f.Severity, c.want, f.Why)
+			}
+			if !f.Escalates {
+				t.Errorf("3 of 3 flagged must escalate: %+v", f)
+			}
+		})
 	}
 }

@@ -202,12 +202,20 @@ into; running the 127 server-source samples through `check --llm` (P-004) so the
    - intent (`LLM-001`): the same five plus `software-source`, `file-deletion`, `privilege` → high; `other` → medium;
      `disclosed: true` lowers by one step except for `software-source` (the prompt already says disclosure does not
      excuse it)
+     — amended at W6 after the first measurement: `persistence` (git hooks, startup files, scheduled jobs) split out of
+     `software-source`, high but NOT disclosure-exempt, because the benign skill whose purpose is to install a
+     formatting pre-commit hook otherwise reads as high; `software-source` keeps only registries, indexes and proxies
    - capability (`LLM-008`): `network`, `credential`, `install`, `permission-override` → high; `file-write`,
      `process-control`, `other` → medium
    - explain (`LLM-004`): `network`, `remote-execution`, `credential-read`, `file-deletion` → high; `other` → medium
    - collusion (`LLM-006`): `credential-to-network` → high; `other` → medium
    The high rows are the behaviours the task sentences already name as what to flag; the medium rows are the escape
    valves. Measured in W6, not argued.
+   — amended at W6: the first run with this table raised random-benign escalations from 1 to 4 and hard negatives from
+   0 to 2, all on hooks whose command is `bash <some script>`: the model named `network`, `credential`, `install` and
+   `remote-execution` from the script's file name. The descriptions now say the category is for what the text itself
+   shows, a hook that only runs a local file is `process-control` / `other-directive`, and `remote-execution` means a
+   fetch from the network plus a shell. The second run came back to 1 and 0.
    **Decided (2026-10-10)**: as recommended.
 
 2. **Keep the model's severity word anywhere?** **Recommendation**: yes, read and shown — the `[severities: …]` vote
@@ -228,6 +236,9 @@ into; running the 127 server-source samples through `check --llm` (P-004) so the
 5. **Does an unknown category count toward the majority?** **Recommendation**: yes, as medium. The majority is about
    "did the model see it", the category about "how heavy"; an unknown category is a weight question, not a sight one.
    **Decided (2026-10-10)**: as recommended.
+   — amended at W6: the category is itself voted on. When a majority of the agreeing samples named the same category,
+   that vote's severity is the finding's; otherwise the first sample's. Measured: the confirmation-bypass sample's three
+   votes were `other-directive, safety-disable, safety-disable`, and the first-vote rule read it as medium.
 
 6. **Acceptance when the two `samples: 3` runs disagree on one of the four samples?** **Recommendation**: both runs must
    escalate all four; one miss is a red that is read (which category the model chose) before the table is touched —

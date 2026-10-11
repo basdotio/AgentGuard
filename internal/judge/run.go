@@ -159,9 +159,10 @@ type result struct {
 	ungrounded bool           // something was claimed but couldn't be quoted — dropped
 	unquoted   string         // the quote that failed to ground, clipped — for the LLM-005 note
 	repaired   bool           // the reply was read only by the closed-early repair (P-034)
-	// modelSeverity is the word the model wrote, clamped: shown beside the tool's severity in the
-	// vote list, never weighed (P-041).
+	// modelSeverity is the word the model wrote, clamped, and category the name it chose: both are
+	// shown in the vote list so a later run can audit the table, neither is weighed (P-041).
 	modelSeverity model.Severity
+	category      string
 }
 
 // groundedFinding turns a verdict into a finding ONLY if the text it quotes can be located in
@@ -560,7 +561,8 @@ type ballot struct {
 	flagged []model.Finding
 	// modelSevs is, per entry of flagged, the word the model wrote — the vote list prints it
 	// beside the tool's severity so a later run can check the table against it (P-041).
-	modelSevs []model.Severity
+	modelSevs  []model.Severity
+	categories []string
 	// barriers holds the samples that reported (and could quote) an instruction aimed at the
 	// analyzer. Voted on exactly like the verdict: this signal is strong, but "strong" is not
 	// a reason to skip the bar.
@@ -584,6 +586,7 @@ func (b *ballot) cast(r result) {
 	if r.finding != nil {
 		b.flagged = append(b.flagged, *r.finding)
 		b.modelSevs = append(b.modelSevs, r.modelSeverity)
+		b.categories = append(b.categories, r.category)
 	}
 	if r.barrier != nil {
 		b.barriers = append(b.barriers, *r.barrier)
@@ -597,8 +600,8 @@ func (b *ballot) cast(r result) {
 // lets the judge add. What consensus withholds is influence, not visibility — and the reader
 // is told the vote so the weaker signal reads as weaker.
 func (b *ballot) result(samples int) (verdict, barrier *model.Finding, dropped bool) {
-	verdict = tally(b.flagged, b.modelSevs, samples)
-	barrier = tally(b.barriers, nil, samples)
+	verdict = tally(b.flagged, b.modelSevs, b.categories, samples)
+	barrier = tally(b.barriers, nil, nil, samples)
 	if verdict == nil && barrier == nil {
 		dropped = b.ungrounded
 	}
@@ -622,15 +625,27 @@ var advisoryOnly = map[string]bool{"LLM-009": true}
 // "[tool: <severity>]" names the finding's severity, which severityFor set from the category.
 // Without it (the barrier finding, whose severity was always the tool's) the list is the votes'
 // severities and nothing follows.
-func tally(votes []model.Finding, modelSevs []model.Severity, samples int) *model.Finding {
+func tally(votes []model.Finding, modelSevs []model.Severity, categories []string, samples int) *model.Finding {
 	if len(votes) == 0 {
 		return nil
 	}
 	f := votes[0] // first sample wins: deterministic, since samples merge in order
 	f.Escalates = len(votes) >= majority(samples) && !advisoryOnly[f.RuleID]
+	// The category is a vote too (P-041): when a majority of the agreeing samples named the same
+	// category, the finding carries THAT vote's severity rather than the first sample's. Measured
+	// before this: three votes "other-directive, safety-disable, safety-disable" on a sample that
+	// hides a confirmation bypass read as medium because the first draw was the valve. Ties and
+	// no-majority keep the first vote, so the result is still deterministic in sample order.
+	if i := majorityCategory(categories, samples); i > 0 {
+		f.Severity = votes[i].Severity
+	}
+	if samples == 1 && len(categories) == 1 && categories[0] != "" {
+		f.Why += fmt.Sprintf(" [category: %s]", categories[0])
+	}
 	if samples > 1 {
 		if modelSevs != nil {
-			f.Why += fmt.Sprintf(" [%d of %d samples agreed] [severities: %s] [tool: %s]", len(votes), samples, joinSeverities(modelSevs), f.Severity)
+			f.Why += fmt.Sprintf(" [%d of %d samples agreed] [severities: %s] [categories: %s] [tool: %s]",
+				len(votes), samples, joinSeverities(modelSevs), strings.Join(categories, ", "), f.Severity)
 		} else {
 			f.Why += fmt.Sprintf(" [%d of %d samples agreed] [severities: %s]", len(votes), samples, voteSeverities(votes))
 		}
@@ -732,6 +747,7 @@ func execute(ctx context.Context, c Client, t task, opts Options) result {
 				res.finding, res.barrier, res.ungrounded, res.unquoted = groundedFinding(t, v)
 				res.repaired = v.repaired
 				res.modelSeverity = clampSeverity(v.Severity)
+				res.category = categoryName(v)
 			}
 		case taskTriage:
 			res.labels, err = c.Triage(cctx, t.label, t.items)
@@ -870,4 +886,22 @@ func unquotedSuffix(qs []string) string {
 		return ""
 	}
 	return " Quoted but not found — " + strings.Join(qs, "; ") + "."
+}
+
+// majorityCategory returns the index of the first vote whose category at least majority(samples)
+// of the votes share, or 0 when none does (or when categories were not recorded).
+func majorityCategory(categories []string, samples int) int {
+	if len(categories) < 2 {
+		return 0
+	}
+	count := map[string]int{}
+	for _, c := range categories {
+		count[c]++
+	}
+	for i, c := range categories {
+		if count[c] >= majority(samples) {
+			return i
+		}
+	}
+	return 0
 }
