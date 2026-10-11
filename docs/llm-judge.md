@@ -306,8 +306,9 @@ everything on your machine. That trade-off is yours.
   tells the model to name the category for what the text itself shows, never for what a script
   it names might do: a hook that only runs a local file is `process-control` (medium), whatever
   the file is called. Under `samples: 3` the category is a vote too: when a majority of the
-  agreeing samples named the same category, that vote's severity is the finding's; otherwise the
-  first sample's. `LLM-007`
+  agreeing samples named the same category, that vote's severity is the finding's; when no
+  category reaches a majority, the lowest severity among the votes (the samples agree the text is
+  worth flagging but not on what it is, so no single label may pick the weight). `LLM-007`
   was always high by the tool's decision; `LLM-009` has no table (advisory-only) and keeps the
   model's word, clamped to at most high. No pass can emit `critical`.
 
@@ -467,7 +468,7 @@ effective score.
 - **Every agreeing vote's word is on record**, in sample order, right after the count, and the
   tool's severity after that: `[2 of 3 samples agreed] [severities: high, medium] [categories: exfiltration, exfiltration] [tool: high]`.
   `severities` lists what the model wrote, vote by vote; `tool` is the finding's severity, set from
-  the first agreeing vote's category (P-041). The words are kept so a later run can check the
+  the majority category, or the lowest vote when no category has a majority (P-041). The words are kept so a later run can check the
   table against them and see how far apart the samples were. Taking the severity a majority reached instead was measured once, on a run
   where every vote was recorded, and it changed none of 224 verdicts, so it was not adopted.
 - **Sampling runs at a non-zero temperature.** At temperature 0 the same question returns the

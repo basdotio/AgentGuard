@@ -51,7 +51,7 @@ hook capability(`LLM-008`,维度 2)、MCP config(`LLM-009`,维度 5,**只提示*
 因为 500 个良性配置上它是唯一升级过的判官规则,P-019)、triage(仅展示用的标签)。
 `LLM-007`(artifact 试图指挥分析器,维度 1)的严重度由工具定死。**其余各趟的严重度自 P-041 也由工具定**:`severity.go` 的
 `categoryTables` 按 (趟, 类别) 查,模型只能从提示词列出的封闭名单里选 `category`,不认识的名字一律 medium;意图趟多一个 `disclosed`,
-为真降一档,`software-source` 除外;多票时**类别也投票**(`majorityCategory`:多数同意票选了同一类别就按那张票的严重度,否则按第一张)。
+为真降一档,`software-source` 除外;多票时**类别也投票**(`majorityCategory`:多数同意票选了同一类别就按那张票的严重度,否则取各票最低的严重度)。
 类别说明里"**只按文本本身、不按脚本名猜**"那句是第一次实测换来的:hook 只写 `bash x.sh`,模型按 `check-secrets.sh`/`cmux-notify.sh` 的名字猜成凭证/网络,随机良性升级从 1 跳到 4、hard negative 从 0 到 2;加了这句之后回到 1 和 0。**改表就是改规则**:`categoryPrompt` 把表原样印进系统提示,所以 `PromptVersion` 随之变,不用手动;
 别给表加 low 行(一行 low 等于让模型自己选"不计分"),别让 `Severity` 那个词重新进 `finding()`。投票文本是 `[k of n samples agreed] [severities: a, b] [categories: c, d] [tool: X]`(`samples: 1` 时只有 `[category: c]`):
 `severities` 仍是模型逐票的词(benchmark 的 judgefold 用正则读这一格,**别改它的格式**),`[tool: X]` 是工具定的严重度;前者是以后拿表去核对模型的唯一记录,别删。被扫内容按**敌对**处理:

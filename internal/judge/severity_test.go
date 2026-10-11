@@ -259,7 +259,9 @@ func TestRun_MajorityCategoryDecidesTheSeverity(t *testing.T) {
 	}{
 		{"valve first, majority high", []string{"other-directive", "safety-disable", "safety-disable"}, model.SevHigh},
 		{"high first, majority valve", []string{"exfiltration", "other-directive", "other-directive"}, model.SevMedium},
-		{"no majority keeps the first", []string{"other-directive", "exfiltration", "credential-read"}, model.SevMedium},
+		{"no majority, valve first", []string{"other-directive", "exfiltration", "credential-read"}, model.SevMedium},
+		{"no majority, high first", []string{"credential-read", "other-directive", "exfiltration"}, model.SevMedium},
+		{"no majority, all high", []string{"credential-read", "exfiltration", "remote-execution"}, model.SevHigh},
 		{"all agree", []string{"exfiltration", "exfiltration", "exfiltration"}, model.SevHigh},
 	}
 	for _, c := range cases {
