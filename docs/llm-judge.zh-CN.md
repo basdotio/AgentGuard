@@ -227,12 +227,14 @@ aguard scan --llm --config config.yaml
   | 趟 | high | medium |
   |------|------|--------|
   | 注入(`LLM-003`) | exfiltration · credential-read · remote-execution · safety-disable · concealed-directive | other-directive |
-  | 意图(`LLM-001`) | 上述五类 · software-source · file-deletion · privilege | other |
+  | 意图(`LLM-001`) | 上述五类 · software-source · persistence · file-deletion · privilege | other |
   | hook 越权(`LLM-008`) | network · credential · install · permission-override | file-write · process-control · other |
   | 解码(`LLM-004`) | network · remote-execution · credential-read · file-deletion | other |
   | 共谋(`LLM-006`) | credential-to-network | other |
 
-  意图趟里,声明用途里写明了的行为(`disclosed: true`)降一档——改软件源除外,那条无论披露与否都报。`LLM-007` 一直是工具定死的 high;
+  意图趟里,声明用途里写明了的行为(`disclosed: true`)降一档——改软件源除外,那条无论披露与否都报。提示词要求类别只按文本本身
+  显示的内容来定,不许从脚本名猜:只跑一个本地文件的 hook 就是 `process-control`(medium),文件叫什么都一样。`samples: 3` 时类别也
+  参与投票:多数同意票选了同一个类别,就按那张票的严重度;否则按第一张。`LLM-007` 一直是工具定死的 high;
   `LLM-009` 没有表(只提示),仍按模型的词、封顶到 high。任何一趟都吐不出 `critical`。
 
 ## 规则 ID 速查
@@ -345,10 +347,10 @@ em 空格(U+2003)、不换行空格和 tab 一样折叠,所以用它们垫开的
 一次结论只是一个概率过程的一次抽样。设成 `samples: 3`,同一个问题会被问三遍,一条发现要过**多数**
 才有资格影响 effective 分。
 
-- **没过线的发现照样报出来** —— 并附上票数(`[1 of 3 samples agreed] [severities: medium] [tool: medium] — below the
+- **没过线的发现照样报出来** —— 并附上票数(`[1 of 3 samples agreed] [severities: medium] [categories: other] [tool: medium] — below the
   consensus bar, so it is shown but carries no weight`)。"模型对它前后不一致"和"它不存在"是两回事,而判官只能增不能减:
   共识扣的是**权重**,不是**可见性**。
-- **每张同意票的用词都记着**,按采样顺序紧跟在票数后面,再后面是工具定的严重度:`[2 of 3 samples agreed] [severities: high, medium] [tool: high]`。
+- **每张同意票的用词都记着**,按采样顺序紧跟在票数后面,再后面是工具定的严重度:`[2 of 3 samples agreed] [severities: high, medium] [categories: exfiltration, exfiltration] [tool: high]`。
   `severities` 是模型逐票写的词;`tool` 是发现的严重度,工具按第一张同意票的类别定(P-041)。词留着是为了让以后的运行能拿表去核对,
   也能看到几次采样之间差多远。改取多数票那一档在一次记全了票面的运行上量过,224 个判定一个没变,所以没采用。
 - **采样会提温。** 温度为 0 时同一个问题永远给同一个答案 —— 票数会按构造一致,"共识"什么也没测。
