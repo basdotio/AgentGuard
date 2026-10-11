@@ -273,7 +273,7 @@ Every literal below is computed on the base the branch is rebased onto (after P-
 ## Done
 
 ```
-Merged: PR to be opened (2026-10-11; find the sha with git log --grep P-042 after the merge)
+Merged: PR #62 (2026-10-11; find the sha with git log --grep P-042)
 Released: pending release
 Evidence: TestContentHashGolden's three new cases and TestContentHash_MemberValueIsForgottenWhole
   (internal/detect/contenthash_test.go, contenthash_member_test.go) red on the base with the tests alone (commit
