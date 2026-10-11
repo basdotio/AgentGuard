@@ -25,7 +25,7 @@ import (
 var excerptGolden = struct {
 	version int
 	digest  string
-}{version: 6, digest: "00b1698bccdf10d1"}
+}{version: 6, digest: "8c00ce88a3ae6123"}
 
 func TestExcerptVersion_IsPinnedWithItsGolden(t *testing.T) {
 	got := excerptDigest(t)
@@ -58,7 +58,13 @@ const fixtureHome = "/home/aguard-fixture"
 // P-042 added an MCP server whose credential-keyed env value a rule fires on, with the engine's own findings.
 func excerptFixture(t *testing.T) []model.ArtifactReport {
 	t.Helper()
-	root := t.TempDir()
+	// Resolved, because the engine's findings below name their file relative to the scan root, and relPath
+	// resolves the root but not the file: under a symlinked temp prefix (macOS /var → /private/var) Rel fails
+	// and the tail fallback renders "001/.mcp.json" where Linux renders ".mcp.json" — a digest per host.
+	root, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
 	write := func(rel, body string) string {
 		p := filepath.Join(root, filepath.FromSlash(rel))
 		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
