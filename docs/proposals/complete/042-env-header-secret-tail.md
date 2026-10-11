@@ -274,7 +274,7 @@ Every literal below is computed on the base the branch is rebased onto (after P-
 
 ```
 Merged: PR #62 (2026-10-11; find the sha with git log --grep P-042)
-Released: pending release
+Released: v0.21.0
 Evidence: TestContentHashGolden's three new cases and TestContentHash_MemberValueIsForgottenWhole
   (internal/detect/contenthash_test.go, contenthash_member_test.go) red on the base with the tests alone (commit
   "detect: tests — a credential-keyed env or header value keeps its tail …"): the inputs held `<REDACTED> horse battery`,

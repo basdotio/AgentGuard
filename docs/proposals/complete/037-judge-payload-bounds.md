@@ -182,7 +182,7 @@ is a fixed point of `Redact`, valid UTF-8 and within its cap. Bumps `ExcerptVers
 
 ```
 Merged: PR #58 (2026-10-10; find the sha with git log --grep P-037)
-Released: pending release
+Released: v0.21.0
 Evidence: red on the base with the tests alone (commit "judge: tests — …"): TestPlan_ExplainAndDigestFitTheExcerpt 6,435 and
   11,934 bytes, nothing shortened, no LLM-000; TestPlan_CutsFallOnCharacterBoundaries 29 of 40 (surface, character, offset)
   rows — every one whose cut fell inside a character — send invalid UTF-8, and on 29 calls a quote of what the endpoint read

@@ -347,7 +347,7 @@ starts on top of P-040 (merged, 78678a8) and re-measures every number above ther
 
 ```
 Merged: PR #60 (2026-10-11; find the sha with git log --grep P-043)
-Released: pending release
+Released: v0.21.0
 Evidence: TestQuotedValues (internal/redact/quoted_test.go) red on the base with the tests alone (commit "redact: tests —
   …"): 146 of 164 rows sent the value whole after a flag or -u, or its tail after a key (the other 18, one bare word
   after = or :, assignRE already took); TestAnnounced's moved row gave 0,false; green after W3, every output a fixed
