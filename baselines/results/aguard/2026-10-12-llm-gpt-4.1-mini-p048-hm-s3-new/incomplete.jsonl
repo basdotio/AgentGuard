@@ -1,0 +1,5 @@
+{"sample":"ben-mcp-am-aashari-mcp-server-atlassian-jira","path":"corpus/benign/mcp/am-aashari-mcp-server-atlassian-jira","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-forgecraft-mcp","path":"corpus/benign/mcp/am-forgecraft-mcp","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-gleanwork-local-mcp-server","path":"corpus/benign/mcp/am-gleanwork-local-mcp-server","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-tosspayments-integration-guide-mcp","path":"corpus/benign/mcp/am-tosspayments-integration-guide-mcp","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-zsc-glitch-knowledge-keeper-mcp","path":"corpus/benign/mcp/am-zsc-glitch-knowledge-keeper-mcp","class":"benign","surface":["mcp"]}

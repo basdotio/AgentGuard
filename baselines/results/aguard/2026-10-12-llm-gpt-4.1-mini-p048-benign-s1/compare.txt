@@ -1,0 +1,79 @@
+# P-048, generated from judge.jsonl in this directory (new) and ../2026-10-12-llm-gpt-4.1-mini-p041-benign-s1/ (old): every benign
+# sample (3,220), samples: 1 in both; binary 898e431 (judge-prompt 83ca81a0755b) against dd8001b (ec4382a9226a). Only two category
+# descriptions differ (hook network; credential-read). Read the churn first: of about 55 escalated samples per run, 15 are lost and
+# 20 gained between two draws of nearly the same prompt — the texts under test cannot be measured at samples: 1 on this surface.
+
+== benign: n 3220 · escalated non-009 old 53 → new 59 · flagged(static|judge) old 163 → new 168
+   new rate 1.83% [1.42, 2.36]
+   skills       n  2480 · esc old  22 → new  27
+   mcp          n   353 · esc old   8 → new  10
+   hooks        n   188 · esc old  23 → new  22
+   connector    n   121 · esc old   0 → new   0
+   permission   n    78 · esc old   0 → new   0
+   escalated-high (kind, rule, categories) counts old → new:
+      25 →  26  ('hook', 'LLM-008', ('network',))
+       8 →   8  ('connector', 'LLM-003', ('credential-read',))
+       6 →   4  ('hook', 'LLM-008', ('install',))
+       3 →   5  ('skill', 'LLM-003', ('credential-read',))
+       3 →   4  ('skill', 'LLM-003', ('remote-execution',))
+       4 →   3  ('skill', 'LLM-003', ('safety-disable',))
+       2 →   4  ('skill', 'LLM-001', ('credential-read',))
+       3 →   3  ('skill', 'LLM-001', ('remote-execution',))
+       4 →   1  ('hook', 'LLM-008', ('permission-override',))
+       2 →   2  ('skill', 'LLM-006', ('credential-to-network',))
+       1 →   2  ('skill', 'LLM-001', ('persistence',))
+       2 →   1  ('skill', 'LLM-001', ('exfiltration',))
+       1 →   1  ('hook', 'LLM-007', ())
+       1 →   1  ('hook', 'LLM-003', ('safety-disable',))
+       1 →   1  ('hook', 'LLM-003', ('remote-execution',))
+       0 →   2  ('connector', 'LLM-003', ('remote-execution',))
+       1 →   1  ('skill', 'LLM-001', ('software-source',))
+       1 →   1  ('hook', 'LLM-003', ('concealed-directive',))
+       0 →   1  ('skill', 'LLM-007', ())
+       1 →   0  ('skill', 'LLM-001', ('privilege',))
+       0 →   1  ('skill', 'LLM-001', ('file-deletion',))
+       1 →   0  ('skill', 'LLM-003', ('exfiltration',))
+   GAINED ben-hook-alibaba-tron-one-agent-settings                       old [] [] → new ['LLM-008'] [('install',), ('network',)]
+   GAINED ben-hook-c0dezli-claude-code-personal-assistant-settings       old [] [] → new ['LLM-008'] [('network',)]
+   LOST ben-hook-codingagentsystem-cas-settings                        old ['LLM-008'] [('permission-override',)] → new [] []
+   GAINED ben-hook-commercetools-merchant-center-application-kit-settings old [] [] → new ['LLM-008'] [('network',)]
+   LOST ben-hook-goondocks-co-open-agent-kit-settings                  old ['LLM-008'] [('network',)] → new [] []
+   LOST ben-hook-jlevy-rust-porting-playbook-settings                  old ['LLM-008'] [('install',)] → new [] []
+   LOST ben-hook-jlevy-strif-settings                                  old ['LLM-008'] [('install',)] → new [] []
+   LOST ben-hook-juyterman1000-entroly-settings                        old ['LLM-008'] [('network',)] → new [] []
+   LOST ben-hook-kalypsokichu-code-kalypso-claude-workflow-settings    old ['LLM-008'] [('permission-override',)] → new [] []
+   GAINED ben-hook-proffesor-for-testing-sentinel-api-testing-settings   old [] [] → new ['LLM-008'] [('network',)]
+   LOST ben-hook-rupakm-leslie-settings                                old ['LLM-008'] [('network',)] → new [] []
+   LOST ben-hook-shanraisshan-gemini-cli-best-practice-settings        old ['LLM-008'] [('permission-override',)] → new [] []
+   GAINED ben-hook-sseshachala-conductai-settings                        old [] [] → new ['LLM-008'] [('network',)]
+   GAINED ben-hook-vasu31dev-playwright-ts-lib-settings                  old [] [] → new ['LLM-008'] [('install',)]
+   GAINED ben-hook-willdady-platypus-settings                            old [] [] → new ['LLM-008'] [('network',)]
+   LOST ben-mcp-am-chinchillaenterprises-mcp-stripe                    old ['LLM-003'] [('credential-read',)] → new [] []
+   GAINED ben-mcp-am-mcp-ssh-manager                                     old [] [] → new ['LLM-003'] [('credential-read',)]
+   LOST ben-mcp-am-mpp32-mcp-server                                    old ['LLM-003'] [('credential-read',)] → new [] []
+   GAINED ben-mcp-am-playwright-mcp-645b26c3                             old [] [] → new ['LLM-003'] [('remote-execution',)]
+   GAINED ben-mcp-am-tsmztech-mcp-server-salesforce                      old [] [] → new ['LLM-003'] [('remote-execution',)]
+   GAINED ben-mcp-am-warp-agent-mcp                                      old [] [] → new ['LLM-003'] [('credential-read',)]
+   GAINED ben-skill-md-andmarios-google-workspace-skill                  old [] [] → new ['LLM-007'] [()]
+   GAINED ben-skill-md-diet103-claude-code-infrastructure-showcase-route-tester old [] [] → new ['LLM-003'] [('credential-read',)]
+   LOST ben-skill-md-ntcoding-claude-skillz-switch-persona             old ['LLM-003'] [('safety-disable',)] → new [] []
+   GAINED ben-skill-md-smith6jt-cop-skills-registry-mcp-server-configuration old [] [] → new ['LLM-003'] [('credential-read',)]
+   LOST ben-skill-sg-admin-installer                                   old ['LLM-001'] [('privilege',)] → new [] []
+   GAINED ben-skill-sg-git-hooks-legit                                   old [] [] → new ['LLM-001'] [('persistence',)]
+   GAINED ben-skill-sk-Chang-Yo__Transcoder__.claude__skills__web-design-guidelines old [] [] → new ['LLM-003'] [('remote-execution',)]
+   GAINED ben-skill-sk-GondaDaikon__tri-ssd__skills__reshape-l3          old [] [] → new ['LLM-001'] [('file-deletion',)]
+   LOST ben-skill-sk-ItamarZand88__claude-code-agentic-engineering__plugins__agent-sdk-pro__skills__sdk-typescript-patterns old ['LLM-001'] [('remote-execution',)] → new [] []
+   GAINED ben-skill-sk-hashi-demo-lab__claude-skill-hcp-terraform__terraform-mcp-as-code old [] [] → new ['LLM-001'] [('remote-execution',)]
+
+== full benign: n 3220 · asked (judge_calls>0) 3199 · escalated non-009 at high 59 = 1.83% [1.42, 2.36] (gate <= 0.5%) ==
+   over the asked samples only: 59/3199 = 1.84% [1.43, 2.37]
+   static >= high 116 · flagged(static|judge) 168 · judge_any 415 · calls 8218 failed 11 · incomplete 11
+
+== by surface: n · asked · escalated non-009 (rate, Wilson) ==
+  skills       n  2480 · asked  2480 · esc  27  1.09% [0.75, 1.58]
+  mcp          n   353 · asked   353 · esc  10  2.83% [1.55, 5.14]
+  hooks        n   188 · asked   185 · esc  22  11.70% [7.86, 17.08]
+  connector    n   121 · asked   121 · esc   0  0.00% [0.00, 3.08]
+  permission   n    78 · asked    60 · esc   0  0.00% [0.00, 4.69]
+
+== escalated rule × tool severity × categories, over the escalated benign samples ==

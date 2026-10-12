@@ -104,7 +104,11 @@ one raw, and the two runs against each other. Four more, under `results/aguard/2
 measure P-041 (the judge's severity set from a category table): the 224 subset twice at `samples: 3`, the 819 subset at
 `samples: 1` and, for the first time, every benign sample (3,220) at `samples: 1`; their `judge.jsonl` votes carry the
 `categories` the model named, and their raw/ is one archive, `aguard-judge-raw-2026-10-p041.tar.gz`, whose sha256 each
-`run.yaml` names. Two more things apply to a
+`run.yaml` names. Four more, `results/aguard/2026-10-12-llm-gpt-4.1-mini-p048-*/`, belong to a withdrawn proposal and
+are kept for what they show about the method: two `samples: 1` runs of nearly the same prompt on all 3,220 benign samples
+swap about a third of their escalated set (`…-p048-benign-s1/compare.txt`), and a pair at `samples: 3` on the 541 benign
+hooks and MCP catalogues (`…-p048-hm-s3-old/`, `…-p048-hm-s3-new/`) is the shape a wording change has to be measured in;
+their raw/ is `aguard-judge-raw-2026-10-p048.tar.gz`. Two more things apply to a
 judge run: the driver isolates aguard's environment, so a proxy the endpoint needs is passed by
 name with the key (`-aguard-env OPENAI_API_KEY,HTTPS_PROXY,HTTP_PROXY,NO_PROXY`), and Go does not
 read the macOS system proxy. Without that, a run whose endpoint needs a proxy answers nothing and
