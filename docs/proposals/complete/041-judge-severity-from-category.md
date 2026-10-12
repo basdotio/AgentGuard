@@ -102,35 +102,35 @@ into; running the 127 server-source samples through `check --llm` (P-004) so the
 
 ## Done criteria
 
-- [ ] `TestSeverityTable_EveryPassCategoryIsDecided` (`internal/judge/severity_test.go`, new): for every verdict mode
+- [x] `TestSeverityTable_EveryPassCategoryIsDecided` (`internal/judge/severity_test.go`, new): for every verdict mode
   that takes a category (injection, intent, explain, collusion, capability) and every category its prompt lists, the
   table returns a severity; a category not in the table returns medium; the model's `severity` word never changes the
   result — `{"severity":"high","category":"file-write"}` on the capability pass → medium, `{"severity":"low",
   "category":"exfiltration"}` on the injection pass → high, `{"severity":"critical","category":"catastrophe"}` → medium.
   **Red on the base**: `finding()` returns the clamped word
-- [ ] `TestRun_SeverityIsTheTools` (`internal/judge/severity_test.go`): a scripted client answers the injection pass
+- [x] `TestRun_SeverityIsTheTools` (`internal/judge/severity_test.go`): a scripted client answers the injection pass
   with `flagged: true, severity: "medium", category: "exfiltration"` and a verbatim quote; the grounded `LLM-003` is
   **high** and `score.Escalating` holds — the weight `--fail-on-llm` reads (its e2e in `cmd/aguard` keeps firing).
   `TestJudge_HTTPReplyCarriesCategory` drives the real `NewHTTP` client over an `httptest` endpoint for the two reply
   shapes (with and without `category`). **Red on the base**: the finding is medium
-- [ ] `TestRun_IntentDisclosedBehaviourIsOneStepLower` (same file): the intent pass answers `category: "credential-read",
+- [x] `TestRun_IntentDisclosedBehaviourIsOneStepLower` (landed as `TestSeverity_IntentDisclosedIsOneStepLower`) (same file): the intent pass answers `category: "credential-read",
   disclosed: true` → medium; `category: "software-source", disclosed: true` → high (the prompt's own exception).
   **Red on the base**: both are whatever word the reply carried
-- [ ] Reverse assertion `TestRun_UnknownCategoryCannotRaiseTheWeight` (same file, green only after W2): a reply whose
+- [x] Reverse assertion `TestRun_UnknownCategoryCannotRaiseTheWeight` (same file, green only after W2): a reply whose
   category is not in the table, whatever its `severity` word, yields a medium finding that still escalates when the
   majority agrees — visible, weighted as medium, never high
-- [ ] Reverse assertions that stay green without a character changed: `TestBarrier*` (`LLM-007` stays high, set by the
+- [x] Reverse assertions that stay green without a character changed: `TestBarrier*` (`LLM-007` stays high, set by the
   tool as today), `advisory_only_test.go` (`LLM-009` never escalates, category or not), `consensus_test.go` (the vote
   count and the `[k of n samples agreed]` text are unchanged), `ground_test.go`, `reply_test.go` (a reply without a
   `category` member — a model answering the old schema — is read as unknown category, not as a parse failure, and is
   counted nowhere as repaired or failed). Existing tests change only where a fixture's reply pinned the model's word as
   the finding's severity (they gain a `category`) or pinned the vote text (they gain the trailing `[tool: …]`); each
   such file is named in Done
-- [ ] `TestPromptVersion_HashesWhatTheClientSends` golden moves exactly once and `aguard version` prints the new
+- [x] `TestPromptVersion_HashesWhatTheClientSends` golden moves exactly once and `aguard version` prints the new
   `judge-prompt=<v>`; `ExcerptVersion` does **not** move (the excerpt is untouched)
-- [ ] `make docs` regenerates `docs/rules.md` with the `LLM-001/003/004/006/008` rows saying the severity is set by the
+- [x] `make docs` regenerates `docs/rules.md` with the `LLM-001/003/004/006/008` rows saying the severity is set by the
   tool from the category the model names (table in `docs/llm-judge.md`); CI's drift check green
-- [ ] Measured, recorded under `baselines/results/aguard/<date>-llm-<model>-p041/` with `run.yaml`, `judge.jsonl`
+- [x] Measured, recorded under `baselines/results/aguard/<date>-llm-<model>-p041/` (four directories, one per run; see Done for what each gate measured) with `run.yaml`, `judge.jsonl`
   (folded by `judgefold`, P-033) and `scorecard.txt`, and appended to `docs/decisions/judge-comparison-2026-09-25.zh-CN.md`
   as a dated section, every number per source with n, static column unchanged:
   - 224 subset (`strata.json` of `2026-09-29-llm-gpt-4.1-mini-s3-votes`), `samples: 3`, run **twice**: of the five
@@ -144,7 +144,7 @@ into; running the 127 server-source samples through `check --llm` (P-004) so the
     run's number), per source; benign 500 escalated non-009 ≤ 6 (that run's number)
   - full benign 3,220, `samples: 1`, fast model: samples with an escalated judge finding at high ≤ 0.5%, with its
     interval; this is the first full-benign judge number and is recorded as the plan's denominator whatever it is
-- [ ] `make verify` green; `go version` does not switch toolchains; `internal/collect`, `internal/detect`,
+- [x] `make verify` green; `go version` does not switch toolchains; `internal/collect`, `internal/detect`,
   `internal/score`, `internal/gate` untouched (diff empty)
 
 ## Out of scope
@@ -266,4 +266,16 @@ into; running the 127 server-source samples through `check --llm` (P-004) so the
 
 ## Done
 
-<!-- filled at stage 4 -->
+```
+Merged: PR #64 (find the sha with git log --grep P-041)
+Released: not yet
+Evidence: TestSeverityTable_EveryPassCategoryIsDecided, TestRun_SeverityIsTheTools, TestSeverity_IntentDisclosedIsOneStepLower, TestRun_UnknownCategoryCannotRaiseTheWeight, TestRun_BarrierSeverityStaysTheTools, TestJudge_HTTPReplyCarriesCategory, TestPrompt_EveryTableCategoryIsOffered, TestRun_MajorityCategoryDecidesTheSeverity (internal/judge/severity_test.go); the first three red on the base (the finding carried the clamped word), green after W2
+Evidence: reverse assertions green without a character changed: TestBarrier*, advisory_only_test.go, consensus_test.go, ground_test.go, reply_test.go; fixtures that gained a category or the trailing brackets: cmd/aguard/e2e_test.go (judgeServer reply), internal/judge/rendering_test.go (vote suffix), baselines/cmd/judgefold/golden_test.go (scripted endpoint names a category) and golden_values_test.go (votes carry `categories`)
+Evidence: judge-prompt moved 4 times on this branch, once per wording of the table (v1 table; v2 after the first 224 run; v3 846bb95cd0ce = persistence split, no file-name inference, category voting; v4 ec4382a9226a = permission-override is allow-only, remote-execution excludes deploys, disclosure in substance); judge-excerpt stayed 6; docs/rules.md regenerated, drift check green
+Evidence: 224 subset, samples 3, twice, binary dd8001b, baselines/results/aguard/2026-10-12-llm-gpt-4.1-mini-p041-224-s3-{a,b}/ (compare.txt in a): random malicious escalated 68 / 69 of 100 against the 2026-09-29 run's 62 (of the 50 static-missed: 29 / 29 against 26); four of the five medium-only samples at high in both runs (clean-manifest-nested LLM-001, definition-of-done-push, missing-required-fields, overbroad-permissions LLM-003); mal-hook-pretooluse-autoapprove stays medium in both (process-control: the command is a script name, as Must not claim foresaw); random benign escalated 0 / 0 (gate 0; the earlier run 1); targeted benign 3 / 3 (gate ≤ 5); hard negatives 1 / 1 — gate 0 MISSED: hn-skill-socket-client-plain, LLM-001 exfiltration 2 of 3 in both runs, whose purpose says "a local collector" and whose code connects to metrics.example; weight-at-high decision identical in both runs for 97 of 102 flagged questions = 95.1% (gate ≥ 95%); calls 1769 / 1769, failed 1 / 0
+Evidence: 819 subset, samples 1, binary dd8001b, baselines/results/aguard/2026-10-12-llm-gpt-4.1-mini-p041-819-s1/ (compare.txt): reachable malicious flagged 137 of 173 against 124 (gate ≥ 124; the judge's own escalations 121 against 109, the static column 89 against 73 because the binary moved from v0.12.0 to v0.21.0 in between); hard negatives escalated 0 (gate 0); benign 500 escalated non-009: 11 against 6 — gate ≤ 6 MISSED (one of the 11 and one of the 6 is LLM-007, not this proposal's); of the ten, four are a hook whose script NAME suggests install or permission handling read as `install` / `permission-override` by a single draw (jlevy, outfitter, m-xlsea, shanraisshan), one is a purpose that itself says "using git hooks" read as undisclosed `persistence` (bbgnsurftech), one is the documented registry mirror (`software-source`, disclosure-exempt by decision 1), one each `credential-read` on a Stripe tool parameter, `network` on a hook, `credential-to-network` on a template, `remote-execution` on "execute any marketing task remotely"; calls 1928, failed 3
+Evidence: full benign 3,220, samples 1, binary dd8001b, baselines/results/aguard/2026-10-12-llm-gpt-4.1-mini-p041-benign-s1/: 53 of 3,220 samples with an escalated judge finding at high from a rule other than LLM-009 = 1.65% [1.26, 2.15] — gate ≤ 0.5% MISSED, and recorded as the plan's denominator as the criterion said; by surface: hooks 23 of 188 = 12.2% [8.3, 17.7], mcp 8 of 353 = 2.3% [1.2, 4.4], skills 22 of 2,480 = 0.89% [0.59, 1.34], connector 0 of 121, permission 0 of 78; by (rule, category) over those samples: LLM-008 `network` on hooks 25 (hooks that post to a webhook or a notifier), LLM-003 `credential-read` on MCP tool descriptions 8 (a tool parameter that takes the service's own API key, e.g. `secretKey: Stripe secret key`), LLM-008 `install` 6 and `permission-override` 4 (script names, single draws), LLM-003 `safety-disable` on skills 4, the rest 1–3 each; static ≥ high on its own 116 of 3,220 = 3.6%, so the judge added 47 of 3,117 asked = 1.5% [1.1, 2.0]; calls 8,218, failed 20 (0.24%), 20 samples incomplete for it. Two follow-ups this leaves, not taken here because each changes what the table means and needs its own measurement: `credential-read` in the injection pass should exclude a tool parameter that takes the service's own key; `network` on a hook that only posts to a notifier needs a decision (today a webhook notifier and an exfiltrating hook are the same category)
+Evidence: the table at samples 1 is where the benign cost sits: a single draw in a high category is high with no second opinion, which the 224 runs at samples 3 do not show (benign 1 → 0) and the 819 run at samples 1 does (6 → 11). docs/llm-judge.md says so beside the table
+Evidence: Out of scope — git diff --stat origin/main -- internal/collect internal/detect internal/score internal/gate: empty
+Evidence: make verify: all gates passed on the branch; go1.23.5, go.mod line 2 unchanged
+```

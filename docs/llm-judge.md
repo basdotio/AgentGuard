@@ -308,7 +308,7 @@ everything on your machine. That trade-off is yours.
   the file is called. Under `samples: 3` the category is a vote too: when a majority of the
   agreeing samples named the same category, that vote's severity is the finding's; when no
   category reaches a majority, the lowest severity among the votes (the samples agree the text is
-  worth flagging but not on what it is, so no single label may pick the weight). `LLM-007`
+  worth flagging but not on what it is, so no single label may pick the weight). The table's cost sits at `samples: 1`: one draw in a high category is high with no second opinion, and P-041's measurements show it (benign escalations 1 → 0 on 224 samples at `samples: 3`, 6 → 11 on 500 at `samples: 1`, and 1.65% of all 3,220 benign samples at `samples: 1`, most of them hooks that post to a notifier and MCP tools whose parameter takes the service's own key); a gate that reads the judge should run `samples: 3`. `LLM-007`
   was always high by the tool's decision; `LLM-009` has no table (advisory-only) and keeps the
   model's word, clamped to at most high. No pass can emit `critical`.
 
