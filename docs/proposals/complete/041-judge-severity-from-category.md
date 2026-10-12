@@ -268,7 +268,7 @@ into; running the 127 server-source samples through `check --llm` (P-004) so the
 
 ```
 Merged: PR #64 (find the sha with git log --grep P-041)
-Released: not yet
+Released: v0.22.0
 Evidence: TestSeverityTable_EveryPassCategoryIsDecided, TestRun_SeverityIsTheTools, TestSeverity_IntentDisclosedIsOneStepLower, TestRun_UnknownCategoryCannotRaiseTheWeight, TestRun_BarrierSeverityStaysTheTools, TestJudge_HTTPReplyCarriesCategory, TestPrompt_EveryTableCategoryIsOffered, TestRun_MajorityCategoryDecidesTheSeverity (internal/judge/severity_test.go); the first three red on the base (the finding carried the clamped word), green after W2
 Evidence: reverse assertions green without a character changed: TestBarrier*, advisory_only_test.go, consensus_test.go, ground_test.go, reply_test.go; fixtures that gained a category or the trailing brackets: cmd/aguard/e2e_test.go (judgeServer reply), internal/judge/rendering_test.go (vote suffix), baselines/cmd/judgefold/golden_test.go (scripted endpoint names a category) and golden_values_test.go (votes carry `categories`)
 Evidence: judge-prompt moved 4 times on this branch, once per wording of the table (v1 table; v2 after the first 224 run; v3 846bb95cd0ce = persistence split, no file-name inference, category voting; v4 ec4382a9226a = permission-override is allow-only, remote-execution excludes deploys, disclosure in substance); judge-excerpt stayed 6; docs/rules.md regenerated, drift check green

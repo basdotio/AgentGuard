@@ -98,7 +98,7 @@ never read the judge's authority.
 
 ```
 Merged: PR #65 (2026-10-12; find the sha with git log --grep P-046)
-Released: not yet
+Released: v0.22.0
 Evidence: TestLLMConfig_GateReady (internal/config/config_test.go): advisory → "llm.authority: escalate"; escalate with 0 / 1 / 2 → "llm.samples: 3"; 3 and 5 ready; MinSamplesToEscalate pinned at 3
 Evidence: TestFailGate_LLMGateNeedsSamples (cmd/aguard/main_test.go): escalate + samples 0 / 1 / 2 → configuration error naming llm.samples: 3, not *failExit; 3 and 5 → *failExit on a qualified high; --fail-on high alone with samples 1 → nil. On the base the gate took a bool and passed the samples-1 case
 Evidence: TestCheckCmd_FailOnLLMNeedsSamples (cmd/aguard/check_llm_test.go): built binary, escalate + samples 1 + --fail-on-llm high → exit 2, stderr names llm.samples: 3, stdout empty, 0 requests at the endpoint; the same config without the flag → exit 0 with the judge reached
