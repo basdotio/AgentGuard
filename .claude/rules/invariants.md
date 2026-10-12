@@ -83,7 +83,9 @@
    - **升级资格是逐条 finding 的**:必须过**证据落地**(`judge.Ground`,回填真实 `file:line`,落不了地
      就丢弃并计入 `LLM-005`)**加 k-of-n 共识**(`llm.samples`,多数才算)。两道都过才置 `Escalates`。
    - **`llm.authority` 管的是闸门,不是分数**:`overall_effective` 永远照算照显示,`authority: escalate`
-     只决定 `--fail-on-llm` 能否生效。(规格原来把它写成第三个"合格前提",那样默认档下两个分数恒等,
+     只决定 `--fail-on-llm` 能否生效;生效还要 `llm.samples ≥ config.MinSamplesToEscalate`(3,P-046),判定在
+     `config.LLMConfig.GateReady`,`validateFailGates` 在采集之前调它,不传 `--fail-on-llm` 时不读这两个键。
+     **不要把这道门挪到 `config.Load`**:那会让只用静态闸门的 `hook`/`scan` 因为一个判官键而起不来。(规格原来把它写成第三个"合格前提",那样默认档下两个分数恒等,
      "先看两个数再决定放不放权"就没有数可看 —— 规格已按实现修正。)
    - **铁律 #2 绝对不动**:judge 只能*新增* `Source=llm` 的发现和展示用的 `ArtifactReport.Advisory`
      标签,**永远不能删除、降级或重排一条静态发现**。`--fail-on` 只看确定性发现,任何模型输出都改不了

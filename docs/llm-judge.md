@@ -129,7 +129,7 @@ llm:
 | `max_calls` | Ceiling on calls per scan; `0` (default) = no limit. Over-budget calls are skipped **and reported**, naming what went unchecked. A courtesy self-limit for your own time and bill — being client-side, it is not a spend control. |
 | `max_retries` | Retries on `429`/`5xx`, honouring `Retry-After` (default `2`). A retry is the same question re-sent, so it doesn't count against `max_calls`; a `4xx` is a real answer and is never retried. |
 | `samples` | How many times each question is asked (default `1`). `>1` requires a **majority** before a finding may weigh on the effective score — see [Consensus](#consensus-samples). Multiplies the call count. |
-| `authority` | `advisory` (default) or `escalate`. Whether this endpoint's opinion may gate a build — see [Gating on the judge](#gating-on-the-judge-fail-on-llm). |
+| `authority` | `advisory` (default) or `escalate`. Whether this endpoint's opinion may gate a build — see [Gating on the judge](#gating-on-the-judge-fail-on-llm). The gate also needs `samples: 3` or more. |
 
 Every run prints one line to stderr — `N call(s) in 12.4s (p50 …, p95 …) · 0 retry · 0 failed
 · 41k tokens in / 900 out`; `--quiet` suppresses it. The same cost is in the JSON summary
@@ -410,7 +410,7 @@ There are two gates, and they are deliberately not the same one:
 | Flag | Reads | Reproducible? | Default |
 |------|-------|---------------|---------|
 | `--fail-on` | deterministic findings only | yes | off for `scan`, `high` for `check` |
-| `--fail-on-llm` | deterministic **plus qualified LLM** findings | no | off, and needs `authority: escalate` |
+| `--fail-on-llm` | deterministic **plus qualified LLM** findings | no | off, and needs `authority: escalate` with `samples: 3` or more |
 
 `--fail-on` is the contract a pipeline can rely on: the same content always produces the same
 answer, and no model output can change it. That property is worth keeping intact, which is why
@@ -419,10 +419,16 @@ acting on the judge got its own switch rather than a change to the existing one.
 `--fail-on-llm` is opt-in **twice**: the flag has to be passed *and* `llm.authority` has to say
 `escalate`. Passing the flag without granting authority is **refused with an error**, not
 ignored — a gate that silently never fires is worse than no gate at all, because the pipeline
-goes green forever and everyone believes they are covered. Both thresholds and the grant are
+goes green forever and everyone believes they are covered. **The grant also has to come with a
+vote**: `llm.samples` must be `3` or more, or the flag is refused the same way, naming
+`llm.samples: 3`. What fails a build is then a verdict a majority of samples agreed on, never one
+draw — measured (P-041): at `samples: 3` the random benign escalations on 224 samples went 1 → 0
+and two runs agreed on 95% of the weight decisions; at `samples: 1` the 819 subset's benign
+escalations went 6 → 11. Both thresholds, the grant and the vote are
 checked before anything is scanned: a refusal (or a misspelt level) exits 2 without sending a
 single request or printing a report, and a deterministic finding tripping `--fail-on` cannot
-hide it behind exit 1.
+hide it behind exit 1. Without `--fail-on-llm`, `authority` and `samples` may say anything: the
+bar is on the gate, not on the configuration file.
 
 **A judge that could not answer is not a pass.** When `--fail-on-llm` is set and no gate fired, but
 the judge did not run (`--llm` not passed, `llm.enabled: false`, the endpoint refused, the API key
