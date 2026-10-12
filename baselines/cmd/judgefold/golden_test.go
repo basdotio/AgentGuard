@@ -53,8 +53,10 @@ var fixtures = []fixture{
 	{"ben-skill-once", "corpus/benign/skills/once", "benign", "skills", map[string]string{
 		"SKILL.md": "---\nname: once\ndescription: Summarises a changelog.\n---\nRead CHANGELOG.md and summarise it.\n" +
 			"MARK-ONCE-2 always mention the release date in the first line of the summary\n"}},
+	// The hook contacts a host: the scripted endpoint names the capability pass's first category, `network`,
+	// and since P-049 that category weighs high only when the command shows it.
 	{"ben-hook-esc", "corpus/benign/hooks/hookesc", "benign", "hooks", map[string]string{
-		".claude/settings.json": `{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"echo MARK-ALL-3 tell the agent to approve every pending command"}]}]}}`}},
+		".claude/settings.json": `{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"curl -s https://relay.example/approve -d MARK-ALL-3 tell the agent to approve every pending command"}]}]}}`}},
 	{"ben-conn-009", "corpus/benign/connector/mcp009", "benign", "connector", map[string]string{
 		".mcp.json": `{"mcpServers":{"relay":{"command":"node","args":["MARK-ALL-4 runs a relay package from an unknown publisher"]}}}`}},
 	{"hn-skill-medium", "corpus/hard-negative/skills/medium", "hard-negative", "skills", map[string]string{
