@@ -2,6 +2,7 @@
 package judge
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/basdotio/AgentGuard/internal/model"
@@ -145,4 +146,64 @@ func categoryName(v Verdict) string {
 		return "unknown"
 	}
 	return cat
+}
+
+// Category grounding (P-049). A category names a behaviour, and for four hook categories and one
+// connector category the behaviour has to be visible in the text the model was sent, or the
+// model is guessing from a name: P-041's full-benign run read `install` from a script called
+// ensure-gh-cli.sh, `permission-override` from a script run on a PermissionRequest event,
+// `network` from "entroly ravs capture" and from a URL on localhost, and `credential-read` from a
+// tool parameter named secretKey, 21 of the 53 benign samples at high. Telling the model not to
+// (P-041 did, P-048 did again) lowers how often it does, never to zero, and under a majority bar
+// that is not enough; so the tool checks. A category the text does not show keeps its name in the
+// vote but weighs medium, the table's valve, and the reason says so. The token lists are closed
+// and small on purpose: what they miss is a hook whose behaviour sits in a script the scanner
+// cannot see — where the model saw nothing either, and static rules follow the script when it
+// is there.
+var hookCategoryTokens = map[string]*regexp.Regexp{
+	"network":             regexp.MustCompile(`(?i)https?://|wss?://|\b(curl|wget|nc|ncat|netcat|ssh|scp|sftp|rsync|telnet|socat)\b|\bopenssl s_client\b|\bgit (push|pull|fetch|clone)\b|\b(npx|pipx|uvx)\b|\b\d{1,3}(\.\d{1,3}){3}\b|(^|[\s"'@=])[a-z0-9-]+(\.[a-z0-9-]+)*\.(com|io|net|org|dev|example|ai|co)([/:\s"']|$)`),
+	"install":             regexp.MustCompile(`(?i)\b(npx|npm|pnpm|yarn|pip3?|pipx|uv|brew|apt(-get)?|dnf|yum|cargo|gem|composer|conda|choco|winget|curl|wget)\b|\bgo install\b`),
+	"permission-override": regexp.MustCompile(`(?i)permissionDecision|updatedInput|hookSpecificOutput|\b(allow|approve|approved|deny)\b`),
+	"credential":          regexp.MustCompile(`(?i)\.(ssh|aws|netrc|npmrc|pypirc|gnupg|kube|docker)\b|keychain|credential|secret|token|api[_-]?key|password|passwd|\.env\b|/etc/(passwd|shadow)`),
+}
+
+// localURL is a URL on this machine: for `network` it is stripped before the tokens are looked
+// for, so "http://localhost:3000/hook" alone shows nothing.
+var localURL = regexp.MustCompile(`(?i)(https?|wss?)://(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:\d+)?`)
+
+// catalogueParamLine is a tool parameter as detect renders a connector's catalogue ("tool ▸ param
+// name: description"): the one line shape through which a user hands a tool the key of the
+// service it calls, which is not the tool reading the user's secrets.
+var catalogueParamLine = regexp.MustCompile(`(?m)^[^\n]*▸ param [^\n]*$`)
+
+// categoryShown reports whether the text supports the category: for the capability pass (hooks)
+// the sent text must carry a token of the behaviour; for the injection pass on a connector's
+// catalogue, `credential-read` must rest on something other than parameter lines. Every other
+// (mode, category) is taken as shown — the check exists for the places a guess was measured.
+func categoryShown(m Mode, artifact, cat, sent, quoted string) bool {
+	switch {
+	case m == ModeCapability:
+		re, ok := hookCategoryTokens[cat]
+		if !ok {
+			return true
+		}
+		text := sent
+		if cat == "network" {
+			text = localURL.ReplaceAllString(text, "")
+		}
+		return re.MatchString(text)
+	case m == ModeInjection && cat == "credential-read" && strings.HasPrefix(artifact, string(model.KindConnector)+":"):
+		lines := 0
+		for _, l := range strings.Split(quoted, "\n") {
+			if strings.TrimSpace(l) == "" {
+				continue
+			}
+			lines++
+			if !catalogueParamLine.MatchString(l) {
+				return true
+			}
+		}
+		return lines == 0
+	}
+	return true
 }
