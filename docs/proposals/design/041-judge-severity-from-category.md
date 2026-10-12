@@ -216,6 +216,16 @@ into; running the 127 server-source samples through `check --llm` (P-004) so the
    `remote-execution` from the script's file name. The descriptions now say the category is for what the text itself
    shows, a hook that only runs a local file is `process-control` / `other-directive`, and `remote-execution` means a
    fetch from the network plus a shell. The second run came back to 1 and 0.
+   — amended after the 819 run at `samples: 1` (2026-10-12): benign escalations non-009 were 9 against the gate's 6 and
+   hard negatives 2 against 0. Three of the seven new ones were the table's wording, not the model's noise, and the
+   wording changed before the runs were repeated: a hook that only DENIES force-pushes was named `permission-override`
+   (the description now says allow/auto-approve only, a deny-only hook is not this); `vercel --prod` and the sentence
+   "execute any marketing task remotely" were named `remote-execution` (now: deploying, uploading or calling a service
+   through its own CLI or API is not this, nor the word remote in a task description); and a purpose that says "sends a
+   metrics line to a local collector" had `disclosed: false` on the send (the prompt now asks for disclosure in
+   substance, not the exact host). The other four — `sudo -v` in a font installer, a weak credential-to-URL chain, a
+   `remote-execution` on a deploy script, `install` read from a script called `ensure-gh-cli.sh` — are single votes the
+   prompt already forbids or the table maps on purpose; they are recorded, not argued away.
    **Decided (2026-10-10)**: as recommended.
 
 2. **Keep the model's severity word anywhere?** **Recommendation**: yes, read and shown — the `[severities: …]` vote
@@ -231,6 +241,8 @@ into; running the 127 server-source samples through `check --llm` (P-004) so the
 4. **Add `permission-override` to the capability pass?** **Recommendation**: yes. A hook that answers the permission
    prompt itself is the static `PERM-008` shape; the one static-missed malicious hook in the measurement is exactly
    that, and nothing on the benign side was.
+   — amended 2026-10-12: the category is for a hook that ALLOWS or auto-approves. The 819 run named it on a hook that
+   only denies force-pushes, which is the protective direction and a common shape in the wild.
    **Decided (2026-10-10)**: as recommended.
 
 5. **Does an unknown category count toward the majority?** **Recommendation**: yes, as medium. The majority is about

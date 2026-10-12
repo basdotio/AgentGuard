@@ -33,7 +33,7 @@ type category struct {
 var (
 	catExfiltration   = category{"exfiltration", model.SevHigh, "sends data, files or secrets to a network destination outside this machine"}
 	catCredentialRead = category{"credential-read", model.SevHigh, "reads keys, tokens, passwords or credential files by path, with no stated reason to"}
-	catRemoteExec     = category{"remote-execution", model.SevHigh, "downloads code or instructions from the network and runs or follows them (a URL plus a shell or interpreter); running a local script by name is NOT this"}
+	catRemoteExec     = category{"remote-execution", model.SevHigh, "downloads code or instructions from the network and runs or follows them (a URL plus a shell or interpreter); running a local script by name is NOT this, and neither is deploying, uploading or calling a service through its own CLI or API, nor the word remote in a task description"}
 	catSafetyDisable  = category{"safety-disable", model.SevHigh, "skips, disables or bypasses a safety check, confirmation or permission"}
 	catConcealed      = category{"concealed-directive", model.SevHigh, "an instruction hidden by encoding, invisible characters, unusual phrasing or placement"}
 	catFileDeletion   = category{"file-deletion", model.SevHigh, "deletes or overwrites files beyond its own output"}
@@ -58,7 +58,7 @@ var categoryTables = map[Mode][]category{
 		{"network", model.SevHigh, "the command itself contacts the network: a URL, curl, wget, ssh, nc, a mail or webhook call"},
 		{"credential", model.SevHigh, "the command itself reads a key, token or credential file by path"},
 		{"install", model.SevHigh, "the command itself installs a package or downloads code: pip, npm, brew, a fetch piped to a shell"},
-		{"permission-override", model.SevHigh, "the command answers the permission prompt, writes a permissionDecision, or edits the permission settings"},
+		{"permission-override", model.SevHigh, "the command allows or auto-approves an action: it answers the permission prompt with approval, writes an allow permissionDecision, or widens the permission settings; a hook that only denies or blocks is NOT this (process-control if it also runs something, else not flagged)"},
 		{"file-write", model.SevMedium, "the command itself writes files other than its own log or the file the event concerns"},
 		{"process-control", model.SevMedium, "starts, kills or signals processes, or runs a local script whose contents are not shown"},
 		{"other", model.SevMedium, "more than the event requires, and none of the above"},
@@ -131,7 +131,7 @@ func categoryPrompt(m Mode) string {
 		"that says so (process-control, other-directive or other). The tool sets the finding's severity from the category; your " +
 		"severity word is recorded but does not decide it.")
 	if m == ModeIntent {
-		b.WriteString(" Set disclosed=true only when the DECLARED PURPOSE itself states this behaviour; otherwise false.")
+		b.WriteString(" Set disclosed=true when the DECLARED PURPOSE itself states this kind of behaviour in substance (a purpose that says it sends metrics to a collector discloses a network send, even without the host); set it false when the purpose is silent about it, however plausible the behaviour is for such a tool.")
 	}
 	return b.String()
 }
