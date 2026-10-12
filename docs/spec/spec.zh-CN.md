@@ -278,6 +278,12 @@ MCP 配置按 `detect.ConfigLines` 渲染成 `key=value` 行(与静态读同一�
      表里没有 low 行。量到的理由:投票级运行里静态漏掉的 50 个恶意样本中 5 个判官三票一致却全是 medium(3 个是"找到了隐藏指令"),
      而良性上的 medium 几乎全来自 hook 越权趟;词不稳(213 个多数组里 24 组票面不一致),定义不在词上,在类别上。`LLM-009` 无表,
      仍按词(封顶 high);`LLM-007` 本就由工具定死。`TestSeverityTable_EveryPassCategoryIsDecided`、`TestRun_SeverityIsTheTools`。
+   - **类别须被文本证实(P-049,2026-10-12)**:hook 越权趟的 `network`/`install`/`permission-override`/`credential` 要在发出的命令里有
+     该行为的词(`judge.hookCategoryTokens`;localhost 的 URL 先剥掉),连接器注入趟的 `credential-read` 不能只落在 `▸ param` 行上;
+     没有依据的那票是 medium,类别名照记,理由注明 `[category not shown by the text: …]`。量到的理由:P-041 全量良性 53 个 high 里 21 个
+     是模型按脚本名、程序名、参数名猜的类别,提示词两次禁止(P-041、P-048)都只降频不归零;六次已记录运行上离线模拟,良性 hook 23→9、
+     MCP `credential-read` 8→1,恶意零丢失。`TestCategoryShown`、`TestRun_HookCategoryNotShownWeighsMedium`、
+     `TestRun_ConnectorParamOnlyCredentialReadWeighsMedium`。
    - **闸门**:`--fail-on` 只看确定性发现,**完全不受 LLM 影响**;要用升级结果卡 CI 的走另一个开关 `--fail-on-llm`,默认关(§3)。
 2. **LLM 永不删除/降级/抑制一条静态发现**(**保持绝对,不随 #1 放松**):抑制只能走确定性的信誉库(§0.5)/基线(`.aguardignore`)。若允许 LLM 抑制,一次成功的注入就能让恶意 skill"洗白"——这正是要防的。триаж标签走独立展示通道,发现本身仍以真实严重度渲染、仍进闸门。标签值按**首个词精确匹配**:首个词恰好是 `likely-benign` 且全文没有 `likely-real` 才是 benign,其余一律 likely-real(安全侧);reason 存下之前先脱敏、截 256 字节;`rule_id` 不是送去 triage 的某条规则 ID(逐字节相同)的标签直接丢弃 —— 这个 ID 是报告把标签挂到发现上的连接键,终端按原样连、markdown/HTML 按清洗后的副本连,模型写一个带控制符的 ID 两边就挂得不一样(P-006)。
 3. **判定器自身按不可信对待**:nonce barrier(§5.2)隔离"操作者指令"与"被审数据";数据块内任何指向判定器的指令都被忽略,**且其存在本身即一等注入信号**——报为 `LLM-007`(维度 1),而不是只写进 verdict 的散文里。这是本工具能拿到的最高置信度恶意信号之一,在单向升级下理应能推高风险。**已实现**:严重度**由工具定死为 high、不采纳模型自评**(被劫持的模型当然会把自己评低),但仍须过落地与共识两道门槛;且**没上报不证明没发生** —— 成功的操纵不会被上报。

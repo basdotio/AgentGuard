@@ -94,7 +94,7 @@
      严重度;不在表里的类别一律 medium,表里没有 low 行(只有意图趟的"已披露降一档"能到 low)。模型自己的词经 `clampSeverity`
      封顶到 `high`,只在票数列表里展示,唯一还由它决定严重度的是没有表的 `LLM-009`(只提示)。`clampLabel` 对未知值取
      `likely-real`(安全侧);`LLM-007`(artifact 试图操纵分析器)的严重度一直**由工具定死** —— 被劫持的模型当然会把自己评低,
-     这条理由现在适用于每一趟。**不要把模型的词接回权重**,也不要给表加 high 以外的"自定义"入口。
+     这条理由现在适用于每一趟。**不要把模型的词接回权重**,也不要给表加 high 以外的"自定义"入口。类别还要被文本**证实**(`judge.categoryShown`,P-049):hook 的 `network`/`install`/`permission-override`/`credential` 在发出的命令里没有该行为的词、连接器的 `credential-read` 只落在参数行上,这一票就是 medium——模型从脚本名猜类别这件事,提示词禁了两次都禁不住,所以由工具查。词表只往下压,从不往上抬。
 5. **任何遗漏都不许静默。** 每一处覆盖缺口或抑制都要产出一条 dimension-0 note:
    `IO-000` `COV-000` `PARSE-000` `SCOPE-001` `IGN-000` `REP-GOOD` `LLM-000` `LLM-002`。抑制类 note
    (`IGN-000`、`REP-GOOD`)必须携带**被抑制项中的最高严重度**,否则"压掉了一个 critical"会读成一条
