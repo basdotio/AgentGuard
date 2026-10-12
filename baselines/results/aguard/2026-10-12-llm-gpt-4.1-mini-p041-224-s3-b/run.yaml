@@ -76,5 +76,5 @@ judge_usage:
     completion_tokens: 349544
 raw_archive:                          # raw/ is not in the tree (P-039); the archive is this run's primary evidence
     asset: aguard-judge-raw-2026-10-p041.tar.gz
-    sha256: 51e14a585ba95dd4b6ec5f2d6542e17a0fb0ce795c4aad017b3dad5380428ff7   # 2,072,161 bytes; attach to a release before citing: gh release upload <tag> aguard-judge-raw-2026-10-p041.tar.gz
+    sha256: 51e14a585ba95dd4b6ec5f2d6542e17a0fb0ce795c4aad017b3dad5380428ff7   # 2,072,161 bytes; attached to release v0.21.0 on 2026-10-12 (gh release download v0.21.0 --pattern aguard-judge-raw-2026-10-p041.tar.gz)
     note: one archive holds the raw/ of all four P-041 runs, under the directory names used here
