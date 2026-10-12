@@ -49,8 +49,9 @@ type Row struct {
 }
 
 // Vote is one vote-carrying LLM finding: a question at least one sample flagged. K of N samples
-// agreed; Severity is the finding's own (the first agreeing sample's, as the judge's tally sets
-// it); Severities lists every agreeing sample's when the binary printed them.
+// agreed; Severity is the finding's own as the judge's tally sets it (since P-041 from the
+// majority category; before, the first agreeing sample's word); Severities lists every agreeing
+// sample's word and Categories every agreeing sample's category when the binary printed them.
 type Vote struct {
 	Rule string `json:"rule"`
 	// Kind is the aguard artifact kind the finding sits on, from raw/. It is aguard's vocabulary,
@@ -62,6 +63,7 @@ type Vote struct {
 	Severity   string   `json:"severity"`
 	Escalates  bool     `json:"escalates"`
 	Severities []string `json:"severities,omitempty"`
+	Categories []string `json:"categories,omitempty"`
 }
 
 // Notes counts scan-level notes by rule id in first-appearance order. A JSON object, but not a

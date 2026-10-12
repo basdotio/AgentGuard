@@ -25,6 +25,7 @@ const advisoryRule = "LLM-009"
 var (
 	agreedRe     = regexp.MustCompile(`\[(\d+) of (\d+) samples agreed\]`)
 	severitiesRe = regexp.MustCompile(`\[severities: ([^\]]*)\]`)
+	categoriesRe = regexp.MustCompile(`\[categor(?:y|ies): ([^\]]*)\]`) // "[category: x]" at samples 1, "[categories: a, b]" above (P-041)
 )
 
 // Options are the fold's two inputs that raw/ may not carry.
@@ -195,6 +196,11 @@ func voteOf(f model.Finding, kind string, n int) (Vote, error) {
 	if s := severitiesRe.FindStringSubmatch(f.Why); s != nil {
 		for _, x := range strings.Split(s[1], ",") {
 			v.Severities = append(v.Severities, strings.TrimSpace(x))
+		}
+	}
+	if c := categoriesRe.FindStringSubmatch(f.Why); c != nil {
+		for _, x := range strings.Split(c[1], ",") {
+			v.Categories = append(v.Categories, strings.TrimSpace(x))
 		}
 	}
 	return v, nil
