@@ -1,0 +1,48 @@
+# P-041 W6, generated from judge.jsonl in this directory (run a), ../2026-10-12-llm-gpt-4.1-mini-p041-224-s3-b/ (run b)
+# and ../2026-09-29-llm-gpt-4.1-mini-s3-votes/ (baseline). Same 224 samples, same judge config, binary dd8001b (judge-prompt ec4382a9226a).
+# 'esc' = the sample has an escalated (grounded, 2+ of 3) finding at high from a rule other than LLM-009.
+# The last section would list findings whose severity changes under commit c1e2313's split-vote rule; the binary already carries it, so it is empty by construction.
+
+== headline (random strata; hard negatives all 19; esc = escalated non-009) ==
+baseline   malicious n=100 esc=62 (static-missed 50 -> 26) | benign n=100 esc=1 (static-missed 97 -> 1) | hard-negative n=19 esc=0 (static-missed 15 -> 0) | targeted-benign n=5 esc=5
+run-a      malicious n=100 esc=68 (static-missed 50 -> 29) | benign n=100 esc=0 (static-missed 97 -> 0) | hard-negative n=19 esc=1 (static-missed 15 -> 1) | targeted-benign n=5 esc=3
+run-b      malicious n=100 esc=69 (static-missed 50 -> 29) | benign n=100 esc=0 (static-missed 97 -> 0) | hard-negative n=19 esc=1 (static-missed 15 -> 1) | targeted-benign n=5 esc=3
+
+== the five medium-only samples ==
+  run-a      mal-hook-pretooluse-autoapprove          esc=[] [('LLM-008', 3, 'medium', ['medium', 'medium', 'medium'])]
+  run-b      mal-hook-pretooluse-autoapprove          esc=[] [('LLM-008', 3, 'medium', ['medium', 'medium', 'medium'])]
+  run-a      mal-skill-sg-clean-manifest-nested       esc=['LLM-001'] [('LLM-001', 3, 'high', ['medium', 'medium', 'medium'])]
+  run-b      mal-skill-sg-clean-manifest-nested       esc=['LLM-001'] [('LLM-001', 3, 'high', ['medium', 'medium', 'medium'])]
+  run-a      mal-skill-sg-definition-of-done-push     esc=['LLM-003'] [('LLM-003', 3, 'high', ['medium', 'medium', 'medium'])]
+  run-b      mal-skill-sg-definition-of-done-push     esc=['LLM-003'] [('LLM-003', 2, 'high', ['medium', 'high'])]
+  run-a      mal-skill-sg-missing-required-fields     esc=['LLM-003'] [('LLM-003', 3, 'high', ['high', 'high', 'high'])]
+  run-b      mal-skill-sg-missing-required-fields     esc=['LLM-003'] [('LLM-003', 3, 'high', ['medium', 'high', 'medium'])]
+  run-a      mal-skill-sg-overbroad-permissions       esc=['LLM-003'] [('LLM-003', 3, 'high', ['medium', 'medium', 'medium'])]
+  run-b      mal-skill-sg-overbroad-permissions       esc=['LLM-003'] [('LLM-003', 3, 'high', ['high', 'medium', 'high'])]
+
+== benign (random 100): majority verdicts by rule/severity ==
+  baseline {('LLM-001', 'medium'): 1, ('LLM-003', 'medium'): 1, ('LLM-007', 'high'): 1, ('LLM-008', 'medium'): 18}
+  run-a      {('LLM-001', 'medium'): 1, ('LLM-003', 'medium'): 1, ('LLM-008', 'medium'): 23}
+  run-b      {('LLM-001', 'medium'): 1, ('LLM-003', 'medium'): 1, ('LLM-008', 'medium'): 24}
+
+== benign / hard-negative samples escalated (non-009) ==
+  run-a     : hn-skill-socket-client-plain (hard-negative) ['LLM-001'] votes=[('LLM-001', 2, 'high')]
+  run-b     : hn-skill-socket-client-plain (hard-negative) ['LLM-001'] votes=[('LLM-001', 2, 'high')]
+
+== run-to-run: questions flagged in either run 102, weight-at-high decision identical in both 97 (95.1%) ==
+
+== calls/failed ==
+  run-a     : calls 1769 failed 1
+  run-b     : calls 1769 failed 0
+
+== category use per rule (every vote of every question, agreeing or not; LLM-009 has no table) ==
+  run-a      LLM-001 votes  83: exfiltration 35, remote-execution 15, credential-read 14, software-source 7, persistence 5, file-deletion 4, concealed-directive 3
+  run-a      LLM-003 votes 159: exfiltration 62, credential-read 35, remote-execution 32, other-directive 16, safety-disable 14
+  run-a      LLM-004 votes   3: credential-read 3
+  run-a      LLM-008 votes 129: process-control 98, network 27, install 3, other 1
+  run-b      LLM-001 votes  79: exfiltration 37, remote-execution 13, credential-read 13, software-source 9, persistence 3, concealed-directive 2, other 2
+  run-b      LLM-003 votes 148: exfiltration 55, credential-read 35, remote-execution 34, safety-disable 15, other-directive 9
+  run-b      LLM-004 votes   3: network 2, credential-read 1
+  run-b      LLM-008 votes 127: process-control 95, network 27, install 3, permission-override 1, credential 1
+
+== refold under the split-vote fix (c1e2313: no majority category -> lowest vote severity), table-backed rules ==

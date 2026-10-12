@@ -100,7 +100,11 @@ of those 819 (a 200-sample random draw plus a 24-sample targeted stratum, listed
 `strata.json`); its `judge.jsonl` adds the per-question vote counts. A fourth,
 `results/aguard/2026-09-29-llm-gpt-4.1-mini-s3-votes/`, repeats that run on the same inputs with a binary
 that records every vote's severity (P-035); its `compare.txt` sets the first vote against the majority on
-one raw, and the two runs against each other. Two more things apply to a
+one raw, and the two runs against each other. Four more, under `results/aguard/2026-10-12-llm-gpt-4.1-mini-p041-*/`,
+measure P-041 (the judge's severity set from a category table): the 224 subset twice at `samples: 3`, the 819 subset at
+`samples: 1` and, for the first time, every benign sample (3,220) at `samples: 1`; their `judge.jsonl` votes carry the
+`categories` the model named, and their raw/ is one archive, `aguard-judge-raw-2026-10-p041.tar.gz`, whose sha256 each
+`run.yaml` names. Two more things apply to a
 judge run: the driver isolates aguard's environment, so a proxy the endpoint needs is passed by
 name with the key (`-aguard-env OPENAI_API_KEY,HTTPS_PROXY,HTTP_PROXY,NO_PROXY`), and Go does not
 read the macOS system proxy. Without that, a run whose endpoint needs a proxy answers nothing and

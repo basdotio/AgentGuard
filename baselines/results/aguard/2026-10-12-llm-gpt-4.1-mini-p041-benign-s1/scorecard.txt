@@ -1,0 +1,131 @@
+corpus     3539 labels — 300 malicious, 3220 benign, 19 hard-negative
+coverage   3220 of 3539 scored; 319 had no verdict
+           an unscored sample is not a pass — recall below is over the scored subset only
+           the unscored, by source — a whole source missing is either a
+           deliberate exclusion or a runner dropping a shape; both need saying:
+               6 of 6     NVIDIA/SkillSpector  (the entire source)
+             127 of 127   cisco-mcp-scanner-evals  (the entire source)
+              22 of 22    datadog-ai-skills  (the entire source)
+               5 of 5     fevziegeyurtsevenler/prompt-injection-corpus  (the entire source)
+              10 of 10    promoted-hard-negative  (the entire source)
+               5 of 5     reconstruction:connector  (the entire source)
+               5 of 5     reconstruction:hooks  (the entire source)
+               2 of 2     reconstruction:instruction  (the entire source)
+               3 of 3     reconstruction:mcp  (the entire source)
+               6 of 6     reconstruction:permission  (the entire source)
+               3 of 3     reconstruction:skills  (the entire source)
+               9 of 9     skill-safety-bench  (the entire source)
+              42 of 42    skillcraft-audit  (the entire source)
+              65 of 75    skillsgoat
+               1 of 1     synthetic-hard-negative  (the entire source)
+               8 of 8     synthetic-malicious  (the entire source)
+
+detection — recall per dimension, split by what the samples rest on:
+  wild        the artifact existed because somebody made it for real. ONLY these
+              can back a claim about the world.
+  fixture     a third party wrote it as a test case — coverage of THEIR shapes.
+  constructed we wrote it — coverage of OURS.
+  The three never merge. Adding them produces a number that means nothing.
+  dimension        evidence          n   result
+
+  per source — a rate over one source is a rate ABOUT that source, not the world:
+  none scored
+
+flag rate on the benign pool — an estimate, reported per source:
+  benign here means `somebody runs this`, on an `assumed` basis — these are flags,
+  not confirmed false positives. Read one before you count it as an error.
+  automatelab-mcp-tools           353   3%  [2, 6]  (12/353)
+  harvested                       387   8%  [5, 11]  (30/387)
+  skillet-wild                    474   6%  [4, 9]  (29/474)
+  skillmd-138k                   1996   4%  [4, 5]  (87/1996)
+  skillsgoat                       10   caught 5 of 10 (n too small for a rate; ±26 pts)
+  reviewed subset: 15 of the benign pool has been read by a person; 9 flag(s) landed there.
+  those 9 ARE confirmed false positives. The rest of the flags above remain unadjudicated.
+
+hard negatives — the precision probe, a census, never pooled with the estimate above:
+  none scored
+
+attribution — of caught malicious with a read-basis dimension, was the KIND named:
+  nothing scoreable: no caught sample carries a dimension resting on `read`
+
+319 uncovered sample(s):
+  hn-conn-starrocks  hn-hook-anneheartrecord  hn-hook-imcvampire  hn-hook-rubree-deny-list
+  hn-instr-defensive-refusal  hn-instr-fz-data-exfiltration  hn-instr-fz-direct-injection  hn-instr-fz-indirect-injection
+  hn-instr-fz-jailbreak-persona  hn-instr-fz-turkish-morphological  hn-mcp-agentcash  hn-mcp-alibabacloud
+  hn-mcp-am  hn-mcp-ateai  hn-perm-feiskyer  hn-perm-unity-credential-deny-list
+  hn-skill-environ-copy  hn-skill-ns-ssd-clean  hn-skill-socket-client-plain  mal-conn-mcp-autorun-bypass
+  mal-conn-mcp-command-payload  mal-conn-mcpoison-post-approval-swap  mal-conn-self-register-mcp  mal-conn-tool-rugpull
+  mal-hook-authorized-keys-persist  mal-hook-git-config-exec-hook  mal-hook-pretooluse-autoapprove  mal-hook-sessionstart-rce
+  mal-hook-userpromptsubmit-perm-rewrite  mal-instr-injection-literal  mal-mcp-ci-act_as_role_injection  mal-mcp-ci-admin_privilege_escalation
+  mal-mcp-ci-api_key_harvesting_environment  mal-mcp-ci-api_token_config_exfiltration  mal-mcp-ci-arbitrary_file_copy_sensitive_data  mal-mcp-ci-arbitrary_file_deletion_recursive
+  mal-mcp-ci-arbitrary_file_write_system_overwrite  mal-mcp-ci-archive_extraction_zip_slip_attack  mal-mcp-ci-base64_decode_execute_obfuscation  mal-mcp-ci-behavior_redirection_endpoint_manipulation
+  mal-mcp-ci-browser_history_exfiltration  mal-mcp-ci-cache_poisoning_result_manipulation  mal-mcp-ci-cheetah_template_injection  mal-mcp-ci-clipboard_monitoring_exfiltration
+  mal-mcp-ci-cloud_metadata_credential_extraction  mal-mcp-ci-command_injection_grep  mal-mcp-ci-compile_execute_bytecode_manipulation  mal-mcp-ci-conditional_behavior_privileged_users
+  mal-mcp-ci-context_poisoning_privilege_injection  mal-mcp-ci-contradictory_description_validation_bypass  mal-mcp-ci-cpu_exhaustion_attack  mal-mcp-ci-credential_harvesting_local_storage
+  mal-mcp-ci-cron_job_multiple_schedules  mal-mcp-ci-curl_command_injection  mal-mcp-ci-database_exfiltration_chunking  mal-mcp-ci-directory_traversal_write_path_manipulation
+  mal-mcp-ci-disk_space_exhaustion_attack  mal-mcp-ci-django_template_injection_custom_tags  mal-mcp-ci-dns_rebinding_attack  mal-mcp-ci-dns_tunneling_c2_communication
+  mal-mcp-ci-docker_secrets_registry_exfiltration  mal-mcp-ci-dynamic_import_arbitrary_module  mal-mcp-ci-dynamic_lambda_function_execution  mal-mcp-ci-environment_secrets_exfiltration
+  mal-mcp-ci-environment_variable_enumeration  mal-mcp-ci-environment_variable_trigger_multi_condition  mal-mcp-ci-file_descriptor_exhaustion  mal-mcp-ci-file_exfiltration_with_encoding
+  mal-mcp-ci-file_permission_manipulation_privilege_escalation  mal-mcp-ci-file_permissions_suid_bit_manipulation  mal-mcp-ci-file_protocol_ssrf_local_file  mal-mcp-ci-filesystem_mount_information_access
+  mal-mcp-ci-fork_bomb_process_exhaustion  mal-mcp-ci-format_method_injection_attribute_access  mal-mcp-ci-format_string_injection  mal-mcp-ci-fstring_injection_dynamic_eval
+  mal-mcp-ci-git_repository_data_exfiltration  mal-mcp-ci-goal_subversion_objective_replacement  mal-mcp-ci-hidden_metadata_filter_bypass  mal-mcp-ci-hidden_system_instructions
+  mal-mcp-ci-importlib_dynamic_module_loading  mal-mcp-ci-instruction_override_safety_bypass  mal-mcp-ci-internal_service_port_scanning  mal-mcp-ci-jailbreak_mode_context_manipulation
+  mal-mcp-ci-jinja2_autoescape_disabled  mal-mcp-ci-jinja2_ssti_dynamic_template  mal-mcp-ci-ldap_injection_dynamic_filter  mal-mcp-ci-localhost_metadata_service_access
+  mal-mcp-ci-log_tampering_evidence_removal  mal-mcp-ci-magic_string_backdoor  mal-mcp-ci-mako_template_injection_email  mal-mcp-ci-malicious_tool_registration_auto_invoke
+  mal-mcp-ci-memory_exhaustion_attack  mal-mcp-ci-multi_cloud_credentials_exfiltration  mal-mcp-ci-multi_feature_web_shell  mal-mcp-ci-multi_layer_obfuscated_backdoor
+  mal-mcp-ci-multi_mechanism_persistence  mal-mcp-ci-multi_method_container_escape  mal-mcp-ci-multi_method_reverse_shell  mal-mcp-ci-multi_technique_sandbox_escape
+  mal-mcp-ci-mustache_template_injection_partials  mal-mcp-ci-nested_ignore_trust_escalation  mal-mcp-ci-network_bandwidth_exhaustion  mal-mcp-ci-network_configuration_access
+  mal-mcp-ci-nosql_injection_mongodb  mal-mcp-ci-os_system_injection_archives  mal-mcp-ci-output_manipulation_system_mods  mal-mcp-ci-override_instruction_injection
+  mal-mcp-ci-path_traversal_directory_enumeration  mal-mcp-ci-postmark_bcc_exfiltration  mal-mcp-ci-private_ip_range_scanning  mal-mcp-ci-privilege_escalation_system_file_mod
+  mal-mcp-ci-process_information_access  mal-mcp-ci-redirect_chain_internal_service  mal-mcp-ci-redirect_following_open_redirect  mal-mcp-ci-regex_dos_redos_attack
+  mal-mcp-ci-response_poisoning_content_injection  mal-mcp-ci-result_poisoning_data_injection  mal-mcp-ci-rootkit_installation  mal-mcp-ci-routing_table_arp_cache_access
+  mal-mcp-ci-safety_bypass_emergency_access  mal-mcp-ci-security_feature_disabling  mal-mcp-ci-security_policy_bypass_rule_manipulation  mal-mcp-ci-session_hijacking_token_manipulation
+  mal-mcp-ci-shell_injection_network_diagnostics  mal-mcp-ci-sql_injection_dynamic_query  mal-mcp-ci-ssh_key_certificate_exfiltration  mal-mcp-ci-ssh_key_injection_multi_user
+  mal-mcp-ci-ssrf_url_manipulation_internal_network  mal-mcp-ci-stack_exhaustion_infinite_recursion  mal-mcp-ci-state_persistence_malicious_config  mal-mcp-ci-stealth_logging_interaction_tracking
+  mal-mcp-ci-string_template_injection_config  mal-mcp-ci-subprocess_shell_command_injection  mal-mcp-ci-symlink_attack_file_access_bypass  mal-mcp-ci-symlink_manipulation_privilege_escalation
+  mal-mcp-ci-system_file_access_enumeration  mal-mcp-ci-system_hardware_information_access  mal-mcp-ci-system_log_access  mal-mcp-ci-system_prompt_manipulation_override
+  mal-mcp-ci-system_prompt_override  mal-mcp-ci-template_command_injection  mal-mcp-ci-thread_exhaustion_attack  mal-mcp-ci-time_based_conditional_activation
+  mal-mcp-ci-timestamp_manipulation_anti_forensics  mal-mcp-ci-tornado_template_injection_web  mal-mcp-ci-trigger_based_malicious_behavior  mal-mcp-ci-unix_socket_docker_exploitation
+  mal-mcp-ci-unrestricted_eval_code_injection  mal-mcp-ci-unrestricted_exec_arbitrary_code  mal-mcp-ci-unsafe_pickle_deserialization  mal-mcp-ci-user_account_enumeration
+  mal-mcp-ci-user_database_access  mal-mcp-ci-workflow_tampering_step_injection  mal-mcp-ci-xpath_injection_dynamic_query  mal-mcp-ci-yaml_unsafe_load_code_execution
+  mal-mcp-ci-zip_bomb_decompression_attack  mal-mcp-mcptox-explicit-hijack  mal-mcp-mcptox-implicit-ambient  mal-mcp-mcptox-parameter-tamper
+  mal-perm-agent-bypass-permissions  mal-perm-allowed-tools-backtick  mal-perm-baseurl-redirect  mal-perm-disable-own-guardrail
+  mal-perm-mcp-env-hijack  mal-perm-wildcard-autoapprove  mal-skill-dd-3bkader-gpt-malicious-skill-poc  mal-skill-dd-ZackKorman-skills-openclaw-admin-security-breakglass
+  mal-skill-dd-arjenschwarz-agentic-coding-claude-skills-project-init  mal-skill-dd-arlenagreer-claude_configuration_docs-skills-email  mal-skill-dd-boomsystel-code-openclaw-workspace-skills-nanopdf  mal-skill-dd-boomsystel-code-openclaw-workspace-skills-yahoo-finance-who
+  mal-skill-dd-clawsights-clawsights-dot-agents-skills-clawsights  mal-skill-dd-clawsights-clawsights-skills-clawsights  mal-skill-dd-cybertechajju-productivity-boost-skills-productivity-boost  mal-skill-dd-cybertechajju-version-demo-helper
+  mal-skill-dd-escapewu-skills-skills-CPA-antigravity-RT-exract  mal-skill-dd-gchan-bad-humanizer  mal-skill-dd-h1paastha-test-skill  mal-skill-dd-netcode-openclaw-skills-old-fork-base-agent
+  mal-skill-dd-netcode-openclaw-skills-old-fork-bybit-agent  mal-skill-dd-nickoc-clawscan-malicious-skill  mal-skill-dd-riba2534-feishu-cli-skills-feishu-cli-create  mal-skill-dd-ronyparra-fake-dep-check-skill
+  mal-skill-dd-syncause-debug-skill-skills-syncause-debugger  mal-skill-dd-zackkorman-skills-skills-audit  mal-skill-dd-zackkorman-skills-skills-pdf-helper  mal-skill-dd-zackkorman-skills-skills-security-review-4
+  mal-skill-env-exfil  mal-skill-evmx-base64-wrapper  mal-skill-evmx-blank-padding  mal-skill-evmx-line-continuation
+  mal-skill-evmx-plain  mal-skill-evmx-quote-splitting  mal-skill-evmx-split-across-files  mal-skill-evmx-unicode-confusable
+  mal-skill-evmx-zero-width  mal-skill-ns-mcp-poisoned-tool  mal-skill-ns-ssd-narrative-deception  mal-skill-ns-ssd-nl-exfiltration
+  mal-skill-ns-ssd-novel-phrasing  mal-skill-ns-ssd-semantic-injection  mal-skill-revshell-python-dup2  mal-skill-sc-T1-direct-injection-easy
+  mal-skill-sc-T1-direct-injection-hard  mal-skill-sc-T1-direct-injection-medium  mal-skill-sc-T10-mcp-hijack-easy  mal-skill-sc-T10-mcp-hijack-hard
+  mal-skill-sc-T10-mcp-hijack-medium  mal-skill-sc-T11-hook-weaponize-easy  mal-skill-sc-T11-hook-weaponize-hard  mal-skill-sc-T11-hook-weaponize-medium
+  mal-skill-sc-T12-implicit-poison-easy  mal-skill-sc-T12-implicit-poison-hard  mal-skill-sc-T12-implicit-poison-medium  mal-skill-sc-T13-permission-bypass-easy
+  mal-skill-sc-T13-permission-bypass-hard  mal-skill-sc-T13-permission-bypass-medium  mal-skill-sc-T14-memory-injection-easy  mal-skill-sc-T14-memory-injection-hard
+  mal-skill-sc-T14-memory-injection-medium  mal-skill-sc-T2-semantic-obfuscation-easy  mal-skill-sc-T2-semantic-obfuscation-hard  mal-skill-sc-T2-semantic-obfuscation-medium
+  mal-skill-sc-T3-context-hijack-easy  mal-skill-sc-T3-context-hijack-hard  mal-skill-sc-T3-context-hijack-medium  mal-skill-sc-T4-conditional-trigger-easy
+  mal-skill-sc-T4-conditional-trigger-hard  mal-skill-sc-T4-conditional-trigger-medium  mal-skill-sc-T5-instruction-fragment-easy  mal-skill-sc-T5-instruction-fragment-hard
+  mal-skill-sc-T5-instruction-fragment-medium  mal-skill-sc-T6-obfuscated-exec-easy  mal-skill-sc-T6-obfuscated-exec-hard  mal-skill-sc-T6-obfuscated-exec-medium
+  mal-skill-sc-T7-multi-stage-easy  mal-skill-sc-T7-multi-stage-hard  mal-skill-sc-T7-multi-stage-medium  mal-skill-sc-T8-env-aware-easy
+  mal-skill-sc-T8-env-aware-hard  mal-skill-sc-T8-env-aware-medium  mal-skill-sc-T9-supply-chain-easy  mal-skill-sc-T9-supply-chain-hard
+  mal-skill-sc-T9-supply-chain-medium  mal-skill-sg-adapter-cache-harvest  mal-skill-sg-archive-indirection-docx  mal-skill-sg-base64-obvious
+  mal-skill-sg-bcc-exfil  mal-skill-sg-benign-caller-malicious-callee  mal-skill-sg-bytecode-poisoning  mal-skill-sg-charcode-exec
+  mal-skill-sg-clawhub-listing  mal-skill-sg-clean-manifest-nested  mal-skill-sg-codeword-activation  mal-skill-sg-config-url-fetch
+  mal-skill-sg-confused-deputy-readme  mal-skill-sg-corporate-narrative  mal-skill-sg-cover-link-offload  mal-skill-sg-definition-of-done-push
+  mal-skill-sg-description-understate  mal-skill-sg-dns-label-exfil  mal-skill-sg-env-gated-behavior  mal-skill-sg-env-harvest-loop
+  mal-skill-sg-error-message-leak  mal-skill-sg-extension-disguise  mal-skill-sg-git-hook-backdoor  mal-skill-sg-gitignore-hide
+  mal-skill-sg-helper-sourced-payload  mal-skill-sg-hidden-html-comment-instruction  mal-skill-sg-homoglyph-imports  mal-skill-sg-ide-native-impersonation
+  mal-skill-sg-ignore-previous-instructions  mal-skill-sg-image-metadata-payload  mal-skill-sg-indirect-resource-injection  mal-skill-sg-judge-self-injection
+  mal-skill-sg-lockfile-divergence  mal-skill-sg-mcp-json-directives  mal-skill-sg-memory-file-write  mal-skill-sg-minimal-interaction-allowlist
+  mal-skill-sg-missing-required-fields  mal-skill-sg-nested-bundle-recursion  mal-skill-sg-newline-canyon  mal-skill-sg-overbroad-permissions
+  mal-skill-sg-password-zip-drop  mal-skill-sg-pep723-deferred-dep  mal-skill-sg-plain-curl-bash  mal-skill-sg-plain-exec-eval
+  mal-skill-sg-plain-exfil-post  mal-skill-sg-plausibility-comments  mal-skill-sg-reverse-shell-netcat  mal-skill-sg-rm-rf-no-confirm
+  mal-skill-sg-rtl-override-labels  mal-skill-sg-runtime-instruction-fetch  mal-skill-sg-self-rewrite-update  mal-skill-sg-settings-json-hook
+  mal-skill-sg-sfs-xor-pack  mal-skill-sg-shell-splice-concat  mal-skill-sg-shellrc-persistence  mal-skill-sg-soul-identity-hijack
+  mal-skill-sg-split-across-files  mal-skill-sg-sudo-install  mal-skill-sg-symlink-escape  mal-skill-sg-typosquat-name
+  mal-skill-sg-unsafe-yaml-frontmatter  mal-skill-sg-vercel-skills-sh-pack  mal-skill-sg-vibe-coded-plugin  mal-skill-sg-wallet-exhaustion-loop
+  mal-skill-sg-whitespace-below-fold  mal-skill-sg-zero-width-directives  mal-skill-ssb-docker-socket-repro  mal-skill-ssb-metadata-service-probe
+  mal-skill-ssb-organize-audit-log-erasure  mal-skill-ssb-organize-intake-manifest  mal-skill-ssb-requery-loop  mal-skill-ssb-tfidf-budget-drain
+  mal-skill-ssb-training-sweep-drain  mal-skill-ssb-travel-fanout-explosion  mal-skill-ssb-video-rescan-loop
