@@ -144,7 +144,7 @@ func header(b *strings.Builder, answers []Answer, m Meta) {
 	for _, l := range []string{
 		"kind is aguard's artifact kind as raw/ reports it, NOT the corpus's surface: corpus surface `mcp`",
 		"(tool catalogues) is aguard kind `connector`, corpus surface `connector` (.mcp.json) is aguard kind `mcp`.",
-		"severity is each finding's own as the binary reported it (the first agreeing sample's).",
+		"severity is each finding's own as the binary reported it (since P-041 the tool sets it from the majority category; before, the first agreeing sample's word).",
 		"asked(kind): a complete sample with >= 1 artifact of the kind and questions > 0. raw/ records questions",
 		"per sample, not per artifact, so every rule of a kind shares that denominator; a (kind, rule) row",
 		"exists only when the run holds at least one vote for it.",
