@@ -63,7 +63,7 @@ func TestFailGate_LLMGateNotEvaluable(t *testing.T) {
 		{"typo beats not-evaluable", with(none, nil), "", "hgih", 2, ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := failGate(tc.out, tc.failOn, tc.failOnLLM, true)
+			err := failGate(tc.out, tc.failOn, tc.failOnLLM, gateGranted)
 			if got := gateCode(err); got != tc.code {
 				t.Fatalf("exit %d, want %d (err: %v)", got, tc.code, err)
 			}
@@ -84,7 +84,7 @@ func writeGateJudgeConfig(t *testing.T, baseURL string, enabled bool, extra ...s
 	}
 	body := "llm:\n  enabled: " + on + "\n  provider: openai_compatible\n  base_url: " + baseURL + "\n" +
 		"  model: fake\n  concurrency: 4\n  timeout: 10s\n  total_timeout: 1m\n  max_retries: 0\n" +
-		"  samples: 1\n  authority: escalate\n"
+		"  samples: 3\n  authority: escalate\n" // three: the gate refuses fewer (P-046)
 	for _, e := range extra {
 		body += "  " + e + "\n"
 	}

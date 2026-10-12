@@ -44,7 +44,7 @@ func TestCheckTarget_MaliciousSingleSkill(t *testing.T) {
 	if out.Overall > 49 {
 		t.Errorf("malicious skill scored %d (>49) — gate would pass it (B1)", out.Overall)
 	}
-	if err := failGate(out, "high", "", false); err == nil {
+	if err := failGate(out, "high", "", gateDefault); err == nil {
 		t.Error("check --fail-on high must gate a malicious skill (non-zero exit)")
 	}
 }
@@ -60,23 +60,23 @@ func TestFailGate(t *testing.T) {
 	clean := model.ScanResult{}
 
 	// No threshold → never gates (regression: scan must not inherit check's default).
-	if err := failGate(high, "", "", false); err != nil {
+	if err := failGate(high, "", "", gateDefault); err != nil {
 		t.Errorf(`failOn="" must return nil even with high findings, got %v`, err)
 	}
 	// Threshold met → code-1 sentinel.
-	if _, ok := failGate(high, "high", "", false).(*failExit); !ok {
+	if _, ok := failGate(high, "high", "", gateDefault).(*failExit); !ok {
 		t.Error("high finding with --fail-on high should return failExit")
 	}
 	// Threshold not met (clean env) → nil.
-	if err := failGate(clean, "high", "", false); err != nil {
+	if err := failGate(clean, "high", "", gateDefault); err != nil {
 		t.Errorf("clean env with --fail-on high should be nil, got %v", err)
 	}
 	// Below threshold → nil (high finding, but gate at critical).
-	if err := failGate(high, "critical", "", false); err != nil {
+	if err := failGate(high, "critical", "", gateDefault); err != nil {
 		t.Errorf("high finding with --fail-on critical should be nil, got %v", err)
 	}
 	// Invalid level → error (exit 2), not a fail sentinel.
-	if err := failGate(high, "bogus", "", false); err == nil {
+	if err := failGate(high, "bogus", "", gateDefault); err == nil {
 		t.Error("invalid --fail-on should error")
 	} else if _, ok := err.(*failExit); ok {
 		t.Error("invalid --fail-on should be a plain error (exit 2), not failExit")
@@ -217,7 +217,7 @@ func TestScan_EscapableGrantIsStatic(t *testing.T) {
 	if f.Source == model.SrcLLM || f.Dimension == 0 {
 		t.Fatal("PERM-006 must be a scoring, gating finding — not an advisory note")
 	}
-	if err := failGate(out, "medium", "", false); err == nil {
+	if err := failGate(out, "medium", "", gateDefault); err == nil {
 		t.Error("--fail-on medium should gate an escapable-binary grant")
 	}
 }
@@ -243,7 +243,7 @@ func TestScan_HookScriptPayloadIsStatic(t *testing.T) {
 	if art.Name != "PreToolUse[Bash]#1" {
 		t.Errorf("finding attributed to %q, want the exact hook command artifact", art.Name)
 	}
-	if err := failGate(out, "high", "", false); err == nil {
+	if err := failGate(out, "high", "", gateDefault); err == nil {
 		t.Error("--fail-on high should gate a hook that fetches and runs remote code")
 	}
 }
@@ -271,7 +271,7 @@ func llmResult(escalates bool) model.ScanResult {
 func TestFailGate_DeterministicGateIgnoresTheJudge(t *testing.T) {
 	for _, escalates := range []bool{false, true} {
 		out := llmResult(escalates)
-		if err := failGate(out, "low", "", true); err != nil {
+		if err := failGate(out, "low", "", gateGranted); err != nil {
 			t.Errorf("escalates=%v: --fail-on fired on an LLM finding (%v)", escalates, err)
 		}
 	}
@@ -280,7 +280,7 @@ func TestFailGate_DeterministicGateIgnoresTheJudge(t *testing.T) {
 // TestFailGate_LLMGateIsOffByDefault: the flag is empty unless asked for, so an existing
 // pipeline cannot start failing because someone enabled the judge.
 func TestFailGate_LLMGateIsOffByDefault(t *testing.T) {
-	if err := failGate(llmResult(true), "", "", true); err != nil {
+	if err := failGate(llmResult(true), "", "", gateGranted); err != nil {
 		t.Errorf("no --fail-on-llm passed, yet the run gated: %v", err)
 	}
 }
@@ -288,8 +288,15 @@ func TestFailGate_LLMGateIsOffByDefault(t *testing.T) {
 // TestFailGate_LLMGateNeedsAuthority: passing the flag without granting authority is REFUSED,
 // not ignored. A gate that silently never fires is worse than no gate — the pipeline goes
 // green forever and everyone believes they are covered.
+// Two judge configurations the gate tests pass: one that may gate (authority granted, three
+// samples) and the default, which may not.
+var (
+	gateGranted = config.LLMConfig{Authority: config.AuthorityEscalate, Samples: config.MinSamplesToEscalate}
+	gateDefault = config.LLMConfig{Authority: config.AuthorityAdvisory, Samples: 1}
+)
+
 func TestFailGate_LLMGateNeedsAuthority(t *testing.T) {
-	err := failGate(llmResult(true), "", "high", false)
+	err := failGate(llmResult(true), "", "high", gateDefault)
 	if err == nil {
 		t.Fatal("--fail-on-llm without authority must be refused, not silently ignored")
 	}
@@ -301,14 +308,41 @@ func TestFailGate_LLMGateNeedsAuthority(t *testing.T) {
 	}
 }
 
+// TestFailGate_LLMGateNeedsSamples (P-046): authority granted but one sample per question is
+// refused the same way — a configuration error naming llm.samples, never the exit-1 sentinel and
+// never a silent pass. Three samples, or more, is the bar; an odd count above it is fine too.
+func TestFailGate_LLMGateNeedsSamples(t *testing.T) {
+	for _, n := range []int{0, 1, 2} {
+		err := failGate(llmResult(true), "", "high", config.LLMConfig{Authority: config.AuthorityEscalate, Samples: n})
+		if err == nil {
+			t.Fatalf("samples %d: --fail-on-llm with authority but without a vote must be refused", n)
+		}
+		if _, isExit := err.(*failExit); isExit {
+			t.Errorf("samples %d: refusal should be a configuration error (exit 2), not a findings failure (exit 1)", n)
+		}
+		if !strings.Contains(err.Error(), "llm.samples: 3") {
+			t.Errorf("samples %d: the error should name llm.samples: 3, got %q", n, err)
+		}
+	}
+	for _, n := range []int{3, 5} {
+		if _, ok := failGate(llmResult(true), "", "high", config.LLMConfig{Authority: config.AuthorityEscalate, Samples: n}).(*failExit); !ok {
+			t.Errorf("samples %d: a qualified LLM high should trip --fail-on-llm", n)
+		}
+	}
+	// Reverse: --fail-on alone never reads authority or samples.
+	if err := failGate(llmResult(true), "high", "", config.LLMConfig{Authority: config.AuthorityEscalate, Samples: 1}); err != nil {
+		t.Errorf("--fail-on high with samples 1 must run as before: %v", err)
+	}
+}
+
 // TestFailGate_LLMGateFiresOnlyOnQualifiedFindings: with authority granted, the gate acts on
 // findings that cleared grounding and consensus — and only those. A finding the samples
 // disagreed about is reported but must not fail a build.
 func TestFailGate_LLMGateFiresOnlyOnQualifiedFindings(t *testing.T) {
-	if _, ok := failGate(llmResult(true), "", "high", true).(*failExit); !ok {
+	if _, ok := failGate(llmResult(true), "", "high", gateGranted).(*failExit); !ok {
 		t.Error("a qualified LLM high should trip --fail-on-llm when authority is granted")
 	}
-	if err := failGate(llmResult(false), "", "high", true); err != nil {
+	if err := failGate(llmResult(false), "", "high", gateGranted); err != nil {
 		t.Errorf("an unqualified LLM finding must not gate: %v", err)
 	}
 }
@@ -317,13 +351,13 @@ func TestFailGate_LLMGateFiresOnlyOnQualifiedFindings(t *testing.T) {
 // PLUS qualified LLM ones, so --fail-on-llm is at least as strict as --fail-on. A gate that
 // somehow saw only LLM findings would silently stop catching real ones.
 func TestFailGate_LLMGateStillSeesStaticFindings(t *testing.T) {
-	if _, ok := failGate(withHigh(), "", "high", true).(*failExit); !ok {
+	if _, ok := failGate(withHigh(), "", "high", gateGranted).(*failExit); !ok {
 		t.Error("--fail-on-llm must also fire on a deterministic high")
 	}
 }
 
 func TestFailGate_InvalidLLMLevel(t *testing.T) {
-	if err := failGate(llmResult(true), "", "bogus", true); err == nil {
+	if err := failGate(llmResult(true), "", "bogus", gateGranted); err == nil {
 		t.Error("an invalid --fail-on-llm level should be rejected")
 	}
 }
@@ -350,7 +384,7 @@ func TestCheckTarget_BareDirIsGated(t *testing.T) {
 	if out.Overall >= 100 {
 		t.Errorf("malicious bare dir scored %d — the gate reports it clean", out.Overall)
 	}
-	if err := failGate(out, "high", "", false); err == nil {
+	if err := failGate(out, "high", "", gateDefault); err == nil {
 		t.Error("check --fail-on high must gate a bare dir containing curl|bash")
 	}
 }
@@ -402,7 +436,7 @@ func TestCheckTarget_SingleFile(t *testing.T) {
 	if len(f.Evidence) == 0 || f.Evidence[0].File != "install.sh" {
 		t.Errorf("evidence path = %+v, want the file's name", f.Evidence)
 	}
-	if err := failGate(out, "high", "", false); err == nil {
+	if err := failGate(out, "high", "", gateDefault); err == nil {
 		t.Error("check --fail-on high must gate a single malicious file")
 	}
 }
@@ -480,7 +514,7 @@ func TestCheckTarget_TargetSuppliedBaselineIgnored(t *testing.T) {
 	if _, ok := findNote(out, "IGN-000"); ok {
 		t.Error("target's own .aguardignore was loaded at all (IGN-000 emitted)")
 	}
-	if err := failGate(out, "high", "", false); err == nil {
+	if err := failGate(out, "high", "", gateDefault); err == nil {
 		t.Error("a target must not be able to open the gate by shipping a baseline")
 	}
 }
@@ -1145,14 +1179,14 @@ func TestCheckTarget_SingleCommandFileRunsAllRules(t *testing.T) {
 	if got := out.Artifacts[0].Kind; got != model.KindCommand {
 		t.Errorf("kind = %s, want command", got)
 	}
-	if err := failGate(out, "high", "", false); err == nil {
+	if err := failGate(out, "high", "", gateDefault); err == nil {
 		t.Errorf("check on a slash command with curl|bash must fail the high gate; score %d", out.Overall)
 	}
 	out, err = checkTarget(docFile, scanOpts{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := failGate(out, "high", "", false); err != nil {
+	if err := failGate(out, "high", "", gateDefault); err != nil {
 		t.Errorf("the same text in docs/ is prose and must not gate: %v", err)
 	}
 }

@@ -19,6 +19,7 @@ package main
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -99,6 +100,13 @@ func mustJSON(t *testing.T, s string) []byte {
 // writeJudgeConfig produces a config file pointing at the fake endpoint.
 func writeJudgeConfig(t *testing.T, baseURL, authority string) string {
 	t.Helper()
+	return writeJudgeConfigSamples(t, baseURL, authority, 1)
+}
+
+// writeJudgeConfigSamples is writeJudgeConfig with the sample count chosen: the tests that run
+// --fail-on-llm need three, the bar the gate refuses below (P-046).
+func writeJudgeConfigSamples(t *testing.T, baseURL, authority string, samples int) string {
+	t.Helper()
 	path := filepath.Join(t.TempDir(), "config.yaml")
 	mustWriteFile(t, path, "llm:\n"+
 		"  enabled: true\n"+
@@ -108,7 +116,7 @@ func writeJudgeConfig(t *testing.T, baseURL, authority string) string {
 		"  concurrency: 4\n"+
 		"  timeout: 30s\n"+
 		"  total_timeout: 2m\n"+
-		"  samples: 1\n"+
+		fmt.Sprintf("  samples: %d\n", samples)+
 		"  authority: "+authority+"\n")
 	return path
 }
@@ -146,7 +154,7 @@ func TestE2E_StaticBaseline(t *testing.T) {
 		t.Errorf("overall = %d, want below 100 — the credential read must cost something", out.Overall)
 	}
 	// One medium finding must not trip a high gate; that is the headroom the judge fills.
-	if err := failGate(out, "high", "", false); err != nil {
+	if err := failGate(out, "high", "", gateDefault); err != nil {
 		t.Errorf("--fail-on high should pass on the static baseline, got %v", err)
 	}
 }
@@ -181,10 +189,10 @@ func TestE2E_JudgeEscalatesWithoutTouchingTheDeterministicScore(t *testing.T) {
 			judged.OverallEffective, judged.Overall)
 	}
 	// Each gate answers for its own half.
-	if err := failGate(judged, "high", "", true); err != nil {
+	if err := failGate(judged, "high", "", gateGranted); err != nil {
 		t.Errorf("--fail-on high must stay blind to the judge, got %v", err)
 	}
-	if err := failGate(judged, "", "high", true); err == nil {
+	if err := failGate(judged, "", "high", gateGranted); err == nil {
 		t.Error("--fail-on-llm high should fire on an escalating finding")
 	}
 }
@@ -207,7 +215,7 @@ func TestE2E_AdvisoryAuthorityRefusesTheGate(t *testing.T) {
 		t.Errorf("effective score = %d vs overall %d: advisory must still SHOW what the judge saw",
 			out.OverallEffective, out.Overall)
 	}
-	err = failGate(out, "", "high", false)
+	err = failGate(out, "", "high", gateDefault)
 	if err == nil {
 		t.Fatal("--fail-on-llm without authority must be refused")
 	}
