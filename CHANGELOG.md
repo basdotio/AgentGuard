@@ -17,7 +17,31 @@ rate copied into prose goes stale on the next rule. `git tag` and the Releases p
 - Invariants: never executes scanned content, no cross-root symlink reads, secret redaction before storage (+ high-entropy fallback).
 - Single static binary (`CGO_ENABLED=0`), MIT + SPDX, CI, bilingual README.
 
-## v0.2.0 – v0.21.0
+## v0.2.0 – v0.22.0
+
+**v0.22.0 (2026-10-12) — the judge's severity is the tool's, read from a closed category the model names, not the
+model's own word; and a build may only fail on the judge when each question was asked at least three times.**
+
+No static rule, score formula, grounding step or consensus bar changed, and `--fail-on` is untouched. On the `aguard
+version` line `judge-prompt` changes (`e863a9dc881c` → `ec4382a9226a`; `rules` and `judge-excerpt` do not): the questions
+put to the model changed, so LLM findings are not comparable with earlier runs. **One configuration that worked stops
+working**: `--fail-on-llm` with `llm.samples` below `3` is now refused with exit 2 before any request, the same way the
+flag is refused without `llm.authority: escalate`; set `samples: 3` (three times the calls of that run) or drop the flag.
+
+- **A judge finding's severity.** Each pass that looks for behaviour (`LLM-001`, `LLM-003`, `LLM-004`, `LLM-006`,
+  `LLM-008`) now asks the model for a category from a closed list, and a per-pass table sets the finding's severity from
+  it; the model's own severity word is recorded in the vote text and weighs nothing. A category outside the list is
+  medium, so a model talked into inventing one cannot raise its weight; the intent pass also asks whether the declared
+  purpose discloses the behaviour, which lowers it one step (a changed software source excepted). Under `samples: 3` the
+  category is voted on: the majority category's severity, or the lowest among the votes when none reaches a majority.
+  The vote text reads `[k of n samples agreed] [severities: …] [categories: …] [tool: high]`. `LLM-007` was already the
+  tool's; `LLM-009` (advisory only) keeps the model's word. The benchmark's `judgefold` records each vote's categories.
+  Measured on the corpus at `samples: 3` and `samples: 1`, with the gates it met and the three it missed, in the
+  proposal (P-041).
+- **The LLM gate needs a vote.** `--fail-on-llm` requires `llm.samples: 3` or more beside `llm.authority: escalate`;
+  a build may only fail on a verdict a majority of samples agreed on, never on one draw. The bar is on the gate, not on
+  the configuration file: without the flag, `authority` and `samples` may say anything, and `hook`, `scan` and `approve`
+  are untouched (P-046).
 
 **v0.21.0 (2026-10-11) — the judge reads the skills, commands and agents a plugin installs, and secrets the redactor used to miss no longer reach the judge, the snippets or the content hash: the key after `--api-key` in an argument array, a quoted password, a credential flag the patterns did not know, the tail of a value that holds a space.**
 
