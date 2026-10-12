@@ -32,7 +32,7 @@ type category struct {
 // Rows shared by the passes that look for the same behaviours; one spelling, one weight.
 var (
 	catExfiltration   = category{"exfiltration", model.SevHigh, "sends data, files or secrets to a network destination outside this machine"}
-	catCredentialRead = category{"credential-read", model.SevHigh, "reads keys, tokens, passwords or credential files by path, with no stated reason to"}
+	catCredentialRead = category{"credential-read", model.SevHigh, "reads keys, tokens, passwords or credential files by path, with no stated reason to; a tool PARAMETER through which the user hands the tool its own service's key or password is NOT this"}
 	catRemoteExec     = category{"remote-execution", model.SevHigh, "downloads code or instructions from the network and runs or follows them (a URL plus a shell or interpreter); running a local script by name is NOT this, and neither is deploying, uploading or calling a service through its own CLI or API, nor the word remote in a task description"}
 	catSafetyDisable  = category{"safety-disable", model.SevHigh, "skips, disables or bypasses a safety check, confirmation or permission"}
 	catConcealed      = category{"concealed-directive", model.SevHigh, "an instruction hidden by encoding, invisible characters, unusual phrasing or placement"}
@@ -55,7 +55,7 @@ var categoryTables = map[Mode][]category{
 		{"other", model.SevMedium, "undisclosed behaviour that is none of the above"},
 	},
 	ModeCapability: {
-		{"network", model.SevHigh, "the command itself contacts the network: a URL, curl, wget, ssh, nc, a mail or webhook call"},
+		{"network", model.SevHigh, "the command itself contacts a host outside this machine: a URL, hostname or IP other than localhost or 127.0.0.1, or curl, wget, ssh, scp, rsync, nc, git fetch/pull/push, or a package runner that fetches code (npx, pipx); a URL on localhost is NOT this, and a program whose NAME merely suggests sync, mail, heartbeat or update is NOT this (process-control)"},
 		{"credential", model.SevHigh, "the command itself reads a key, token or credential file by path"},
 		{"install", model.SevHigh, "the command itself installs a package or downloads code: pip, npm, brew, a fetch piped to a shell"},
 		{"permission-override", model.SevHigh, "the command allows or auto-approves an action: it answers the permission prompt with approval, writes an allow permissionDecision, or widens the permission settings; a hook that only denies or blocks is NOT this (process-control if it also runs something, else not flagged)"},
