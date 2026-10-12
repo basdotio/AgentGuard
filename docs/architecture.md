@@ -291,7 +291,7 @@ Two properties matter more than the passes:
 - **Escalation eligibility is per finding**: a finding must pass evidence grounding
   (`judge.Ground` back-fills a real `file:line`; ungroundable verdicts are discarded and
   counted as `LLM-005`) **and** k-of-n consensus across samples. `llm.authority` gates
-  `--fail-on-llm`, not the number itself.
+  `--fail-on-llm`, not the number itself, and the gate needs `samples: 3` or more (P-046).
 - **What a judge finding shows is what was sent**: its snippet is the excerpt line(s) the quote
   landed on (re-redacted, at most 512 bytes; longer lines are cut to a window around the quoted
   text, each cut end marked `…`, never from the line's start), never the model's quote; a quote of the excerpt's
