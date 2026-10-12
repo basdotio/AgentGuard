@@ -182,6 +182,13 @@ func groundedFinding(t task, v Verdict) (verdict, barrier *model.Finding, droppe
 	if f := finding(t.req, v); f != nil {
 		if s, ok := groundSpan(v.Evidence, t.units); ok {
 			f.Evidence[0] = s.evidence()
+			// The category has to be shown by the text, not guessed from a name (P-049): a
+			// hook category with no token of it in the sent command, or a connector's
+			// credential-read resting on parameter lines alone, weighs medium and says so.
+			if cat := categoryName(v); !categoryShown(t.req.Mode, t.req.Artifact, cat, t.req.Behavior, s.text) {
+				f.Severity = model.SevMedium
+				f.Why += " [category not shown by the text: " + cat + "]"
+			}
 			verdict = f
 		} else {
 			dropped = true
