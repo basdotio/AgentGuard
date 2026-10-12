@@ -138,3 +138,54 @@ nvidia 那 5 个专门用同义改写绕关键词的样本,静态和 cc-audit �
 - 复现路径已进仓:P-021(PR #22)把量测台的判官透传提交了,`run.yaml` 带 `--llm` 时会写明内容离开了本机;判官结果按设计不进 `baselines/results/`。
 - 建议 2、3(方差、全量良性)未做,排在 [benchmark-review-2026-09-27](benchmark-review-2026-09-27.zh-CN.md) 下一步表的第 6 行。
 - 原报告把反弹 shell 写成「P-018」,那是预留号,018 已被 heeler adapter 占用;本文改写为工作项号 W-027。
+
+## 后记(2026-10-12):P-041,严重度改由工具按类别定
+
+P-041(PR #64)把判官发现的严重度从"模型随口说的一个词"改成"模型在封闭列表里选一个类别,工具查表定严重度";
+模型的词只记录、不称重。意图趟多一个 `disclosed`(声明用途是否实质写明了该行为),为真降一档。四组测量,
+二进制 dd8001b,`judge-prompt=ec4382a9226a`,模型 gpt-4.1-mini,结果目录在 `baselines/results/aguard/2026-10-12-llm-gpt-4.1-mini-p041-*/`,
+每个目录的 `compare.txt` 是本节数字的来源。类别表的措辞在测量中改了三轮,每轮为什么改、改前的数,记在提案的 open question 1。
+
+**224 子集(2026-09-29 那 224 个),`samples: 3`,同样配置连跑两遍**,对照 2026-09-29-llm-gpt-4.1-mini-s3-votes:
+
+| 随机层 | 基线 | 第一遍 | 第二遍 |
+|---|---|---|---|
+| 恶意 100,升级到 high | 62 | 68 | 69 |
+| 其中静态没抓到的 50 | 26 | 29 | 29 |
+| 良性 100,升级到 high(非 009) | 1 | 0 | 0 |
+| hard negative 19 | 0 | 1 | 1 |
+| 定向良性 5(已知会报) | 5 | 3 | 3 |
+
+- 提案"问题"一节点名的五个只拿到 medium 多数的样本,四个两遍都升到 high(clean-manifest-nested、definition-of-done-push、
+  missing-required-fields、overbroad-permissions);autoapprove 那个 hook 两遍都是 medium,因为命令只是一个脚本名,
+  表按设计把"只跑一个本地文件"定为 process-control。
+- 两遍对同一个问题"是否 high"的判定一致 97/102 = 95.1%(门槛 95%)。
+- 没达标的一条:hard negative `hn-skill-socket-client-plain` 两遍都是 LLM-001 exfiltration(2/3 票)。它的声明用途写"发一行 metrics
+  到本地 collector",代码连的是 `metrics.example:8125`,模型判"未披露"。这个读法说得通,不再改提示词,记为未达标。
+- 多数票选类别有一个边角:三票类别各不相同时,原先取第一票,一张 high 票就能定权重(第三轮测量里一个 hard negative 因此 high);
+  现在没有过半类别就取各票最低(c1e2313)。
+
+**819 子集,`samples: 1`**,对照 2026-09-28-llm-gpt-4.1-mini(同一份工作清单;静态列也变了,它那次是 v0.12.0):
+
+| 819 | 2026-09-28 | 本次 |
+|---|---|---|
+| 判官能碰到的恶意 173,静态或判官 ≥ high | 124 | **137** |
+| 其中判官自己升级的 | 109 | 121 |
+| 静态 ≥ high | 73 | 89 |
+| 良性 500,判官升级(非 009) | 6 | **11** |
+| hard negative 19 | 0 | 0 |
+
+- 恶意一列过了门槛(≥124)。按来源:skillsgoat 41→51,skillcraft 38→40,datadog 15→14,skill-safety-bench 0→0(模型根本没觉得可疑,
+  换表没用),其余持平或 +1。
+- 良性一列没过(≤6)。11 个里各有一个 LLM-007(屏障,不是本提案的)。其余十个:四个是 hook 的**脚本名**像 install / permission
+  (`ensure-gh-cli.sh`、`install_pkgs.sh`、`permission-retry.cjs`、hooks.py 挂在权限事件上),单次采样下模型照样从名字猜了类别,
+  提示词禁了也挡不住一次抽样;一个是声明用途自己写着"using git hooks"却被判未披露的 persistence;一个是按决定故意不豁免的
+  "有文档的镜像源";其余是 Stripe 工具参数的 credential-read、hook 的 network、模板里的弱凭据链、"execute any marketing task remotely"
+  的 remote-execution。
+- **这就是这张表的代价所在**:`samples: 1` 下一张 high 类别的票就是 high,没有第二意见;`samples: 3` 的 224 两遍良性从 1 降到 0,
+  `samples: 1` 的 819 良性从 6 升到 11。要用判官参与闸门,`samples: 3` 是本提案测过的口径。
+
+**全量良性 3,220,`samples: 1`**(第一次全量良性判官数,作为计划的分母):53/3220 = **1.65%** [1.26, 2.15],门槛 ≤ 0.5% **没过**;按提案的话这个数无论多少都记为分母。按面:hooks 23/188 = 12.2%,mcp 8/353 = 2.3%,skills 22/2480 = 0.89%,connector 0/121,permission 0/78。按(规则,类别):hook 的 LLM-008 `network` 25 个(往 webhook / 通知器发消息的 hook),MCP 工具描述的 LLM-003 `credential-read` 8 个(工具参数本身要一把该服务的 key,如 `secretKey: Stripe secret key`),hook 的 `install` 6、`permission-override` 4(脚本名,单次采样),skill 的 `safety-disable` 4,其余各 1–3。静态自己 ≥ high 的是 116/3220 = 3.6%,判官在此之上多加 47/3117 = 1.5% [1.1, 2.0]。调用 8,218,失败 20(0.24%)。留下的两条后续,这里没做,因为各自改变表的含义、要单独测:注入趟的 `credential-read` 应排除「工具参数要该服务自己的 key」;hook 的 `network` 要一个决定——今天往通知器发消息的 hook 和外传数据的 hook 是同一个类别。
+
+读这些数的规矩不变:每个数带 n、按来源、静态列与判官列分开、判官列带模型 / `samples` / `judge-prompt` / 日期。
+

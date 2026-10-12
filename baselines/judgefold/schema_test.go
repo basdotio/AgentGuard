@@ -11,8 +11,9 @@ import (
 	"testing"
 )
 
-// TestSchema_RoundTripsTheCommittedJudgeFiles: the four committed judge runs were folded by a
-// one-off script, and their judge.jsonl is the only schema anyone has cited. Every line of them
+// TestSchema_RoundTripsTheCommittedJudgeFiles: the four 2026-09 judge runs were folded by a
+// one-off script, and their judge.jsonl is the only schema anyone has cited; the four P-041 runs
+// (2026-10-12) were folded by this tool and carry `categories` per vote. Every line of them
 // must decode into Row and encode back to the same bytes — key order, empty lists, absent fields
 // and all — or the tool writes a file that only looks like the committed one. The two samples:1
 // runs carry no votes / triage_calls / questions; those must stay absent, not become null or 0.
@@ -22,8 +23,8 @@ func TestSchema_RoundTripsTheCommittedJudgeFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(files) != 4 {
-		t.Fatalf("found %d committed judge.jsonl files, want the four judge runs: %v", len(files), files)
+	if len(files) != 8 {
+		t.Fatalf("found %d committed judge.jsonl files, want the eight judge runs (four of 2026-09, four of P-041): %v", len(files), files)
 	}
 	total := 0
 	for _, f := range files {
@@ -49,8 +50,8 @@ func TestSchema_RoundTripsTheCommittedJudgeFiles(t *testing.T) {
 			total++
 		}
 	}
-	if total != 2086 {
-		t.Errorf("round-tripped %d lines, want 2,086 (819 + 819 + 224 + 224)", total)
+	if total != 6573 {
+		t.Errorf("round-tripped %d lines, want 6,573 (819 + 819 + 224 + 224 of 2026-09, then 224 + 224 + 819 + 3,220 of P-041)", total)
 	}
 }
 

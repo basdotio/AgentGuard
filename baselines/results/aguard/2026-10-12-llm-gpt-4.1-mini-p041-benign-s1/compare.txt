@@ -1,0 +1,90 @@
+# P-041 W6, generated from judge.jsonl in this directory: every benign sample of the corpus (3,220), samples: 1, binary dd8001b
+# (judge-prompt ec4382a9226a). The first full-benign judge number; there is no earlier run to set it against.
+# 'escalated non-009 at high' = the sample has an escalated judge finding at high from a rule other than LLM-009. Wilson 95% intervals.
+
+== full benign: n 3220 · asked (judge_calls>0) 3199 · escalated non-009 at high 53 = 1.65% [1.26, 2.15] (gate <= 0.5%) ==
+   over the asked samples only: 53/3199 = 1.66% [1.27, 2.16]
+   static >= high 116 · flagged(static|judge) 163 · judge_any 409 · calls 8218 failed 20 · incomplete 20
+
+== by surface: n · asked · escalated non-009 (rate, Wilson) ==
+  skills       n  2480 · asked  2480 · esc  22  0.89% [0.59, 1.34]
+  mcp          n   353 · asked   353 · esc   8  2.27% [1.15, 4.41]
+  hooks        n   188 · asked   185 · esc  23  12.23% [8.29, 17.69]
+  connector    n   121 · asked   121 · esc   0  0.00% [0.00, 3.08]
+  permission   n    78 · asked    60 · esc   0  0.00% [0.00, 4.69]
+
+== escalated rule × tool severity × categories, over the escalated benign samples ==
+   25  ('LLM-008', 'hook', ('network',))
+    8  ('LLM-003', 'connector', ('credential-read',))
+    6  ('LLM-008', 'hook', ('install',))
+    4  ('LLM-008', 'hook', ('permission-override',))
+    4  ('LLM-003', 'skill', ('safety-disable',))
+    3  ('LLM-003', 'skill', ('remote-execution',))
+    3  ('LLM-003', 'skill', ('credential-read',))
+    3  ('LLM-001', 'skill', ('remote-execution',))
+    2  ('LLM-001', 'skill', ('credential-read',))
+    2  ('LLM-001', 'skill', ('exfiltration',))
+    2  ('LLM-006', 'skill', ('credential-to-network',))
+    1  ('LLM-003', 'hook', ('concealed-directive',))
+    1  ('LLM-007', 'hook', ())
+    1  ('LLM-003', 'hook', ('safety-disable',))
+    1  ('LLM-003', 'hook', ('remote-execution',))
+    1  ('LLM-001', 'skill', ('persistence',))
+    1  ('LLM-003', 'skill', ('exfiltration',))
+    1  ('LLM-001', 'skill', ('privilege',))
+    1  ('LLM-001', 'skill', ('software-source',))
+
+== the escalated benign samples ==
+  ben-hook-bioinfo-slopless-settings                                     hooks      ['LLM-008'] [('LLM-008', ['install'])]
+  ben-hook-codingagentsystem-cas-settings                                hooks      ['LLM-008'] [('LLM-008', ['permission-override'])]
+  ben-hook-commercetools-ui-kit-settings                                 hooks      ['LLM-008'] [('LLM-008', ['install']), ('LLM-008', ['process-control'])]
+  ben-hook-corvidae-coding-projects-openclaudia-settings                 hooks      ['LLM-008'] [('LLM-008', ['process-control']), ('LLM-008', ['network'])]
+  ben-hook-generaltranslation-gt-settings                                hooks      ['LLM-008'] [('LLM-008', ['network'])]
+  ben-hook-goondocks-co-open-agent-kit-settings                          hooks      ['LLM-008'] [('LLM-008', ['network'])]
+  ben-hook-ianscott313-miniverse-settings                                hooks      ['LLM-008'] [('LLM-008', ['network']), ('LLM-008', ['network']), ('LLM-008', ['network']), ('LLM-008', ['network']), ('LLM-008', ['network']), ('LLM-008', ['network']), ('LLM-008', ['network']), ('LLM-008', ['network']), ('LLM-008', ['network'])]
+  ben-hook-jlevy-rust-porting-playbook-settings                          hooks      ['LLM-008'] [('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['install']), ('LLM-008', ['process-control'])]
+  ben-hook-jlevy-strif-settings                                          hooks      ['LLM-008'] [('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['install'])]
+  ben-hook-jlevy-tbd-settings                                            hooks      ['LLM-008'] [('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['install']), ('LLM-003', ['other-directive']), ('LLM-008', ['process-control'])]
+  ben-hook-juyterman1000-entroly-settings                                hooks      ['LLM-008'] [('LLM-008', ['network'])]
+  ben-hook-kalypsokichu-code-kalypso-claude-workflow-settings            hooks      ['LLM-008'] [('LLM-008', ['process-control']), ('LLM-008', ['permission-override']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control'])]
+  ben-hook-koukyosyumei-h5i-db-settings                                  hooks      ['LLM-008'] [('LLM-008', ['network']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control'])]
+  ben-hook-li-zhixin-claude-ignore-settings                              hooks      ['LLM-003', 'LLM-007'] [('LLM-003', ['concealed-directive']), ('LLM-007', None)]
+  ben-hook-natea-exomind-settings                                        hooks      ['LLM-008'] [('LLM-008', ['network']), ('LLM-008', ['network']), ('LLM-008', ['network']), ('LLM-008', ['network']), ('LLM-008', ['network'])]
+  ben-hook-outfitter-dev-blz-settings                                    hooks      ['LLM-008'] [('LLM-008', ['install'])]
+  ben-hook-paulpreibisch-agentvibes-settings                             hooks      ['LLM-003'] [('LLM-003', ['safety-disable']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control'])]
+  ben-hook-pmgraham-claude-agents-settings                               hooks      ['LLM-008'] [('LLM-008', ['network'])]
+  ben-hook-rupakm-leslie-settings                                        hooks      ['LLM-008'] [('LLM-008', ['network']), ('LLM-008', ['network'])]
+  ben-hook-shanraisshan-gemini-cli-best-practice-settings                hooks      ['LLM-008'] [('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['permission-override']), ('LLM-008', ['permission-override']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control'])]
+  ben-hook-travisjneuman-claude-settings                                 hooks      ['LLM-003'] [('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-003', ['remote-execution']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control'])]
+  ben-hook-vmihalis-hacker-bob-settings                                  hooks      ['LLM-008'] [('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['network']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control']), ('LLM-008', ['process-control'])]
+  ben-hook-z3z1ma-dbt-core-interface-settings                            hooks      ['LLM-008'] [('LLM-008', ['process-control']), ('LLM-008', ['network']), ('LLM-008', ['network'])]
+  ben-mcp-am-agent-passport-system-mcp                                   mcp        ['LLM-003'] [('LLM-003', ['credential-read'])]
+  ben-mcp-am-chinchillaenterprises-mcp-lambda-cron                       mcp        ['LLM-003'] [('LLM-003', ['credential-read'])]
+  ben-mcp-am-chinchillaenterprises-mcp-stripe                            mcp        ['LLM-003'] [('LLM-003', ['credential-read'])]
+  ben-mcp-am-local-mcp                                                   mcp        ['LLM-003'] [('LLM-003', ['credential-read'])]
+  ben-mcp-am-malicious-mcp-server                                        mcp        ['LLM-003'] [('LLM-003', ['credential-read'])]
+  ben-mcp-am-mpp32-mcp-server                                            mcp        ['LLM-003'] [('LLM-003', ['credential-read'])]
+  ben-mcp-am-onesub-mcp-server                                           mcp        ['LLM-003'] [('LLM-003', ['credential-read'])]
+  ben-mcp-am-pmxt-mcp                                                    mcp        ['LLM-003'] [('LLM-003', ['credential-read'])]
+  ben-skill-md-bbgnsurftech-claude-skills-collection-overnight-dev       skills     ['LLM-001'] [('LLM-001', ['persistence'])]
+  ben-skill-md-choufeng-impersonate-agents-convex                        skills     ['LLM-003'] [('LLM-003', ['exfiltration'])]
+  ben-skill-md-davila7-claude-code-templates-busybox-on-windows          skills     ['LLM-003'] [('LLM-003', ['remote-execution'])]
+  ben-skill-md-deviautomatiza1-atrapaclientes-iautomatiza-atrapaclientes-mcps skills     ['LLM-003'] [('LLM-003', ['credential-read'])]
+  ben-skill-md-dvcrn-openclaw-skills-marketplace-clawhub-quarantine-installer skills     ['LLM-003'] [('LLM-003', ['remote-execution'])]
+  ben-skill-md-ntcoding-claude-skillz-switch-persona                     skills     ['LLM-003'] [('LLM-003', ['safety-disable'])]
+  ben-skill-md-openclaw-skills-antigravity-image                         skills     ['LLM-003'] [('LLM-003', ['credential-read'])]
+  ben-skill-md-orionjs-orionjs-publish                                   skills     ['LLM-003'] [('LLM-003', ['credential-read'])]
+  ben-skill-md-sypsyp97-claude-skill-codex-codex                         skills     ['LLM-003'] [('LLM-003', ['safety-disable'])]
+  ben-skill-md-trailofbits-skills-second-opinion                         skills     ['LLM-003'] [('LLM-003', ['safety-disable'])]
+  ben-skill-sg-admin-installer                                           skills     ['LLM-001'] [('LLM-001', ['privilege'])]
+  ben-skill-sg-env-names-only                                            skills     ['LLM-001'] [('LLM-001', ['credential-read'])]
+  ben-skill-sg-registry-mirror-documented                                skills     ['LLM-001'] [('LLM-001', ['software-source'])]
+  ben-skill-sk-ItamarZand88__claude-code-agentic-engineering__plugins__agent-sdk-pro__skills__sdk-hooks-development skills     ['LLM-001'] [('LLM-001', ['remote-execution'])]
+  ben-skill-sk-ItamarZand88__claude-code-agentic-engineering__plugins__agent-sdk-pro__skills__sdk-typescript-patterns skills     ['LLM-001'] [('LLM-001', ['remote-execution'])]
+  ben-skill-sk-MUmerRazzaq__claude-code-skills-lab__.claude__skills__prebuilt__browsing-with-playwright skills     ['LLM-001'] [('LLM-001', ['remote-execution'])]
+  ben-skill-sk-MiddleKD__prompt-eval-tuning__.claude__skills__ragas-skill skills     ['LLM-001'] [('LLM-001', ['exfiltration'])]
+  ben-skill-sk-ShareX__ShareX.Avalonia__.ai__skills__create-uploader-plugin skills     ['LLM-006'] [('LLM-006', ['credential-to-network'])]
+  ben-skill-sk-antoniolg__agent-skills__skills__holded-invoices          skills     ['LLM-001', 'LLM-006'] [('LLM-001', ['exfiltration']), ('LLM-006', ['credential-to-network'])]
+  ben-skill-sk-breverdbidder__brevard-bidder-landing__.claude__skills__screen-control-operator skills     ['LLM-003'] [('LLM-003', ['safety-disable'])]
+  ben-skill-sk-robynnai__robynn-claude-cmo__skills__cmo                  skills     ['LLM-003'] [('LLM-003', ['remote-execution'])]
+  ben-skill-sk-rungchan2__frontend-skills__skills__project-packages__skills__supabase-clients skills     ['LLM-001'] [('LLM-001', ['credential-read'])]
