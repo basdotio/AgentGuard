@@ -1,0 +1,10 @@
+{"sample":"ben-hook-clima-ensemblekalmanprocesses-jl-settings","path":"corpus/benign/hooks/clima-ensemblekalmanprocesses-jl-settings","class":"benign","surface":["hooks","permission"]}
+{"sample":"ben-mcp-am-cloudbase-cloudbase-mcp","path":"corpus/benign/mcp/am-cloudbase-cloudbase-mcp","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-korean-law-mcp","path":"corpus/benign/mcp/am-korean-law-mcp","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-moralisweb3-api-mcp-server","path":"corpus/benign/mcp/am-moralisweb3-api-mcp-server","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-morningljn-mnemo","path":"corpus/benign/mcp/am-morningljn-mnemo","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-smartbear-mcp","path":"corpus/benign/mcp/am-smartbear-mcp","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-ttpears-gitlab-mcp-server","path":"corpus/benign/mcp/am-ttpears-gitlab-mcp-server","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-wikipedia-mcp-server","path":"corpus/benign/mcp/am-wikipedia-mcp-server","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-yoonion-mimi-seed-mcp","path":"corpus/benign/mcp/am-yoonion-mimi-seed-mcp","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-am-zsc-glitch-knowledge-keeper-mcp","path":"corpus/benign/mcp/am-zsc-glitch-knowledge-keeper-mcp","class":"benign","surface":["mcp"]}

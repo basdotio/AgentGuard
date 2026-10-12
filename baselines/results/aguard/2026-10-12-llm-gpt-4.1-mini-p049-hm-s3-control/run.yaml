@@ -1,0 +1,81 @@
+# Written BY HAND from the run's raw output, not by baselines/cmd/baseline: the driver (P-021)
+# records the flags and the usage but folds verdicts from deterministic findings only, so its own
+# verdicts.jsonl is the static column (still recoverable from ledger.jsonl); the files here are
+# re-folded from raw/ at the judge's predicate by baselines/cmd/judgefold (P-033). Read
+# baselines/README.md "Measuring the judge" before citing any figure produced alongside this file.
+# THIS IS NOT A BASELINE: the verdicts depend on a model, a day and the sampling.
+#
+# WHAT THIS RUN IS FOR: the noise of the judge's own operating point. Every benign hook (188) and MCP tool
+# catalogue (353) at samples: 3 with v0.22.0's prompt, a SECOND time: the first draw is
+# ../2026-10-12-llm-gpt-4.1-mini-p048-hm-s3-old/. Between the two, 28 and 27 samples escalated and
+# 8 changed (4 lost, 4 gained), which is the band a change measured on this panel has to clear.
+# P-049's run on the same panel (../2026-10-12-llm-gpt-4.1-mini-p049-hm-s3/) is read against both.
+#
+# measured by agent-guard's own adapter (agent-guard baselines/adapter/aguard) with --llm passed through, threshold "high" chosen by us, placement: by content, into a fake home; unplaceable trees are handed to `check` directly (the judge does not run on that path)
+
+tool: aguard
+tool_version: aguard v0.22.0-4-g77d41e2 (commit 77d41e2, built 2026-10-12T11:42:08Z) · reputation entries=18 · rules=d74bca61f0da · judge-prompt=ec4382a9226a · judge-excerpt=6
+threshold: high
+tool_extra_args:
+    - --llm
+    - --config
+    - <judge config, not committed; reproduced under `judge:` below>
+tool_extra_env: []                    # none: the key was read from api_key_file, no proxy was needed
+uploads_samples: true
+uploads_samples_basis: >-
+    this run passed --llm to aguard: redacted excerpts of every judged artifact (skills, CLAUDE.md,
+    subagents, commands, hooks, MCP configs; at most 6,000 bytes per skill) were sent to the endpoint
+    under `judge:`, three times per question. Samples routed to `check` stayed static; nothing of theirs left the machine.
+corpus_commit: 5c3db6ee
+started_at: 2026-10-12T11:42:10Z
+finished_at: 2026-10-12T12:24:54Z   # the driver's exit; 42 min wall clock at -j 2
+adapter: agent-guard baselines/adapter/aguard
+placement: by content, into a fake home; unplaceable trees are handed to `check` directly
+provisional: false
+work_list: samples.jsonl
+judge:
+    provider: openai                  # preset: endpoint https://api.openai.com/v1
+    model: gpt-4.1-mini
+    samples: 3                        # majority = 2; each question asked 3 times at temperature 0.8
+    authority: advisory
+    concurrency: 4
+    timeout: 60s                      # default
+    total_timeout: 10m                # default
+    max_retries: 4
+    calls: 7093
+    failed: 11
+    skipped: 0
+    repaired: 72
+    prompt_version: ec4382a9226a
+    excerpt_version: 6
+fold: >-
+    verdict = malicious when a deterministic finding is >= high, OR an LLM finding that ESCALATED
+    (grounded; k of n at the majority bar) is >= high and its rule is not LLM-009 (advisory-only).
+    The finding's severity is the tool's, set from the category the majority of the agreeing votes
+    named (P-041); the model's own words are in each vote's `severities`, the categories in its
+    `categories`. Per-sample static / judge / judge-any, the escalated rule ids and the votes are in
+    judge.jsonl; per-kind-rule.txt is judgefold's table over the same rows. Folded by
+    baselines/cmd/judgefold from raw/ (see raw_archive). Nothing here is hand-typed except this file.
+counts:
+    scored: 541
+    no_verdict: 0
+    error: 0
+    incomplete: 10 # ben-hook-clima-ensemblekalmanprocesses-jl-settings, ben-mcp-am-cloudbase-cloudbase-mcp, ben-mcp-am-korean-law-mcp, ben-mcp-am-moralisweb3-api-mcp-server, ben-mcp-am-morningljn-mnemo, ben-mcp-am-smartbear-mcp, ben-mcp-am-ttpears-gitlab-mcp-server, ben-mcp-am-wikipedia-mcp-server, ben-mcp-am-yoonion-mimi-seed-mcp, ben-mcp-am-zsc-glitch-knowledge-keeper-mcp — judgefold: one of its calls failed, so one question had fewer answers than asked; the row keeps what was answered (incomplete.jsonl)
+work_list_size: 541
+judge_usage:
+    basis: reported
+    basis_note: 'summed from the tool''s own counts: every sample with a judge summary reported triage_calls and retries. Questions asked = (calls - triage_calls) / the judge''s samples setting, exact only when skipped is 0'
+    reported_samples: 541
+    derived_samples: 0
+    calls: 7093
+    failed: 11
+    skipped: 0
+    repaired: 72
+    triage_calls: 292
+    retries: 0
+    prompt_tokens: 7166604
+    completion_tokens: 1333625
+raw_archive:                          # raw/ is not in the tree (P-039); the archive is this run's primary evidence
+    asset: aguard-judge-raw-2026-10-p049.tar.gz
+    sha256: 92342c4aebcfae375e59c41805918c23069cb5cec862f73547d51ad021a47caf   # 1,654,513 bytes; attached to release v0.22.0 on 2026-10-13 (gh release download v0.22.0 --pattern aguard-judge-raw-2026-10-p049.tar.gz)
+    note: one archive holds the raw/ of the four P-049 runs, under the directory names used here

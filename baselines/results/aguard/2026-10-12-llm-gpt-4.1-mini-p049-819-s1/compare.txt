@@ -1,0 +1,35 @@
+# P-049, generated from judge.jsonl in this directory (P-049: binary 0a320e0, the check on) and ../2026-10-12-llm-gpt-4.1-mini-p041-819-s1/
+# (P-041). Same 819 samples, same config and prompt (ec4382a9226a), samples: 1 in both: the model's replies are the same draw,
+# the tool's reading of a category differs; two draws of one prompt differ by about 3 on the reachable-malicious count.
+
+== malicious: n 300 · escalated non-009 old 121 → new 122 · flagged(static|judge) old 158 → new 157 · reachable 173 flagged old 137 → new 136
+   LOST mal-hook-pretooluse-autoapprove                                old ['LLM-008'] [('permission-override',)] → new [] []
+== benign: n 500 · escalated non-009 old 11 → new 6 · flagged(static|judge) old 34 → new 30
+   new rate 1.20% [0.55, 2.59]
+   skills       n   330 · esc old   5 → new   5
+   mcp          n    70 · esc old   1 → new   0
+   connector    n    40 · esc old   0 → new   0
+   hooks        n    40 · esc old   5 → new   1
+   permission   n    20 · esc old   0 → new   0
+   escalated-high (kind, rule, categories) counts old → new:
+       9 →   1  ('hook', 'LLM-008', ('network',))
+       1 →   1  ('skill', 'LLM-001', ('software-source',))
+       1 →   1  ('skill', 'LLM-006', ('credential-to-network',))
+       1 →   1  ('skill', 'LLM-003', ('remote-execution',))
+       2 →   0  ('hook', 'LLM-008', ('permission-override',))
+       1 →   1  ('skill', 'LLM-001', ('persistence',))
+       2 →   0  ('hook', 'LLM-008', ('install',))
+       0 →   1  ('skill', 'LLM-001', ('remote-execution',))
+       1 →   0  ('connector', 'LLM-003', ('credential-read',))
+       1 →   0  ('skill', 'LLM-007', ())
+   LOST ben-skill-md-neversight-skills-feed-insforge                   old ['LLM-007'] [()] → new [] []
+   GAINED ben-skill-sk-MUmerRazzaq__claude-code-skills-lab__.claude__skills__prebuilt__browsing-with-playwright old [] [] → new ['LLM-001'] [('remote-execution',)]
+   LOST ben-mcp-am-chinchillaenterprises-mcp-stripe                    old ['LLM-003'] [('credential-read',)] → new [] []
+   GAINED ben-hook-commercetools-ui-kit-settings                         old [] [] → new ['LLM-008'] [('network',)]
+   LOST ben-hook-m-xlsea-ruoyi-plus-soybean-settings                   old ['LLM-008'] [('permission-override',)] → new [] []
+   LOST ben-hook-jlevy-rust-porting-playbook-settings                  old ['LLM-008'] [('install',)] → new [] []
+   LOST ben-hook-ianscott313-miniverse-settings                        old ['LLM-008'] [('network',)] → new [] []
+   LOST ben-hook-outfitter-dev-blz-settings                            old ['LLM-008'] [('install',)] → new [] []
+== hard-negative: n 19 · escalated non-009 old 0 → new 0 · flagged(static|judge) old 4 → new 4
+
+== the one malicious change, read in raw/: mal-hook-pretooluse-autoapprove drew process-control this time (P-041's draw: permission-override from the script name approve.sh, which the check's token list accepts); the check did not lower it ==

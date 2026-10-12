@@ -1,0 +1,87 @@
+# P-049, generated from judge.jsonl in this directory (P-049: binary 0a320e0, the check on) and the two controls
+# ../2026-10-12-llm-gpt-4.1-mini-p048-hm-s3-old/ (control A) and ../2026-10-12-llm-gpt-4.1-mini-p049-hm-s3-control/ (control B),
+# all three the same 541 benign samples (188 hooks, 353 MCP tool catalogues), samples: 3, judge-prompt ec4382a9226a.
+# The controls differ from each other by 8 samples (4 lost, 4 gained); the check is read against that band.
+
+== control A vs control B (the noise) ==
+== benign: n 541 · escalated non-009 old 28 → new 27 · flagged(static|judge) old 38 → new 36
+   new rate 4.99% [3.45, 7.16]
+   mcp          n   353 · esc old   8 → new   8
+   hooks        n   188 · esc old  20 → new  19
+   escalated-high (kind, rule, categories) counts old → new:
+      18 →  15  ('hook', 'LLM-008', ('network', 'network', 'network'))
+       4 →   7  ('connector', 'LLM-003', ('credential-read', 'credential-read', 'credential-read'))
+       4 →   4  ('hook', 'LLM-008', ('install', 'install', 'install'))
+       3 →   2  ('hook', 'LLM-008', ('network', 'network'))
+       2 →   3  ('hook', 'LLM-003', ('remote-execution', 'remote-execution'))
+       4 →   1  ('connector', 'LLM-003', ('credential-read', 'credential-read'))
+       3 →   1  ('hook', 'LLM-008', ('permission-override', 'permission-override', 'permission-override'))
+       1 →   1  ('hook', 'LLM-008', ('network', 'install', 'network'))
+       1 →   1  ('hook', 'LLM-007', ())
+       1 →   1  ('hook', 'LLM-003', ('concealed-directive', 'concealed-directive', 'concealed-directive'))
+       0 →   1  ('hook', 'LLM-008', ('permission-override', 'permission-override', 'process-control'))
+       0 →   1  ('hook', 'LLM-008', ('install', 'network', 'network'))
+       1 →   0  ('hook', 'LLM-008', ('install', 'network', 'install'))
+       0 →   1  ('hook', 'LLM-008', ('install', 'install'))
+       0 →   1  ('hook', 'LLM-003', ('safety-disable', 'safety-disable'))
+       0 →   1  ('hook', 'LLM-008', ('network', 'install', 'install'))
+       0 →   1  ('hook', 'LLM-008', ('network', 'network', 'install'))
+       1 →   0  ('hook', 'LLM-008', ('install', 'network'))
+       0 →   1  ('hook', 'LLM-008', ('permission-override', 'permission-override'))
+   GAINED ben-hook-alexfazio-plankton-settings                           old [] [] → new ['LLM-003'] [('safety-disable', 'safety-disable')]
+   LOST ben-hook-clxzl-claude-code-best-practice-cn-settings           old ['LLM-008'] [('permission-override', 'permission-override', 'permission-override')] → new [] []
+   GAINED ben-hook-commercetools-merchant-center-application-kit-settings old [] [] → new ['LLM-008'] [('install', 'install')]
+   LOST ben-hook-commercetools-ui-kit-settings                         old ['LLM-008'] [('network', 'install', 'network')] → new [] []
+   LOST ben-hook-sseshachala-conductai-settings                        old ['LLM-008'] [('network', 'network')] → new [] []
+   LOST ben-hook-willdady-platypus-settings                            old ['LLM-008'] [('install', 'network')] → new [] []
+   GAINED ben-mcp-am-onesub-mcp-server                                   old [] [] → new ['LLM-003'] [('credential-read', 'credential-read', 'credential-read')]
+   LOST ben-mcp-am-warp-agent-mcp                                      old ['LLM-003'] [('credential-read', 'credential-read')] → new [] []
+
+== control A vs P-049 ==
+== benign: n 541 · escalated non-009 old 28 → new 6 · flagged(static|judge) old 38 → new 16
+   new rate 1.11% [0.51, 2.40]
+   mcp          n   353 · esc old   8 → new   0
+   hooks        n   188 · esc old  20 → new   6
+   escalated-high (kind, rule, categories) counts old → new:
+      18 →   4  ('hook', 'LLM-008', ('network', 'network', 'network'))
+       3 →   4  ('hook', 'LLM-008', ('network', 'network'))
+       4 →   0  ('connector', 'LLM-003', ('credential-read', 'credential-read', 'credential-read'))
+       4 →   0  ('hook', 'LLM-008', ('install', 'install', 'install'))
+       4 →   0  ('connector', 'LLM-003', ('credential-read', 'credential-read'))
+       3 →   0  ('hook', 'LLM-008', ('permission-override', 'permission-override', 'permission-override'))
+       2 →   1  ('hook', 'LLM-003', ('remote-execution', 'remote-execution'))
+       1 →   1  ('hook', 'LLM-008', ('install', 'network'))
+       1 →   1  ('hook', 'LLM-003', ('concealed-directive', 'concealed-directive', 'concealed-directive'))
+       1 →   0  ('hook', 'LLM-007', ())
+       1 →   0  ('hook', 'LLM-008', ('install', 'network', 'install'))
+       0 →   1  ('hook', 'LLM-003', ('remote-execution', 'exfiltration'))
+       1 →   0  ('hook', 'LLM-008', ('network', 'install', 'network'))
+   LOST ben-hook-clxzl-claude-code-best-practice-cn-settings           old ['LLM-008'] [('permission-override', 'permission-override', 'permission-override')] → new [] []
+   LOST ben-hook-codingagentsystem-cas-settings                        old ['LLM-008'] [('permission-override', 'permission-override', 'permission-override')] → new [] []
+   LOST ben-hook-commercetools-ui-kit-settings                         old ['LLM-008'] [('network', 'install', 'network')] → new [] []
+   LOST ben-hook-ianscott313-miniverse-settings                        old ['LLM-008'] [('network', 'network', 'network')] → new [] []
+   LOST ben-hook-jlevy-rust-porting-playbook-settings                  old ['LLM-008'] [('install', 'install', 'install')] → new [] []
+   LOST ben-hook-jlevy-strif-settings                                  old ['LLM-008'] [('install', 'install', 'install')] → new [] []
+   LOST ben-hook-jlevy-tbd-settings                                    old ['LLM-008'] [('install', 'install', 'install')] → new [] []
+   LOST ben-hook-kalypsokichu-code-kalypso-claude-workflow-settings    old ['LLM-008'] [('permission-override', 'permission-override', 'permission-override')] → new [] []
+   LOST ben-hook-koukyosyumei-h5i-db-settings                          old ['LLM-008'] [('network', 'network', 'network')] → new [] []
+   LOST ben-hook-outfitter-dev-blz-settings                            old ['LLM-008'] [('install', 'install', 'install')] → new [] []
+   LOST ben-hook-pmgraham-claude-agents-settings                       old ['LLM-008'] [('network', 'network')] → new [] []
+   LOST ben-hook-sseshachala-conductai-settings                        old ['LLM-008'] [('network', 'network')] → new [] []
+   LOST ben-hook-vmihalis-hacker-bob-settings                          old ['LLM-008'] [('network', 'network', 'network')] → new [] []
+   LOST ben-hook-willdady-platypus-settings                            old ['LLM-008'] [('install', 'network')] → new [] []
+   LOST ben-mcp-am-agent-passport-system-mcp                           old ['LLM-003'] [('credential-read', 'credential-read', 'credential-read')] → new [] []
+   LOST ben-mcp-am-chinchillaenterprises-mcp-lambda-cron               old ['LLM-003'] [('credential-read', 'credential-read')] → new [] []
+   LOST ben-mcp-am-chinchillaenterprises-mcp-stripe                    old ['LLM-003'] [('credential-read', 'credential-read')] → new [] []
+   LOST ben-mcp-am-local-mcp                                           old ['LLM-003'] [('credential-read', 'credential-read', 'credential-read')] → new [] []
+   LOST ben-mcp-am-malicious-mcp-server                                old ['LLM-003'] [('credential-read', 'credential-read', 'credential-read')] → new [] []
+   LOST ben-mcp-am-mcp-ssh-manager                                     old ['LLM-003'] [('credential-read', 'credential-read', 'credential-read')] → new [] []
+   LOST ben-mcp-am-pmxt-mcp                                            old ['LLM-003'] [('credential-read', 'credential-read')] → new [] []
+   LOST ben-mcp-am-warp-agent-mcp                                      old ['LLM-003'] [('credential-read', 'credential-read')] → new [] []
+
+== control B vs P-049 ==
+== benign: n 541 · escalated non-009 old 27 → new 6 · flagged(static|judge) old 36 → new 16
+   new rate 1.11% [0.51, 2.40]
+   mcp          n   353 · esc old   8 → new   0
+   hooks        n   188 · esc old  19 → new   6
+   escalated-high (kind, rule, categories) counts old → new:
