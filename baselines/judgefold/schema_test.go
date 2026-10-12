@@ -23,8 +23,8 @@ func TestSchema_RoundTripsTheCommittedJudgeFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(files) != 12 {
-		t.Fatalf("found %d committed judge.jsonl files, want the twelve judge runs (four of 2026-09, four of P-041, four of P-048): %v", len(files), files)
+	if len(files) != 16 {
+		t.Fatalf("found %d committed judge.jsonl files, want the sixteen judge runs (four of 2026-09, four each of P-041, P-048 and P-049): %v", len(files), files)
 	}
 	total := 0
 	for _, f := range files {
@@ -50,8 +50,8 @@ func TestSchema_RoundTripsTheCommittedJudgeFiles(t *testing.T) {
 			total++
 		}
 	}
-	if total != 11694 {
-		t.Errorf("round-tripped %d lines, want 11,694 (819 + 819 + 224 + 224 of 2026-09; 224 + 224 + 819 + 3,220 of P-041; 819 + 3,220 + 541 + 541 of P-048)", total)
+	if total != 16815 {
+		t.Errorf("round-tripped %d lines, want 16,815 (819 + 819 + 224 + 224 of 2026-09; 224 + 224 + 819 + 3,220 of P-041; 819 + 3,220 + 541 + 541 of P-048; 541 + 541 + 819 + 3,220 of P-049)", total)
 	}
 }
 

@@ -108,7 +108,10 @@ measure P-041 (the judge's severity set from a category table): the 224 subset t
 are kept for what they show about the method: two `samples: 1` runs of nearly the same prompt on all 3,220 benign samples
 swap about a third of their escalated set (`…-p048-benign-s1/compare.txt`), and a pair at `samples: 3` on the 541 benign
 hooks and MCP catalogues (`…-p048-hm-s3-old/`, `…-p048-hm-s3-new/`) is the shape a wording change has to be measured in;
-their raw/ is `aguard-judge-raw-2026-10-p048.tar.gz`. Two more things apply to a
+their raw/ is `aguard-judge-raw-2026-10-p048.tar.gz`. Four more, `results/aguard/2026-10-12-llm-gpt-4.1-mini-p049-*/`,
+measure P-049 (a category the text does not show weighs medium) with the prompt unchanged: a second same-prompt draw of
+the 541-sample panel as the control (`…-p049-hm-s3-control/`), the check on the panel, on the 819 subset and on every
+benign sample; their raw/ is `aguard-judge-raw-2026-10-p049.tar.gz`. Two more things apply to a
 judge run: the driver isolates aguard's environment, so a proxy the endpoint needs is passed by
 name with the key (`-aguard-env OPENAI_API_KEY,HTTPS_PROXY,HTTP_PROXY,NO_PROXY`), and Go does not
 read the macOS system proxy. Without that, a run whose endpoint needs a proxy answers nothing and
