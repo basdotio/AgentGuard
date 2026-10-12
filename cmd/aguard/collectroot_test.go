@@ -270,7 +270,7 @@ func TestScan_CITemplateShapeBlocksUnderEverySpelling(t *testing.T) {
 				t.Errorf("%s: no EXEC-001 on the repository's own MCP server (overall %d)", sp.name, out.Overall)
 			}
 			var fe *failExit
-			if gerr := failGate(out, "high", "", false); !errors.As(gerr, &fe) || fe.code != 1 {
+			if gerr := failGate(out, "high", "", gateDefault); !errors.As(gerr, &fe) || fe.code != 1 {
 				t.Errorf("%s: --fail-on high returned %v, want exit 1 — the CI gate lets the poisoned config through", sp.name, gerr)
 			}
 		})

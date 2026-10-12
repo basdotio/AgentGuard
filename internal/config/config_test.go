@@ -217,3 +217,35 @@ func TestCheckEndpoint(t *testing.T) {
 		}
 	}
 }
+
+// TestLLMConfig_GateReady (P-046): the gate may be honoured only with the authority granted AND
+// at least MinSamplesToEscalate samples per question; each refusal names the key to change.
+func TestLLMConfig_GateReady(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		authority string
+		samples   int
+		wantErr   string // "" = ready
+	}{
+		{"default", AuthorityAdvisory, 1, "llm.authority: escalate"},
+		{"advisory with a vote", AuthorityAdvisory, 3, "llm.authority: escalate"},
+		{"granted, one draw", AuthorityEscalate, 1, "llm.samples: 3"},
+		{"granted, two draws", AuthorityEscalate, 2, "llm.samples: 3"},
+		{"granted, zero (the judge's own floor is 1)", AuthorityEscalate, 0, "llm.samples: 3"},
+		{"granted with the vote", AuthorityEscalate, 3, ""},
+		{"granted with a larger vote", AuthorityEscalate, 5, ""},
+	} {
+		err := LLMConfig{Authority: tc.authority, Samples: tc.samples}.GateReady()
+		switch {
+		case tc.wantErr == "" && err != nil:
+			t.Errorf("%s: refused: %v", tc.name, err)
+		case tc.wantErr != "" && err == nil:
+			t.Errorf("%s: ready, want a refusal naming %q", tc.name, tc.wantErr)
+		case tc.wantErr != "" && !strings.Contains(err.Error(), tc.wantErr):
+			t.Errorf("%s: refusal %q does not name %q", tc.name, err, tc.wantErr)
+		}
+	}
+	if MinSamplesToEscalate != 3 {
+		t.Errorf("MinSamplesToEscalate = %d; the measurements behind it were taken at 3 (P-041), change them before this", MinSamplesToEscalate)
+	}
+}

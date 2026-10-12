@@ -215,7 +215,7 @@ func TestFailGate_TargetTheJudgeAsksNothingAbout(t *testing.T) {
 		{"plugin target, judge did not run", notRun, "", "high", 4, "API key file is missing"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := failGate(tc.out, tc.failOn, tc.failOnLLM, true)
+			err := failGate(tc.out, tc.failOn, tc.failOnLLM, gateGranted)
 			if got := gateCode(err); got != tc.code {
 				t.Fatalf("exit %d, want %d (err: %v)", got, tc.code, err)
 			}

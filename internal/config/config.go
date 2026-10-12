@@ -127,6 +127,32 @@ const (
 // MayEscalate reports whether this configuration allows the effective score to gate anything.
 func (c LLMConfig) MayEscalate() bool { return c.Authority == AuthorityEscalate }
 
+// MinSamplesToEscalate is the fewest samples a configuration may ask per question and still
+// gate a build on the judge (P-046). Measured under P-041 (the judge's severity set from a
+// category table): at samples 3 the random benign escalations on the 224 subset went 1 → 0 and
+// two runs agreed on 95% of the weight decisions; at samples 1 the 819 subset's benign
+// escalations went 6 → 11 and 1.65% of all 3,220 benign samples escalated — one draw in a high
+// category is high with no second opinion. A gate is a consequence, so it gets the vote.
+const MinSamplesToEscalate = 3
+
+// GateReady says whether --fail-on-llm may be honoured under this configuration: nil when the
+// authority is granted AND each question is asked at least MinSamplesToEscalate times, else an
+// error that names the key to change. Refused, not ignored: a gate that silently never fires is
+// worse than no gate, and a gate that fires on a single draw fails builds on noise.
+func (c LLMConfig) GateReady() error {
+	if !c.MayEscalate() {
+		return fmt.Errorf("--fail-on-llm requires config llm.authority: %s (currently %q) — "+
+			"the judge may only gate a build when you have explicitly granted it that",
+			AuthorityEscalate, c.Authority)
+	}
+	if c.Samples < MinSamplesToEscalate {
+		return fmt.Errorf("--fail-on-llm requires config llm.samples: %d or more (currently %d) — "+
+			"a build may only fail on a verdict a majority of samples agreed on, never on one draw",
+			MinSamplesToEscalate, c.Samples)
+	}
+	return nil
+}
+
 // Durations parses the two duration fields. They are strings in YAML ("60s", "10m") and an
 // unparsable value is a config ERROR, not a silent fallback — a typo that quietly restores a
 // default is how a "why is this still timing out?" afternoon starts.

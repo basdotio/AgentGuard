@@ -652,7 +652,7 @@ func main() {
 			if err != nil {
 				return err
 			}
-			if _, _, err := validateFailGates(scanFailOn, scanFailOnLLM, cfg.LLM.MayEscalate()); err != nil {
+			if _, _, err := validateFailGates(scanFailOn, scanFailOnLLM, cfg.LLM); err != nil {
 				return err
 			}
 			out, err := scanEnv(root, scanOpts{cfgPath: cfgPath, ignorePath: ignorePath, zombie: zombie, noReputation: noRep, llm: useLLM, quiet: quiet})
@@ -717,7 +717,7 @@ func main() {
 			} else if !quiet && mdOut != "-" {
 				writeReport(os.Stdout, out, verbose)
 			}
-			return failGate(out, scanFailOn, scanFailOnLLM, cfg.LLM.MayEscalate())
+			return failGate(out, scanFailOn, scanFailOnLLM, cfg.LLM)
 		},
 	}
 	scanCmd.Flags().BoolVar(&asJSON, "json", false, "output JSON")
@@ -746,7 +746,7 @@ func main() {
 			if err != nil {
 				return err
 			}
-			if _, _, err := validateFailGates(checkFailOn, checkFailOnLLM, cfg.LLM.MayEscalate()); err != nil {
+			if _, _, err := validateFailGates(checkFailOn, checkFailOnLLM, cfg.LLM); err != nil {
 				return err
 			}
 			out, err := checkTarget(args[0], scanOpts{cfgPath: cfgPath, ignorePath: ignorePath, noReputation: noRep, llm: useLLM, quiet: quiet})
@@ -773,7 +773,7 @@ func main() {
 			} else if !quiet && mdOut != "-" {
 				writeReport(os.Stdout, out, verbose)
 			}
-			return failGate(out, checkFailOn, checkFailOnLLM, cfg.LLM.MayEscalate())
+			return failGate(out, checkFailOn, checkFailOnLLM, cfg.LLM)
 		},
 	}
 	checkCmd.Flags().StringVar(&sarifOut, "sarif", "", "also write a SARIF 2.1.0 log to this path (for GitHub Code Scanning / any SARIF viewer)")
@@ -975,7 +975,9 @@ func (e *failExit) Error() string {
 // contract a CI pipeline can rely on, reproducible and untouched by any model output.
 // --fail-on-llm reads the effective set as well, and is opt-in twice over — the flag must be
 // passed AND the config must grant authority — because it is the only switch here that can
-// fail someone's build on a probabilistic opinion.
+// fail someone's build on a probabilistic opinion. The grant also has to come with a vote:
+// llm.samples at least config.MinSamplesToEscalate (P-046), so what fails a build is a verdict a
+// majority of samples reached, never one draw.
 //
 // Both gates are validated before either is evaluated. Returning exit 1 on a deterministic hit
 // first used to mean a typo or a missing grant on --fail-on-llm was never looked at — under
@@ -987,8 +989,8 @@ func (e *failExit) Error() string {
 // It used to be 0 — the code a judge that looked and found nothing gets — so a pipeline that asked
 // the judge to gate it went green exactly when the judge was blind (P-026). Order is 2 (refused, above) > 1 (a gate fired: an answer, however much the judge
 // managed) > 4 > 0, and --fail-on alone never reads the judge's state.
-func failGate(out model.ScanResult, failOn, failOnLLM string, mayEscalate bool) error {
-	sev, llmSev, err := validateFailGates(failOn, failOnLLM, mayEscalate)
+func failGate(out model.ScanResult, failOn, failOnLLM string, llm config.LLMConfig) error {
+	sev, llmSev, err := validateFailGates(failOn, failOnLLM, llm)
 	if err != nil {
 		return err
 	}
@@ -1070,19 +1072,20 @@ func judgeGap(j *model.JudgeSummary) string {
 // sent, so a gate the run cannot honour is refused with exit 2 — which spec §3 defines as "the
 // scan did not happen" — instead of after the judge has been paid for and a report printed.
 // failGate calls it again, so the up-front check and the final one cannot disagree.
-func validateFailGates(failOn, failOnLLM string, mayEscalate bool) (sev, llmSev model.Severity, err error) {
+func validateFailGates(failOn, failOnLLM string, llm config.LLMConfig) (sev, llmSev model.Severity, err error) {
 	if sev, err = parseFailOn("--fail-on", failOn); err != nil {
 		return "", "", err
 	}
 	if llmSev, err = parseFailOn("--fail-on-llm", failOnLLM); err != nil {
 		return "", "", err
 	}
-	if llmSev != "" && !mayEscalate {
+	if llmSev != "" {
 		// Refused, not ignored. A gate that silently never fires is worse than no gate: the
-		// pipeline goes green forever and everyone believes they are covered.
-		return "", "", fmt.Errorf("--fail-on-llm requires config llm.authority: %s (currently %q) — "+
-			"the judge may only gate a build when you have explicitly granted it that",
-			config.AuthorityEscalate, config.AuthorityAdvisory)
+		// pipeline goes green forever and everyone believes they are covered. The same refusal
+		// covers a grant without a vote (samples below the bar, P-046).
+		if err := llm.GateReady(); err != nil {
+			return "", "", err
+		}
 	}
 	return sev, llmSev, nil
 }

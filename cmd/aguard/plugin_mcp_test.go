@@ -160,7 +160,7 @@ func TestScan_PluginMCPPreloadIsNotAClean100(t *testing.T) {
 			if out.Overall != 69 {
 				t.Errorf("overall = %d, want 69: an EXEC-010 high caps the environment wherever the server came from", out.Overall)
 			}
-			if _, ok := failGate(out, "high", "", false).(*failExit); !ok {
+			if _, ok := failGate(out, "high", "", gateDefault).(*failExit); !ok {
 				t.Error("--fail-on high passed an environment whose MCP server preloads a file into node")
 			}
 		})
@@ -252,7 +252,7 @@ func TestScan_UnwrappedPluginPreloadIsNotAClean100(t *testing.T) {
 	if out.Overall != 69 {
 		t.Errorf("overall = %d, want 69: an EXEC-010 high caps the environment, wrapped or not", out.Overall)
 	}
-	if _, ok := failGate(out, "high", "", false).(*failExit); !ok {
+	if _, ok := failGate(out, "high", "", gateDefault).(*failExit); !ok {
 		t.Error("--fail-on high passed an environment whose plugin starts a server that preloads a file into node")
 	}
 }

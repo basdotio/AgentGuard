@@ -22,6 +22,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/basdotio/AgentGuard/internal/config"
 	"github.com/basdotio/AgentGuard/internal/gate"
 	"github.com/basdotio/AgentGuard/internal/model"
 )
@@ -149,8 +150,8 @@ func TestCheckCmd_LLMRunsTheJudge(t *testing.T) {
 func TestCheckCmd_FailOnLLMNeedsAuthority(t *testing.T) {
 	dir := testRunnerSkillDir(t)
 	srv := judgeServer(t, injectedLine)
-	escalate := writeJudgeConfig(t, srv.URL, "escalate")
-	advisory := writeJudgeConfig(t, srv.URL, "advisory")
+	escalate := writeJudgeConfigSamples(t, srv.URL, "escalate", 3)
+	advisory := writeJudgeConfigSamples(t, srv.URL, "advisory", 3)
 
 	if _, se, code := runAguard(t, "check", dir, "--llm", "--config", escalate, "--fail-on-llm", "high", "--quiet"); code != 1 {
 		t.Errorf("authority escalate + --fail-on-llm high: exit %d, want 1 (a grounded, agreed high); stderr:\n%s", code, se)
@@ -163,6 +164,32 @@ func TestCheckCmd_FailOnLLMNeedsAuthority(t *testing.T) {
 	// run. That gate reads deterministic findings only, with or without --llm.
 	if _, se, code := runAguard(t, "check", dir, "--llm", "--config", escalate, "--quiet"); code != 0 {
 		t.Errorf("--llm with the default --fail-on high: exit %d, want 0 — the judge reached the deterministic gate; stderr:\n%s", code, se)
+	}
+}
+
+// TestCheckCmd_FailOnLLMNeedsSamples (P-046): the grant alone is not enough — a config that says
+// escalate but asks each question once is refused before a request is sent, naming llm.samples.
+// The reverse half: the same config under --fail-on alone runs the judge as before.
+func TestCheckCmd_FailOnLLMNeedsSamples(t *testing.T) {
+	dir := testRunnerSkillDir(t)
+	srv, calls := countingServer(t)
+	one := writeJudgeConfigSamples(t, srv.URL, "escalate", 1)
+
+	so, se, code := runAguard(t, "check", dir, "--llm", "--config", one, "--fail-on-llm", "high", "--json")
+	if code != 2 || !strings.Contains(se, "llm.samples: 3") {
+		t.Errorf("escalate + samples 1 + --fail-on-llm: exit %d, want 2 with a refusal naming llm.samples: 3; stderr:\n%s", code, se)
+	}
+	if so != "" {
+		t.Errorf("a refused run still printed a report:\n%.200s", so)
+	}
+	if n := calls.Load(); n != 0 {
+		t.Errorf("the refusal cost %d request(s); it must come before any is sent", n)
+	}
+	if _, se, code := runAguard(t, "check", dir, "--llm", "--config", one, "--quiet"); code != 0 {
+		t.Errorf("the same config without --fail-on-llm: exit %d, want 0; stderr:\n%s", code, se)
+	}
+	if n := calls.Load(); n == 0 {
+		t.Error("without --fail-on-llm the judge should have run on this config")
 	}
 }
 
@@ -318,7 +345,7 @@ func TestFailGateFlags_RefusedBeforeTheJudge(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			srv, calls := countingServer(t)
-			cfg := writeJudgeConfig(t, srv.URL, tc.authority)
+			cfg := writeJudgeConfigSamples(t, srv.URL, tc.authority, 3)
 			so, se, code := runAguard(t, append(tc.args, "--config", cfg, "--json")...)
 			if code != tc.code {
 				t.Fatalf("exit %d, want %d; stderr:\n%s", code, tc.code, se)
@@ -342,12 +369,13 @@ func TestFailGateFlags_RefusedBeforeTheJudge(t *testing.T) {
 func TestFailGate_DeterministicHitDoesNotMaskARefusal(t *testing.T) {
 	for _, tc := range []struct {
 		name, failOnLLM string
-		mayEscalate     bool
+		llm             config.LLMConfig
 	}{
-		{"typo", "hgih", true},
-		{"no authority", "high", false},
+		{"typo", "hgih", gateGranted},
+		{"no authority", "high", gateDefault},
+		{"no vote", "high", config.LLMConfig{Authority: config.AuthorityEscalate, Samples: 1}},
 	} {
-		err := failGate(withHigh(), "high", tc.failOnLLM, tc.mayEscalate)
+		err := failGate(withHigh(), "high", tc.failOnLLM, tc.llm)
 		if err == nil {
 			t.Errorf("%s: failGate passed", tc.name)
 			continue

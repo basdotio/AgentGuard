@@ -344,7 +344,7 @@ func TestBrokenSettingsMachineOutputUnchanged(t *testing.T) {
 		t.Errorf("score moved: %d / %d, want 100 — the artifact was not read, so it has no findings to score", out.Overall, doc.Overall)
 	}
 	for _, threshold := range []string{"high", "low"} {
-		if err := failGate(out, threshold, "", false); err != nil {
+		if err := failGate(out, threshold, "", gateDefault); err != nil {
 			t.Errorf("--fail-on %s tripped on a dimension-0 note: %v", threshold, err)
 		}
 	}
