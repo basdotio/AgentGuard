@@ -1,0 +1,51 @@
+# P-048 (withdrawn), generated from judge.jsonl in this directory (old: P-041 texts, binary 561c589 = v0.22.0, judge-prompt ec4382a9226a)
+# and ../2026-10-12-llm-gpt-4.1-mini-p048-hm-s3-new/ (new: the P-048 texts, binary 898e431, judge-prompt 83ca81a0755b). Same 541 benign
+# samples (188 hooks, 353 MCP tool catalogues), samples: 3 in both. esc = escalated (grounded, 2+ of 3) at high from a rule other than LLM-009.
+
+== benign: n 541 · escalated non-009 old 28 → new 34 · flagged(static|judge) old 38 → new 42
+   new rate 6.28% [4.53, 8.65]
+   mcp          n   353 · esc old   8 → new   6
+   hooks        n   188 · esc old  20 → new  28
+   escalated-high (kind, rule, categories) counts old → new:
+      18 →  13  ('hook', 'LLM-008', ('network', 'network', 'network'))
+       3 →  11  ('hook', 'LLM-008', ('network', 'network'))
+       4 →   5  ('connector', 'LLM-003', ('credential-read', 'credential-read', 'credential-read'))
+       4 →   2  ('hook', 'LLM-008', ('install', 'install', 'install'))
+       4 →   1  ('connector', 'LLM-003', ('credential-read', 'credential-read'))
+       1 →   3  ('hook', 'LLM-008', ('install', 'network', 'install'))
+       3 →   0  ('hook', 'LLM-008', ('permission-override', 'permission-override', 'permission-override'))
+       1 →   1  ('hook', 'LLM-007', ())
+       1 →   1  ('hook', 'LLM-008', ('network', 'install', 'network'))
+       1 →   1  ('hook', 'LLM-003', ('concealed-directive', 'concealed-directive', 'concealed-directive'))
+       2 →   0  ('hook', 'LLM-003', ('remote-execution', 'remote-execution'))
+       0 →   1  ('hook', 'LLM-003', ('safety-disable', 'safety-disable'))
+       0 →   1  ('hook', 'LLM-003', ('concealed-directive', 'concealed-directive'))
+       0 →   1  ('hook', 'LLM-008', ('process-control', 'permission-override', 'permission-override'))
+       0 →   1  ('hook', 'LLM-008', ('process-control', 'install', 'install'))
+       1 →   0  ('hook', 'LLM-008', ('install', 'network'))
+       0 →   1  ('hook', 'LLM-008', ('network', 'network', 'process-control'))
+       0 →   1  ('hook', 'LLM-008', ('permission-override', 'permission-override', 'process-control'))
+       0 →   1  ('hook', 'LLM-008', ('install', 'install', 'network'))
+       0 →   1  ('hook', 'LLM-008', ('network', 'install', 'install'))
+       0 →   1  ('hook', 'LLM-008', ('install', 'install'))
+       0 →   1  ('hook', 'LLM-008', ('permission-override', 'permission-override'))
+   GAINED ben-hook-alibaba-tron-one-agent-settings                       old [] [] → new ['LLM-008'] [('install', 'network', 'install'), ('network', 'network')]
+   GAINED ben-hook-clima-ensemblekalmanprocesses-jl-settings             old [] [] → new ['LLM-003'] [('concealed-directive', 'concealed-directive')]
+   LOST ben-hook-clxzl-claude-code-best-practice-cn-settings           old ['LLM-008'] [('permission-override', 'permission-override', 'permission-override')] → new [] []
+   GAINED ben-hook-commercetools-merchant-center-application-kit-settings old [] [] → new ['LLM-008'] [('install', 'network', 'install')]
+   GAINED ben-hook-corvidae-coding-projects-openclaudia-settings         old [] [] → new ['LLM-008'] [('network', 'network', 'network')]
+   GAINED ben-hook-corvidae-coding-projects-thermite-settings            old [] [] → new ['LLM-008'] [('network', 'network', 'process-control')]
+   GAINED ben-hook-goondocks-co-open-agent-kit-settings                  old [] [] → new ['LLM-008'] [('network', 'network')]
+   GAINED ben-hook-jamesjlundin-full-stack-web-and-mobile-template-settings old [] [] → new ['LLM-008'] [('install', 'install')]
+   LOST ben-hook-jlevy-rust-porting-playbook-settings                  old ['LLM-008'] [('install', 'install', 'install')] → new [] []
+   LOST ben-hook-jlevy-strif-settings                                  old ['LLM-008'] [('install', 'install', 'install')] → new [] []
+   LOST ben-hook-jlevy-tbd-settings                                    old ['LLM-008'] [('install', 'install', 'install')] → new [] []
+   GAINED ben-hook-juyterman1000-entroly-settings                        old [] [] → new ['LLM-008'] [('network', 'network')]
+   GAINED ben-hook-paulpreibisch-agentvibes-settings                     old [] [] → new ['LLM-003'] [('safety-disable', 'safety-disable')]
+   GAINED ben-hook-proffesor-for-testing-sentinel-api-testing-settings   old [] [] → new ['LLM-008'] [('install', 'install', 'install')]
+   LOST ben-hook-travisjneuman-claude-settings                         old ['LLM-003'] [('remote-execution', 'remote-execution')] → new [] []
+   GAINED ben-hook-vasu31dev-playwright-ts-lib-settings                  old [] [] → new ['LLM-008'] [('install', 'install', 'install')]
+   LOST ben-mcp-am-chinchillaenterprises-mcp-lambda-cron               old ['LLM-003'] [('credential-read', 'credential-read')] → new [] []
+   LOST ben-mcp-am-local-mcp                                           old ['LLM-003'] [('credential-read', 'credential-read', 'credential-read')] → new [] []
+   LOST ben-mcp-am-mcp-ssh-manager                                     old ['LLM-003'] [('credential-read', 'credential-read', 'credential-read')] → new [] []
+   GAINED ben-mcp-am-onesub-mcp-server                                   old [] [] → new ['LLM-003'] [('credential-read', 'credential-read', 'credential-read')]

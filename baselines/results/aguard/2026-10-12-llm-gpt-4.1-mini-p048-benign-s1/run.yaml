@@ -1,0 +1,80 @@
+# Written BY HAND from the run's raw output, not by baselines/cmd/baseline: the driver (P-021)
+# records the flags and the usage but folds verdicts from deterministic findings only, so its own
+# verdicts.jsonl is the static column (still recoverable from ledger.jsonl); the files here are
+# re-folded from raw/ at the judge's predicate by baselines/cmd/judgefold (P-033). Read
+# baselines/README.md "Measuring the judge" before citing any figure produced alongside this file.
+# THIS IS NOT A BASELINE: the verdicts depend on a model, a day and the sampling.
+#
+# WHAT THIS RUN IS FOR: P-048, every benign sample of the corpus (3,220) at samples: 1 with the two
+# category descriptions tightened. Same work list and config as
+# ../2026-10-12-llm-gpt-4.1-mini-p041-benign-s1/; compare.txt counts the hook `network` and MCP
+# `credential-read` escalations before and after, and the rate over all 3,220 with its interval.
+#
+# measured by agent-guard's own adapter (agent-guard baselines/adapter/aguard) with --llm passed through, threshold "high" chosen by us, placement: by content, into a fake home; unplaceable trees are handed to `check` directly (the judge does not run on that path)
+
+tool: aguard
+tool_version: aguard v0.22.0-1-g898e431 (commit 898e431, built 2026-10-12T05:09:41Z) · reputation entries=18 · rules=d74bca61f0da · judge-prompt=83ca81a0755b · judge-excerpt=6
+threshold: high
+tool_extra_args:
+    - --llm
+    - --config
+    - <judge config, not committed; reproduced under `judge:` below>
+tool_extra_env: []                    # none: the key was read from api_key_file, no proxy was needed
+uploads_samples: true
+uploads_samples_basis: >-
+    this run passed --llm to aguard: redacted excerpts of every judged artifact (skills, CLAUDE.md,
+    subagents, commands, hooks, MCP configs; at most 6,000 bytes per skill) were sent to the endpoint
+    under `judge:`, once per question. Samples routed to `check` stayed static; nothing of theirs left the machine.
+corpus_commit: 5c3db6ee
+started_at: 2026-10-12T05:37:10Z
+finished_at: 2026-10-12T08:21:21Z   # the driver's exit; 164 min wall clock at -j 2
+adapter: agent-guard baselines/adapter/aguard
+placement: by content, into a fake home; unplaceable trees are handed to `check` directly
+provisional: false
+work_list: samples.jsonl
+judge:
+    provider: openai                  # preset: endpoint https://api.openai.com/v1
+    model: gpt-4.1-mini
+    samples: 1                        # ONE answer per question; the consensus bar is trivially met
+    authority: advisory
+    concurrency: 4
+    timeout: 60s                      # default
+    total_timeout: 10m                # default
+    max_retries: 4
+    calls: 8218
+    failed: 11
+    skipped: 0
+    repaired: 43
+    prompt_version: 83ca81a0755b
+    excerpt_version: 6
+fold: >-
+    verdict = malicious when a deterministic finding is >= high, OR an LLM finding that ESCALATED
+    (grounded; k of n at the majority bar) is >= high and its rule is not LLM-009 (advisory-only).
+    The finding's severity is the tool's, set from the category the majority of the agreeing votes
+    named (P-041); the model's own words are in each vote's `severities`, the categories in its
+    `categories`. Per-sample static / judge / judge-any, the escalated rule ids and the votes are in
+    judge.jsonl; per-kind-rule.txt is judgefold's table over the same rows. Folded by
+    baselines/cmd/judgefold from raw/ (see raw_archive). Nothing here is hand-typed except this file.
+counts:
+    scored: 3220
+    no_verdict: 0
+    error: 0
+    incomplete: 11 # ben-skill-md-drewdrewh-code-graph-context-swarm, ben-skill-md-fohte-dotfiles-delegate-claude, ben-skill-md-hanabi-jpn-clawhub-skills-jp-seo-writer, ben-skill-md-hculap-better-code-tdd-methodology, ben-skill-md-josephdeville-gtmclaudskills-data-orchestration, ben-skill-md-mrzhang123-ai-workspace-weekly-review, ben-skill-md-novaeco-terra-god-mode-dev-herp, ben-skill-md-zhanlincui-auto-evolution-agent-skills-evolution, ben-skill-sk-46ki75__skills__skills__prompt-evaluation, ben-skill-sk-ItamarZand88__claude-code-agentic-engineering__plugins__workflow__skills__best-practices-extractor, ben-skill-sk-duplocloud__ai-ops__skills__devcontainers — judgefold: one of its calls failed, so one question had fewer answers than asked; the row keeps what was answered (incomplete.jsonl)
+work_list_size: 3220
+judge_usage:
+    basis: reported
+    basis_note: 'summed from the tool''s own counts: every sample with a judge summary reported triage_calls and retries. Questions asked = (calls - triage_calls) / the judge''s samples setting, exact only when skipped is 0'
+    reported_samples: 3220
+    derived_samples: 0
+    calls: 8218
+    failed: 11
+    skipped: 0
+    repaired: 43
+    triage_calls: 610
+    retries: 0
+    prompt_tokens: 10611096
+    completion_tokens: 2901295
+raw_archive:                          # raw/ is not in the tree (P-039); the archive is this run's primary evidence
+    asset: aguard-judge-raw-2026-10-p048.tar.gz
+    sha256: cbdf534f92f80d4e8a0ae0841634155633e58e9739b85614e6acd87dd001d99a   # 1,656,485 bytes; attached to release v0.22.0 on 2026-10-12 (gh release download v0.22.0 --pattern aguard-judge-raw-2026-10-p048.tar.gz)
+    note: one archive holds the raw/ of both P-048 runs, under the directory names used here
