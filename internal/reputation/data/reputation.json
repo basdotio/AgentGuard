@@ -1,6 +1,6 @@
 {
-  "version": "2026-10-09",
-  "note": "Canonical-hash reputation seed. good=known-trusted (findings suppressed, disclosed as REP-GOOD), malicious=known-bad (raises a REP-BAD critical finding). Every entry must be a REAL curated hash from `aguard hash <path>`: this file feeds the score, so a placeholder record is a false record — the malicious half is empty until curated entries exist rather than carrying an example. A good entry with a `source` must also carry sha, reviewed, reason and the findings fingerprint the review covered; `make reputation-refresh` renews such entries when the official marketplace pins a new commit with the SAME fingerprint, and refuses when it differs. Two sources only: official-marketplace plugins, and Claude Desktop's Anthropic built-in skills (`source: claude-desktop`, sha = the desktop manifest's updatedAt for that skill, path = skills/<name>; renewable only on a machine with the desktop store, via -add-desktop / make reputation-refresh).",
+  "version": "2026-10-12",
+  "note": "Canonical-hash reputation seed. good=known-trusted (findings suppressed, disclosed as REP-GOOD), malicious=known-bad (raises a REP-BAD critical finding). Every entry must be a REAL curated hash from `aguard hash \u003cpath\u003e`: this file feeds the score, so a placeholder record is a false record — the malicious half is empty until curated entries exist rather than carrying an example. A good entry with a `source` must also carry sha, reviewed, reason and the findings fingerprint the review covered; `make reputation-refresh` renews such entries when the official marketplace pins a new commit with the SAME fingerprint, and refuses when it differs. Two sources only: official-marketplace plugins, and Claude Desktop's Anthropic built-in skills (`source: claude-desktop`, sha = the desktop manifest's updatedAt for that skill, path = skills/\u003cname\u003e; renewable only on a machine with the desktop store, via -add-desktop / make reputation-refresh).",
   "entries": [
     {
       "hash": "9c694fcbe46336131c4c4842a6621cf23ee994efa935f5fd8fefa91ea9ff4acd",
@@ -11,7 +11,7 @@
       "source": "https://github.com/obra/superpowers.git",
       "sha": "5bf4e78011075bcfc0dc295f0724994cd123ee71",
       "reviewed": "2026-09-03",
-      "reason": "All 18 findings read in source. EXFIL-001 x5: brainstorm-server tests talk to http://localhost:${PORT}; auth.test.js:50 and server.test.js:40 pass that URL through a variable, windows-lifecycle.test.sh and lifecycle.test.js are loopback literals. EXFIL-003 + OBF-004 in skills/brainstorming/scripts/server.cjs: the 'encode' leg is the RFC 6455 WebSocket accept key (sha1 -> base64), the 'network' leg is a brand-logo URL constant (line 106) never used in a request; branding.test.js:17 is the same constant. EXEC-003/004/005: child_process spawn/exec of the local server and the graphviz renderer in tests and skills/writing-skills/render-graphs.js, with argv arrays, no shell string from input.",
+      "reason": "All 18 findings read in source. EXFIL-001 x5: brainstorm-server tests talk to http://localhost:${PORT}; auth.test.js:50 and server.test.js:40 pass that URL through a variable, windows-lifecycle.test.sh and lifecycle.test.js are loopback literals. EXFIL-003 + OBF-004 in skills/brainstorming/scripts/server.cjs: the 'encode' leg is the RFC 6455 WebSocket accept key (sha1 -\u003e base64), the 'network' leg is a brand-logo URL constant (line 106) never used in a request; branding.test.js:17 is the same constant. EXEC-003/004/005: child_process spawn/exec of the local server and the graphviz renderer in tests and skills/writing-skills/render-graphs.js, with argv arrays, no shell string from input.",
       "findings": [
         "EXEC-003 skills/brainstorming/scripts/server.cjs",
         "EXEC-003 skills/writing-skills/render-graphs.js",
@@ -55,7 +55,7 @@
       "name": "receipts",
       "publisher": "claude-plugins-official",
       "source": "https://github.com/anthropics/claude-plugins-official.git",
-      "sha": "315c4e48967d9541c29c3c656441dded353ca7aa",
+      "sha": "f359d43b406057f1a8cdbc4ea93b827642c162e6",
       "path": "plugins/receipts",
       "reviewed": "2026-09-03",
       "reason": "4 findings read in source. EXFIL-001 assets/make-sample.mjs:148/179: a demo-fixture generator; the 'network' leg is the string https://example.com/limits inside a fabricated transcript, the 'credential' leg spreads process.env into a local `git commit` to set GIT_AUTHOR_DATE. INJ-001 skills/receipts/SKILL.md:142: quotes 'ignore previous instructions' as an example of a directory name that must be treated as inert data - defensive text. EXEC-004 x2: execFileSync('git', [...]) with argv arrays in make-sample.mjs and mine-transcripts.mjs - read-only git queries and fixture commits.",
@@ -67,16 +67,16 @@
       ]
     },
     {
-      "hash": "e072594ed0eb474e97beec9e107aadc46f4692eb041bbc034f1156c42585648d",
+      "hash": "e97f95a349d5b155c81bcb2e266e52dab2d9731541b3a5b19fdb2a0593424508",
       "verdict": "good",
       "name": "security-guidance",
       "publisher": "claude-plugins-official",
-      "version": "2.0.11",
+      "version": "2.0.13",
       "source": "https://github.com/anthropics/claude-plugins-official.git",
-      "sha": "315c4e48967d9541c29c3c656441dded353ca7aa",
+      "sha": "f359d43b406057f1a8cdbc4ea93b827642c162e6",
       "path": "plugins/security-guidance",
       "reviewed": "2026-10-09",
-      "reason": "87 findings read in source. This plugin hooks SessionStart, UserPromptSubmit, PostToolUse (Edit/Write/MultiEdit/NotebookEdit, Bash git commit/push, gt create/modify/submit), Stop and SubagentStop; 2.0.11 adds a tests/ directory (pytest only, not referenced by hooks.json), hooks/reporesolve.py, hooks/review_api.py, hooks/extensibility.py and a bash interpreter shim hooks/sg-python.sh, so read this entry as a description of what those hooks do. EXEC-004 x61: subprocess.run/Popen with argv lists and no shell - read-only git queries in hooks/gitutil.py x14, hooks/security_reminder_hook.py x11, hooks/diffstate.py x5 and hooks/reporesolve.py x1, all run with -c core.fsmonitor=false -c core.hooksPath=/dev/null so repo config cannot execute programs; hooks/ensure_agent_sdk.py x7, which at SessionStart (and as a throttled background Popen from security_reminder_hook.py:2244) creates ~/.claude/security/agent-sdk-venv and pip-installs the claude-agent-sdk package from the user's default pip index when it is missing (a package install, by design and documented in the file); 11 in tests/ run git and the hook script against temp repos; the remaining 12 are rule strings and reminder examples in hooks/patterns.py and prompt text in hooks/llm.py. EXFIL-001 x5: hooks/llm.py reads ANTHROPIC_API_KEY / ANTHROPIC_AUTH_TOKEN (lines 106-109) and talks to ${ANTHROPIC_BASE_URL:-https://api.anthropic.com} - POST /v1/messages with the session's git diff for the on-stop/commit/push review (line 702), a GET /v1/models?limit=100 with the same credential to pick the newest Opus (line 403, cached a day), and under CLAUDE_CODE_REMOTE only a bodiless HEAD probe (line 184); the agentic commit reviewer additionally runs the user's own claude CLI via claude-agent-sdk with allowed_tools=[Read, Grep, Glob] in the repo, so files it reads also go to that endpoint - the same destination and credential Claude Code itself uses, stated in the README privacy section; code diffs do leave the machine, to Anthropic (or to the gateway/3P provider the user configured). The four tests/ EXFIL-001 lines point ANTHROPIC_BASE_URL at a loopback http.server stub on 127.0.0.1 with the literal key \"test-key\". EXFIL-004 x3: tests/ copy os.environ to build a child env with proxy/auth vars stripped; nothing is sent. EXEC-005 x4, EXEC-003 x8, BD-002 x4, FS-004 x2: all inside the plugin's own detection material - regex strings and reminder text in hooks/patterns.py, the review prompt in hooks/llm.py (lines 1012-1129; the ../../etc/passwd at 1052 is prose) and a tampered-cache test value in tests/test_review_model.py:252 - none is executed. hooks/extensibility.py reads optional ~/.claude/ and <repo>/.claude/ security-patterns.{yaml,json} and claude-security-guidance.md as data only (regexes and prompt text, no code loading).",
+      "reason": "87 findings read in source. This plugin hooks SessionStart, UserPromptSubmit, PostToolUse (Edit/Write/MultiEdit/NotebookEdit, Bash git commit/push, gt create/modify/submit), Stop and SubagentStop; 2.0.11 adds a tests/ directory (pytest only, not referenced by hooks.json), hooks/reporesolve.py, hooks/review_api.py, hooks/extensibility.py and a bash interpreter shim hooks/sg-python.sh, so read this entry as a description of what those hooks do. EXEC-004 x61: subprocess.run/Popen with argv lists and no shell - read-only git queries in hooks/gitutil.py x14, hooks/security_reminder_hook.py x11, hooks/diffstate.py x5 and hooks/reporesolve.py x1, all run with -c core.fsmonitor=false -c core.hooksPath=/dev/null so repo config cannot execute programs; hooks/ensure_agent_sdk.py x7, which at SessionStart (and as a throttled background Popen from security_reminder_hook.py:2244) creates ~/.claude/security/agent-sdk-venv and pip-installs the claude-agent-sdk package from the user's default pip index when it is missing (a package install, by design and documented in the file); 11 in tests/ run git and the hook script against temp repos; the remaining 12 are rule strings and reminder examples in hooks/patterns.py and prompt text in hooks/llm.py. EXFIL-001 x5: hooks/llm.py reads ANTHROPIC_API_KEY / ANTHROPIC_AUTH_TOKEN (lines 106-109) and talks to ${ANTHROPIC_BASE_URL:-https://api.anthropic.com} - POST /v1/messages with the session's git diff for the on-stop/commit/push review (line 702), a GET /v1/models?limit=100 with the same credential to pick the newest Opus (line 403, cached a day), and under CLAUDE_CODE_REMOTE only a bodiless HEAD probe (line 184); the agentic commit reviewer additionally runs the user's own claude CLI via claude-agent-sdk with allowed_tools=[Read, Grep, Glob] in the repo, so files it reads also go to that endpoint - the same destination and credential Claude Code itself uses, stated in the README privacy section; code diffs do leave the machine, to Anthropic (or to the gateway/3P provider the user configured). The four tests/ EXFIL-001 lines point ANTHROPIC_BASE_URL at a loopback http.server stub on 127.0.0.1 with the literal key \"test-key\". EXFIL-004 x3: tests/ copy os.environ to build a child env with proxy/auth vars stripped; nothing is sent. EXEC-005 x4, EXEC-003 x8, BD-002 x4, FS-004 x2: all inside the plugin's own detection material - regex strings and reminder text in hooks/patterns.py, the review prompt in hooks/llm.py (lines 1012-1129; the ../../etc/passwd at 1052 is prose) and a tampered-cache test value in tests/test_review_model.py:252 - none is executed. hooks/extensibility.py reads optional ~/.claude/ and \u003crepo\u003e/.claude/ security-patterns.{yaml,json} and claude-security-guidance.md as data only (regexes and prompt text, no code loading).",
       "findings": [
         "BD-002 hooks/patterns.py",
         "BD-002 hooks/patterns.py",
@@ -259,6 +259,7 @@
       "verdict": "good",
       "name": "code-modernization",
       "publisher": "claude-plugins-official",
+      "version": "1.0.0",
       "source": "https://github.com/anthropics/claude-plugins-official.git",
       "sha": "315c4e48967d9541c29c3c656441dded353ca7aa",
       "path": "plugins/code-modernization",
@@ -381,8 +382,7 @@
         "OBF-001 tests/register.test.ts",
         "OBF-001 tests/verification.test.ts",
         "OBF-004 scripts/tests/test_report_tools.py"
-      ],
-      "version": "1.0.0"
+      ]
     },
     {
       "hash": "c0d4ace4617b31a8d3686ef8120f227e4ac004b222aaa7909603a40186176dbd",
@@ -390,7 +390,7 @@
       "name": "github",
       "publisher": "claude-plugins-official",
       "source": "https://github.com/anthropics/claude-plugins-official.git",
-      "sha": "315c4e48967d9541c29c3c656441dded353ca7aa",
+      "sha": "f359d43b406057f1a8cdbc4ea93b827642c162e6",
       "path": "external_plugins/github",
       "reviewed": "2026-09-03",
       "reason": "1 finding read in source. EXFIL-001 .mcp.json:4/6: the official GitHub MCP server declared as an HTTP MCP endpoint, https://api.githubcopilot.com/mcp/ with Authorization: Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN} - the token is sent to GitHub, its issuer, to authenticate the MCP session. That declaration is the whole plugin; there is no other code.",
@@ -498,7 +498,7 @@
       "sha": "2026-08-28T02:00:39.535636Z",
       "path": "skills/pptx",
       "reviewed": "2026-09-04",
-      "reason": "All 9 findings read in source. EXEC-004 x5: subprocess.run with argv lists - `pdftoppm -jpeg -r <dpi> <pdf>` for slide thumbnails in scripts/thumbnail.py:200; scripts/office/soffice.py and scripts/office/validators/redlining.py are byte-identical to the docx skill's copies (LibreOffice launcher, the embedded socket shim compiled with gcc, `git diff --no-index` on temp files). INJ-004 x3: UTF-8 BOM at byte 0 of the same three ECMA-376 .xsd schema files. RES-001 scripts/clean.py:268: `while True` removing orphaned parts breaks on the first pass that removes nothing.",
+      "reason": "All 9 findings read in source. EXEC-004 x5: subprocess.run with argv lists - `pdftoppm -jpeg -r \u003cdpi\u003e \u003cpdf\u003e` for slide thumbnails in scripts/thumbnail.py:200; scripts/office/soffice.py and scripts/office/validators/redlining.py are byte-identical to the docx skill's copies (LibreOffice launcher, the embedded socket shim compiled with gcc, `git diff --no-index` on temp files). INJ-004 x3: UTF-8 BOM at byte 0 of the same three ECMA-376 .xsd schema files. RES-001 scripts/clean.py:268: `while True` removing orphaned parts breaks on the first pass that removes nothing.",
       "findings": [
         "EXEC-004 scripts/office/soffice.py",
         "EXEC-004 scripts/office/soffice.py",
