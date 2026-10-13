@@ -325,3 +325,16 @@ Each test was committed before the code and run red on the base (`18114a1`); the
     failures are classified by the lexical target. Every refusal is scored (`SCOPE-001`), and the hash, the rules and the judge
     read the same files." Spec §16 item 2 then names both boundaries instead of `--root` alone.
     **Decided (2026-10-13)**: as recommended.
+
+## Done
+
+```
+Merged: PR to be opened (2026-10-13; find the sha with git log --grep P-056 after the merge)
+Released: pending
+Evidence: TestLinkedSkillMDHashIsThePlainCopys, TestNoSkillHasTheEmptyDigest, TestUnresolvableLinksAreClassifiedByTheirText, TestPluginChildLinkedSkillMDIsBoundedByThePluginRoot, TestInstructionFileOutsideHomeIsRefusedOutLoud, TestCrossRootSymlinkIgnored (rewritten) (internal/collect); TestLinkedSkillFilesAreReadOrRefusedOutLoud (internal/detect); TestPlan_ReadsTheFilesTheRulesRead (internal/judge); TestGate_LinkedSkillsShareNoApproval, TestOutsideSkillMDNeverLeaves (cmd/aguard) — each red on 18114a1
+Evidence: real ~/.claude, counts only: skills with the empty-input digest 41 → 0; hashes moved: those 41 skills only; overall 69 → 69; skills below 100 21 → 25 (9 findings on 4 skills, the bytes the pack's tree already carried); judge calls 589 → 593, intent and injection unchanged
+Evidence: fixture gate: base — a benign linked skill's clean load trusted the empty-input digest and an exfiltration skill linked the same way then loaded with no output; branch — it asks
+Evidence: corpus mal-skill-sg-symlink-escape: 100 → 88 (SCOPE-001 medium); no benign sample holds a symlink
+Evidence: reverse — TestHashGolden, TestContentHashGolden unchanged; directory-symlinked and plain skills keep hash, findings and score; ExcerptVersion golden digest unchanged with the version at 7
+Evidence: make verify: all gates passed; go.mod line 2 go 1.23.5; go1.23.5, no toolchain switch
+```
