@@ -295,7 +295,7 @@ everything on your machine. That trade-off is yours.
 
   | Pass | high | medium |
   |------|------|--------|
-  | injection (`LLM-003`) | exfiltration · credential-read · remote-execution · safety-disable · concealed-directive | other-directive |
+  | injection (`LLM-003`) | exfiltration · credential-read · remote-execution · safety-disable · concealed-directive · privilege | other-directive |
   | intent (`LLM-001`) | the five above · software-source · persistence · file-deletion · privilege | other |
   | hook capability (`LLM-008`) | network · credential · install · permission-override | file-write · process-control · other |
   | deobfuscation (`LLM-004`) | network · remote-execution · credential-read · file-deletion | other |
