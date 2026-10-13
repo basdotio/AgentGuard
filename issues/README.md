@@ -32,6 +32,9 @@
 | [021](021-judge-triage-by-static-severity-rejected.md) | 只在静态报到 medium 以上时才问判官：实测否决（保住 14/62，丢 77%） | 功能范围 | — | **不规划**（前提实测不成立）|
 | [022](022-plugin-install-case-collision-macos.md) | macOS 上 CLI 装不上插件：插件名与 marketplace 名只差大小写（上游 bug） | 分发缺陷 | 高 | **已修复**（0.17.0 改名 `aguard`；上游 bug 仍在） |
 | [023](023-judge-asks-nothing-of-plugins-and-directories.md) | 判官对 plugin 整树和无法识别的目录一个问题都不问（`scan` 里插件的 skill/命令/子 agent 也不被判） | 覆盖缺口 | 中 | 部分修复（插件已做：子项各自采集、按种类判，P-044；隔离区已通报；普通目录未定） |
+| [024](024-symlinked-loaded-files-outside-root-unscored.md) | 软链到 root 外的 command、agent、rule、workflow、output style 只通报不计分 | 覆盖缺口 | 中 | 未修复 |
+| [025](025-credentials-json-not-a-credential.md) | `.credentials.json` 不被认作凭据：import Claude Code 自己的凭据文件会被读取 | 安全缺陷 | 中 | 未修复 |
+| [026](026-clean-undo-relative-skill-md-link.md) | `SKILL.md` 是相对软链的 skill 能被 clean 隔离，却撤销不了 | 功能缺陷 | 中 | 未修复 |
 
 ## 判定口径
 
