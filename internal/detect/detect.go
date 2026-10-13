@@ -769,7 +769,7 @@ func treeRole(dir, p string) fileRole {
 func readTextTree(boundary, dir string) ([]unit, []model.Finding) {
 	var units []unit
 	var notes []model.Finding
-	var skippedDirs, nonRegular, pyc, unreadable []string
+	var skippedDirs, nonRegular, pyc, unreadable, outside []string
 	// Keyed by content AND role: the same bytes as a doc and as a command are two different
 	// questions, and whichever the walk met first used to answer both.
 	type seenKey struct {
@@ -813,8 +813,17 @@ func readTextTree(boundary, dir string) ([]unit, []model.Finding) {
 			return nil
 		}
 		// Boundary FIRST: the sniff below opens the file, and a file whose target escapes
-		// the artifact root must not be opened at all (§16.2).
-		if !inBoundary(boundary, p) {
+		// the artifact root must not be opened at all (§16.2). The answer is collect.FileReach's — the
+		// predicate the hash and the judge ask — and no answer is silent any more (P-056).
+		switch r := collect.FileReach(boundary, p); r.Kind {
+		case collect.Unresolved:
+			unreadable = append(unreadable, treeRel(dir, p))
+			return nil
+		case collect.Outside:
+			outside = append(outside, p)
+			return nil
+		case collect.Credential:
+			notes = append(notes, skillCredentialFinding(p, r.Severity))
 			return nil
 		}
 		// Before the extension split, because a pipe is unreadable whatever it is called and
@@ -862,6 +871,9 @@ func readTextTree(boundary, dir string) ([]unit, []model.Finding) {
 		units = append(units, unit{file: p, text: stripBOM(string(b)), role: role})
 		return nil
 	})
+	if len(outside) > 0 {
+		notes = append(notes, refusedLinksFinding(dir, outside)) // dimension 9: Run routes it to the artifact
+	}
 	if len(nonRegular) > 0 {
 		notes = append(notes, nonRegularNote(dir, nonRegular))
 	}
