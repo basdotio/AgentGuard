@@ -116,7 +116,10 @@ benign sample; their raw/ is `aguard-judge-raw-2026-10-p049.tar.gz`. Five more,
 prompt change has to be measured after P-048: the current prompt and the clause side by side on 28 samples (9
 skill-safety-bench + 19 hard negatives) and on 100 random benign skills at `samples: 10`, where each question's k/10 is
 its flag probability, plus the 819 subset at `samples: 1`; their raw/ is `aguard-judge-raw-2026-10-p050.tar.gz`, with
-the two wordings the proposal dropped. Two more things apply to a
+the two wordings the proposal dropped. One more, `results/aguard/2026-10-13-llm-gpt-4.1-mini-p049-benign-s3/`, is the
+full-benign denominator at `samples: 3` — the mode a gate is told to run — on main at e951123 (P-049 in): 30 of 3,220 =
+0.93% [0.65, 1.33] against 35 at `samples: 1` on the same binary, so what is left is not the draw; its raw/ is
+`aguard-judge-raw-2026-10-benign-s3.tar.gz` on v0.23.0. Two more things apply to a
 judge run: the driver isolates aguard's environment, so a proxy the endpoint needs is passed by
 name with the key (`-aguard-env OPENAI_API_KEY,HTTPS_PROXY,HTTP_PROXY,NO_PROXY`), and Go does not
 read the macOS system proxy. Without that, a run whose endpoint needs a proxy answers nothing and
