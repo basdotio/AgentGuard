@@ -77,9 +77,12 @@ func FileReach(root, p string) Reach {
 	return Reach{Kind: Outside}
 }
 
-// SkillMDReadable reports whether dir's SKILL.md may be read: the judge and hygiene open it directly.
-func SkillMDReadable(dir string) bool {
-	return FileReach(dir, filepath.Join(dir, "SKILL.md")).Kind == Read
+// SkillMDRefused reports whether dir's SKILL.md is one the scanner must not open (outside its
+// boundary, or a credential): the judge and hygiene open SKILL.md directly and ask this first. A
+// missing or unresolvable SKILL.md is not refused — opening it simply fails, as it always did.
+func SkillMDRefused(dir string) bool {
+	k := FileReach(dir, filepath.Join(dir, "SKILL.md")).Kind
+	return k == Outside || k == Credential
 }
 
 // SkillMDBound is the wider boundary a skill's SKILL.md may resolve into: the skills directory that

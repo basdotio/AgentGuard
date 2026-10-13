@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/basdotio/AgentGuard/internal/clean"
+	"github.com/basdotio/AgentGuard/internal/collect"
 	"github.com/basdotio/AgentGuard/internal/detect"
 	"github.com/basdotio/AgentGuard/internal/model"
 	"github.com/basdotio/AgentGuard/internal/parse"
@@ -85,7 +86,12 @@ func Analyze(root string, arts []model.ArtifactReport, opts Options) []model.Cle
 		if a.Kind != model.KindSkill || a.Plugin != "" {
 			continue
 		}
-		skills = append(skills, skillInfo{name: a.Name, meta: parse.ReadSkill(a.Path), path: a.Path, hash: a.Hash})
+		// SKILL.md through the rules' predicate (P-056): a refused one is not opened here either.
+		var meta parse.SkillMeta
+		if !collect.SkillMDRefused(a.Path) {
+			meta = parse.ReadSkill(a.Path)
+		}
+		skills = append(skills, skillInfo{name: a.Name, meta: meta, path: a.Path, hash: a.Hash})
 	}
 
 	var out []model.CleanItem

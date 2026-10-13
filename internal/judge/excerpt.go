@@ -525,7 +525,9 @@ func behaviorExcerpt(dir string, eg egress) (string, []sourceUnit) {
 			}
 			return nil
 		}
-		if d.Type()&fs.ModeSymlink != 0 { // never read a symlink target (may escape the skill root)
+		// The rules' predicate, not a rule of its own (P-056): a symlink inside the root is read as the
+		// static walk reads it, one that escapes is not, and the hash folds in the same answer.
+		if collect.FileReach(dir, p).Kind != collect.Read {
 			return nil
 		}
 		if !behaviorExts[strings.ToLower(filepath.Ext(p))] {
@@ -613,7 +615,7 @@ func serverDeclared(dir string, eg egress) (string, []sourceUnit) {
 			}
 			return nil
 		}
-		if d.Type()&fs.ModeSymlink != 0 || !strings.EqualFold(filepath.Ext(p), ".py") {
+		if !strings.EqualFold(filepath.Ext(p), ".py") || collect.FileReach(dir, p).Kind != collect.Read {
 			return nil
 		}
 		raw := readAtMost(p, maxFileRead)
