@@ -2,7 +2,6 @@
 package collect
 
 import (
-	"crypto/sha256"
 	"os"
 	"path/filepath"
 	"strings"
@@ -121,14 +120,6 @@ func CredentialPath(real string) (model.Severity, bool) {
 		return model.SevHigh, true
 	}
 	return credentialFile(real)
-}
-
-// OutsideLinkMark is what a refused entry contributes to a tree hash in place of its bytes: its link
-// text. Presence and target re-key (an approval cannot cover a retargeted link); the target's content
-// is never a digest input.
-func OutsideLinkMark(p string) [32]byte {
-	t, _ := os.Readlink(p)
-	return sha256.Sum256([]byte("aguard:outside-link\x00" + t))
 }
 
 func isSymlink(p string) bool {

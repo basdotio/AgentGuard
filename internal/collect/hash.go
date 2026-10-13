@@ -140,3 +140,11 @@ func TreeHash(boundary, dir string) string {
 	}
 	return hex.EncodeToString(h.Sum(nil))
 }
+
+// OutsideLinkMark is what a refused entry contributes to a tree hash in place of its bytes: its link
+// text. Presence and target re-key (an approval cannot cover a retargeted link); the target's content
+// is never a digest input.
+func OutsideLinkMark(p string) [32]byte {
+	t, _ := os.Readlink(p)
+	return sha256.Sum256([]byte("aguard:outside-link\x00" + t))
+}
