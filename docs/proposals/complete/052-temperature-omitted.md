@@ -75,5 +75,6 @@ Released: not yet
 Evidence: TestHTTP_TemperatureRefusedIsOmittedThenRemembered, TestHTTP_OtherBadRequestsAreNotRetried, TestRun_TemperatureOmittedReachesTheStats (internal/judge/temperature_test.go); the first red on the base
 Evidence: prompt-version tests green and judge-prompt unchanged (6572379d32b1 before and after): the request body of a model that takes the member did not change
 Evidence: aguard llm test, real endpoint: "OK · gpt-6.1-sol answered in 1.85s via https://api.openai.com/v1 (23 tokens in / 4 out)" where the base answered "judge endpoint returned 400 … 'temperature' does not support 0 with this model"; gpt-4.1-mini still OK
+Evidence: TestHTTP_ConcurrentFirstCallsAreAllResent (same file), added after the first real run: with concurrency 4 the first calls are refused together, the one that set the flag was the only one re-sent and the others failed — 573 of 1,769 calls on the 224 subset, about three per sample; the re-send now rests on whether THIS call carried the member, not on the flag
 Evidence: make verify: all gates passed on the branch; go test -count=1 -race ./internal/judge/ ./cmd/aguard/ green; go.mod line 2 unchanged
 ```
