@@ -584,3 +584,60 @@ func headed(files []string) func([]string) (string, []span) {
 		return b.String(), spans
 	}
 }
+
+// serverTool matches a decorated tool definition and its docstring's first line, the shape of a
+// FastMCP / mcp.server tool in Python: the declared side of the server-source pass (P-053).
+var serverToolRe = regexp.MustCompile(`(?s)@\w+(?:\.\w+)*\.tool\((?:[^()]*|\([^()]*\))*\)[ \t]*\n(?:[ \t]*@[^\n]*\n)*[ \t]*(?:async[ \t]+)?def[ \t]+(\w+)[ \t]*\([^)]*\)[^:\n]*:[ \t]*\n(?:[ \t]*[rub]{0,2}(?:"""|''')(.*?)(?:"""|'''))?`)
+
+// serverDeclared renders an MCP server's declared side: one line per tool, "name: first docstring
+// line", gathered from the Python files of dir within the behaviour walker's bounds, redacted and
+// capped like a skill's description. A tool without a docstring is listed by name alone, and a
+// server with no tool at all declares nothing — which the prompt reads as a thin declaration, so
+// most of what the code does is undisclosed, which is the right reading of a server that documents
+// nothing. The module docstring is never used: it is not shown to a client, and in test corpora it
+// names the attack. The unit is collapsed, like a skill's description, so a quote of a docstring
+// line grounds to the file it came from.
+func serverDeclared(dir string, eg egress) (string, []sourceUnit) {
+	var lines []string
+	var units []sourceUnit
+	_ = filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if d.IsDir() {
+			if collect.ExcludedFromScan(d.Name()) {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if d.Type()&fs.ModeSymlink != 0 || !strings.EqualFold(filepath.Ext(p), ".py") {
+			return nil
+		}
+		raw := readAtMost(p, maxFileRead)
+		if raw == nil {
+			return nil
+		}
+		rel, _ := filepath.Rel(dir, p)
+		for _, m := range serverToolRe.FindAllStringSubmatch(string(raw), -1) {
+			first := strings.TrimSpace(m[2])
+			if i := strings.IndexByte(first, '\n'); i >= 0 {
+				first = strings.TrimSpace(first[:i])
+			}
+			line := m[1]
+			if first != "" {
+				line += ": " + first
+			}
+			lines = append(lines, line)
+			if len(units) == 0 {
+				units = append(units, sourceUnit{file: detect.Redact(rel), firstLine: 1, collapsed: true})
+			}
+		}
+		return nil
+	})
+	if len(lines) == 0 {
+		return "", nil
+	}
+	text := declaredPurpose(strings.Join(lines, "\n"), eg)
+	units[0].text = text
+	return text, units
+}

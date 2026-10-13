@@ -42,7 +42,7 @@ const promptVersionLen = 12
 
 // passModes is every Mode in declaration order; TestPromptVersion_EveryInputIsDecided reads the
 // constants from judge.go and fails when one is missing here.
-var passModes = []Mode{ModeIntent, ModeInjection, ModeExplain, ModeCapability, ModeMCPConfig, ModeCollusion}
+var passModes = []Mode{ModeIntent, ModeInjection, ModeExplain, ModeCapability, ModeMCPConfig, ModeCollusion, ModeServer}
 
 // callShape is one kind of request the client sends: a judge call (req), or a triage call carrying
 // the given items. The content in it is stand-ins only.

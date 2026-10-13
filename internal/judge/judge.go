@@ -46,6 +46,7 @@ const (
 	ModeCapability             // hooks: is the command proportionate to its interception point?
 	ModeMCPConfig              // MCP servers: what the CONFIG says (see limits in prompt.go)
 	ModeCollusion              // skills: does a capability chain span several files?
+	ModeServer                 // MCP server source: do the tools do more than their docstrings say? (P-053)
 )
 
 // Request is one artifact submission. Declared and Behavior are ALREADY redacted before
@@ -75,7 +76,7 @@ type Request struct {
 // only be read on its own terms.
 func (r Request) twoSided() bool {
 	switch r.Mode {
-	case ModeIntent, ModeCapability, ModeCollusion:
+	case ModeIntent, ModeCapability, ModeCollusion, ModeServer:
 		return true
 	case ModeInjection:
 		return r.Declared != ""
@@ -188,6 +189,8 @@ func modeInfo(m Mode) modeRow {
 		return modeRow{"capability", "LLM-008", dimCapability, "Hook capability exceeds its interception point (LLM judge — advisory, not confirmed)"}
 	case ModeMCPConfig:
 		return modeRow{"mcp-config", "LLM-009", dimSupplyChain, "MCP server configuration risk (LLM judge — advisory, not confirmed)"}
+	case ModeServer:
+		return modeRow{"server", "LLM-010", dimIntent, "MCP server source does more than its tools say (LLM judge — advisory, not confirmed)"}
 	}
 	return modeRow{"intent", "LLM-001", dimIntent, "Intent mismatch (LLM judge — advisory, not confirmed)"}
 }

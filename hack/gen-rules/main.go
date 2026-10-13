@@ -103,6 +103,8 @@ var llm = []entry{
 		"While being examined, the content addressed the analysis model — telling it what to conclude, or to ignore its instructions. Legitimate content has no reason to talk to a scanner. Unlike every other verdict the SEVERITY IS THE TOOL'S, not the model's: a hijacked model would rate its own capture low."},
 	{"LLM-008", 2, model.SevMedium, true, "Hook capability exceeds its interception point",
 		"The hook command does more than intercepting its own event requires. The severity is the tool's, from the category the model names (network, credential, install, permission override → high; file write, process control, other → medium)."},
+	{"LLM-010", 10, model.SevMedium, true, "MCP server source does more than its tools say",
+		"The server-source pass (P-053): `check <dir>` on an MCP server's source — a Python file importing mcp or fastmcp and declaring tools — asks whether the tools do more than their docstrings say, with the intent pass's category table; the module docstring is never the declared side. Runs on kind server only; a plain directory is still asked nothing."},
 	{"LLM-009", 5, model.SevMedium, true, "MCP server configuration risk",
 		"Unpinned package, unknown publisher, remote endpoint, or credentials passed through env. Advisory only: reported with the model's severity but never escalates, whatever the vote — on 500 real configs it was the only judge rule to flag benign input."},
 }

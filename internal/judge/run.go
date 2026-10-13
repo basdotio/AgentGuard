@@ -534,6 +534,15 @@ func planFor(i int, a model.ArtifactReport, eg egress) []task {
 				Declared: declaredPurpose("Remote MCP connector \""+a.Name+"\": the tool list its server sent (names, descriptions, parameter descriptions)", eg),
 				Behavior: text}, []sourceUnit{{file: detect.Redact(a.Name) + " (connector)", text: text, firstLine: 0, collapsed: true}})
 		}
+	case model.KindServer:
+		// An MCP server's source (P-053): the tools' docstrings are the only description a client
+		// sees, the code is what runs. The intent question, with the skill passes' walker and caps.
+		declared, declaredUnits := serverDeclared(a.Path, eg)
+		behavior, behaviorUnits := behaviorExcerpt(a.Path, eg)
+		if behavior != "" {
+			ask(Request{Mode: ModeServer, Declared: declared, Behavior: behavior}, append(declaredUnits, behaviorUnits...))
+		}
+
 	case model.KindHook:
 		// A hook gets injection (does it push directives into the agent's context?) and
 		// capability (is the command proportionate to its interception point?). It does NOT
