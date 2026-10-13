@@ -145,3 +145,79 @@ this change cannot add a benign false positive on the corpus.
 The whole suite stays green except `TestCrossRootSymlinkIgnored` (`internal/collect`), which asserts that deleting an
 out-of-root link leaves the hash unchanged — it pins the silent skip. `TestHashGolden` stays green. No existing test has a
 symlinked `SKILL.md`, and none asserts what the judge reads of one.
+
+## Design (as recommended in the open questions)
+
+One predicate in `collect` answers "may this file of this artifact be read?", and the hash walk, the static tree read, the judge
+and hygiene all ask it; nothing else opens a skill's files.
+
+1. **`SKILL.md` at the root of a skill** (the one file Claude Code's loader reads) is read when it resolves inside the skill root,
+   **or** inside the skills directory that holds the skill (open question 1; for a plugin's child, the plugin root, question 7),
+   and its resolved path is not a credential path by the predicates `@import` already uses (`hasSensitiveComponent`,
+   `credentialFile`). It is hashed under the name `SKILL.md` with the target's bytes — the same hash a plain copy gets (question 3).
+2. **A refused `SKILL.md`** (outside that boundary, a credential, or unresolvable while its lexical target is outside) is not
+   opened by anything: `SCOPE-001` (medium, scored) on the artifact — `EXFIL-005`-style high when the target is a credential
+   (question 4) — and the artifact's hash is `""`, never the empty-input digest; P-011 then makes `approve` refuse and the gate
+   say "not remembered".
+3. **Every other file** keeps invariant #2's skill-root boundary (question 2), but a refused one is no longer silent: one
+   `SCOPE-001` (medium, scored) per artifact naming the entries (through `Redact`), and each entry folded into the tree hash as a
+   marker over its link text, so retargeting a link re-keys. This applies to every tree the walk hashes (skill, plugin, directory,
+   server, quarantined).
+4. **A link that cannot be resolved** (dangling, a loop) is classified by its lexical target: inside → present and unread (the
+   existing unreadable mark and `COV-000`), outside → item 3 (question 6). `withinDir` and `inBoundary` stop disagreeing.
+5. **The judge reads exactly that file set**: `SKILL.md` through the predicate (no more reading outside the boundary), supporting
+   files the static walk reads, including symlinks inside the skill root (question 5). `ExcerptVersion` is bumped.
+6. `detect.rulesEpoch` 2 → 3 (deterministic findings change for an input); `make docs`.
+
+## Done criteria
+
+- [ ] `TestSkillFiles_OneReading` (`internal/collect`, `internal/detect`, `internal/judge`; one `t.TempDir()` fixture with rows
+  a–i, z, the P-044 plugin child and a corpus-shaped dangling supporting link): per row, the hash class (equal to the plain copy's
+  hash / `""` / changed by the marker / unchanged), the static finding set, `SCOPE-001` present or absent, and that the files the
+  judge's planned units name are exactly the files the hash folded in and the static walk read. Red on the base for a–f, h, i and
+  the plugin child
+- [ ] `TestNoSkillHasTheEmptyDigest` (`internal/collect`, invariant): over every row and over `CollectAll` / `CollectTarget`, no
+  `skill` artifact and no plugin child hashes to `e3b0c442…b855`. Red on the base (a, b, c, d, i, the child)
+- [ ] `TestOutsideSkillMDNeverLeaves` (`cmd/aguard`, invariant #2 on the egress path): a `SKILL.md` symlinked to a file outside
+  the boundary that holds a marker string; the marker appears in no JSON, SARIF, markdown, HTML or terminal report and in no
+  `llm preview --json` payload. Red on the base (the judge payload carries it)
+- [ ] `TestGate_LinkedSkillsShareNoApproval` (`cmd/aguard`, two `runHook` processes as `nextProcess` does): after the clean load
+  of a linked benign skill, a linked malicious skill asks; after appending a byte to a remembered skill's link target, the gate
+  audits it again. Red on the base (no output for both)
+- [ ] `TestCrossRootSymlinkIgnored` rewritten to the property it was meant to pin: changing the out-of-root target's bytes leaves
+  the hash unchanged and the content absent from every output; removing the link changes the hash; `SCOPE-001` names it
+- [ ] Real `~/.claude`, counts only: 41 → 0 skills with the empty-input digest; exactly those 41 hashes move; `overall` 69 → 69;
+  judge calls 589 → 593 with intent and injection unchanged; hygiene still 17 items
+- [ ] **Reverse assertions**: rows g (directory symlink into `$HOME`) and z (plain file) byte-identical to the base in
+  `scan --json` and `check --json`; a tree with no symlink keeps its hash (`TestHashGolden`, `TestContentHashGolden` unchanged);
+  the three scan-level `COV-000` notes for symlinked commands, agents and rules unchanged; `check --fail-on high` still exits 1
+  for z; `TestZeroDial_*`, `TestAsksNothingOf_FollowsPlanFor` green unchanged
+- [ ] Docs: `.claude/rules/invariants.md` #2 and `hash.md`, `docs/architecture*.md` (invariant 2), spec §16 item 2 and §13 test ②,
+  §8 (the tree hash), `docs/rules.md` via `make docs` (`SCOPE-001` now true as written), `docs/llm-judge*.md` (what the judge reads
+  of a skill), `ROADMAP.md` known limitations if a question is decided against reading
+- [ ] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no toolchain switch; no new dependency
+
+## Out of scope
+
+- **Symlinked commands, agents, rules, workflows and output styles** that resolve outside the root: they are disclosed today (one
+  scan-level `COV-000` medium per tree) but not scored, while Claude Code loads them. Aligning them with `HOOK-002`'s "score the
+  refusal" is a follow-up (question 11); none exists on the real `~/.claude`
+- **Claude Code's realpath dedupe**: two links to one target are two artifacts with one hash, as today; Claude Code loads one
+- **The skill directory install guard** (a directory symlink must resolve inside `$HOME`, `SCOPE-001`): unchanged
+- **`clean`**: quarantining or restoring a skill whose `SKILL.md` is a relative link (`issues/019`); its identity check simply
+  gets a real hash instead of the empty-input digest
+- **`credentialFile` coverage** (`.credentials.json` is not matched, nor for `@import`s): a follow-up, it moves `EXFIL-005`
+- **Zip targets**: extraction never recreates a symlink (spec §4.1), so nothing changes there
+- **The gate's code**: no change; it consumes the hash and the findings the scanner produces
+- No rule text change other than `SCOPE-001`'s and `EXFIL-005`'s descriptions; no Go dependency; no `go` directive change
+
+## Must not claim
+
+- **Not "symlinked skills are covered"**: a `SKILL.md` is read inside the declared boundary; one outside it, and every supporting
+  file outside its skill root, is refused — loudly, scored, unhashed or marked — and still not read
+- **Not that the judge "now sees" these skills**: it already read every one of them (measured, 589 calls before and after for the
+  questions); the change for the judge is that it stops reading outside the boundary and reads the same set as the rules
+- **Not that the loader table is Claude Code's contract**: it was read from one installed build (2.1.107)
+- **No recall claim from the corpus**: one sample moves (100 → 88, medium against a high truth label); one sample is not a rate
+- **Not "approvals are migrated"**: approvals of the affected skills stop matching and are asked again once; nothing rewrites
+  the store
