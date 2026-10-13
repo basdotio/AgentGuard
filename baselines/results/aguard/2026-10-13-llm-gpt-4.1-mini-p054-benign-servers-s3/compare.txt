@@ -1,0 +1,17 @@
+# P-054, generated from judge.jsonl in this directory: the 76-server benign panel of P-053 at samples: 3 with the two readings fixed
+# (binary b1e9fe3). Read against ../2026-10-13-llm-gpt-4.1-mini-p053-benign-servers-s3/ (4 escalated). Four draws of this panel
+# under the P-054 binaries escalated 7, 5 and 6 (raw_archive holds the two earlier draws): on 76 samples the draw moves the count
+# by three, so a one-sample effect cannot be read here; the declared-only rule fired once (an LLM-005 naming the declared purpose).
+
+== full benign: n 76 · asked (judge_calls>0) 69 · escalated non-009 at high 6 = 7.89% [3.67, 16.17] (gate <= 0.5%) ==
+   over the asked samples only: 6/69 = 8.70% [4.05, 17.70]
+   static >= high 3 · flagged(static|judge) 9 · judge_any 7 · calls 215 failed 3 · incomplete 0
+
+== escalated in this draw ==
+   fm-atproto_mcp [('LLM-010', ['credential-read', 'credential-read', 'credential-read'])]
+   fm-code_mode [('LLM-010', ['credential-read', 'credential-read'])]
+   fm-diagnostics [('LLM-010', ['remote-execution', 'remote-execution'])]
+   fm-memory [('LLM-010', ['credential-read', 'credential-read', 'credential-read'])]
+   fm-resources_as_tools [('LLM-010', ['credential-read', 'file-deletion'])]
+   fm-text_me [('LLM-010', ['exfiltration', 'exfiltration'])]
+   atproto_mcp now declares its tools (the extractor fix) and is still flagged: the login's credential read is in no docstring, which is a defensible reading; code_mode and text_me as in P-053; diagnostics spawns `uv run` (2 of 3 twice); memory and resources_as_tools are this draw's.

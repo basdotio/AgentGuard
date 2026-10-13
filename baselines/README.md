@@ -124,7 +124,11 @@ measure P-053 (the server-source pass, kind `server`, `LLM-010`) through `aguard
 which never passes `--llm` to `check`: the 127 Cisco servers of the corpus, and 76 benign servers that are NOT in the corpus
 (real source at pinned commits, named in `samples.jsonl` and `run.yaml`; the trees travel in the archive under
 `benign-servers/`); `judge.jsonl` for the benign panel was written in judgefold's row shape by the run's own script,
-since judgefold stages from the corpus. Their raw/ is `aguard-judge-raw-2026-10-p053.tar.gz`. Two more things apply to a
+since judgefold stages from the corpus. Their raw/ is `aguard-judge-raw-2026-10-p053.tar.gz`. Three more, `results/aguard/2026-10-13-llm-gpt-4.1-mini-p054-*/`,
+measure P-054 (two readings fixed, no prompt change): the 224 subset beside a same-prompt control, and the 76-server benign
+panel again — whose four draws under the P-054 binaries escalated 7, 5 and 6 against P-053's 4, the band a panel that
+size moves in; the two earlier draws and a gpt-6.1-sol probe on the 224 subset are in `aguard-judge-raw-2026-10-p054.tar.gz`
+under `earlier-draws/` and `model-probe/`. Two more things apply to a
 judge run: the driver isolates aguard's environment, so a proxy the endpoint needs is passed by
 name with the key (`-aguard-env OPENAI_API_KEY,HTTPS_PROXY,HTTP_PROXY,NO_PROXY`), and Go does not
 read the macOS system proxy. Without that, a run whose endpoint needs a proxy answers nothing and

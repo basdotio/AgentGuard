@@ -1,0 +1,2 @@
+{"sample":"mal-skill-sg-vibe-coded-plugin","path":"corpus/malicious/skills/sg-vibe-coded-plugin","class":"malicious","surface":["skills"],"severity":"high"}
+{"sample":"ben-skill-md-acidsound-acidapps-screenshot-generator","path":"corpus/benign/skills/md-acidsound-acidapps-screenshot-generator","class":"benign","surface":["skills"]}
