@@ -210,6 +210,7 @@ type Rule struct {
 > **规格修订(本轮)**:上表原有一行「escapability 长尾 → Permission → 交给 LLM 去读那个脚本」,**已删除**。「`Bash(./scripts/deploy.sh *)` 这条授权危不危险」等价于「`deploy.sh` 干什么」—— 那是**把被引用的文件读进来跑规则**,和 hook 跟进被引用脚本是同一件事,是**结构问题不是语义问题**。交给 LLM 反而更差:慢、要钱、结论不可复现,还要过落地 + 共识两道门槛才有资格进 `overall_effective`;静态版本**直接进 `overall`、直接进闸门**。**已实现**(`detect.permissionUnits`):只跟 `allow` 不跟 `deny`(deny 什么都没交出去,且把脚本内容归到一条正在**拒绝**它的规则上是错误归因),边界与 hook 完全同一套(§16.2),跟不动一律出 `COV-000`(§16.8)。
 | deobfuscation | Skill | 结构前提:有可解码 blob | 原始字节,非 finding | 已实现 |
 | MCP 配置语义 | MCP | 结构前提:有 server 配置 | collect 的配置项 | 已实现(`LLM-009`,维度 5)。**本机 MCP 配置**只有启动命令,看不到工具说明,tool poisoning 在这一路不可达 |
+| 服务器源码 | `check` 目标为 MCP 服务器源码(种类 `server`:导入 `mcp`/`fastmcp` 且声明工具的 Python 文件) | 结构前提:有带 docstring 的工具 | 声明侧 = 工具名 + docstring 首行(模块注释不算);行为侧 = 代码,走 skill 脚本摘录器 | 已实现(`LLM-010`,维度 10;P-053)。语料里 127 个 cisco 样本正是这个形状,此前判官一个问题都不问 |
 | **injection(connector)** | Connector | **无条件** | collect 读到的桌面版缓存工具清单(§4) | 已实现:远程 connector 的工具说明就是模型会读并照做的文本,静态那半是 `MCP-001..004`(§5.1),判官跑同一份渲染(`detect.ConnectorText`),两边看不到不同的东西 |
 | **intent** | Skill | **静态先行**:有静态发现 或 信誉库未知 | detect + reputation | 已实现 |
 | **collusion** | Skill | **静态先行**:`EXFIL-002` 粗筛命中 | 静态跨文件粗筛(§5.1) | 已实现(`LLM-006`,只发能力摘要不发全文) |

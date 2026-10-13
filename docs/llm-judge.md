@@ -51,6 +51,7 @@ In short: the LLM can only push risk **up**, never down. It can surface a risk; 
 | **Collusion** | Do capabilities in *different files* form a chain — collected here, sent from there? | skills the static screen (`EXFIL-002`) flagged | 3 · `LLM-006` |
 | **Capability** | Does this hook do more than intercepting *its* event plausibly requires? | hooks | 2 · `LLM-008` |
 | **MCP config** | Unpinned package, unknown publisher, remote endpoint, credentials in env? | MCP servers | 5 · `LLM-009` |
+| **Server source** | Do an MCP server's tools do more than their docstrings say — read credentials, send data out, run shell from a parameter? | `check <dir>` on an MCP server's source (kind `server`) | 10 · `LLM-010` |
 | **Triage** | Are the *static* findings likely-real or likely-benign noise (doc examples, pinned URLs, fixtures)? | any artifact that has static findings | `AdvisoryLabel` |
 
 Two things about that table are deliberate:
@@ -325,6 +326,7 @@ everything on your machine. That trade-off is yours.
 | `LLM-006` | Capability chain across files of one skill (dim 3). |
 | `LLM-008` | Hook capability exceeds its interception point (dim 2). |
 | `LLM-007` | The artifact addressed the analyzer — told it what to conclude, or to ignore its instructions (dim 1). |
+| `LLM-010` | MCP server source does more than its tools say (dim 10). `check <dir>` on a Python MCP server (the SDK imported, a tool declared) asks the intent question of it: DECLARED is each tool's name and first docstring line — all a client is shown, the module docstring never — BEHAVIOR the code, through the skill passes' walker and caps; the intent table and `disclosed` apply. A plain directory is still asked nothing (P-053). |
 | `LLM-009` | MCP server configuration risk — source, pinning, transport, credentials (dim 5). **Advisory only**: shown with the model's severity, never escalates, whatever the vote. Unpinned `npx -y` packages holding a token are what real configs look like — measured on 500 benign configs it was the only judge rule to flag benign input (P-019). |
 
 Triage labels (`likely-real` / `likely-benign`) render inline under the matching finding as
@@ -445,7 +447,7 @@ not that it read every byte.
 folder, or on a plugin holding no skill, command or agent (also as a `.zip`), exits **4**: the judge plans no question about it
 (a triage label is not one — it never reaches this gate), so exit 0 would read as an answer the run never had. A plugin that
 holds one is answered through its children, and the usual rules apply to those calls. A `scan`, or a `check` of a directory
-laid out as a config root, keeps its exit code: an environment is not a target. There the `LLM-000` note is the disclosure.
+laid out as a config root, keeps its exit code: an environment is not a target. There the `LLM-000` note is the disclosure. An MCP server's source is not a plain folder: a directory holding a Python file that imports `mcp` or `fastmcp` and declares a tool is kind `server`, gets the server-source pass (`LLM-010`), and the gate answers for it (P-053).
 
 Both flags mean the same thing on `scan` and on `check`, apart from that target rule. A pull-request job that wants the
 judge's say runs `aguard check ./skill --llm --fail-on-llm high`: a deterministic high still
