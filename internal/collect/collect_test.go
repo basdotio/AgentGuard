@@ -106,36 +106,52 @@ func TestNoExecInvariant(t *testing.T) {
 	}
 }
 
-// TestCrossRootSymlinkIgnored asserts out-of-root symlink targets are not read into
-// the tree hash (spec §16.2): the evil skill's hash must equal the hash computed with
-// the symlink absent.
+// TestCrossRootSymlinkIgnored pins invariant #2 for a skill's internal file (spec §16.2): a link out of
+// the skill root is never READ — its target's bytes are not a digest input — but it is no longer
+// absent either (P-056). The old form of this test asserted that deleting the link left the hash
+// unchanged, i.e. that the link contributed nothing; that was the silent skip, and it let a tree
+// with an unread file that runs share its hash with the tree without it.
 func TestCrossRootSymlinkIgnored(t *testing.T) {
 	root, secret, _ := buildFakeHome(t)
-	res := CollectAll(root)
-	var evilHash string
-	for _, a := range res.Artifacts {
-		if a.Kind == model.KindSkill && a.Name == "evil" {
-			evilHash = a.Hash
+	evilHash := func() string {
+		t.Helper()
+		for _, a := range CollectAll(root).Artifacts {
+			if a.Kind == model.KindSkill && a.Name == "evil" {
+				return a.Hash
+			}
 		}
-	}
-	if evilHash == "" {
 		t.Fatal("evil skill not collected")
+		return ""
 	}
-	// Recompute after deleting the symlink; hashes must match (symlink contributed nothing).
-	if err := os.Remove(filepath.Join(root, "skills", "evil", "leak.txt")); err != nil {
+	before := evilHash()
+	if before == "" {
+		t.Fatal("a refused supporting file must not cost the skill its hash; only a refused SKILL.md does")
+	}
+	// The target's bytes are not read: changing them cannot move the hash.
+	mustWrite(t, secret, "OTHER-SECRET-CONTENT")
+	if got := evilHash(); got != before {
+		t.Errorf("hash moved when the out-of-root target changed (%s vs %s) — the target was read", before, got)
+	}
+	// The link itself is present: retargeting it re-keys, removing it re-keys.
+	link := filepath.Join(root, "skills", "evil", "leak.txt")
+	other := filepath.Join(filepath.Dir(secret), "OTHER_OUTSIDE.txt")
+	mustWrite(t, other, "x")
+	if err := os.Remove(link); err != nil {
 		t.Fatal(err)
 	}
-	res2 := CollectAll(root)
-	var evilHash2 string
-	for _, a := range res2.Artifacts {
-		if a.Kind == model.KindSkill && a.Name == "evil" {
-			evilHash2 = a.Hash
-		}
+	if err := os.Symlink(other, link); err != nil {
+		t.Fatal(err)
 	}
-	if evilHash != evilHash2 {
-		t.Errorf("hash changed when symlink removed (%s vs %s) — out-of-root target was read", evilHash, evilHash2)
+	retargeted := evilHash()
+	if retargeted == before {
+		t.Error("retargeting an out-of-root link left the hash unchanged — an approval would cover a different file")
 	}
-	_ = secret
+	if err := os.Remove(link); err != nil {
+		t.Fatal(err)
+	}
+	if got := evilHash(); got == before || got == retargeted {
+		t.Error("removing an out-of-root link left the hash unchanged — the refused entry was not folded in")
+	}
 }
 
 // TestParseErrorSurfaced asserts corrupt settings.json is NOT silently skipped —
