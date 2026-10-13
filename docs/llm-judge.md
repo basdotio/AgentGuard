@@ -479,7 +479,10 @@ effective score.
   where every vote was recorded, and it changed none of 224 verdicts, so it was not adopted.
 - **Sampling runs at a non-zero temperature.** At temperature 0 the same question returns the
   same answer every time — the votes would agree by construction and the agreement would
-  measure nothing. Variance is the entire point.
+  measure nothing. Variance is the entire point. A model that allows only its default temperature
+  (some reasoning-class models answer the member with a 400 naming it) is sent the same call once
+  more without the member and every later call without it; a consensus run then samples at that
+  default, and the judge block says `temperature_omitted: true` (P-052).
 - **That variance never reaches `overall`.** Two runs can produce different LLM findings; the
   deterministic score comes out bit-identical either way.
 - **It costs what it says:** `samples: 3` means three times the calls, so it is opt-in. Triage
@@ -496,7 +499,7 @@ did not run: <reason>` — and the "LLM judge leads" section is present even whe
 that line. When some replies needed the closed-early repair, the line says how many beside the
 failures (`(0 failed, 0 skipped, 1 repaired)`); with none it reads as before. JSON has the same as
 `judge` (`ran`, `reason`, `artifacts`, `calls`, `failed`, `skipped`, `repaired` — always present, like
-the two before it — `findings`, `endpoint`), plus what it cost: `triage_calls` (the part of `calls` that
+the two before it — `findings`, `endpoint`, and `temperature_omitted` when the endpoint refused the temperature member), plus what it cost: `triage_calls` (the part of `calls` that
 was triage, asked once where a question is asked `samples` times), `retries`, and
 `prompt_tokens` / `completion_tokens` — the last two absent when the endpoint reported no usage,
 rather than a 0 that would read as a measurement. Without `--llm` none of this appears: a judge that ran and

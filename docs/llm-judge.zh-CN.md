@@ -353,7 +353,7 @@ em 空格(U+2003)、不换行空格和 tab 一样折叠,所以用它们垫开的
 - **每张同意票的用词都记着**,按采样顺序紧跟在票数后面,再后面是工具定的严重度:`[2 of 3 samples agreed] [severities: high, medium] [categories: exfiltration, exfiltration] [tool: high]`。
   `severities` 是模型逐票写的词;`tool` 是发现的严重度,工具按过半的类别定、无过半时取各票最低(P-041)。词留着是为了让以后的运行能拿表去核对,
   也能看到几次采样之间差多远。改取多数票那一档在一次记全了票面的运行上量过,224 个判定一个没变,所以没采用。
-- **采样会提温。** 温度为 0 时同一个问题永远给同一个答案 —— 票数会按构造一致,"共识"什么也没测。
+- **采样会提温。** 温度为 0 时同一个问题永远给同一个答案 —— 票数会按构造一致,"共识"什么也没测。只允许默认温度的模型(有些推理类模型会对这个字段回 400 并点名它)会收到同一次调用去掉该字段的重发,之后的调用都不带;多票运行就按模型默认温度采样,判官区块会写 `temperature_omitted: true`(P-052)。
   有方差才有意义。
 - **这份方差绝不会渗进 `overall`。** 两次跑可能给出不同的 LLM 发现,确定性分数逐位相同。
 - **成本如实翻倍:** `samples: 3` 就是三倍调用,所以默认关。triage(分诊)永远不采样 —— 它产出的是展示标签、
@@ -367,7 +367,7 @@ em 空格(U+2003)、不换行空格和 tab 一样折叠,所以用它们垫开的
 to add`、`… and added K advisory leads`,或 `LLM judge did not run: <原因>` —— 并且 "LLM judge leads"
 那一节即使为空也会出现,里面就是这一行。有回复用到了"提前合上"的修补时,这一行在失败数旁边写出几个
 (`(0 failed, 0 skipped, 1 repaired)`);一个都没有时和以前一样。JSON 里对应 `judge` 字段(`ran`、`reason`、
-`artifacts`、`calls`、`failed`、`skipped`、`repaired`——和前两个一样总是出现——`findings`、`endpoint`),外加成本:`triage_calls`(`calls` 里属于 triage 的部分——
+`artifacts`、`calls`、`failed`、`skipped`、`repaired`——和前两个一样总是出现——`findings`、`endpoint`,端点拒收温度字段时还有 `temperature_omitted`),外加成本:`triage_calls`(`calls` 里属于 triage 的部分——
 triage 只问一次,判官的题问 `samples` 次)、`retries`、`prompt_tokens` / `completion_tokens`——端点没报用量时
 后两个键不出现,而不是写一个看起来像测量值的 0。不开 `--llm` 这些一律不出现。以前"判官跑了没发现"和"判官
 没跑"在报告上长得一样,而这正是读一份干净报告的人最需要分清的一件事。
