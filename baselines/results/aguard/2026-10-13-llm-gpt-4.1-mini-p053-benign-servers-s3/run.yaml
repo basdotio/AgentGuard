@@ -1,0 +1,82 @@
+# Written BY HAND from the run's raw output, not by baselines/cmd/baseline: the driver (P-021)
+# records the flags and the usage but folds verdicts from deterministic findings only, so its own
+# verdicts.jsonl is the static column (still recoverable from ledger.jsonl); the files here are
+# re-folded from raw/ at the judge's predicate by baselines/cmd/judgefold (P-033). Read
+# baselines/README.md "Measuring the judge" before citing any figure produced alongside this file.
+# THIS IS NOT A BASELINE: the verdicts depend on a model, a day and the sampling.
+#
+# WHAT THIS RUN IS FOR: P-053, the server-source pass on 76 BENIGN MCP servers at samples: 3 — real server
+# source at pinned commits, not in the corpus (its benign MCP samples are tool catalogues, a different
+# shape, as its manifest says): modelcontextprotocol/servers bbb701e (fetch, git, time),
+# modelcontextprotocol/servers-archived 9be4674 (git, sentry, sqlite), modelcontextprotocol/python-sdk
+# c9356a2 (34 example servers and snippets), jlowin/fastmcp e2fcc41 (36 examples). Each sample is one
+# example file or package, copied as-is. samples.jsonl names them; raw_archive holds the trees.
+#
+# measured by agent-guard's own adapter (agent-guard baselines/adapter/aguard) with --llm passed through, threshold "high" chosen by us, placement: by content, into a fake home; unplaceable trees are handed to `check` directly (the judge does not run on that path)
+
+tool: aguard
+tool_version: aguard v0.23.0-9-g7d30efa (commit 7d30efa, built 2026-10-13T05:25:30Z) · reputation entries=18 · rules=d74bca61f0da · judge-prompt=cc2cab18585d · judge-excerpt=6
+threshold: high
+tool_extra_args:
+    - --llm
+    - --config
+    - <judge config, not committed; reproduced under `judge:` below>
+tool_extra_env: []                    # none: the key was read from api_key_file, no proxy was needed
+uploads_samples: true
+uploads_samples_basis: >-
+    this run passed --llm to aguard: redacted excerpts of every judged artifact (skills, CLAUDE.md,
+    subagents, commands, hooks, MCP configs; at most 6,000 bytes per skill) were sent to the endpoint
+    under `judge:`, once per question. Samples routed to `check` stayed static; nothing of theirs left the machine.
+corpus_commit: 5c3db6ee
+started_at: 2026-10-13T05:27:24.142802Z
+finished_at: 2026-10-13T05:28:27.481153Z   # the driver's exit; 1 min wall clock at -j 2
+adapter: agent-guard baselines/adapter/aguard
+placement: by content, into a fake home; unplaceable trees are handed to `check` directly
+provisional: false
+work_list: samples.jsonl
+judge:
+    provider: openai                  # preset: endpoint https://api.openai.com/v1
+    model: gpt-4.1-mini
+    samples: 1                        # ONE answer per question; the consensus bar is trivially met
+    authority: advisory
+    concurrency: 4
+    timeout: 60s                      # default
+    total_timeout: 10m                # default
+    max_retries: 4
+    calls: 215
+    failed: 0
+    skipped: 0
+    repaired: 21
+    prompt_version: cc2cab18585d
+    excerpt_version: 6
+fold: >-
+    verdict = malicious when a deterministic finding is >= high, OR an LLM finding that ESCALATED
+    (grounded; k of n at the majority bar) is >= high and its rule is not LLM-009 (advisory-only).
+    The finding's severity is the tool's, set from the category the majority of the agreeing votes
+    named (P-041); the model's own words are in each vote's `severities`, the categories in its
+    `categories`. Per-sample static / judge / judge-any, the escalated rule ids and the votes are in
+    judge.jsonl; per-kind-rule.txt is judgefold's table over the same rows. Folded by
+    baselines/cmd/judgefold from raw/ (see raw_archive). Nothing here is hand-typed except this file.
+counts:
+    scored: 76
+    no_verdict: 0
+    error: 0
+    incomplete: 0
+work_list_size: 76
+judge_usage:
+    basis: reported
+    basis_note: 'summed from the tool''s own judge summary per sample'
+    reported_samples: 76
+    derived_samples: 0
+    calls: 215
+    failed: 0
+    skipped: 0
+    repaired: 21
+    triage_calls: 8
+    retries: 0
+    prompt_tokens: 343480
+    completion_tokens: 49941
+raw_archive:                          # raw/ is not in the tree (P-039); the archive is this run's primary evidence
+    asset: aguard-judge-raw-2026-10-p053.tar.gz
+    sha256: 45660523427b9bd62ddf0ae82ee00dd184b5b0e3f871c362e7f4a6d9117fd2c7   # 233533 bytes; attached to release v0.23.0 on 2026-10-13 (gh release download v0.23.0 --pattern aguard-judge-raw-2026-10-p053.tar.gz); benign-servers/ in it holds the 76 trees
+    note: one archive holds the raw/ of both P-053 runs, plus the 76 benign server trees, under the directory names used here
