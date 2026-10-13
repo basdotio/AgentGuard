@@ -56,6 +56,14 @@ var categoryTables = map[Mode][]category{
 		{"privilege", model.SevHigh, "changes permissions, users, sudoers or ownership"},
 		{"other", model.SevMedium, "undisclosed behaviour that is none of the above"},
 	},
+	ModeServer: {
+		catExfiltration, catCredentialRead, catRemoteExec, catSafetyDisable, catConcealed,
+		{"software-source", model.SevHigh, "points a package registry, index or proxy at a host that is not the vendor's"},
+		{"persistence", model.SevHigh, "installs a git hook, writes shell or editor startup files, scheduled jobs or launch agents"},
+		catFileDeletion,
+		{"privilege", model.SevHigh, "changes permissions, users, sudoers or ownership"},
+		{"other", model.SevMedium, "undisclosed behaviour that is none of the above"},
+	},
 	ModeCapability: {
 		{"network", model.SevHigh, "the command itself contacts the network: a URL, curl, wget, ssh, nc, a mail or webhook call"},
 		{"credential", model.SevHigh, "the command itself reads a key, token or credential file by path"},
@@ -96,7 +104,7 @@ func severityFor(m Mode, v Verdict) model.Severity {
 			break
 		}
 	}
-	if m == ModeIntent && v.Disclosed && cat != disclosureExempt {
+	if (m == ModeIntent || m == ModeServer) && v.Disclosed && cat != disclosureExempt {
 		sev = oneStepLower(sev)
 	}
 	return sev
@@ -132,7 +140,7 @@ func categoryPrompt(m Mode) string {
 		"and never from what a script might contain — when all the text shows is that a local file is run, the category is the one " +
 		"that says so (process-control, other-directive or other). The tool sets the finding's severity from the category; your " +
 		"severity word is recorded but does not decide it.")
-	if m == ModeIntent {
+	if m == ModeIntent || m == ModeServer {
 		b.WriteString(" Set disclosed=true when the DECLARED PURPOSE itself states this kind of behaviour in substance (a purpose that says it sends metrics to a collector discloses a network send, even without the host); set it false when the purpose is silent about it, however plausible the behaviour is for such a tool.")
 	}
 	return b.String()

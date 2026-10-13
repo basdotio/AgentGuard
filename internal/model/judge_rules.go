@@ -25,6 +25,7 @@ var judgeRuleText = map[string]string{
 	"LLM-007": "While being examined, this content addressed the analysis model directly — telling it what to " +
 		"conclude, or to disregard its instructions. Legitimate content has no reason to talk to a scanner.",
 	"LLM-008": "The hook does more than intercepting this event plausibly requires.",
+	"LLM-010": "The tools an MCP server implements do things their docstrings — the only description a client is shown — do not disclose: reading credentials or environment secrets, sending data out, running shell built from a parameter, writing outside their own data, changing privilege, persisting. The source was read; the server was never run.",
 	"LLM-009": "The server's configuration (source, pinning, transport, credentials) carries supply-chain risk.",
 }
 

@@ -17,8 +17,8 @@ never scores. See [architecture.md](architecture.md#scoring) for the full formul
 **Advisory** means static analysis cannot confirm it — the report says so, and you should
 read the evidence before acting.
 
-**83 rule IDs** in this build — 46 engine rules + 13 structural + 6 permission + 7 LLM
-+ 9 scan notes + 2 gate messages. Of these, **72 score** and 11 never do (dimension 0).
+**84 rule IDs** in this build — 46 engine rules + 13 structural + 6 permission + 8 LLM
++ 9 scan notes + 2 gate messages. Of these, **73 score** and 11 never do (dimension 0).
 These counts are generated from the same tables the drift check reads, so if a count
 anywhere else in this repository disagrees with this line, that other count is stale.
 
@@ -32,7 +32,7 @@ carry falls in exactly one class:
   scan notes that are not `LLM-` IDs, and `GATE-001` (the gate message `scan` raises). The epoch is
   an integer folded into the hash, which the maintainers bump when deterministic detection
   code outside the engine rule table changes; nothing checks that they did.
-- **Outside `rules_version` entirely:** every `LLM-` ID — the 7 judge findings and the 3
+- **Outside `rules_version` entirely:** every `LLM-` ID — the 8 judge findings and the 3
   `LLM-` scan notes. The judge moves only `overall_effective`; a `--llm` report names it in
   its own `judge` block — `prompt_version`, `excerpt_version`, `model` and `samples`.
 
@@ -50,7 +50,7 @@ agree were produced by the same engine rule table.
 - [7 — Backdoor](#7--backdoor) (4)
 - [8 — Resource abuse](#8--resource-abuse) (3)
 - [9 — Filesystem](#9--filesystem) (5)
-- [10 — Intent mismatch](#10--intent-mismatch) (1)
+- [10 — Intent mismatch](#10--intent-mismatch) (2)
 - [Scan notes (dimension 0)](#scan-notes-dimension-0) (9)
 - [Load-time gate](#load-time-gate) (2)
 - [Not covered by any rule](#not-covered-by-any-rule)
@@ -179,6 +179,7 @@ and never trips `--fail-on`.
 | ID | Severity | Title | Why it fires |
 |---|---|---|---|
 | `LLM-001` | medium · advisory | Intent mismatch | The declared purpose and what the scripts actually do do not line up. The severity is the tool's, from the category the model names (exfiltration, credential read, remote execution, safety disable, concealed directive, software source, persistence, file deletion, privilege → high; other → medium), one step lower when the declared purpose states the behaviour, except a changed software source. |
+| `LLM-010` | medium · advisory | MCP server source does more than its tools say | The server-source pass (P-053): `check <dir>` on an MCP server's source — a Python file importing mcp or fastmcp and declaring tools — asks whether the tools do more than their docstrings say, with the intent pass's category table; the module docstring is never the declared side. Runs on kind server only; a plain directory is still asked nothing. |
 
 ## Scan notes (dimension 0)
 
