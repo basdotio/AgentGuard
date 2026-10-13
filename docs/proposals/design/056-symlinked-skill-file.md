@@ -221,3 +221,15 @@ and hygiene all ask it; nothing else opens a skill's files.
 - **No recall claim from the corpus**: one sample moves (100 → 88, medium against a high truth label); one sample is not a rate
 - **Not "approvals are migrated"**: approvals of the affected skills stop matching and are asked again once; nothing rewrites
   the store
+
+## Work items
+
+| W | In one sentence | Commit message (no sha; a rebase changes it) |
+|---|---|---|
+| 1 | The collect, detect, judge and cmd tests above, with their reverse rows, run red on the base; `TestCrossRootSymlinkIgnored` rewritten | `collect: tests — …`, `detect: tests — …`, `judge: tests — …`, `cmd: tests — …` (P-056) |
+| 2 | The one predicate in `collect`; `TreeHash` follows `SKILL.md` into the boundary, returns `""` for a refused one, and folds a marker for every other refused entry; dangling links classified by their lexical target | `collect: a skill's SKILL.md is read where it loads, and nothing is refused in silence (P-056)` |
+| 3 | `readTextTree` asks the same predicate; `SCOPE-001` on the artifact for a refused file; the credential case; `rulesEpoch` 2 → 3; `make docs` | `detect: a symlinked SKILL.md is scanned, a refused file is scored (P-056)` |
+| 4 | `planFor`, `behaviorExcerpt`, `decodedPayloads` and hygiene open a skill's files through the predicate; `ExcerptVersion` bumped | `judge, hygiene: one reading of a skill's files (P-056)` |
+| 5 | (if question 10 is decided as recommended) `CLAUDE.md` / `CLAUDE.local.md` resolving outside home: `SCOPE-001` instead of nothing | `collect: an instruction file outside home is refused out loud (P-056)` |
+| 6 | Invariant #2 wording in `.claude/rules/invariants.md`, `hash.md`, architecture pair, spec §16 / §13 / §8, judge docs pair | `docs: invariant #2 names the file a skill loads (P-056)` |
+| 7 | "Done" in this file, the index | `proposals: P-056 (P-056)` |
