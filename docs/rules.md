@@ -17,18 +17,18 @@ never scores. See [architecture.md](architecture.md#scoring) for the full formul
 **Advisory** means static analysis cannot confirm it — the report says so, and you should
 read the evidence before acting.
 
-**84 rule IDs** in this build — 46 engine rules + 13 structural + 6 permission + 8 LLM
-+ 9 scan notes + 2 gate messages. Of these, **73 score** and 11 never do (dimension 0).
+**84 rule IDs** in this build — 46 engine rules + 14 structural + 6 permission + 8 LLM
++ 8 scan notes + 2 gate messages. Of these, **74 score** and 10 never do (dimension 0).
 These counts are generated from the same tables the drift check reads, so if a count
 anywhere else in this repository disagrees with this line, that other count is stale.
 
-**Rules version `d74bca61f0da`** — reports from this build carry it as `rules_version` (`--json`),
+**Rules version `629837fddcba`** — reports from this build carry it as `rules_version` (`--json`),
 and `aguard version` prints it. It covers deterministic detection only. Each ID a report can
 carry falls in exactly one class:
 
 - **Hashed:** the 46 engine rules — each one's ID, dimension, severity, flags and pattern, not
   the titles and explanations below.
-- **Covered only by the epoch:** the 13 structural checks, the 6 permission checks, the 6
+- **Covered only by the epoch:** the 14 structural checks, the 6 permission checks, the 5
   scan notes that are not `LLM-` IDs, and `GATE-001` (the gate message `scan` raises). The epoch is
   an integer folded into the hash, which the maintainers bump when deterministic detection
   code outside the engine rule table changes; nothing checks that they did.
@@ -49,9 +49,9 @@ agree were produced by the same engine rule table.
 - [6 — Obfuscation](#6--obfuscation) (8)
 - [7 — Backdoor](#7--backdoor) (4)
 - [8 — Resource abuse](#8--resource-abuse) (3)
-- [9 — Filesystem](#9--filesystem) (5)
+- [9 — Filesystem](#9--filesystem) (6)
 - [10 — Intent mismatch](#10--intent-mismatch) (2)
-- [Scan notes (dimension 0)](#scan-notes-dimension-0) (9)
+- [Scan notes (dimension 0)](#scan-notes-dimension-0) (8)
 - [Load-time gate](#load-time-gate) (2)
 - [Not covered by any rule](#not-covered-by-any-rule)
 
@@ -90,7 +90,7 @@ agree were produced by the same engine rule table.
 | `EXFIL-002` | low · advisory | Exfiltration surface split across files | One file in the artifact reads credentials, a different one makes outbound requests. Much weaker than the same-file chain — unrelated files legitimately do each half — so it is advisory, and only raised when no same-file chain was found. |
 | `EXFIL-003` | high | Exfiltration chain with encoding | All three legs in one file — credential read, encode, egress. Raised INSTEAD of EXFIL-001 (one fact reported twice reads as two problems), together with OBF-004. Same loopback downgrade as EXFIL-001; OBF-004 is not raised when nothing left the machine. |
 | `EXFIL-004` | medium | Whole environment dumped | Enumerates every environment variable — the agent's own API keys and tokens included — and prints, serialises or writes them out. A skill that needs a setting reads it by name; taking all of them is collection. |
-| `EXFIL-005` | high | Instruction file imports a credential into the agent's context | An @import in CLAUDE.md (or another instruction file) resolves to a credential: a file inside .ssh/.aws/.gnupg/…, or a file named .env, id_rsa, credentials, *.key, *.p12 … Claude Code expands imports into context at launch. The file is NOT read by the scan (a COV-000 says so); this scores the import itself. High for names that hold only secrets; medium for .pem / .npmrc / .pypirc and paths through .config, which often hold configuration. `.env.example` and friends are not credentials and are scanned normally. |
+| `EXFIL-005` | high | Instruction file imports a credential into the agent's context | An @import in CLAUDE.md (or another instruction file) resolves to a credential: a file inside .ssh/.aws/.gnupg/…, or a file named .env, id_rsa, credentials, *.key, *.p12 … Claude Code expands imports into context at launch. The file is NOT read by the scan (a COV-000 says so); this scores the import itself. High for names that hold only secrets; medium for .pem / .npmrc / .pypirc and paths through .config, which often hold configuration. `.env.example` and friends are not credentials and are scanned normally. Also raised when a skill's SKILL.md is a symlink to such a file: Claude Code would load the secret as the skill (never read by the scan). |
 | `EXFIL-006` | medium | Anthropic API base URL points at a third-party host | Requests — the API key and every prompt with it — go to this host instead of api.anthropic.com. Gateways and proxies are legitimate; the reader should know which host is in the middle. |
 | `EXFIL-007` | high | Host identity sent to an outside URL | An outbound URL carries $(hostname)/$(whoami)/$(id)/$(uname) in a query parameter — the machine's identity beaconed to a remote server. A reconnaissance leg leaving the box. |
 | `LLM-006` | medium · advisory | Cross-file capability chain | Different files of one artifact collect and send between them. The severity is the tool's: credential-to-network → high; any other chain → medium. |
@@ -170,6 +170,7 @@ agree were produced by the same engine rule table.
 | `FS-003` | high | Dangerous recursive delete | rm -rf of a whole tree — the filesystem root, the home directory, or everything in the working directory. A scoped path under one of them (a cache, a build output) is not this rule. |
 | `FS-004` | medium | Path traversal to a sensitive directory | Multi-level .. traversal aimed at a system/credential directory — unauthorized-access surface. |
 | `PERM-003` | low | Overly broad file read/write grant | Read/Write/Edit grant with an over-broad glob (`**`); narrow to specific sub-paths. |
+| `SCOPE-001` | medium | Symlink escapes its boundary | A file of an artifact resolves outside the boundary it may be read in and was NOT read (invariant #2): for any file, the artifact's own directory; for a skill's SKILL.md — the file Claude Code loads, following any symlink — the skills directory that holds the skill, or the plugin root for a plugin's skill. Scored on the artifact, one finding listing the entries, because what Claude Code loads or the agent runs was not audited; a refused SKILL.md also leaves the skill with no content hash, so it cannot be approved. A link that does not resolve is placed by its link text. The same ID, as a scan-level note, reports a skill directory, a plugin installPath or an instruction file that resolves outside HOME and was not collected. |
 
 ## 10 — Intent mismatch
 
@@ -192,7 +193,6 @@ seriousness of the gap, so a silenced critical cannot read as a footnote.
 | `COV-000` | note | Coverage gap | Something was not read: a file over the size limit, an unknown extension whose content sniffs as text, an excluded generated directory nobody references, a hook script outside HOME, unowned entries under a root, a named pipe / socket / device node (unbounded to read, so never opened), or a root that collected nothing at all. |
 | `IO-000` | note | Path unreadable | The location exists but could not be read (permission or I/O error). Surfaced rather than skipped, so a missed scan cannot masquerade as clean. |
 | `PARSE-000` | note | Unparseable configuration | A settings/manifest file parsed into nothing usable. Reported, because 'no hooks found' and 'the hooks block was malformed' are different facts. |
-| `SCOPE-001` | medium | Symlink escapes its boundary | A skill's internal file, a plugin installPath, or a hook script resolved outside the allowed root and was NOT read. Resolution failures are refusals (invariant #2, fail-closed). |
 | `IGN-000` | note | Findings suppressed by baseline | A .aguardignore file suppressed findings BEFORE scoring. Carries the highest severity it silenced — a baseline that hides a critical must not read as a low footnote. |
 | `REP-GOOD` | note | Findings suppressed as known-trusted | The artifact's hash is on the embedded allowlist, so its scoring findings were dropped to cut trusted-tool noise. Also carries the highest suppressed severity. |
 | `LLM-000` | note | LLM judge unavailable or incomplete | The judge was requested but could not complete (endpoint error, timeout, unparseable reply), or has no pass for some artifacts' kind (a plugin holding no loadable skill, command or agent, an unrecognised directory, quarantined content that no longer loads) and asked nothing about them. Announced, so an absent opinion is never mistaken for a clean one. |
