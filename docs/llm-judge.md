@@ -447,7 +447,7 @@ not that it read every byte.
 folder, or on a plugin holding no skill, command or agent (also as a `.zip`), exits **4**: the judge plans no question about it
 (a triage label is not one — it never reaches this gate), so exit 0 would read as an answer the run never had. A plugin that
 holds one is answered through its children, and the usual rules apply to those calls. A `scan`, or a `check` of a directory
-laid out as a config root, keeps its exit code: an environment is not a target. There the `LLM-000` note is the disclosure. An MCP server's source is not a plain folder: a directory holding a Python file that imports `mcp` or `fastmcp` and declares a tool is kind `server`, gets the server-source pass (`LLM-010`), and the gate answers for it (P-053).
+laid out as a config root, keeps its exit code: an environment is not a target. There the `LLM-000` note is the disclosure. A quote that lands only in the declared purpose — a skill's description, a server's tool docstrings — is not evidence of a behaviour: on the intent and server-source passes such a verdict is dropped like an unquotable one and the `LLM-005` note says it quoted the declared purpose (P-054). An MCP server's source is not a plain folder: a directory holding a Python file that imports `mcp` or `fastmcp` and declares a tool is kind `server`, gets the server-source pass (`LLM-010`), and the gate answers for it (P-053).
 
 Both flags mean the same thing on `scan` and on `check`, apart from that target rule. A pull-request job that wants the
 judge's say runs `aguard check ./skill --llm --fail-on-llm high`: a deterministic high still
