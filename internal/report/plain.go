@@ -309,6 +309,7 @@ var kindNoun = []struct {
 	{model.KindConnector, "remote connector", "remote connectors"},
 	{model.KindInstruction, "file", "files"},
 	{model.KindDirectory, "directory", "directories"},
+	{model.KindServer, "server", "servers"},
 	{model.KindQuarantined, "quarantined item", "quarantined items"},
 }
 

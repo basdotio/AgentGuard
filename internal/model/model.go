@@ -75,6 +75,13 @@ const (
 	// a WHOLE TREE instead of being routed to the root collectors, which look only for known
 	// sub-layouts and therefore reported a bare directory of scripts as clean.
 	KindDirectory ArtifactKind = "directory"
+	// KindServer is a directory that is an MCP server's SOURCE — a Python file importing mcp or
+	// fastmcp and declaring tools — produced only by `check <dir>` (P-053). It is scanned as a
+	// whole tree like a directory, and unlike a directory the judge has a question for it: do the
+	// tools do more than their docstrings say? The 127 synthetic servers in the corpus's largest
+	// malicious source are this shape, and until this kind existed `check <server> --llm` asked
+	// nothing of them.
+	KindServer ArtifactKind = "server"
 	// KindConnector is a remote MCP server attached to the user's Claude account (the app's
 	// Connectors tab: Figma, Notion, Slack, …). The server is remote and never contacted; what
 	// is collected is the TOOL LIST it advertised — every tool's name, description and parameter

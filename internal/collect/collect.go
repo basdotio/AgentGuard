@@ -17,9 +17,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -187,7 +189,60 @@ func CollectTarget(path string) (Result, error) {
 	if looksLikeRoot(path) {
 		return CollectAll(path), nil
 	}
+	if LooksLikeServerSource(path) {
+		return single(model.KindServer, TreeHash(path, path), model.EnvSummary{})
+	}
 	return single(model.KindDirectory, TreeHash(path, path), model.EnvSummary{})
+}
+
+// serverImport and serverTool are what makes a Python file an MCP server's source (P-053): it
+// imports mcp or fastmcp AND declares at least one tool with a decorator. Both are required — a
+// file that only mentions mcp in a string, or a client that imports the SDK to call a server, is
+// not a server. The check reads at most serverProbeBytes of each file and walks at most
+// serverProbeDepth levels, skipping the shared excluded directories and never following a symlink
+// (§16.2): a target of any size is classified in bounded time.
+var (
+	serverImport = regexp.MustCompile(`(?m)^\s*(?:from\s+(?:mcp|fastmcp)(?:\.|\s)|import\s+(?:mcp|fastmcp)\b)`)
+	serverTool   = regexp.MustCompile(`(?m)^\s*@\w+(?:\.\w+)*\.tool\(`)
+)
+
+const (
+	serverProbeBytes = 64 << 10
+	serverProbeDepth = 3
+)
+
+// LooksLikeServerSource reports whether dir holds an MCP server's source: some Python file under
+// it, within the probe bounds, imports the SDK and declares a tool.
+func LooksLikeServerSource(dir string) bool {
+	found := false
+	_ = filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
+		if err != nil || found {
+			return nil
+		}
+		if d.IsDir() {
+			if p != dir && (ExcludedFromScan(d.Name()) || strings.Count(strings.TrimPrefix(p, dir), string(filepath.Separator)) > serverProbeDepth) {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if d.Type()&fs.ModeSymlink != 0 || !strings.EqualFold(filepath.Ext(p), ".py") {
+			return nil
+		}
+		f, err := os.Open(p)
+		if err != nil {
+			return nil
+		}
+		buf := make([]byte, serverProbeBytes)
+		n, _ := io.ReadFull(f, buf)
+		_ = f.Close()
+		head := buf[:n]
+		if serverImport.Match(head) && serverTool.Match(head) {
+			found = true
+			return filepath.SkipAll
+		}
+		return nil
+	})
+	return found
 }
 
 // ValidateRoot reports whether root is usable as a scan root: it must exist and be a
