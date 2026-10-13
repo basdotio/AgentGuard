@@ -253,7 +253,7 @@ func (e *Engine) byID(id string) (Rule, bool) {
 // the scanned config root — hooks need it to resolve the scripts they invoke.
 func (e *Engine) unitsFor(root string, a model.ArtifactReport) ([]unit, []model.Finding) {
 	switch a.Kind {
-	case model.KindSkill, model.KindPlugin, model.KindDirectory, model.KindQuarantined:
+	case model.KindSkill, model.KindPlugin, model.KindDirectory, model.KindQuarantined, model.KindServer:
 		// A plugin is a bundle of the same authored content as a skill (instructions,
 		// scripts, config), so it is read the same way, boundary and all. A bare directory
 		// target (`check <dir>`, unrecognized layout) gets the same whole-tree read: with no
