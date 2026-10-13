@@ -140,13 +140,15 @@ func (c *HTTPClient) Judge(ctx context.Context, r Request) (Verdict, error) {
 // assistant message content. Shared by Judge and Triage so the transport/redaction-escaping
 // path is identical.
 func (c *HTTPClient) chat(ctx context.Context, system, user string, temperature float64) (string, error) {
-	content, err := c.chatOnce(ctx, system, user, temperature)
-	if err != nil && !c.noTemperature.Load() && refusesTemperature(err) {
+	content, sent, err := c.chatOnce(ctx, system, user, temperature)
+	if err != nil && sent && refusesTemperature(err) {
 		// The endpoint answered the shape, not the content: this model takes no temperature
 		// member. Remember it and send the same call once more without one (P-052); the retry
-		// counters are for "not now" answers, and this is not one.
+		// counters are for "not now" answers, and this is not one. The decision rests on what
+		// THIS call sent, not on the flag: concurrent first calls are all refused together, and
+		// the one that sets the flag must not rob the others of their re-send.
 		c.noTemperature.Store(true)
-		return c.chatOnce(ctx, system, user, temperature)
+		content, _, err = c.chatOnce(ctx, system, user, temperature)
 	}
 	return content, err
 }
@@ -160,8 +162,9 @@ func refusesTemperature(err error) bool {
 
 var temperatureParam = regexp.MustCompile(`"param"\s*:\s*"temperature"`)
 
-// chatOnce is one POST; chat wraps it with the temperature fallback.
-func (c *HTTPClient) chatOnce(ctx context.Context, system, user string, temperature float64) (string, error) {
+// chatOnce is one POST; chat wraps it with the temperature fallback. sentTemperature says whether
+// this request carried the member, which is what decides whether a refusal earns a re-send.
+func (c *HTTPClient) chatOnce(ctx context.Context, system, user string, temperature float64) (content string, sentTemperature bool, err error) {
 	var body bytes.Buffer
 	enc := json.NewEncoder(&body)
 	enc.SetEscapeHTML(false) // keep <REDACTED> / shell metachars literal for the model
@@ -172,6 +175,7 @@ func (c *HTTPClient) chatOnce(ctx context.Context, system, user string, temperat
 	if c.noTemperature.Load() {
 		temp = nil
 	}
+	sentTemperature = temp != nil
 	if err := enc.Encode(chatRequest{
 		Model:       c.model,
 		Temperature: temp,
@@ -180,11 +184,11 @@ func (c *HTTPClient) chatOnce(ctx context.Context, system, user string, temperat
 			{Role: "user", Content: user},
 		},
 	}); err != nil {
-		return "", fmt.Errorf("marshal judge request: %w", err)
+		return "", sentTemperature, fmt.Errorf("marshal judge request: %w", err)
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/chat/completions", bytes.NewReader(body.Bytes()))
 	if err != nil {
-		return "", fmt.Errorf("build judge request: %w", err)
+		return "", sentTemperature, fmt.Errorf("build judge request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	if c.apiKey != "" {
@@ -196,20 +200,20 @@ func (c *HTTPClient) chatOnce(ctx context.Context, system, user string, temperat
 		// retrying only sends the same excerpts to it again, to be refused again (P-023).
 		var refused *redirectRefused
 		if errors.As(err, &refused) {
-			return "", fmt.Errorf("call judge endpoint: %w", refused)
+			return "", sentTemperature, fmt.Errorf("call judge endpoint: %w", refused)
 		}
 		// A transport error is usually transient (connection reset, DNS blip, timeout on the
 		// endpoint's side). The context deadline is NOT: retrying a call we already ran out of
 		// time for just burns the rest of the run.
 		if ctx.Err() != nil {
-			return "", fmt.Errorf("call judge endpoint: %w", err)
+			return "", sentTemperature, fmt.Errorf("call judge endpoint: %w", err)
 		}
-		return "", Retryable(fmt.Errorf("call judge endpoint: %w", err), 0)
+		return "", sentTemperature, Retryable(fmt.Errorf("call judge endpoint: %w", err), 0)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	raw, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
-		return "", fmt.Errorf("read judge response: %w", err)
+		return "", sentTemperature, fmt.Errorf("read judge response: %w", err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		herr := fmt.Errorf("judge endpoint returned %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
@@ -217,20 +221,20 @@ func (c *HTTPClient) chatOnce(ctx context.Context, system, user string, temperat
 		// on a metered API, where one rate-limit burst would otherwise drop a batch of checks.
 		// 4xx (bad key, bad model, malformed request) is a real answer; retrying it is noise.
 		if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500 {
-			return "", Retryable(herr, retryAfter(resp.Header.Get("Retry-After")))
+			return "", sentTemperature, Retryable(herr, retryAfter(resp.Header.Get("Retry-After")))
 		}
-		return "", herr
+		return "", sentTemperature, herr
 	}
 	var cr chatResponse
 	if err := json.Unmarshal(raw, &cr); err != nil {
-		return "", fmt.Errorf("parse judge envelope: %w", err)
+		return "", sentTemperature, fmt.Errorf("parse judge envelope: %w", err)
 	}
 	c.promptTokens.Add(cr.Usage.PromptTokens)
 	c.completionTokens.Add(cr.Usage.CompletionTokens)
 	if len(cr.Choices) == 0 {
-		return "", fmt.Errorf("judge returned no choices")
+		return "", sentTemperature, fmt.Errorf("judge returned no choices")
 	}
-	return cr.Choices[0].Message.Content, nil
+	return cr.Choices[0].Message.Content, sentTemperature, nil
 }
 
 // retryAfter parses a Retry-After header (delta-seconds or HTTP-date). An unparsable or

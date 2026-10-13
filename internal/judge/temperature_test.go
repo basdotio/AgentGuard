@@ -107,3 +107,31 @@ func TestRun_TemperatureOmittedReachesTheStats(t *testing.T) {
 		t.Error("a scripted client reports no omission")
 	}
 }
+
+// TestHTTP_ConcurrentFirstCallsAreAllResent (P-052): with several first calls in flight, every one is
+// refused together; the one that sets the flag must not rob the others of their re-send. Measured on
+// the first run that used this: with concurrency 4, about three calls per sample failed this way.
+func TestHTTP_ConcurrentFirstCallsAreAllResent(t *testing.T) {
+	srv, seen := temperatureRefusingEndpoint(t)
+	c := NewHTTP(srv.URL, "", "gpt-6.1-sol", nil)
+	const n = 8
+	errs := make(chan error, n)
+	start := make(chan struct{})
+	for i := 0; i < n; i++ {
+		go func() {
+			<-start
+			_, err := c.Judge(context.Background(), Request{Mode: ModeInjection, Behavior: "echo hello world from a skill body"})
+			errs <- err
+		}()
+	}
+	close(start)
+	for i := 0; i < n; i++ {
+		if err := <-errs; err != nil {
+			t.Errorf("a concurrent first call failed instead of being re-sent: %v", err)
+		}
+	}
+	b := seen()
+	if len(b) < n+1 || len(b) > 2*n {
+		t.Errorf("endpoint saw %d requests for %d calls; want between %d and %d (each refused call re-sent once)", len(b), n, n+1, 2*n)
+	}
+}
