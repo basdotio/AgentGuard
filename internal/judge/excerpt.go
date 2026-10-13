@@ -587,7 +587,7 @@ func headed(files []string) func([]string) (string, []span) {
 
 // serverTool matches a decorated tool definition and its docstring's first line, the shape of a
 // FastMCP / mcp.server tool in Python: the declared side of the server-source pass (P-053).
-var serverToolRe = regexp.MustCompile(`(?s)@\w+(?:\.\w+)*\.tool(?:\((?:[^()]*|\([^()]*\))*\))?[ \t]*\n(?:[ \t]*@[^\n]*\n)*[ \t]*(?:async[ \t]+)?def[ \t]+(\w+)[ \t]*\([^)]*\)[^:\n]*:[ \t]*\n(?:[ \t]*[rub]{0,2}(?:"""|''')(.*?)(?:"""|'''))?`)
+var serverToolRe = regexp.MustCompile(`(?s)@\w+(?:\.\w+)*\.tool(?:\((?:[^()]*|\([^()]*\))*\))?[ \t]*\n(?:[ \t]*@[^\n]*\n)*[ \t]*(?:async[ \t]+)?def[ \t]+(\w+)[ \t]*\((?:[^()]*|\([^()]*\))*\)[^:\n]*:[ \t]*\n(?:[ \t]*[rub]{0,2}(?:"""|''')(.*?)(?:"""|'''))?`)
 
 // serverToolTypeRe is the registration form: Tool(name="x", …, description="…") in a list of tools.
 var serverToolTypeRe = regexp.MustCompile(`(?s)\bTool\(\s*name\s*=\s*["']([^"']+)["'][^)]*?description\s*=\s*["']([^"'\n]*)`)
