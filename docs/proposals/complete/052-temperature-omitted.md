@@ -71,7 +71,7 @@ does not move), and any other 400 is the answer it always was.
 
 ```
 Merged: PR #72 (2026-10-13; find the sha with git log --grep P-052)
-Released: not yet
+Released: v0.24.0
 Evidence: TestHTTP_TemperatureRefusedIsOmittedThenRemembered, TestHTTP_OtherBadRequestsAreNotRetried, TestRun_TemperatureOmittedReachesTheStats (internal/judge/temperature_test.go); the first red on the base
 Evidence: prompt-version tests green and judge-prompt unchanged (6572379d32b1 before and after): the request body of a model that takes the member did not change
 Evidence: aguard llm test, real endpoint: "OK · gpt-6.1-sol answered in 1.85s via https://api.openai.com/v1 (23 tokens in / 4 out)" where the base answered "judge endpoint returned 400 … 'temperature' does not support 0 with this model"; gpt-4.1-mini still OK

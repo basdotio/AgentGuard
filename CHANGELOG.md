@@ -17,7 +17,32 @@ rate copied into prose goes stale on the next rule. `git tag` and the Releases p
 - Invariants: never executes scanned content, no cross-root symlink reads, secret redaction before storage (+ high-entropy fallback).
 - Single static binary (`CGO_ENABLED=0`), MIT + SPDX, CI, bilingual README.
 
-## v0.2.0 – v0.23.0
+## v0.2.0 – v0.24.0
+
+**v0.24.0 (2026-10-13) — the judge reads an MCP server's source; a model that allows only its default temperature can
+be the judge; two readings fixed.**
+
+No static rule, score formula, consensus bar, flag or exit code changed; `--fail-on` is untouched. On the `aguard version`
+line `judge-prompt` changes (`6572379d32b1` → `cc2cab18585d`: a new pass's request shapes joined it; `rules` and
+`judge-excerpt` do not), so LLM findings are not comparable with earlier runs. **Two things a reader of reports should know**:
+`check <dir>` on a directory holding a Python MCP server now reports the artifact as kind `server` where it said
+`directory`, and `check <server> --llm --fail-on-llm` answers with exit 1 or 0 where it answered exit 4.
+
+- **An MCP server's source.** A directory holding a Python file that imports `mcp` or `fastmcp` and builds a server or
+  declares a tool is kind `server`: scanned as a whole tree like a directory, and asked the intent question — DECLARED
+  is each tool's name and first docstring line (all a client is shown; the module docstring never), BEHAVIOR the code
+  through the skill passes' walker and caps — as rule `LLM-010`, with the intent pass's category table and `disclosed`.
+  A plain directory is still asked nothing. Measured on the corpus's 127 server samples and on 76 real servers outside
+  it, in the proposal (P-053).
+- **A model that refuses the temperature member.** Some models allow only their default temperature and answer the
+  member with a 400 naming it; the judge sent it on every call, so such a model could not be used at all. On that exact
+  400 the client sends the same call once more without the member and omits it from then on; a consensus run then
+  samples at the model's default, and the judge block says `temperature_omitted: true` (P-052).
+- **Two readings fixed.** The server-source extractor reads a tool whose parameters carry nested parentheses
+  (`Annotated[…, Field(…)]`) and a tool registered as `Tool(name=<expression>, description="""…""")`, both of which
+  declared nothing before. On the intent and server-source passes a verdict whose only quote is the declared purpose
+  — a skill's description, a server's docstrings — is not a finding: it is dropped like an unquotable claim and the
+  `LLM-005` note says it quoted the declared purpose (P-054).
 
 **v0.23.0 (2026-10-13) — a judge category the text never shows weighs medium, and the injection pass is told that
 escaping a sandbox or escalating privilege is beyond a skill's purpose.**
