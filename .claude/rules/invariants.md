@@ -45,11 +45,24 @@
      `runVersion`…),闭包里在那个函数之外多出的一行请求不在视野里;
    - **包级 `init()`**:测试装上计数器之前它就跑完了。`applyBuildInfo`(没被 `-ldflags` 盖章时从构建信息取版本,由
      `init()` 调用)在 `version` 从构建信息盖版本的那一行里另跑一次;`init()` 里别的东西不在视野里。
-2. **符号链接边界收敛,出错即拒(fail-closed)。** `collect.withinDir` 与 `detect.inBoundary` 都会
-   先解析符号链接再判断越界。skill *内部*文件不得指向 skill root 之外;skill 目录*本身*是符号链接
-   属于合法的安装方式,但解析后必须落在 `$HOME` 之内(否则报 `SCOPE-001`)。解析失败一律拒绝。
-   同一条边界还管着另外两处**配置里写死的路径**(它们同样由攻击者可控的文件提供):插件的
-   `installPath`(`collect.collectPlugins`)和 hook command 里引用的脚本(`detect.hookUnits`)。
+2. **符号链接边界收敛,出错即拒(fail-closed);一个 artifact 由哪些文件组成只有一个答案。** 谓词只有一个:
+   `collect.FileReach`。树哈希(`TreeHash`)、静态树读取(`detect.readTextTree`)、判官(`behaviorExcerpt`、`decodedPayloads`、
+   `serverDeclared`,以及 `planFor` 打开 `SKILL.md` 之前问的 `SkillMDRefused`)和 hygiene 都问它(P-056)。**不要在别处再写一个
+   "读不读"的判断** —— P-056 之前是三套:哈希和规则静默跳过指向 skill 目录外的 `SKILL.md`(真机上 41 个这样装的 skill 哈希全是
+   空输入的 sha256,闸门一次"trusted from now on"就覆盖了全部,改目标文件也不重问),判官却跟着软链从任何地方读它,包括 `$HOME` 外。
+   - 树里的文件解析后必须落在**树自己的 root** 之内。**唯一的例外是根上的 `SKILL.md`**:Claude Code 2.1.107 的加载器读的就是它,
+     跟着软链走、不做任何约束;它可以落在**装着这个 skill 的 skills 目录**之内(`SkillMDBound`:解析后的 skill root 的父目录名为
+     `skills` 时是那个目录,那个目录属于插件时是插件 root —— P-044 约束子项的同一个容器),除非它是凭据路径(`CredentialPath`,
+     与 `@import` 同一份名单)。边界从路径推出来,所以 `scan`、`check`、闸门、`aguard hash`、`clean` 算出同一个哈希。
+   - 解析不了的链接(悬空、环)按**链接文本**定位:文本在边界内 → 存在但没读(不可读标记 + 聚合的 `COV-000`);在边界外 → 拒绝。
+     以前哈希按父目录算"在内",规则按 `EvalSymlinks` 失败算"在外",两边说的不是一回事。
+   - **拒绝一律计分、一律出声**:被拒的条目是 artifact 上**一条** `SCOPE-001`(medium,维度 9,按 `HOOK-002` 的理由:加载或执行的
+     东西没被审过是风险,不只是覆盖缺口),`SKILL.md` 指向凭据是 `EXFIL-005`。被拒的 `SKILL.md` 让 artifact **没有哈希**(`""`,不是
+     空输入的摘要;P-011 接手:`approve` 拒绝、闸门不记);其余被拒条目**按链接文本**折进树哈希(改指向就重键,目标的字节永不进摘要)。
+     `TestNoSkillHasTheEmptyDigest`、`TestCrossRootSymlinkIgnored`、`TestOutsideSkillMDNeverLeaves`、`TestGate_LinkedSkillsShareNoApproval` 钉住。
+   skill 目录*本身*是符号链接属于合法的安装方式,但解析后必须落在 `$HOME` 之内(否则报 `SCOPE-001` note);`CLAUDE.md` 同样
+   (P-056 之前是一句话都没有)。同一条边界还管着另外两处**配置里写死的路径**(它们同样由攻击者可控的文件提供):插件的
+   `installPath`(`collect.collectPlugins`)和 hook command 里引用的脚本(`detect.hookUnits`,`detect.inBoundary` 只剩这里和权限脚本)。
 3. **脱敏只有一个收口。** `detect.Redact` 是产出 snippet 的唯一途径,并且在所有地方都**先脱敏再截断**
    (`boundedRedact`、`behaviorExcerpt`)—— 否则跨越字节上限的 secret 会以残片形式漏出去。报告与
    LLM judge 消费的是同一份已脱敏视图。

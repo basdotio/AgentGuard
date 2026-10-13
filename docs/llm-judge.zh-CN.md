@@ -153,6 +153,10 @@ aguard scan --llm --config config.yaml
   给出原样的字节和每一趟的指令;终端视图清掉控制字符和双向/零宽字符。不显示的:`Authorization` 头,以及
   点名每次调用 nonce 的那段栅栏规则(nonce 在真正发出时才生成)。文件和配置不变时,真跑不会发别的文本;
   它可能比预览列出的少发(总时限到了、端点被拒、缺密钥)。
+- **只读静态规则读的那些文件。** 一个 skill 的文件经哈希和规则用的同一个谓词打开(`collect.FileReach`,
+  P-056):`SKILL.md` 落在 skill 自己或装着它的 skills 目录里才读,其余文件和软链只在 skill 自己的目录里读。
+  软链到别处的 `SKILL.md` 不读、不发;规则给这次拒绝计分(`SCOPE-001`)。v0.24.0 及以前判官跟着任何软链读
+  `SKILL.md`,包括指向你 home 目录之外的。
 - **只发脱敏摘录。** 每个字节——行为脚本、SKILL.md 正文、声明用途、解码 blob、triage 证据——都先过
   和报告 snippet 同一个 `detect.Redact`,才离开进程。
 - **脱敏是 best-effort,不是保证。** 它抓已知密钥形状(API key、token、PEM 头、`scheme://user:pw@host`、

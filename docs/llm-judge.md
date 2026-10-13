@@ -176,6 +176,12 @@ everything on your machine. That trade-off is yours.
   `Authorization` header, and the barrier rule naming the per-call nonce, which is drawn when a
   call is made. On the same files and config, a real run sends no other text; it can send fewer
   calls than the preview lists (the run deadline, a refused endpoint, a missing key).
+- **Only the files the static rules read.** A skill's files are opened through the same predicate
+  the hash and the rules use (`collect.FileReach`, P-056): its `SKILL.md` when it resolves inside the
+  skill or the skills directory holding it, other files and symlinks only inside the skill's own
+  directory. A `SKILL.md` linked anywhere else is not read and not sent; the rules score that
+  refusal (`SCOPE-001`). Up to v0.24.0 the judge read `SKILL.md` through any symlink, including one
+  pointing outside your home directory.
 - **Only redacted excerpts are sent.** Every byte — behavior scripts, the SKILL.md body, the
   declared description, decoded blobs, triage evidence — passes through the same
   `detect.Redact` used for report snippets before it leaves the process.

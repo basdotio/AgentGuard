@@ -374,7 +374,7 @@ type ArtifactReport struct {
     Kind     ArtifactKind // skill|mcp|hook|permission|subagent|command|plugin|instruction|rule|workflow|output_style|memory|quarantined|directory|connector
     Name     string
     Path     string      // 磁盘上能找到它的地方;来自 zip 的 artifact 是包本身的路径(§4.1),不是查完即删的解压目录
-    Hash     string      // canonical hash —— 预留信誉库比对/上链。作用域:skill/plugin=整目录 canonical tree hash
+    Hash     string      // canonical hash —— 预留信誉库比对/上链。作用域:skill/plugin=整目录 canonical tree hash(读哪些文件由 `collect.FileReach` 定,§16 第 2 条;跟进的 `SKILL.md` 按目标字节进哈希,与普通拷贝同哈希;被拒的 `SKILL.md` → 空串,其余被拒条目按链接文本折进,P-056)
                           // (SKILL.md + 全部脚本/资源,排序后逐文件 sha256 再汇总);单文件 artifact=文件 sha256。
                           // 风险主要在脚本,故不能只哈希 SKILL.md(B3-应修)。connector=工具清单哈希。
                           // hook/mcp/permission=内容哈希(P-009,detect 阶段算,先于信誉/闸门):
@@ -532,7 +532,7 @@ v1 写的 `internal/rules/` 从未存在:规则表就在 `detect/rules_data.go`,
 - **隐私测试**:含假 secret 的 fixture,断言输出中值被 REDACTED、绝不出现明文。
 - **端到端**:对 `testdata/fake-claude-home/` 跑 `scan --json`,快照比对;真实机冒烟(只读)。
 - **退出码**:`--fail-on` 各级别验证(闸门/CI 契约);`--fail-on-llm` 在判官没跑/跑短时为 `4`、`check` 的目标是判官没有一趟的种类时也为 `4`(插件里有可加载子项时不算,P-044)(`scan` 不因此变,只出 `LLM-000`)、命中时仍为 `1`、只设 `--fail-on` 时与判官状态无关(`TestFailGate_LLMGateNotEvaluable`、`TestFailOnLLM_ExitCodesWhenTheJudgeIsBlind`、`TestFailOnLLM_TargetTheJudgeAsksNothingAbout`、`TestFailOnLLM_ScanKeepsItsCodeAndNamesWhatWasNotAsked`)。
-- **不变量测试(B2,§16)**:①"若被执行会落地标记文件"的 fixture,断言标记始终不存在(证明不执行);②越界 symlink fixture(skill 内软链到 `/etc/passwd`),断言其内容绝不出现在任何输出;③含假 secret 的会话日志 fixture,断言 zombie 检查读取后仍脱敏。④配置里**开着**判官,把判官的 transport(测试接缝 `judge.Transport`)和 `http.DefaultTransport` 换成计数器:先断言 §16.4 的三条出网路径确实被看见(正对照),再断言其余每个命令入口零次请求(`TestZeroDial_OnlyTheJudgeConnects`);计数器看不见自带 transport 的 client,本模块产品代码的这一块(判官包在内,只许 `NewHTTP` 那一个 client)由源码检查 `TestZeroDial_NoClientOutsideTheJudge` 补上;依赖在自己代码里造的不在内(§16.4)。⑤判官的 client 对端点回的跨源重定向(https 降成 http、换主机、换端口、子域)一跳都不发,调用失败、不重试,经 `LLM-000` 进报告,静态结果不变;同源的照跟,10 跳上限保留(`TestNewHTTP_RefusesCrossOriginRedirects`、`TestNewHTTP_SameOriginRedirectsAndPlainCallsUnchanged`,端到端 `TestE2E_JudgeRedirectIsRefusedAndReported`、`TestLLMTest_RedirectIsRefused`)。
+- **不变量测试(B2,§16)**:①"若被执行会落地标记文件"的 fixture,断言标记始终不存在(证明不执行);②越界 symlink fixture(skill 内软链到 `/etc/passwd`;skill 的 `SKILL.md` 软链到边界外,P-056),断言其内容绝不出现在任何输出,判官的请求也不例外(`TestOutsideSkillMDNeverLeaves`);没有一个 skill 的哈希是空输入的摘要(`TestNoSkillHasTheEmptyDigest`);③含假 secret 的会话日志 fixture,断言 zombie 检查读取后仍脱敏。④配置里**开着**判官,把判官的 transport(测试接缝 `judge.Transport`)和 `http.DefaultTransport` 换成计数器:先断言 §16.4 的三条出网路径确实被看见(正对照),再断言其余每个命令入口零次请求(`TestZeroDial_OnlyTheJudgeConnects`);计数器看不见自带 transport 的 client,本模块产品代码的这一块(判官包在内,只许 `NewHTTP` 那一个 client)由源码检查 `TestZeroDial_NoClientOutsideTheJudge` 补上;依赖在自己代码里造的不在内(§16.4)。⑤判官的 client 对端点回的跨源重定向(https 降成 http、换主机、换端口、子域)一跳都不发,调用失败、不重试,经 `LLM-000` 进报告,静态结果不变;同源的照跟,10 跳上限保留(`TestNewHTTP_RefusesCrossOriginRedirects`、`TestNewHTTP_SameOriginRedirectsAndPlainCallsUnchanged`,端到端 `TestE2E_JudgeRedirectIsRefusedAndReported`、`TestLLMTest_RedirectIsRefused`)。
 - **评分测试**:确定性输入→固定分(可复现);critical 触发木桶封顶;floor=0 不为负;插件和子项是一个单元,子项不稀释插件、子项的合格 LLM 发现照样进 `overall_effective`(`TestApply_PluginAndChildrenAreOneUnit`,P-044);**开不开 `--llm`,`overall` 逐位相同**(§16.7 的可复现性契约)。
 - **单向升级测试(§16.7)**(已实现):①任意 finding 组合下 `overall_effective ≤ overall` 恒成立(属性测试);②证据落地不通过的 LLM finding 被丢弃且计入 `LLM-005`;③`authority: advisory` 下即使有 flagged 发现,升级也是 no-op;④k-of-n:3 次采样中 1 次 flagged **不**升级、2 次 flagged 升级;⑤`--fail-on` 不受任何 LLM 发现影响,`--fail-on-llm` 默认关;⑥铁律 #2 回归:LLM 仍无法删除/降级静态发现。
 
@@ -568,7 +568,7 @@ v1 写的 `internal/rules/` 从未存在:规则表就在 `detect/rules_data.go`,
 工具在**不可信目录树**上运行且处理 secret,以下为不可协商的不变量,每条对应 §13 测试:
 
 1. **绝不执行被扫内容**:全程不调用任何解释器/shell/被扫二进制(包括"校验语法"也不 `python -c`/`node --check`)。AST 仅用解析器,不运行。
-2. **不跟随越界 symlink**:采集与 `stale_ref`/`zombie` 解析**不读取**指向 `--root`(及项目根)之外的符号链接目标——防恶意 skill 软链到 `~/.ssh`、`/etc/passwd` 把内容吸入报告/判定。**越界不读,但越界本身要计分**:hook command 引用的脚本解析到 HOME 外时仍不打开文件(本条不变量不动),但要出一条计分发现(`HOOK-002`)——覆盖缺口(没读到)和风险(静默执行点上有一段审不了的第二阶段)是两回事,不能再用一条 dimension-0 note 把后者折成脚注。
+2. **不跟随越界 symlink**:采集与 `stale_ref`/`zombie` 解析**不读取**指向边界之外的符号链接目标——防恶意 skill 软链到 `~/.ssh`、`/etc/passwd` 把内容吸入报告/判定。**边界有两层**(P-056):一个 artifact 树里的文件必须落在**树自己的 root** 之内;唯一的例外是 skill 根上的 `SKILL.md`(Claude Code 2.1.107 的加载器读的就是它,跟着软链走、不做约束),它可以落在**装着这个 skill 的 skills 目录**之内(插件的 skill 是插件 root),凭据路径除外。两层都在 `--root` 之内或更窄;skill 目录本身是软链时解析后须在 `$HOME` 之内,hook 与权限引用的脚本按 `$HOME` 判。读不读只问一个谓词(`collect.FileReach`):哈希、静态规则、判官、hygiene 读同一组文件;解析不了的链接按链接文本定位;被拒的条目是 artifact 上计分的 `SCOPE-001`(凭据是 `EXFIL-005`),被拒的 `SKILL.md` 让 artifact 没有哈希。**越界不读,但越界本身要计分**:hook command 引用的脚本解析到 HOME 外时仍不打开文件(本条不变量不动),但要出一条计分发现(`HOOK-002`)——覆盖缺口(没读到)和风险(静默执行点上有一段审不了的第二阶段)是两回事,不能再用一条 dimension-0 note 把后者折成脚注。
 3. **脱敏前移,且必须先脱敏再截断**:secret/token/高熵串在 **detect 阶段**即 `<REDACTED>`;判定器与报告共用这份脱敏视图,原始凭证**绝不离开本机**。
    判官出网前在这份视图之上(**先脱敏、再替换**)去掉两个家目录(OS 用户的、被扫环境的)、按键名发 MCP 配置(§5.2「出网前去掉"这台机器是谁的"」);那一步只在判官里,不进 `Redact`,报告字节不变。**顺序是硬要求**:快照有长度上限,先截断会把凭证拦腰切断,而半截凭证不再匹配那些本该抹掉它的模式 —— 实测中一个 query string 够长的 URL,就能让高熵串的前 12–23 个字符明文进报告(熵检测有 24 字符下限)。两步收成**一个调用**(`detect.redactClip`),让调用点没有机会写反顺序。
    **长度下限只属于"无键名担保"的那一档**:纯高熵串靠长度+熵来猜,所以有 24 字符下限;而键名已经自证是凭证时

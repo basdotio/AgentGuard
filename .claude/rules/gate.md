@@ -67,6 +67,10 @@ paths:
   跳过它们 —— 选中一个分更低的子项,`aguard approve <插件>` 就会把子项的哈希存成对插件的批准;SessionStart 跳过它们,因为子项的每条
   阻断规则都已经在插件那一行上。另一头是对齐的:`PreToolUse[Skill]` 解析 `plugin:skill` 得到的目录和哈希,正是扫描报告里那个子项的
   (`TestGate_NamespacedSkillHashIsTheChildsHash`),所以加载时记下的批准,和报告里点名的是同一样东西。
+- **软链进来的 `SKILL.md` 曾让一次批准覆盖一整包 skill**(P-056)。一包 skill 装成每个 skill 一个目录、里面只有一个指向包目录的
+  `SKILL.md` 软链时,哈希以前一个条目都不收,全是空输入的 sha256:第一个干净加载写下"trusted from now on",之后所有同样装的 skill
+  一声不响地加载,改目标文件也不重问。**本包一行没改** —— 修在哈希(`collect.FileReach`):跟进的 `SKILL.md` 按目标字节进哈希,
+  被拒的没有哈希(走 `UnhashedLine`,不记)。`TestGate_LinkedSkillsShareNoApproval` 每个事件一个 `runHook` 钉住两半。
 - **只有判成 `ask` 时才 `pend`。** 拒绝没有"你答应了"这条路径,停一条永远兑现不了的判决,是在一个
   每次风险加载都会写的文件里攒垃圾。
 - **`systemMessage` 在 VSCode 扩展里不渲染**(实测),所以干净路径那行提示可能根本没人看见。
