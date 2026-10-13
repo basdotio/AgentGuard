@@ -215,8 +215,8 @@ and hygiene all ask it; nothing else opens a skill's files.
 
 - **Not "symlinked skills are covered"**: a `SKILL.md` is read inside the declared boundary; one outside it, and every supporting
   file outside its skill root, is refused — loudly, scored, unhashed or marked — and still not read
-- **Not that the judge "now sees" these skills**: it already read every one of them (measured, 589 calls before and after for the
-  questions); the change for the judge is that it stops reading outside the boundary and reads the same set as the rules
+- **Not that the judge "now sees" these skills**: it already read every one of them (measured: 171 intent and 321 injection calls before and after; the
+  only additions are 4 triage calls); the change for the judge is that it stops reading outside the boundary and reads the same set as the rules
 - **Not that the loader table is Claude Code's contract**: it was read from one installed build (2.1.107)
 - **No recall claim from the corpus**: one sample moves (100 → 88, medium against a high truth label); one sample is not a rate
 - **Not "approvals are migrated"**: approvals of the affected skills stop matching and are asked again once; nothing rewrites
