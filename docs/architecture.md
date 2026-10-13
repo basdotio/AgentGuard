@@ -92,10 +92,16 @@ container's `.claude/rules/invariants.md` (moved out of `CLAUDE.md` 2026-09-16) 
 
 1. **Never execute scanned content, never make a network call** (except the explicitly enabled
    LLM judge). Read-only throughout.
-2. **Symlink boundaries converge and fail closed.** `collect.withinDir` and `detect.inBoundary`
-   both resolve links *before* deciding. A skill's internal files may not point outside the
-   skill root; a skill directory that is itself a symlink is a legitimate install mechanism but
-   must resolve inside `$HOME`. Resolution failure is always a refusal.
+2. **Symlink boundaries converge and fail closed, and an artifact's file set has one answer.**
+   `collect.FileReach` is the only predicate: the tree hash, the static tree read, the judge's
+   excerpts and hygiene all ask it (P-056). Every file of a tree must resolve inside the tree's
+   own root, with one exception: the root `SKILL.md` — the file Claude Code's loader reads,
+   following any symlink — may resolve inside the skills directory that holds the skill (the
+   plugin root for a plugin's skill), unless it is a credential path. A link that does not
+   resolve is placed by its link text. Every refusal is scored (`SCOPE-001` on the artifact;
+   `EXFIL-005` for a credential); a refused `SKILL.md` leaves the skill with no hash, and any
+   other refused entry is folded into the hash by its link text. A skill directory that is
+   itself a symlink is a legitimate install mechanism but must resolve inside `$HOME`.
 3. **Redaction has exactly one exit.** `detect.Redact` is the only path that produces a
    snippet, and everywhere it runs **before** truncation — otherwise a secret straddling the
    byte limit leaks as a fragment. Report and LLM judge consume the same redacted view.

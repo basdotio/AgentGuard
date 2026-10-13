@@ -82,9 +82,13 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
 在容器层的 `.claude/rules/invariants.md`(2026-09-16 从 `CLAUDE.md` 搬出)和各包的包级 doc 注释里;简表:
 
 1. **绝不执行被扫描内容,绝不外连**(除显式开启的 LLM judge)。全程只读。
-2. **符号链接边界收敛,出错即拒(fail-closed)。** `collect.withinDir` 与 `detect.inBoundary`
-   都会**先解析**符号链接再判断。skill *内部*文件不得指向 skill root 之外;skill 目录*本身*是
-   符号链接属于合法安装方式,但解析后必须落在 `$HOME` 之内。解析失败一律拒绝。
+2. **符号链接边界收敛,出错即拒(fail-closed),一个 artifact 由哪些文件组成只有一个答案。**
+   谓词只有 `collect.FileReach`:树哈希、静态树读取、判官的摘录和 hygiene 都问它(P-056)。树里的
+   文件解析后必须落在树自己的 root 之内,唯一的例外是根上的 `SKILL.md` —— Claude Code 的加载器读的
+   就是它、跟着任何软链走 —— 它可以落在装着这个 skill 的 skills 目录之内(插件的 skill 是插件 root),
+   凭据路径除外。解析不了的链接按链接文本定位。拒绝一律计分(artifact 上的 `SCOPE-001`;凭据是
+   `EXFIL-005`);被拒的 `SKILL.md` 让 skill 没有哈希,其余被拒条目按链接文本折进哈希。skill 目录
+   *本身*是符号链接属于合法安装方式,但解析后必须落在 `$HOME` 之内。
 3. **脱敏只有一个收口。** `detect.Redact` 是产出 snippet 的唯一途径,并且在所有地方都**先脱敏
    再截断** —— 否则跨越字节上限的 secret 会以残片形式漏出去。报告与 LLM judge 消费同一份已脱敏视图。
    实现只有一个叶子包 `internal/redact`:`detect.Redact` 委托它;`collect` 在 import 图里位于 `detect` 之下,
