@@ -1,0 +1,5 @@
+{"sample":"ben-skill-sk-GondaDaikon__tri-ssd__skills__review-tri-ssd","path":"corpus/benign/skills/sk-GondaDaikon__tri-ssd__skills__review-tri-ssd","class":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-lumberbarons-lumber-mart-init","path":"corpus/benign/skills/md-lumberbarons-lumber-mart-init","class":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-webbertakken-agent-skills-context-optimizer","path":"corpus/benign/skills/md-webbertakken-agent-skills-context-optimizer","class":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-diegoknsk-video-processing-engine-video-finalizer-lambda-s3-down","path":"corpus/benign/skills/md-diegoknsk-video-processing-engine-video-finalizer-lambda-s3-down","class":"benign","surface":["skills"]}
+{"sample":"ben-skill-md-adaruru-dbtool-postgresql","path":"corpus/benign/skills/md-adaruru-dbtool-postgresql","class":"benign","surface":["skills"]}

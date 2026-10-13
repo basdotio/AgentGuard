@@ -1,0 +1,2 @@
+{"sample":"mal-skill-dd-boomsystel-code-openclaw-workspace-skills-yahoo-finance-who","path":"corpus/malicious/skills/dd-boomsystel-code-openclaw-workspace-skills-yahoo-finance-who","class":"malicious","surface":["skills"],"severity":"high"}
+{"sample":"ben-mcp-am-tosspayments-integration-guide-mcp","path":"corpus/benign/mcp/am-tosspayments-integration-guide-mcp","class":"benign","surface":["mcp"]}

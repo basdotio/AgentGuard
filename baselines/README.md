@@ -111,7 +111,12 @@ hooks and MCP catalogues (`…-p048-hm-s3-old/`, `…-p048-hm-s3-new/`) is the s
 their raw/ is `aguard-judge-raw-2026-10-p048.tar.gz`. Four more, `results/aguard/2026-10-12-llm-gpt-4.1-mini-p049-*/`,
 measure P-049 (a category the text does not show weighs medium) with the prompt unchanged: a second same-prompt draw of
 the 541-sample panel as the control (`…-p049-hm-s3-control/`), the check on the panel, on the 819 subset and on every
-benign sample; their raw/ is `aguard-judge-raw-2026-10-p049.tar.gz`. Two more things apply to a
+benign sample; their raw/ is `aguard-judge-raw-2026-10-p049.tar.gz`. Five more,
+`results/aguard/2026-10-13-llm-gpt-4.1-mini-p050-*/`, measure P-050 (the injection pass names sandbox escape) the way a
+prompt change has to be measured after P-048: the current prompt and the clause side by side on 28 samples (9
+skill-safety-bench + 19 hard negatives) and on 100 random benign skills at `samples: 10`, where each question's k/10 is
+its flag probability, plus the 819 subset at `samples: 1`; their raw/ is `aguard-judge-raw-2026-10-p050.tar.gz`, with
+the two wordings the proposal dropped. Two more things apply to a
 judge run: the driver isolates aguard's environment, so a proxy the endpoint needs is passed by
 name with the key (`-aguard-env OPENAI_API_KEY,HTTPS_PROXY,HTTP_PROXY,NO_PROXY`), and Go does not
 read the macOS system proxy. Without that, a run whose endpoint needs a proxy answers nothing and
