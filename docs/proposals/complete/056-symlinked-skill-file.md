@@ -329,7 +329,7 @@ Each test was committed before the code and run red on the base (`18114a1`); the
 ## Done
 
 ```
-Merged: PR to be opened (2026-10-13; find the sha with git log --grep P-056 after the merge)
+Merged: PR #76 (2026-10-13; find the sha with git log --grep P-056)
 Released: pending
 Evidence: TestLinkedSkillMDHashIsThePlainCopys, TestNoSkillHasTheEmptyDigest, TestUnresolvableLinksAreClassifiedByTheirText, TestPluginChildLinkedSkillMDIsBoundedByThePluginRoot, TestInstructionFileOutsideHomeIsRefusedOutLoud, TestCrossRootSymlinkIgnored (rewritten) (internal/collect); TestLinkedSkillFilesAreReadOrRefusedOutLoud (internal/detect); TestPlan_ReadsTheFilesTheRulesRead (internal/judge); TestGate_LinkedSkillsShareNoApproval, TestOutsideSkillMDNeverLeaves (cmd/aguard) — each red on 18114a1
 Evidence: real ~/.claude, counts only: skills with the empty-input digest 41 → 0; hashes moved: those 41 skills only; overall 69 → 69; skills below 100 21 → 25 (9 findings on 4 skills, the bytes the pack's tree already carried); judge calls 589 → 593, intent and injection unchanged
