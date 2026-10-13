@@ -171,31 +171,49 @@ and hygiene all ask it; nothing else opens a skill's files.
 
 ## Done criteria
 
-- [ ] `TestSkillFiles_OneReading` (`internal/collect`, `internal/detect`, `internal/judge`; one `t.TempDir()` fixture with rows
-  a–i, z, the P-044 plugin child and a corpus-shaped dangling supporting link): per row, the hash class (equal to the plain copy's
-  hash / `""` / changed by the marker / unchanged), the static finding set, `SCOPE-001` present or absent, and that the files the
-  judge's planned units name are exactly the files the hash folded in and the static walk read. Red on the base for a–f, h, i and
-  the plugin child
-- [ ] `TestNoSkillHasTheEmptyDigest` (`internal/collect`, invariant): over every row and over `CollectAll` / `CollectTarget`, no
-  `skill` artifact and no plugin child hashes to `e3b0c442…b855`. Red on the base (a, b, c, d, i, the child)
-- [ ] `TestOutsideSkillMDNeverLeaves` (`cmd/aguard`, invariant #2 on the egress path): a `SKILL.md` symlinked to a file outside
-  the boundary that holds a marker string; the marker appears in no JSON, SARIF, markdown, HTML or terminal report and in no
-  `llm preview --json` payload. Red on the base (the judge payload carries it)
-- [ ] `TestGate_LinkedSkillsShareNoApproval` (`cmd/aguard`, two `runHook` processes as `nextProcess` does): after the clean load
-  of a linked benign skill, a linked malicious skill asks; after appending a byte to a remembered skill's link target, the gate
-  audits it again. Red on the base (no output for both)
-- [ ] `TestCrossRootSymlinkIgnored` rewritten to the property it was meant to pin: changing the out-of-root target's bytes leaves
-  the hash unchanged and the content absent from every output; removing the link changes the hash; `SCOPE-001` names it
-- [ ] Real `~/.claude`, counts only: 41 → 0 skills with the empty-input digest; exactly those 41 hashes move; `overall` 69 → 69;
-  judge calls 589 → 593 with intent and injection unchanged; hygiene still 17 items
-- [ ] **Reverse assertions**: rows g (directory symlink into `$HOME`) and z (plain file) byte-identical to the base in
-  `scan --json` and `check --json`; a tree with no symlink keeps its hash (`TestHashGolden`, `TestContentHashGolden` unchanged);
-  the three scan-level `COV-000` notes for symlinked commands, agents and rules unchanged; `check --fail-on high` still exits 1
-  for z; `TestZeroDial_*`, `TestAsksNothingOf_FollowsPlanFor` green unchanged
-- [ ] Docs: `.claude/rules/invariants.md` #2 and `hash.md`, `docs/architecture*.md` (invariant 2), spec §16 item 2 and §13 test ②,
-  §8 (the tree hash), `docs/rules.md` via `make docs` (`SCOPE-001` now true as written), `docs/llm-judge*.md` (what the judge reads
-  of a skill), `ROADMAP.md` known limitations if a question is decided against reading
-- [ ] `make verify` green; `go.mod` line 2 still `go 1.23.5`; no toolchain switch; no new dependency
+Each test was committed before the code and run red on the base (`18114a1`); the reasons are the base's own output.
+
+- [x] One reading, pinned per package over one `t.TempDir()`-style fixture each (temp roots resolved, so the paths match on
+  ubuntu and macOS):
+  `TestLinkedSkillMDHashIsThePlainCopys` (`internal/collect`: `skills/a` hashes as its target directory and as a plain copy, and
+  `CollectTarget` — the gate's path — agrees; red: the empty-input digest),
+  `TestUnresolvableLinksAreClassifiedByTheirText` (two dangling links out of the root with different text hash apart, two inside
+  hash alike; red: both pairs alike), `TestPluginChildLinkedSkillMDIsBoundedByThePluginRoot` (a child's `SKILL.md` linked inside
+  the plugin is the plain copy's hash, one linked out of it has none; red: the empty-input digest),
+  `TestLinkedSkillFilesAreReadOrRefusedOutLoud` (`internal/detect`: rows a, c, d, cred, h, dl, dli, loop, in, z — `EXEC-001` on a,
+  `SCOPE-001` medium and scored on c, d, h, dl, `EXFIL-005` high on cred, the unresolvable inside links in the unreadable note, the
+  inside link read; red: no finding and no note on any refused row),
+  `TestPlan_ReadsTheFilesTheRulesRead` (`internal/judge`: nothing of an out-of-boundary `SKILL.md` is planned, a sibling-linked
+  one is, a symlink inside the skill root is a unit; red: the outside file planned, the inside link skipped)
+- [x] `TestNoSkillHasTheEmptyDigest` (`internal/collect`, invariant): no skill in `CollectAll` hashes to `e3b0c442…b855`, the
+  refused ones carry no hash, and `CollectTarget` gives each the scan's hash. Red on the base (a, c, d, i, cred)
+- [x] `TestOutsideSkillMDNeverLeaves` (`cmd/aguard`): a marker in a `SKILL.md` linked outside the boundary reaches none of
+  `scan --json`, `--sarif`, `--html`, `--md -`, the terminal report, `check --json`, and `llm preview` with a path and without.
+  Red on the base: both `llm preview` runs carried it
+- [x] `TestGate_LinkedSkillsShareNoApproval` (`cmd/aguard`, one `runHook` per event): after the clean load of a linked benign
+  skill, a linked exfiltration skill asks, and appending the payload to the benign skill's target makes it ask too. Red on the
+  base: no output for the exfiltration skill
+- [x] `TestCrossRootSymlinkIgnored` rewritten: changing the out-of-root target's bytes leaves the hash unchanged; retargeting
+  the link and removing it each re-key. Red on the base (removing it left the hash unchanged)
+- [x] `TestInstructionFileOutsideHomeIsRefusedOutLoud` (`internal/collect`, decision 10): a `CLAUDE.md` linked outside home
+  gives a `SCOPE-001`. Red on the base (no note)
+- [x] Real `~/.claude`, counts only, base `18114a1` against this branch: 41 → 0 skills with the empty-input digest (the empty
+  directory keeps it); exactly those 41 skill hashes move (one memory file, edited by its owner between the two runs, also
+  differs); 9 scoring findings on 4 of them (1 high, 8 low); skills below 100 21 → 25; `overall` 69 → 69; notes unchanged; judge
+  calls 589 → 593 (intent 171, injection 321 unchanged; +4 triage); hygiene 17 → 17 items, empty-digest locators 2 → 0 items —
+  the design's numbers
+- [x] Corpus: `mal-skill-sg-symlink-escape` `check` 100 → 88 with `SCOPE-001` medium; no benign sample holds a symlink
+- [x] **Reverse assertions**: rows g (directory symlink into `$HOME`), z (plain file) and pack keep their hash, findings and score
+  (fixture scan, base against branch); `in` (a link inside the skill) was already scanned by the rules and still is; a tree with no
+  symlink keeps its hash (`TestHashGolden`, `TestContentHashGolden` unchanged); the three scan-level `COV-000` notes for symlinked
+  commands, agents and rules unchanged; `TestZeroDial_*`, `TestAsksNothingOf_FollowsPlanFor` green unchanged; the
+  `ExcerptVersion` golden keeps its digest (`8c00ce88a3ae6123`) with the version moved to 7
+- [x] Docs: `.claude/rules/invariants.md` #2, `hash.md`, `gate.md`, `detect.md`; `docs/architecture*.md` (invariant 2); spec
+  §16 item 2, §13 test ②, §8 (`Hash`); `docs/rules.md` via `make docs` (`SCOPE-001` is a scored structural finding now, dimension
+  9; `EXFIL-005` names the skill case); `docs/llm-judge*.md`; `issues/024`–`026` for decision 11 and the two findings outside
+  the scope. `ROADMAP.md` untouched: no question was decided against reading
+- [x] `make verify` ends with "verify: all gates passed"; `go.mod` line 2 still `go 1.23.5`; `go version` go1.23.5, no toolchain
+  switch; no new dependency
 
 ## Out of scope
 
