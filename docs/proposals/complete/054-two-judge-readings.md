@@ -69,7 +69,7 @@ note says which quote was the declared purpose. No prompt change (`judge-prompt`
 
 ```
 Merged: PR #74 (2026-10-13; find the sha with git log --grep P-054)
-Released: not yet
+Released: v0.24.0
 Evidence: TestServerDeclared_NestedParenthesesInSignature, TestServerDeclared_ReadsRegisteredTools (extended: Tool(name=GitTools.STATUS, …) and a triple-quoted description), TestRun_DeclaredOnlyEvidenceIsDropped (internal/judge); the first and third red on the base; every grounding, P-041, P-049, P-053 test and the cmd/aguard e2e green without a character changed; judge-prompt unchanged
 Evidence: offline on the recorded runs (no calls): the declared-only rule removes exactly one benign sample per full-benign run (ctf-forensics at samples 1, overnight-dev at samples 3 and on the 819 subset) and no malicious or hard-negative sample; on the two 224 runs of P-041 three malicious samples quoted the frontmatter beside another high and keep their flag
 Evidence: 224 subset at samples 3 (…-p054-224-s3/compare.txt against …-p054-224-s3-control/, same prompt for these samples): random malicious 70 against 71, random benign 0 against 0, hard negatives 1 against 1 (socket-client-plain), targeted benign 1 against 2; weight decisions identical on 97 of 101 flagged questions (96.0%) — nothing moved beyond the draw

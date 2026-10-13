@@ -127,7 +127,7 @@ command to its file is a later proposal.
 
 ```
 Merged: PR #73 (2026-10-13; find the sha with git log --grep P-053)
-Released: not yet
+Released: v0.24.0
 Evidence: TestCollectTarget_ServerSourceIsItsOwnKind (nine shapes: FastMCP at the top, two levels down, the low-level SDK, the decorator without the call, low-level handlers, Tool(name=…) registrations, a client that only imports the SDK, a decorator without the SDK, mcp in a string, a plain directory, a skill bundling a server, a server too deep to probe) and TestLooksLikeServerSource_NeverFollowsASymlink (internal/collect/server_test.go); red on the base (every directory)
 Evidence: TestServerDeclared_IsTheToolDocstrings, TestServerDeclared_ReadsRegisteredTools, TestRun_ServerSourceGetsLLM010 (internal/judge/server_test.go): the declared side is tool names with docstring first lines and never the module docstring; LLM-010 at high on credential-read, medium when disclosed; a server gets exactly the server pass; directory stays unasked; TestAsksNothingOf_FollowsPlanFor green with the new kind in its fixture
 Evidence: TestCheckCmd_ServerSourceAnswersTheGate (cmd/aguard/check_server_test.go): check <server> --llm --fail-on-llm high exits 1 on a flagged server and 0 on a clean one, with kind server and LLM-010 in the report; a plain directory still exits 4 (P-038)
