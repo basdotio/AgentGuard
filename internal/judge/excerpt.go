@@ -590,7 +590,7 @@ func headed(files []string) func([]string) (string, []span) {
 var serverToolRe = regexp.MustCompile(`(?s)@\w+(?:\.\w+)*\.tool(?:\((?:[^()]*|\([^()]*\))*\))?[ \t]*\n(?:[ \t]*@[^\n]*\n)*[ \t]*(?:async[ \t]+)?def[ \t]+(\w+)[ \t]*\((?:[^()]*|\([^()]*\))*\)[^:\n]*:[ \t]*\n(?:[ \t]*[rub]{0,2}(?:"""|''')(.*?)(?:"""|'''))?`)
 
 // serverToolTypeRe is the registration form: Tool(name="x", …, description="…") in a list of tools.
-var serverToolTypeRe = regexp.MustCompile(`(?s)\bTool\(\s*name\s*=\s*["']([^"']+)["'][^)]*?description\s*=\s*["']([^"'\n]*)`)
+var serverToolTypeRe = regexp.MustCompile(`(?s)\bTool\(\s*name\s*=\s*(?:"([^"\n]+)"|'([^'\n]+)'|([\w.]+))\s*,.*?description\s*=\s*(?:"""(.*?)"""|'''(.*?)'''|"([^"\n]*)"|'([^'\n]*)')`)
 
 // serverDeclared renders an MCP server's declared side: one line per tool, "name: first docstring
 // line", gathered from the Python files of dir within the behaviour walker's bounds, redacted and
@@ -622,7 +622,17 @@ func serverDeclared(dir string, eg egress) (string, []sourceUnit) {
 		}
 		rel, _ := filepath.Rel(dir, p)
 		for _, m := range serverToolTypeRe.FindAllStringSubmatch(string(raw), -1) {
-			lines = append(lines, m[1]+": "+strings.TrimSpace(m[2]))
+			// name: a string, or an expression such as GitTools.STATUS, of which the last segment
+			// is the name a client sees; description: the first line of whichever string form.
+			name := m[1] + m[2]
+			if name == "" {
+				name = m[3][strings.LastIndex(m[3], ".")+1:]
+			}
+			desc := strings.TrimSpace(m[4] + m[5] + m[6] + m[7])
+			if k := strings.IndexByte(desc, '\n'); k >= 0 {
+				desc = strings.TrimSpace(desc[:k])
+			}
+			lines = append(lines, name+": "+desc)
 			if len(units) == 0 {
 				units = append(units, sourceUnit{file: detect.Redact(rel), firstLine: 1, collapsed: true})
 			}
