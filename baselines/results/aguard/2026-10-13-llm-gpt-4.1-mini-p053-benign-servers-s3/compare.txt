@@ -1,0 +1,6 @@
+# P-053, generated from judge.jsonl in this directory: 76 benign MCP servers (real source at pinned commits, listed in samples.jsonl and run.yaml;
+# not in the corpus, whose benign MCP samples are tool catalogues) through `aguard check <dir> --llm` at samples: 3, binary 7d30efa.
+
+== 76 benign servers: judge escalated at high 4 = 5.3% [2.1, 12.8] · static high 3 · 69 recognised as kind server, 7 prompt/resource-only examples that build no server stay kind directory ==
+   escalated: fm-atproto_mcp [('LLM-010', ['credential-read', 'credential-read', 'credential-read'])], fm-code_mode [('LLM-010', ['file-deletion', 'remote-execution', 'file-deletion'])], fm-search [('LLM-010', ['credential-read', 'credential-read', 'credential-read'])], fm-text_me [('LLM-010', ['exfiltration', 'exfiltration', 'exfiltration'])]
+   read in raw/: atproto_mcp declares no tool the extractor can read (tools defined elsewhere), so everything reads as undisclosed; code_mode and search expose a read_file tool the model names file-deletion / credential-read though the docstring says it reads a file; text_me posts the message with its API key to the SMS service it exists to call.
