@@ -186,7 +186,16 @@ type result struct {
 // not the first fired: content can be perfectly benign and still argue with the scanner.
 func groundedFinding(t task, v Verdict) (verdict, barrier *model.Finding, dropped bool, unquoted string) {
 	if f := finding(t.req, v); f != nil {
-		if s, ok := groundSpan(v.Evidence, t.units); ok {
+		// On the two passes that set a declaration against a behaviour, the quote has to land in
+		// the behaviour (P-054): a verdict that quotes the declared purpose — "the description
+		// says it recovers credentials, no behaviour found, undisclosed" — contradicts itself, and
+		// a server's docstrings are its declaration too. Grounded only in the declaration, it is
+		// dropped like an unquotable claim, and the note says which it was.
+		units := t.units
+		if t.req.Mode == ModeIntent || t.req.Mode == ModeServer {
+			units = behaviourUnits(t.units)
+		}
+		if s, ok := groundSpan(v.Evidence, units); ok {
 			f.Evidence[0] = s.evidence()
 			// The category has to be shown by the text, not guessed from a name (P-049): a
 			// hook category with no token of it in the sent command, or a connector's
@@ -199,6 +208,11 @@ func groundedFinding(t task, v Verdict) (verdict, barrier *model.Finding, droppe
 		} else {
 			dropped = true
 			unquoted = clipQuote(v.Evidence)
+			if len(units) != len(t.units) {
+				if _, inDeclared := groundSpan(v.Evidence, t.units); inDeclared {
+					unquoted += " (the declared purpose, not a behaviour)"
+				}
+			}
 		}
 	}
 	if quote := strings.TrimSpace(v.BarrierEvidence); quote != "" {
@@ -359,8 +373,9 @@ func Run(ctx context.Context, c Client, arts []model.ArtifactReport, opts Option
 		notes = append(notes, model.Finding{
 			RuleID: "LLM-005", Dimension: 0, Severity: model.SevLow, Source: model.SrcLLM,
 			Title: "LLM findings discarded: evidence not found in the scanned text",
-			Why: fmt.Sprintf("%d flagged verdict(s) quoted text that does not appear in what was sent to the model, "+
-				"so they were discarded rather than reported: a verdict whose quoted evidence cannot be located in the scanned text is treated as fabricated.%s", ungrounded,
+			Why: fmt.Sprintf("%d flagged verdict(s) quoted text that does not appear in what was sent to the model, or quoted only the "+
+				"declared purpose where a behaviour was required, so they were discarded rather than reported: a verdict whose quoted evidence "+
+				"cannot be located in the scanned behaviour is treated as fabricated.%s", ungrounded,
 				unquotedSuffix(unquoted)),
 		})
 	}
@@ -946,4 +961,17 @@ func lowestSeverity(votes []model.Finding) model.Severity {
 		}
 	}
 	return low
+}
+
+// behaviourUnits is the units that are behaviour, not declaration: on the intent and server passes
+// the declared purpose travels as one collapsed unit (a skill's description, a server's tool
+// docstrings), and a quote that lands only there is not evidence that the behaviour exists (P-054).
+func behaviourUnits(units []sourceUnit) []sourceUnit {
+	out := make([]sourceUnit, 0, len(units))
+	for _, u := range units {
+		if !u.collapsed {
+			out = append(out, u)
+		}
+	}
+	return out
 }

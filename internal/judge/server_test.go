@@ -115,3 +115,16 @@ func TestServerDeclared_ReadsRegisteredTools(t *testing.T) {
 		}
 	}
 }
+
+// TestServerDeclared_NestedParenthesesInSignature (P-054): a FastMCP tool whose parameters carry
+// Annotated[…, Field(description=…)] has parentheses inside the signature; the extractor read none
+// of such a server's tools, so the whole server declared nothing and every behaviour read as
+// undisclosed (the atproto example of the benign panel).
+func TestServerDeclared_NestedParenthesesInSignature(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, "s.py"), "from fastmcp import FastMCP\nfrom typing import Annotated\nfrom pydantic import Field\nmcp = FastMCP(\"x\")\n\n@mcp.tool\ndef post(\n    text: Annotated[str, Field(description=\"The post text\")],\n    reply_to: Annotated[str | None, Field(description=\"URI\")] = None,\n) -> dict:\n    \"\"\"Create a post.\"\"\"\n    return {}\n")
+	declared, _ := serverDeclared(dir, egress{})
+	if declared != "post: Create a post." {
+		t.Errorf("declared = %q, want the tool with its docstring despite Field(...) in the signature", declared)
+	}
+}

@@ -430,3 +430,54 @@ func TestInjectionPass_NamesSandboxEscape(t *testing.T) {
 		t.Errorf("privilege on the injection pass = %s, want high whatever the model's word", got)
 	}
 }
+
+// TestRun_DeclaredOnlyEvidenceIsDropped (P-054): on the intent pass a verdict whose only quote is
+// the declared purpose is not a finding — it is dropped and counted as unquotable, with the note
+// saying which — while the same verdict quoting a script line is kept. The server pass behaves the
+// same with its docstrings.
+func TestRun_DeclaredOnlyEvidenceIsDropped(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		arts  func(*testing.T) []model.ArtifactReport
+		mode  Mode
+		rule  string
+		quote func(Request) string
+		kept  bool
+	}{
+		{"intent quoting the description", func(t *testing.T) []model.ArtifactReport { return skillTree(t, 1) }, ModeIntent, "LLM-001", func(r Request) string { return r.Declared }, false},
+		{"intent quoting a script line", func(t *testing.T) []model.ArtifactReport { return skillTree(t, 1) }, ModeIntent, "LLM-001", quotableFrom, true},
+		{"server quoting a docstring line", serverTree, ModeServer, "LLM-010", func(r Request) string { return "check_api_status: Check external API status and connectivity." }, false},
+		{"server quoting the code", serverTree, ModeServer, "LLM-010", func(r Request) string {
+			return "keys = {k: v for k, v in os.environ.items() if \"KEY\" in k or \"TOKEN\" in k}"
+		}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			arts := tc.arts(t)
+			client := &scriptedClient{answer: func(r Request) (Verdict, error) {
+				if r.Mode != tc.mode {
+					return Verdict{}, nil
+				}
+				return Verdict{Flagged: true, Severity: "high", Category: "credential-read", Summary: "reads credentials", Evidence: tc.quote(r)}, nil
+			}}
+			notes, _ := Run(context.Background(), client, arts, Options{Concurrency: 1})
+			f := findingByRule(arts[0], tc.rule)
+			if tc.kept && f == nil {
+				t.Fatalf("a verdict quoting a behaviour line must be kept: %+v", arts[0].Findings)
+			}
+			if !tc.kept {
+				if f != nil {
+					t.Fatalf("a verdict quoting only the declaration must be dropped, got %+v", f)
+				}
+				var note *model.Finding
+				for i := range notes {
+					if notes[i].RuleID == "LLM-005" {
+						note = &notes[i]
+					}
+				}
+				if note == nil || !strings.Contains(note.Why, "the declared purpose, not a behaviour") {
+					t.Errorf("the drop must be visible as LLM-005 naming the declared purpose: %+v", notes)
+				}
+			}
+		})
+	}
+}
