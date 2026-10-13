@@ -37,7 +37,7 @@ messages. Numbers stay in the proposal.
 ## Done
 
 ```
-Merged: PR to be opened (2026-10-13; find the sha with git log --grep P-057 after the merge)
+Merged: PR #77 (2026-10-13; find the sha with git log --grep P-057)
 Released: v0.25.0
 Evidence: make verify: all gates passed on the branch; go1.23.5, go.mod line 2 unchanged
 Evidence: TestMarketplaceEntryVersionMatchesPlugin green with both files at 0.25.0
