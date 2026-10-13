@@ -83,7 +83,13 @@ type Stats struct {
 	// times and triage once, so without this split what one question costs can only be guessed.
 	TriageCalls int
 	Latencies   []time.Duration // one per issued call, retries included
+	// TemperatureOmitted says the endpoint refused the temperature member and the client sent the
+	// rest of the run without it (P-052): a consensus run then sampled at the model's default.
+	TemperatureOmitted bool
 }
+
+// temperatureReporter is what a client may say about the run after it: the HTTP client does.
+type temperatureReporter interface{ TemperatureOmitted() bool }
 
 // Percentile returns the p-th percentile latency (p in [0,1]), or 0 when no call ran.
 func (s Stats) Percentile(p float64) time.Duration {
@@ -357,6 +363,9 @@ func Run(ctx context.Context, c Client, arts []model.ArtifactReport, opts Option
 				"so they were discarded rather than reported: a verdict whose quoted evidence cannot be located in the scanned text is treated as fabricated.%s", ungrounded,
 				unquotedSuffix(unquoted)),
 		})
+	}
+	if tr, ok := c.(temperatureReporter); ok {
+		stats.TemperatureOmitted = tr.TemperatureOmitted()
 	}
 	return notes, stats
 }

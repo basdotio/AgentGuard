@@ -61,7 +61,7 @@ func captureServer(t *testing.T) (*httptest.Server, func() []capturedCall) {
 			t.Errorf("system message does not end with the barrier rule for this call's nonce:\n%s", body.Messages[0].Content)
 		}
 		mu.Lock()
-		got = append(got, capturedCall{body.Model, body.Temperature, instruction, strings.Join(lines[1:len(lines)-1], "\n")})
+		got = append(got, capturedCall{body.Model, *body.Temperature, instruction, strings.Join(lines[1:len(lines)-1], "\n")})
 		mu.Unlock()
 		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"{\"flagged\":false,\"labels\":[]}"}}]}`))
 	}))
