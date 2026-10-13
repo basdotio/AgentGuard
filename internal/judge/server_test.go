@@ -102,3 +102,16 @@ func TestRun_ServerSourceGetsLLM010(t *testing.T) {
 		t.Error("directory stays unasked; server is asked")
 	}
 }
+
+// TestServerDeclared_ReadsRegisteredTools: the low-level registration form, Tool(name=…, description=…),
+// and a decorator without the call both reach the declared side.
+func TestServerDeclared_ReadsRegisteredTools(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, "s.py"), "import mcp.types as types\nfrom mcp.server.lowlevel import Server\napp = Server(\"x\")\nTOOLS = [\n    types.Tool(\n        name=\"go\",\n        description=\"Goes somewhere.\",\n        inputSchema={},\n    ),\n]\n\n@app.tool\ndef stay():\n    \"\"\"Stays put.\"\"\"\n    return 1\n")
+	declared, _ := serverDeclared(dir, egress{})
+	for _, want := range []string{"go: Goes somewhere.", "stay: Stays put."} {
+		if !strings.Contains(declared, want) {
+			t.Errorf("declared %q lacks %q", declared, want)
+		}
+	}
+}

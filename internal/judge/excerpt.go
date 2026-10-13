@@ -587,7 +587,10 @@ func headed(files []string) func([]string) (string, []span) {
 
 // serverTool matches a decorated tool definition and its docstring's first line, the shape of a
 // FastMCP / mcp.server tool in Python: the declared side of the server-source pass (P-053).
-var serverToolRe = regexp.MustCompile(`(?s)@\w+(?:\.\w+)*\.tool\((?:[^()]*|\([^()]*\))*\)[ \t]*\n(?:[ \t]*@[^\n]*\n)*[ \t]*(?:async[ \t]+)?def[ \t]+(\w+)[ \t]*\([^)]*\)[^:\n]*:[ \t]*\n(?:[ \t]*[rub]{0,2}(?:"""|''')(.*?)(?:"""|'''))?`)
+var serverToolRe = regexp.MustCompile(`(?s)@\w+(?:\.\w+)*\.tool(?:\((?:[^()]*|\([^()]*\))*\))?[ \t]*\n(?:[ \t]*@[^\n]*\n)*[ \t]*(?:async[ \t]+)?def[ \t]+(\w+)[ \t]*\([^)]*\)[^:\n]*:[ \t]*\n(?:[ \t]*[rub]{0,2}(?:"""|''')(.*?)(?:"""|'''))?`)
+
+// serverToolTypeRe is the registration form: Tool(name="x", …, description="…") in a list of tools.
+var serverToolTypeRe = regexp.MustCompile(`(?s)\bTool\(\s*name\s*=\s*["']([^"']+)["'][^)]*?description\s*=\s*["']([^"'\n]*)`)
 
 // serverDeclared renders an MCP server's declared side: one line per tool, "name: first docstring
 // line", gathered from the Python files of dir within the behaviour walker's bounds, redacted and
@@ -618,6 +621,12 @@ func serverDeclared(dir string, eg egress) (string, []sourceUnit) {
 			return nil
 		}
 		rel, _ := filepath.Rel(dir, p)
+		for _, m := range serverToolTypeRe.FindAllStringSubmatch(string(raw), -1) {
+			lines = append(lines, m[1]+": "+strings.TrimSpace(m[2]))
+			if len(units) == 0 {
+				units = append(units, sourceUnit{file: detect.Redact(rel), firstLine: 1, collapsed: true})
+			}
+		}
 		for _, m := range serverToolRe.FindAllStringSubmatch(string(raw), -1) {
 			first := strings.TrimSpace(m[2])
 			if i := strings.IndexByte(first, '\n'); i >= 0 {
