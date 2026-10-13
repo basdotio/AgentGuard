@@ -588,8 +588,11 @@ type JudgeSummary struct {
 	Failed    int    `json:"failed"`           // calls that ended in error after retries
 	Skipped   int    `json:"skipped"`          // calls never issued: budget or deadline
 	Repaired  int    `json:"repaired"`         // answered calls read only by the closed-early repair (P-034)
-	Findings  int    `json:"findings"`         // advisory leads added
-	Endpoint  string `json:"endpoint,omitempty"`
+	// TemperatureOmitted: the endpoint refused the temperature member (a model that allows only its
+	// default) and the calls went without it, so a consensus run sampled at that default (P-052).
+	TemperatureOmitted bool   `json:"temperature_omitted,omitempty"`
+	Findings           int    `json:"findings"` // advisory leads added
+	Endpoint           string `json:"endpoint,omitempty"`
 	// What the run cost. TriageCalls is the part of Calls that was triage (asked once, where a
 	// judge question is asked `samples` times); Retries counts re-sends of the same call. Both
 	// are our own counts and always present. The token totals are what the ENDPOINT reported —

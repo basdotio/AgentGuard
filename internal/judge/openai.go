@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -41,7 +42,16 @@ type HTTPClient struct {
 	// telemetry only: nothing here can reach a finding or the score.
 	promptTokens     atomic.Int64
 	completionTokens atomic.Int64
+	// noTemperature is set the first time the endpoint refuses the temperature member (a 400
+	// naming the parameter, as some models do: only their default is allowed), after which every
+	// call omits it (P-052). A consensus run then samples at the model's default, which is what
+	// such a model offers; the run's summary says so (temperature_omitted).
+	noTemperature atomic.Bool
 }
+
+// TemperatureOmitted reports whether the endpoint refused the temperature member and the client
+// now sends calls without it.
+func (c *HTTPClient) TemperatureOmitted() bool { return c.noTemperature.Load() }
 
 // Transport is a TEST SEAM, and nothing outside tests assigns it. It is the RoundTripper a client
 // built by NewHTTP(…, nil) uses; nil — the only value production ever leaves here — means
@@ -90,7 +100,7 @@ type chatMessage struct {
 type chatRequest struct {
 	Model       string        `json:"model"`
 	Messages    []chatMessage `json:"messages"`
-	Temperature float64       `json:"temperature"`
+	Temperature *float64      `json:"temperature,omitempty"` // nil once the endpoint refused it (P-052)
 }
 
 type chatResponse struct {
@@ -130,14 +140,41 @@ func (c *HTTPClient) Judge(ctx context.Context, r Request) (Verdict, error) {
 // assistant message content. Shared by Judge and Triage so the transport/redaction-escaping
 // path is identical.
 func (c *HTTPClient) chat(ctx context.Context, system, user string, temperature float64) (string, error) {
+	content, err := c.chatOnce(ctx, system, user, temperature)
+	if err != nil && !c.noTemperature.Load() && refusesTemperature(err) {
+		// The endpoint answered the shape, not the content: this model takes no temperature
+		// member. Remember it and send the same call once more without one (P-052); the retry
+		// counters are for "not now" answers, and this is not one.
+		c.noTemperature.Store(true)
+		return c.chatOnce(ctx, system, user, temperature)
+	}
+	return content, err
+}
+
+// refusesTemperature recognises the 400 an OpenAI-shaped endpoint returns for a model that allows
+// only its default temperature: the body names the parameter and the unsupported-value code.
+func refusesTemperature(err error) bool {
+	s := err.Error()
+	return strings.Contains(s, "returned 400") && temperatureParam.MatchString(s) && strings.Contains(s, "unsupported_value")
+}
+
+var temperatureParam = regexp.MustCompile(`"param"\s*:\s*"temperature"`)
+
+// chatOnce is one POST; chat wraps it with the temperature fallback.
+func (c *HTTPClient) chatOnce(ctx context.Context, system, user string, temperature float64) (string, error) {
 	var body bytes.Buffer
 	enc := json.NewEncoder(&body)
 	enc.SetEscapeHTML(false) // keep <REDACTED> / shell metachars literal for the model
+	// 0 for a normal call — as deterministic as the endpoint allows. Consensus sampling
+	// passes a non-zero value; either way the DETERMINISTIC score never depends on this.
+	// Nil once the endpoint said it takes no such member.
+	temp := &temperature
+	if c.noTemperature.Load() {
+		temp = nil
+	}
 	if err := enc.Encode(chatRequest{
-		Model: c.model,
-		// 0 for a normal call — as deterministic as the endpoint allows. Consensus sampling
-		// passes a non-zero value; either way the DETERMINISTIC score never depends on this.
-		Temperature: temperature,
+		Model:       c.model,
+		Temperature: temp,
 		Messages: []chatMessage{
 			{Role: "system", Content: system},
 			{Role: "user", Content: user},

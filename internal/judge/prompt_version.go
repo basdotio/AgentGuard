@@ -114,7 +114,7 @@ func shapeBodies(shapes []callShape) [][]byte {
 		// The request types are plain strings and numbers; encoding them cannot fail.
 		_ = enc.Encode(chatRequest{
 			Model:       modelStandIn,
-			Temperature: temperature,
+			Temperature: &temperature,
 			Messages:    []chatMessage{{Role: "system", Content: system}, {Role: "user", Content: user}},
 		})
 		out[i] = body.Bytes()
