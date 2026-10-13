@@ -248,10 +248,12 @@ and hygiene all ask it; nothing else opens a skill's files.
    plumbing (the gate and `scan` hash the same directory with the same rule, so their hashes stay equal), and a link it refuses
    is loud, scored and unapprovable rather than silent. A `check` of a lone directory outside a `skills/` directory gets no
    widening.
+   **Decided (2026-10-13)**: as recommended.
 2. **Do supporting files get the same widening?**
    **Recommendation**: no — keep invariant #2's skill root for every file except the root `SKILL.md`. No loader reads them;
    measured 0 supporting links leaving their skill on the real `~/.claude`; and the corpus's one symlink sample escapes its own
    directory into its `skills/` directory, so widening to B would turn its attack into a read. They become loud instead (Design 3).
+   **Decided (2026-10-13)**: as recommended.
 3. **What is the hash?**
    **Recommendation**: a followed `SKILL.md` is hashed under its own name with the target's bytes and no link text — identical to
    a plain copy (measured: `a552389f…` both ways), so identity stays content, a reputation entry for the bytes covers both
@@ -260,38 +262,48 @@ and hygiene all ask it; nothing else opens a skill's files.
    text: presence and target re-key, the target's bytes never enter the digest. Re-keying: only artifacts with a symlink leaving
    their root move — 41 skills on the real `~/.claude`, none of the 18 reputation entries carries the empty-input digest, the
    official marketplace mirror has no symlink; the pinned-repo entries are confirmed by `make reputation-refresh` in W2's PR.
+   **Decided (2026-10-13)**: as recommended.
 4. **What severity is a refusal?**
    **Recommendation**: `SCOPE-001` medium on the artifact, scored — `HOOK-002`'s precedent: an unread file that loads or runs is a
    risk, not only a coverage gap; medium means the gate re-audits on every load (P-005) without blocking a legitimate dotfiles
    layout. A `SKILL.md` that resolves to a credential path is high (`EXFIL-005`'s reasoning: Claude Code would put the secret in
    context; with a body-derived description, in every session's skill list).
+   **Decided (2026-10-13)**: as recommended.
 5. **Does the judge follow the same predicate?**
    **Recommendation**: yes, for every file: it stops reading a `SKILL.md` outside the boundary (fixture d sends an out-of-`$HOME`
    file today), and it reads supporting-file symlinks inside the skill root that the rules already read (2 on the real
    `~/.claude`). One reading is the point; `ExcerptVersion` moves.
+   **Decided (2026-10-13)**: as recommended.
 6. **Dangling and looping links.**
    **Recommendation**: classify by the lexical target (`Join(Dir(p), readlink)`): inside the root → present and unread, as the hash
    already marks it; outside → refused as in Design 3. Today the two primitives disagree (the hash says inside, the walk says
    outside). `desktop.go` treats a dangling directory link as "nothing loads, no note"; that stays, since it is about a directory
    Claude Code does not load. A dangling `SKILL.md` still makes no skill, as in Claude Code.
+   **Decided (2026-10-13)**: as recommended.
 7. **A plugin child's boundary** (P-044).
    **Recommendation**: the plugin root, the container P-044 already bounds children by; Claude Code reads plugin skills with no
    containment. Measured: no installed plugin has a symlinked `SKILL.md` (two in a third-party marketplace mirror, which never loads).
+   **Decided (2026-10-13)**: as recommended.
 8. **Approvals already stored under the empty-input digest.**
    **Recommendation**: leave them. After the change no skill can hash to it, so they match nothing; `aguard approvals` still lists
    them and `forget` removes them. Dropping them silently on load would be a second rule about which keys are valid.
+   **Decided (2026-10-13)**: as recommended.
 9. **Findings shown twice** (on the pack, whose tree holds the target, and on the linked skill).
    **Recommendation**: keep both, no fold. They are two skills that load separately, and the gate's verdict for the linked skill
    must carry its own findings; measured 9 duplicates on 4 skills.
+   **Decided (2026-10-13)**: as recommended.
 10. **`CLAUDE.md` symlinked outside home** is dropped with no note today, and the run says "Nothing to audit under this root".
     **Recommendation**: include it (W5): `SCOPE-001` on the refusal, the same one-line shape as the skills guard. Same class (a
     loaded file refused in silence), no file on the real `~/.claude` is affected.
+    **Decided (2026-10-13)**: as recommended.
 11. **Symlinked commands, agents and rules outside the root.**
     **Recommendation**: not here (Out of scope). They are disclosed, not silent; scoring them changes `check`'s answer for a
     different surface and deserves its own measurement. Record it as a follow-up in `issues/` when this merges.
+    **Decided (2026-10-13)**: as recommended.
 12. **Invariant #2's wording.**
     **Recommendation**: "A skill's internal files must not resolve outside the skill root; the one exception is its `SKILL.md`,
     the file Claude Code loads, which may resolve inside the skills directory that holds the skill (a plugin's root for a plugin's
     skill) unless it names a credential. A skill directory that is itself a symlink must resolve inside `$HOME`. Resolution
     failures are classified by the lexical target. Every refusal is scored (`SCOPE-001`), and the hash, the rules and the judge
     read the same files." Spec §16 item 2 then names both boundaries instead of `--root` alone.
+    **Decided (2026-10-13)**: as recommended.
