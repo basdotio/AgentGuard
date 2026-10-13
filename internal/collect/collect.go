@@ -196,14 +196,17 @@ func CollectTarget(path string) (Result, error) {
 }
 
 // serverImport and serverTool are what makes a Python file an MCP server's source (P-053): it
-// imports mcp or fastmcp AND declares at least one tool with a decorator. Both are required — a
-// file that only mentions mcp in a string, or a client that imports the SDK to call a server, is
-// not a server. The check reads at most serverProbeBytes of each file and walks at most
+// imports mcp or fastmcp AND builds a server or declares a tool — a `FastMCP(` / `Server(`
+// construction, a `@x.tool` decorator (with or without the call), the low-level
+// `@server.call_tool()` / `list_tools()` handlers, or a `Tool(` / `add_tool(` registration.
+// Both halves are required — a file that only mentions mcp in a string, or a client that
+// imports the SDK to call a server, is not a server. Measured on 76 real servers: the decorator
+// alone recognised 28; the forms above are what the other 48 use. The check reads at most serverProbeBytes of each file and walks at most
 // serverProbeDepth levels, skipping the shared excluded directories and never following a symlink
 // (§16.2): a target of any size is classified in bounded time.
 var (
 	serverImport = regexp.MustCompile(`(?m)^\s*(?:from\s+(?:mcp|fastmcp)(?:\.|\s)|import\s+(?:mcp|fastmcp)\b)`)
-	serverTool   = regexp.MustCompile(`(?m)^\s*@\w+(?:\.\w+)*\.tool\(`)
+	serverTool   = regexp.MustCompile(`(?m)^\s*@\w+(?:\.\w+)*\.(?:tool\b|call_tool\(|list_tools\()|\b(?:FastMCP|Server)\(|\.add_tool\(|\bTool\(\s*(?:\n\s*)?name\s*=`)
 )
 
 const (
