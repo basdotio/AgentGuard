@@ -49,7 +49,7 @@ func decodedPayloads(dir string, eg egress) []sourceUnit {
 			}
 			return nil
 		}
-		if d.Type()&fs.ModeSymlink != 0 {
+		if collect.FileReach(dir, p).Kind != collect.Read { // the rules' predicate (P-056)
 			return nil
 		}
 		if !behaviorExts[strings.ToLower(filepath.Ext(p))] {

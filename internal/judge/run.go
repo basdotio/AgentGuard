@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/basdotio/AgentGuard/internal/collect"
 	"github.com/basdotio/AgentGuard/internal/detect"
 	"github.com/basdotio/AgentGuard/internal/model"
 	"github.com/basdotio/AgentGuard/internal/parse"
@@ -489,20 +490,27 @@ func planFor(i int, a model.ArtifactReport, eg egress) []task {
 
 	switch a.Kind {
 	case model.KindSkill:
-		skill := parse.ReadSkill(a.Path)
-		declared := declaredPurpose(skill.Description, eg)
-		behavior, behaviorUnits := behaviorExcerpt(a.Path, eg)
-		// The declared purpose is part of what the model saw, so a verdict may legitimately
-		// quote it; it lives in SKILL.md's frontmatter, near the top.
-		intentUnits := append([]sourceUnit{{file: "SKILL.md", text: declared, firstLine: 1, collapsed: true}}, behaviorUnits...)
-		ask(Request{Mode: ModeIntent, Declared: declared, Behavior: behavior}, intentUnits)
+		// SKILL.md is opened only if the rules' predicate admits it (P-056): it used to be read through
+		// any symlink, so a SKILL.md linked to a file outside home went to the endpoint while the static
+		// rules and the hash skipped it. A refused one is scored by the rules (SCOPE-001); the two
+		// passes that read it have nothing to read, and the artifact counts as asked nothing about.
+		var declared string
+		if !collect.SkillMDRefused(a.Path) {
+			skill := parse.ReadSkill(a.Path)
+			declared = declaredPurpose(skill.Description, eg)
+			behavior, behaviorUnits := behaviorExcerpt(a.Path, eg)
+			// The declared purpose is part of what the model saw, so a verdict may legitimately
+			// quote it; it lives in SKILL.md's frontmatter, near the top.
+			intentUnits := append([]sourceUnit{{file: "SKILL.md", text: declared, firstLine: 1, collapsed: true}}, behaviorUnits...)
+			ask(Request{Mode: ModeIntent, Declared: declared, Behavior: behavior}, intentUnits)
 
-		body, bodyLM := condense("SKILL.md", eg.redact(skill.Body), false)
-		body, bodyLM = settleExcerpt(capHeadTail(body, bodyLM, maxExcerptBytes))
-		// The description is the second side here too: "beyond what it says it is for" is a
-		// far sharper question than "contains instructions", which every skill body does.
-		ask(Request{Mode: ModeInjection, Declared: declared, Behavior: body},
-			[]sourceUnit{{file: "SKILL.md", text: body, firstLine: skill.BodyLine, lineMap: offsetLines(bodyLM, skill.BodyLine-1)}})
+			body, bodyLM := condense("SKILL.md", eg.redact(skill.Body), false)
+			body, bodyLM = settleExcerpt(capHeadTail(body, bodyLM, maxExcerptBytes))
+			// The description is the second side here too: "beyond what it says it is for" is a
+			// far sharper question than "contains instructions", which every skill body does.
+			ask(Request{Mode: ModeInjection, Declared: declared, Behavior: body},
+				[]sourceUnit{{file: "SKILL.md", text: body, firstLine: skill.BodyLine, lineMap: offsetLines(bodyLM, skill.BodyLine-1)}})
+		}
 
 		if text, units, shortened := explainExcerpt(decodedPayloads(a.Path, eg)); text != "" {
 			ask(Request{Mode: ModeExplain, Behavior: text}, units)

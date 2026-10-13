@@ -25,7 +25,7 @@ import (
 var excerptGolden = struct {
 	version int
 	digest  string
-}{version: 6, digest: "8c00ce88a3ae6123"}
+}{version: 7, digest: "8c00ce88a3ae6123"}
 
 func TestExcerptVersion_IsPinnedWithItsGolden(t *testing.T) {
 	got := excerptDigest(t)
