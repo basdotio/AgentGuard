@@ -415,3 +415,18 @@ func TestRun_ConnectorParamOnlyCredentialReadWeighsMedium(t *testing.T) {
 		}
 	}
 }
+
+// TestInjectionPass_NamesSandboxEscape (P-050): the injection task names escaping a sandbox or
+// escalating privilege as beyond a purpose, and its table carries `privilege` at high — the nine
+// skill-safety-bench samples that mount the docker socket or write under /root got no finding
+// while neither was said.
+func TestInjectionPass_NamesSandboxEscape(t *testing.T) {
+	for _, want := range []string{"escaping a sandbox", "container socket", "cloud metadata service", "writing under /root"} {
+		if !strings.Contains(injectionTask, want) {
+			t.Errorf("the injection task does not name %q", want)
+		}
+	}
+	if got := severityFor(ModeInjection, Verdict{Flagged: true, Severity: "low", Category: "privilege"}); got != model.SevHigh {
+		t.Errorf("privilege on the injection pass = %s, want high whatever the model's word", got)
+	}
+}

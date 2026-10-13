@@ -45,6 +45,7 @@ var (
 var categoryTables = map[Mode][]category{
 	ModeInjection: {
 		catExfiltration, catCredentialRead, catRemoteExec, catSafetyDisable, catConcealed,
+		{"privilege", model.SevHigh, "escalates privilege or escapes a sandbox: runs as root or with sudo, writes under /root, mounts the host filesystem or the container socket, probes a cloud metadata service"},
 		{"other-directive", model.SevMedium, "a directive beyond or against the declared purpose that is none of the above, including one that only runs a local script or command"},
 	},
 	ModeIntent: {
