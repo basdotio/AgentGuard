@@ -17,7 +17,33 @@ rate copied into prose goes stale on the next rule. `git tag` and the Releases p
 - Invariants: never executes scanned content, no cross-root symlink reads, secret redaction before storage (+ high-entropy fallback).
 - Single static binary (`CGO_ENABLED=0`), MIT + SPDX, CI, bilingual README.
 
-## v0.2.0 – v0.22.0
+## v0.2.0 – v0.23.0
+
+**v0.23.0 (2026-10-13) — a judge category the text never shows weighs medium, and the injection pass is told that
+escaping a sandbox or escalating privilege is beyond a skill's purpose.**
+
+No static rule, score formula, grounding step, consensus bar, flag or exit code changed; `--fail-on` is untouched. On the
+`aguard version` line `judge-prompt` changes (`ec4382a9226a` → `6572379d32b1`; `rules` and `judge-excerpt` do not): one
+clause was added to one task sentence, so LLM findings are not comparable with earlier runs. Fewer judge findings weigh
+high than in v0.22.0: a hook or MCP finding whose category the text does not show is now medium, so a build gated with
+`--fail-on-llm` may pass where v0.22.0 failed it on such a finding.
+
+- **A category the text does not show.** Since v0.22.0 a judge finding's severity follows the category the model
+  names, and the model named categories the text in front of it did not show — `install` from a script called
+  `ensure-gh-cli.sh`, `permission-override` from a script run on a `PermissionRequest` event, `network` from a program's
+  name or a URL on localhost, `credential-read` from a tool parameter named `secretKey`. Now the tool checks: for a
+  hook, `network`, `install`, `permission-override` and `credential` need a token of the behaviour in the command (a URL
+  or host other than localhost, `curl`/`ssh`/`git pull`/`npx`, `npm`/`pip`/`brew`, `permissionDecision`/`allow`/
+  `approve`, a key file or the word secret); for an MCP tool catalogue, `credential-read` must rest on a quoted line that
+  is not a parameter. A category the text does not show keeps its name in the vote, weighs medium, and the reason says
+  `[category not shown by the text: …]`. Measured on the corpus with the prompt unchanged, in the proposal (P-049).
+- **Escaping a sandbox is beyond the purpose.** The injection pass's task sentence names escalating privilege or
+  escaping a sandbox — mounting the host filesystem or the container socket, probing a cloud metadata service, writing
+  under `/root`, running as root — and `privilege` joins its category table at high; a skill that told the agent to mount
+  `/:/host` and `/var/run/docker.sock` "as a last-resort reproduction path" got no finding before. Measured at ten draws
+  per question against the previous prompt, in the proposal (P-050).
+- A proposal that tightened two category descriptions was measured and withdrawn: the wording moved nothing a vote
+  could see, and the runs stay under `baselines/results/` as the record of how a prompt change has to be measured (P-048).
 
 **v0.22.0 (2026-10-12) — the judge's severity is the tool's, read from a closed category the model names, not the
 model's own word; and a build may only fail on the judge when each question was asked at least three times.**

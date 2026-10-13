@@ -121,7 +121,7 @@ with both checks: 32 of 3,220 = 0.99% [0.70, 1.40].
 
 ```
 Merged: PR #68 (2026-10-13; find the sha with git log --grep P-049)
-Released: not yet
+Released: v0.23.0
 Evidence: TestCategoryShown, TestRun_HookCategoryNotShownWeighsMedium, TestRun_ConnectorParamOnlyCredentialReadWeighsMedium (internal/judge/severity_test.go); the two Run tests red on the base (both cases high), green after W1; every P-041 test and cmd/aguard e2e green without a character changed; judge-prompt ec4382a9226a and judge-excerpt 6 unchanged (the prompt did not move)
 Evidence: panel — 541 benign hooks + MCP at samples 3, same prompt three times (…-p048-hm-s3-old/ = control A, …-p049-hm-s3-control/ = control B, …-p049-hm-s3/ = the check; compare.txt in the last): escalated at high 28 / 27 / 6 (gate ≤ 12); controls differ by 8 samples (4 lost, 4 gained), the check sits 21 below both; hooks 20 / 19 → 6, MCP 8 / 8 → 0; findings the check lowered: network 17, permission-override 6, install 5, credential-read 7; the six hook samples left are npx runners (2), a command carrying a URL (1) and three LLM-003 findings the check does not read
 Evidence: 819 subset at samples 1 (…-p049-819-s1/compare.txt, against …-p041-819-s1/): reachable malicious flagged 137 → 136 (gate ≥ 134); the one change is mal-hook-pretooluse-autoapprove, which drew process-control this time where P-041's draw read permission-override off approve.sh — the check's token list accepts approve, so the check lowered nothing malicious; hard negatives 0 → 0; benign 500 escalated non-009 11 → 6 (gate ≤ 9): hooks 5 → 1, MCP 1 → 0
