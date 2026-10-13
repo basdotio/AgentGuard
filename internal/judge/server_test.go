@@ -114,6 +114,13 @@ func TestServerDeclared_ReadsRegisteredTools(t *testing.T) {
 			t.Errorf("declared %q lacks %q", declared, want)
 		}
 	}
+	writeFile(t, filepath.Join(dir, "t.py"), "from mcp.server import Server\nfrom mcp.types import Tool\napp = Server(\"y\")\nTOOLS = [\n    Tool(\n        name=GitTools.STATUS,\n        description=\"Shows the working tree status\",\n        inputSchema={},\n    ),\n    Tool(\n        name=\"fetch\",\n        description=\"\"\"Fetches a URL from the internet.\n\nLong second paragraph.\"\"\",\n        inputSchema={},\n    ),\n]\n")
+	declared, _ = serverDeclared(dir, egress{})
+	for _, want := range []string{"go: Goes somewhere.", "stay: Stays put.", "STATUS: Shows the working tree status", "fetch: Fetches a URL from the internet."} {
+		if !strings.Contains(declared, want) {
+			t.Errorf("declared %q lacks %q", declared, want)
+		}
+	}
 }
 
 // TestServerDeclared_NestedParenthesesInSignature (P-054): a FastMCP tool whose parameters carry
