@@ -738,15 +738,28 @@ func collectInstruction(root, home string, known []model.ArtifactReport) ([]mode
 		{filepath.Join(home, "CLAUDE.local.md"), "CLAUDE.local.md (project)"},
 	}
 	var out []model.ArtifactReport
+	var refused []model.Finding
 	for _, c := range candidates {
 		fi, err := os.Stat(c.path)
-		if err != nil || fi.IsDir() || !withinDir(home, c.path) {
+		if err != nil || fi.IsDir() {
+			continue
+		}
+		if !withinDir(home, c.path) {
+			// Claude Code loads it; it used to be dropped here with no note at all, and a root holding
+			// nothing else reported only "Nothing to audit under this root" (P-056).
+			refused = append(refused, model.Finding{
+				RuleID: "SCOPE-001", Dimension: 9, Severity: model.SevMedium, Source: model.SrcStatic,
+				Title: "Instruction file symlink points outside HOME, skipped",
+				Why: "This instruction file is a symlink whose target resolves outside the scan home, so it was NOT read " +
+					"(invariant #2), while Claude Code loads it into every session. Audit the target directly.",
+				Evidence: []model.Evidence{{File: c.path, Line: 0, Snippet: "symlink target escapes HOME"}},
+			})
 			continue
 		}
 		out = append(out, artifact(model.KindInstruction, c.name, c.path, FileHash(c.path)))
 	}
 	out, imported, notes := expandImports(home, out, known)
-	return append(out, imported...), notes
+	return append(out, imported...), append(refused, notes...)
 }
 
 // withParseError returns an artifact carrying a single parse_error finding (spec §4:
