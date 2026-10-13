@@ -68,9 +68,10 @@ func FileHash(path string) string {
 
 // TreeHash returns a canonical hash over a directory: every regular file's relative
 // path + content is folded in, sorted by path, so the digest is stable regardless of
-// walk order (spec §8 — the risk lives in the scripts, not just SKILL.md). Files whose
-// resolved target escapes `boundary` (the skill's own root) are skipped (spec §16.2).
-// Returns "" on error.
+// walk order (spec §8 — the risk lives in the scripts, not just SKILL.md). Which files are read
+// is FileReach's answer: a file whose target escapes `boundary` (the tree's own root) is never read
+// (spec §16.2) but is folded in by its link text; the root SKILL.md may resolve into SkillMDBound;
+// a refused root SKILL.md returns "" (P-056). Returns "" on error.
 func TreeHash(boundary, dir string) string {
 	type entry struct {
 		rel string
@@ -86,6 +87,7 @@ func TreeHash(boundary, dir string) string {
 	// Readable trees are unaffected (TestHashGolden pins that), and no tree containing an
 	// unreadable entry ever had a stable hash to break — it hashed as if the entry were absent.
 	unreadableMark := sha256.Sum256([]byte("aguard:unreadable-entry"))
+	refused := false
 	_ = filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			if p != dir {
@@ -100,18 +102,35 @@ func TreeHash(boundary, dir string) string {
 			}
 			return nil
 		}
-		if !withinDir(boundary, p) {
-			return nil // don't read files whose target escapes the skill root
+		// One predicate for every reader of a tree (FileReach, P-056). A file whose target escapes the
+		// root is never opened, but it is not absent either: it is folded in by its link text, so a
+		// tree with an unread file that runs never shares a hash with the tree without it. A refused
+		// SKILL.md — the file Claude Code loads as the skill — leaves the tree with NO hash: what loads
+		// was not read, so there is no identity to approve (every such skill used to hash as empty input).
+		rel, _ := filepath.Rel(dir, p)
+		switch r := FileReach(boundary, p); r.Kind {
+		case Unresolved:
+			entries = append(entries, entry{rel: rel, sum: unreadableMark})
+			return nil
+		case Outside, Credential:
+			if filepath.Dir(p) == filepath.Clean(dir) && d.Name() == "SKILL.md" {
+				refused = true
+				return filepath.SkipAll
+			}
+			entries = append(entries, entry{rel: rel, sum: OutsideLinkMark(p)})
+			return nil
 		}
 		sum, ok := sumFile(p)
 		if !ok {
 			// Regular file that could not be opened (or a non-regular entry): present, unread.
 			sum = unreadableMark
 		}
-		rel, _ := filepath.Rel(dir, p)
 		entries = append(entries, entry{rel: rel, sum: sum})
 		return nil
 	})
+	if refused {
+		return ""
+	}
 	sort.Slice(entries, func(i, j int) bool { return entries[i].rel < entries[j].rel })
 	h := sha256.New()
 	for _, e := range entries {

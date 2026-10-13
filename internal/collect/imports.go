@@ -272,21 +272,10 @@ func expandImports(home string, seeds, known []model.ArtifactReport) ([]model.Ar
 					notes = append(notes, importDepthNote(f.Path, ref))
 					continue
 				}
-				if hasSensitiveComponent(real) {
-					seen[real] = true
-					notes = append(notes, importSensitiveNote(f.Path, ref))
-					// .config holds far more than credentials, so a path through it is medium;
-					// .ssh/.aws/.gnupg/.kube/.docker/.password-store/.netrc hold little else.
-					sev := model.SevHigh
-					for _, seg := range strings.Split(filepath.ToSlash(real), "/") {
-						if seg == ".config" {
-							sev = model.SevMedium
-						}
-					}
-					all[si].Findings = append(all[si].Findings, importCredentialFinding(f.Path, ref, sev))
-					continue
-				}
-				if sev, ok := credentialFile(real); ok {
+				// One list for every credential refusal (CredentialPath): .config holds far more than
+				// credentials, so a path through it is medium; .ssh/.aws/.gnupg/.kube/.docker/
+				// .password-store/.netrc hold little else.
+				if sev, ok := CredentialPath(real); ok {
 					seen[real] = true
 					notes = append(notes, importSensitiveNote(f.Path, ref))
 					all[si].Findings = append(all[si].Findings, importCredentialFinding(f.Path, ref, sev))
