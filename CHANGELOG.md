@@ -17,7 +17,31 @@ rate copied into prose goes stale on the next rule. `git tag` and the Releases p
 - Invariants: never executes scanned content, no cross-root symlink reads, secret redaction before storage (+ high-entropy fallback).
 - Single static binary (`CGO_ENABLED=0`), MIT + SPDX, CI, bilingual README.
 
-## v0.2.0 – v0.24.0
+## v0.2.0 – v0.25.0
+
+**v0.25.0 (2026-10-13) — a skill whose SKILL.md is a symlink is read, hashed and scored as the file Claude Code loads,
+instead of hashing as empty input with a clean score.**
+
+`SCOPE-001` becomes a scored finding (medium) on the artifact; no other rule's severity, the score formula, a flag or an
+exit code changed. On the `aguard version` line `rules` (`d74bca61f0da` → `629837fddcba`) and `judge-excerpt` (6 → 7)
+change and `judge-prompt` does not, so LLM findings are not comparable with earlier runs. **Two things a reader of
+reports should know**: a skill whose SKILL.md is a symlink gets a new content hash — it used to hash as the empty-input
+digest — so an approval stored under that digest matches nothing any more and the skill is asked once at load; and a
+skill whose linked file carries findings, or whose files escape their boundary, now scores below 100, so `check` can
+exit 1 where it exited 0.
+
+- **A linked SKILL.md.** A skill installed as a directory whose SKILL.md is a symlink into a pack's own directory (a
+  common layout for skill packs) hashed as the SHA-256 of empty input and scored 100 with no finding and no note, while
+  the judge read the file. Every such skill shared one content hash, so one load-time approval or reputation entry
+  covered all of them and an edit to any of them never re-asked. A skill's SKILL.md may now resolve into the skills
+  directory that holds the skill (the plugin root for a plugin's skill), unless it is a credential path; it is read by
+  the static rules and by the judge and hashed exactly like a plain copy of the same bytes (P-056).
+- **Refusals out loud.** Any other file of an artifact that resolves outside the artifact's own directory is not read
+  and raises `SCOPE-001` on the artifact; a SKILL.md that links to a credential raises `EXFIL-005` and leaves the skill
+  with no content hash; a link that does not resolve is placed by its link text, so the hash and the rules agree on it;
+  an instruction file that resolves outside HOME is reported by a `SCOPE-001` note instead of vanishing (P-056).
+- **One reading of a file.** The judge reads exactly the files the static rules read: no SKILL.md outside the
+  boundary, and the symlinks inside a skill's own directory, which it used to skip (P-056).
 
 **v0.24.0 (2026-10-13) — the judge reads an MCP server's source; a model that allows only its default temperature can
 be the judge; two readings fixed.**
