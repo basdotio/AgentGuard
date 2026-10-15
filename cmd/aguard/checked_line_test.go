@@ -18,7 +18,8 @@ func summaryPart(name, body string) string {
 	var from, to string
 	switch name {
 	case "terminal", "verbose":
-		from, to = "\nSummary\n", "\n\n"
+		// The terminal's summary is its header block, title to the first blank line (P-058).
+		from, to = "", "\n\n"
 	case "markdown":
 		from, to = "## Summary", "## What to look at"
 	case "html":
@@ -33,6 +34,21 @@ func summaryPart(name, body string) string {
 		rest = rest[:j]
 	}
 	return rest
+}
+
+// namesItsTarget reports whether a default terminal summary is about a single target and names it in its
+// title — `AgentGuard · <name> (<kind>)`. That view prints the Checked line only when part of the target
+// was not fully checked (P-058); --verbose, markdown and HTML always print it.
+func namesItsTarget(surface, summary string, out model.ScanResult) bool {
+	if surface != "terminal" {
+		return false
+	}
+	for _, a := range out.Artifacts {
+		if a.Path == out.Root && a.Plugin == "" {
+			return strings.HasPrefix(summary, "AgentGuard · "+a.Name+" (")
+		}
+	}
+	return false
 }
 
 const (
@@ -95,8 +111,14 @@ func TestCheckedLineCountsWhatWasScanned(t *testing.T) {
 				if s == "" {
 					t.Fatalf("%s: no summary in:\n%s", r.name, r.body)
 				}
-				if strings.Contains(s, nothingFound) || !strings.Contains(s, c.want) {
-					t.Errorf("%s summary must say %q, not %q, about an artifact it scanned:\n%s", r.name, c.want, nothingFound, s)
+				if strings.Contains(s, nothingFound) {
+					t.Errorf("%s summary says %q about an artifact it scanned:\n%s", r.name, nothingFound, s)
+				}
+				if namesItsTarget(r.name, s, out) {
+					continue
+				}
+				if !strings.Contains(s, c.want) {
+					t.Errorf("%s summary must say %q about an artifact it scanned:\n%s", r.name, c.want, s)
 				}
 			}
 		})
@@ -272,10 +294,11 @@ func TestDeliberateSkipsKeepTheHeadline(t *testing.T) {
 			}
 			for _, r := range humanReports(t, out) {
 				s := summaryPart(r.name, r.body)
-				if !strings.Contains(s, "Your Claude Code setup looks safe.") || strings.Contains(s, hedge) {
+				safe := strings.Contains(s, "Your Claude Code setup looks safe.") || strings.Contains(s, "✅ Risk score")
+				if !safe || strings.Contains(s, hedge) {
 					t.Errorf("%s summary: a deliberate, disclosed skip took \"looks safe\" away:\n%s", r.name, s)
 				}
-				if !strings.Contains(s, c.checked) {
+				if !namesItsTarget(r.name, s, out) && !strings.Contains(s, c.checked) {
 					t.Errorf("%s summary lost its Checked line %q:\n%s", r.name, c.checked, s)
 				}
 				if c.disclosed && !strings.Contains(r.body, notCheckedMarker[r.name]) {

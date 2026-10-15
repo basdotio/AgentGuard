@@ -57,8 +57,8 @@ func Text(w io.Writer, r model.ScanResult) { writeText(w, r, false) }
 // ("what did it not read?") rather than its findings.
 func TextVerbose(w io.Writer, r model.ScanResult) { writeText(w, r, true) }
 
-// writeText renders the terminal report. `verbose` changes exactly two things, and neither
-// of them is a finding:
+// writeText renders the terminal report. `verbose` changes what is said about the scan, never which
+// findings are listed:
 //
 //   - The coverage/suppression notes (dimension 0) render as one line instead of a block.
 //     Their prose is long on purpose — a note has to explain what was NOT read and why —
@@ -67,46 +67,26 @@ func TextVerbose(w io.Writer, r model.ScanResult) { writeText(w, r, true) }
 //     still carries the COUNT and the HIGHEST SEVERITY, so invariant #5 ("no omission is
 //     ever silent") holds in both modes: the default view can say less about a gap, never
 //     nothing.
-//   - The header gains a verdict line, present in both modes.
+//   - The judge's model, samples and versions, the hygiene list and the scan details (where the
+//     scan looked, the inventory, the OWASP statement) are --verbose's; the default view names what
+//     --verbose adds in its last line (P-058).
+//   - A result with nothing to look at — no finding, no note, no trust decision, nothing unread —
+//     prints its title, its score and the judge's line, and stops (cleanShort).
 //
 // FINDINGS ARE NEVER COLLAPSED, in either mode. Hiding one behind a flag would make the
 // default view of a security tool the one that under-reports, and a reader cannot ask for
 // detail on a finding they were never shown. Only dimension-0 meta is folded.
 //
 // Reading order is the other design decision here, and it is for the reader who is NOT an
-// auditor: score → one plain sentence → what to look at → the findings in full → what was
-// trusted → what was not checked → the inventory and coverage details an auditor wants. The
-// same facts in both modes; the order puts the sentence a non-specialist needs first and the
-// numbers a specialist needs last, where they used to be first.
+// auditor (P-058): what this is about → the score and how many things to look at → one plain
+// sentence → each finding with the judge's view and a next step → why the score is what it is →
+// what the judge did and what left the machine → what was trusted → what was not checked → what
+// --verbose adds.
 func writeText(w io.Writer, r model.ScanResult, verbose bool) {
-	fmt.Fprintf(w, "AgentGuard scan · root=%s\n", r.Root)
-	// Both numbers, or neither (spec §9). Printing only the deterministic one would hide what
-	// the judge already saw; printing only the effective one would imply a reproducibility it
-	// does not have. With no judge findings the two agree and collapse to one line.
-	fmt.Fprintf(w, "Risk score %d/100 (%s)\n", r.Overall, score.Level(r.Overall))
-	if wl := worstLine(r); wl != "" {
-		fmt.Fprintf(w, "  %s\n", Sanitize(wl))
-	}
-	if r.Sandbox != nil {
-		fmt.Fprint(w, sandboxBanner(r.Sandbox))
-	}
-	// The ENVIRONMENT number is damped twice — averaged across artifacts, then bucket-capped —
-	// so a judge finding routinely moves it by nothing while moving a single artifact a lot.
-	// Showing only the environment delta would therefore hide the very thing this second number
-	// exists to reveal, so the per-artifact drops are named alongside it.
-	hits := escalated(r)
-	if len(hits) > 0 || r.OverallEffective != r.Overall {
-		fmt.Fprintf(w, "   ↳ with LLM advisories: %d/100 (%s) — not reproducible, does not gate\n",
-			r.OverallEffective, score.Level(r.OverallEffective))
-		if len(hits) > 0 {
-			fmt.Fprintf(w, "     most affected: %s\n", strings.Join(hits, " · "))
-		}
-	}
-
 	// One aggregation, shared with the HTML report (see Aggregate) so the two never drift.
 	// Split by SOURCE, because the two halves answer different questions: the deterministic
 	// findings are what your score and --fail-on are made of, while the judge's are leads to
-	// check. Without the split a reader has to know that "LLM-" is a meaningful prefix.
+	// check.
 	var det, ai []Group
 	for _, g := range Aggregate(r) {
 		if g.FromJudge() {
@@ -115,45 +95,106 @@ func writeText(w io.Writer, r model.ScanResult, verbose bool) {
 			det = append(det, g)
 		}
 	}
-	notes := notesOf(r) // the scan's notes and each artifact's own — see notesOf
-	trust, _ := splitNotes(notes)
+	notes, disclosed := withoutDisclosure(notesOf(r)) // the scan's notes and each artifact's own — see notesOf
+	trust, coverage := splitNotes(notes)
+	_, single := target(r)
+	unread := unreadLoaded(r)
+	hits := escalated(r)
+	short := !verbose && len(det) == 0 && len(ai) == 0 && len(notes) == 0 && r.Inbox == nil && r.Sandbox == nil &&
+		!unread && len(hits) == 0 && r.OverallEffective == r.Overall
 
-	// SUMMARY — the part a non-specialist reads. Every sentence is derived from what follows.
-	fmt.Fprintf(w, "\nSummary\n  %s\n", coverageVerdict(score.Level(r.Overall), actionable(det), len(det), r))
-	fmt.Fprintf(w, "  %s\n", Sanitize(checkedSummary(r, plainGap)))
-	if jl := judgeSummaryLine(r); jl != "" {
-		fmt.Fprintf(w, "  %s\n", Sanitize(jl))
+	// WHAT, AND HOW BAD — every sentence derived from what follows.
+	level := score.Level(r.Overall)
+	clause := scoreClause(actionable(det), len(det), unread)
+	mark := ""
+	if clause == nothingToFix && len(coverage) == 0 {
+		mark = "✅ "
 	}
-	if il := judgeIdentityLine(r.Judge); il != "" {
-		fmt.Fprintf(w, "  %s\n", Sanitize(il))
+	fmt.Fprintln(w, Sanitize(title(r)))
+	fmt.Fprintf(w, "%sRisk score %d/100 (%s) — %s\n", mark, r.Overall, level, clause)
+	if !short {
+		fmt.Fprintf(w, "  %s\n", coverageLead(level, r))
+	}
+	if wl := worstLine(r); wl != "" {
+		fmt.Fprintf(w, "  %s\n", Sanitize(wl))
+	}
+	if r.Sandbox != nil {
+		fmt.Fprint(w, sandboxBanner(r.Sandbox))
+	}
+	// Both numbers, or neither (spec §9). The ENVIRONMENT number is damped twice — averaged across
+	// artifacts, then bucket-capped — so a judge finding routinely moves it by nothing while moving a
+	// single artifact a lot; the per-artifact drops are named alongside it.
+	if len(hits) > 0 || r.OverallEffective != r.Overall {
+		fmt.Fprintf(w, "   ↳ with LLM advisories: %d/100 (%s) — not reproducible, does not gate\n",
+			r.OverallEffective, score.Level(r.OverallEffective))
+		if len(hits) > 0 {
+			fmt.Fprintf(w, "     most affected: %s\n", strings.Join(hits, " · "))
+		}
+	}
+	// What was checked: an environment always says it; a single target is named by the title, and
+	// says it only when part of it was not fully checked.
+	if gaps := append(itemGaps(r), scanGaps(r)...); verbose || !single || len(gaps) > 0 {
+		fmt.Fprintf(w, "  %s\n", Sanitize(checkedSummary(r, plainGap)))
 	}
 	if len(trust) > 0 {
 		fmt.Fprintf(w, "  Trusted by allowlist (findings suppressed, see below): %s\n", Sanitize(trustNames(trust)))
 	}
 
-	// WHAT TO LOOK AT — the verdict line plus the worst items, each with a place to start.
-	fmt.Fprintln(w)
-	writeVerdict(w, det)
-	for i, a := range actions(det, 3) {
-		fmt.Fprintf(w, "  %d. %s — %s (%s)\n", i+1, Sanitize(a.Artifact), Sanitize(a.Title), a.Severity)
-		if a.Where != "" {
-			fmt.Fprintf(w, "     where: %s\n", Sanitize(a.Where))
+	if len(det) == 0 && !short {
+		fmt.Fprintln(w, "\n✅ No risk findings (static).")
+	}
+	if len(det) > 0 {
+		fmt.Fprintf(w, "\nWhat to look at — %d finding%s; these set the score and --fail-on:\n", len(det), plural(len(det)))
+		// Above three findings an index helps: the verdict line and the first three with a place to start.
+		if len(det) > 3 {
+			writeVerdict(w, det)
+			for i, a := range actions(det, 3) {
+				fmt.Fprintf(w, "  #%d %s — %s (%s)", i+1, Sanitize(a.Artifact), Sanitize(a.Title), a.Severity)
+				if a.Where != "" {
+					fmt.Fprintf(w, ", at %s", Sanitize(a.Where))
+				}
+				fmt.Fprintln(w)
+			}
+			fmt.Fprintln(w)
+		}
+		offered := map[int]bool{} // artifacts already given an approve command
+		for i, g := range det {
+			writeGroup(w, r, g, fmt.Sprintf("#%d", i+1), verbose, offered)
+		}
+		if why := whyLine(r, det); why != "" {
+			fmt.Fprintf(w, "\n%s\n", why)
 		}
 	}
-	fmt.Fprintln(w)
 
-	if len(det) == 0 {
-		fmt.Fprintln(w, "✅ No risk findings (static).")
-	} else {
-		fmt.Fprintf(w, "Findings · STATIC (%d) — deterministic; these set the score and --fail-on:\n", len(det))
-		for _, g := range det {
-			writeGroup(w, g, verbose)
+	// THE JUDGE — what it did, and what left the machine. Then its own findings, which never set the score.
+	sep := "\n"
+	if short {
+		sep = ""
+	}
+	if jl := judgeShort(r); jl != "" {
+		fmt.Fprintf(w, "%s%s\n", sep, Sanitize(jl))
+		sep = ""
+	}
+	if verbose {
+		if jl := judgeSummaryLine(r); jl != "" {
+			fmt.Fprintf(w, "  %s\n", Sanitize(jl))
+		}
+		if il := judgeIdentityLine(r.Judge); il != "" {
+			fmt.Fprintf(w, "  %s\n", Sanitize(il))
+		}
+	}
+	if len(disclosed) > 0 {
+		fmt.Fprintf(w, "%s%s [%s]\n", sep, Sanitize(disclosureText(disclosureOf(r), func(s string) string { return s })), Sanitize(disclosed[0].RuleID))
+		if verbose {
+			for _, n := range disclosed {
+				fmt.Fprintf(w, "  %s\n", Sanitize(n.Why))
+			}
 		}
 	}
 	if len(ai) > 0 {
 		fmt.Fprintf(w, "\nFindings · LLM JUDGE (%d) — advisory leads; never set the score or --fail-on:\n", len(ai))
 		for _, g := range ai {
-			writeGroup(w, g, verbose)
+			writeGroup(w, r, g, "•", verbose, nil)
 		}
 	}
 
@@ -161,15 +202,25 @@ func writeText(w io.Writer, r model.ScanResult, verbose bool) {
 		writeInbox(w, *r.Inbox, verbose)
 	}
 
+	writeNotes(w, notes, verbose)
+
 	if len(r.Hygiene) > 0 {
-		fmt.Fprintf(w, "\nJunk / hygiene (%d):\n", len(r.Hygiene))
-		for _, h := range r.Hygiene {
-			fmt.Fprintf(w, "  · %s: %s\n", Sanitize(h.Kind), Sanitize(h.Detail))
+		if verbose {
+			fmt.Fprintf(w, "\nJunk / hygiene (%d):\n", len(r.Hygiene))
+			for _, h := range r.Hygiene {
+				fmt.Fprintf(w, "  · %s: %s\n", Sanitize(h.Kind), Sanitize(h.Detail))
+			}
+		} else {
+			fmt.Fprintf(w, "\nJunk / hygiene: %d item(s) — `aguard clean` lists them; --verbose prints them here.\n", len(r.Hygiene))
 		}
 	}
 
-	writeNotes(w, notes, verbose)
-	writeScanDetails(w, r)
+	switch {
+	case verbose:
+		writeScanDetails(w, r)
+	case !short:
+		fmt.Fprintf(w, "\n%s\n", detailsLine(r.Judge != nil && r.Judge.Ran))
+	}
 }
 
 // writeScanDetails is the auditor's footer: the raw inventory, the auto-loaded surfaces and the
@@ -178,7 +229,11 @@ func writeText(w io.Writer, r model.ScanResult, verbose bool) {
 // the second question a reader has, not the first.
 func writeScanDetails(w io.Writer, r model.ScanResult) {
 	fmt.Fprintln(w, "\nScan details")
-	if len(r.Locations) > 0 {
+	// A single target is not a config root: the places a root scan derives from the root's parent
+	// (the user MCP config, the desktop store) are never read for it, so they are not listed (P-058).
+	if _, single := target(r); single {
+		fmt.Fprintf(w, "  Where the scan looked: the target only — %s\n", Sanitize(r.Root))
+	} else if len(r.Locations) > 0 {
 		fmt.Fprintln(w, "  Where the scan looked:")
 		for _, l := range r.Locations {
 			fmt.Fprintf(w, "    %-22s %-7s %s\n", l.Name, l.Status, Sanitize(l.Path))
@@ -396,15 +451,13 @@ func writeNoteEvidence(w io.Writer, n model.Finding) {
 	}
 }
 
-// writeGroup renders one aggregated row: header, plain-language label, explanation, optional
-// triage label, evidence.
-//
-// The header leads with WHO (the artifact, in words) and WHAT (the rule's title); the rule id
-// closes the line in brackets, where an auditor finds it and a first-time reader can skip it.
-// The plain label under the header is the dimension's one-phrase meaning — a drawer, not a
-// diagnosis — and the rule's own Why follows it. Evidence paths are shortened in the default
-// view (plugin › file) and printed in full with --verbose.
-func writeGroup(w io.Writer, g Group, verbose bool) {
+// writeGroup renders one aggregated row as a block a reader can act on (P-058): severity and what the
+// finding is about in plain words; who · what with the rule id closing the line, where an auditor finds
+// it and a first-time reader can skip it; the rule's own Why; the judge's view when it gave one; the next
+// step; the evidence. Evidence paths are shortened in the default view (plugin › file) and printed in
+// full with --verbose. offered tracks the artifacts already given an approve command — one per artifact,
+// under its first finding that warrants it; nil for the judge's findings, which never get one.
+func writeGroup(w io.Writer, r model.ScanResult, g Group, mark string, verbose bool, offered map[int]bool) {
 	adv := ""
 	if g.Advisory {
 		adv = " [advisory: not confirmed]"
@@ -418,17 +471,15 @@ func writeGroup(w io.Writer, g Group, verbose bool) {
 			times += fmt.Sprintf(" in %d files", g.Files)
 		}
 	}
-	fmt.Fprintf(w, "  %s %-9s %s · %s%s%s  [%s]\n",
-		sevIcon(g.Severity), g.Severity, Sanitize(friendlyArtifact(g.Artifact)), Sanitize(g.Title), times, adv, Sanitize(g.RuleID))
-	if l := dimLabel(g.Dimension); l != "" {
-		fmt.Fprintf(w, "      in plain terms: %s\n", l)
+	what := dimLabel(g.Dimension)
+	if what == "" {
+		what = g.Title
 	}
-	if a := actionHint(g.Dimension); a != "" {
-		fmt.Fprintf(w, "      what to do: %s\n", a)
-	}
-	fmt.Fprintf(w, "      %s\n", Sanitize(g.Why))
-	if g.Triage != "" {
-		fmt.Fprintf(w, "      ⚖ triage (LLM, advisory): %s\n", Sanitize(g.Triage))
+	fmt.Fprintf(w, "  %s %s %s · %s\n", mark, sevIcon(g.Severity), capitalize(string(g.Severity)), Sanitize(what))
+	fmt.Fprintf(w, "     %s · %s%s%s  [%s]\n", Sanitize(friendlyArtifact(g.Artifact)), Sanitize(g.Title), times, adv, Sanitize(g.RuleID))
+	fmt.Fprintf(w, "     %s\n", Sanitize(g.Why))
+	if v := judgeView(g); v != "" {
+		fmt.Fprintf(w, "     %s\n", Sanitize(v))
 	}
 	path := func(f string) string {
 		if verbose {
@@ -436,20 +487,37 @@ func writeGroup(w io.Writer, g Group, verbose bool) {
 		}
 		return Sanitize(shortPath(f))
 	}
+	if next := stepText(nextOf(g), path); next != "" {
+		fmt.Fprintf(w, "     %s\n", Sanitize(next))
+	}
+	if offered != nil && !offered[g.art] {
+		if cmd := approveCommand(r, g); cmd != "" {
+			offered[g.art] = true
+			fmt.Fprintf(w, "     %s%s\n", approveLead, cmd)
+		}
+	}
 	for _, e := range g.Evidence {
 		// Line 0 = whole-artifact evidence (a permission entry, a hook command): the file name
 		// alone identifies nothing, so show the snippet — already redacted and clipped at detect
 		// time — or two grants in one file read identically.
 		if e.Line == 0 && e.Snippet != "" {
-			fmt.Fprintf(w, "      ← %s — %s\n", path(e.File), Sanitize(e.Snippet))
+			fmt.Fprintf(w, "     ← %s — %s\n", path(e.File), Sanitize(e.Snippet))
 			continue
 		}
-		fmt.Fprintf(w, "      ← %s:%d\n", path(e.File), e.Line)
+		fmt.Fprintf(w, "     ← %s:%d\n", path(e.File), e.Line)
 	}
 	// Naming the remainder matters more than listing it (see Group.MoreFiles).
 	if rest := g.MoreFiles(); rest > 0 {
-		fmt.Fprintf(w, "      ← … and %d more file(s) — --json or --sarif lists them all\n", rest)
+		fmt.Fprintf(w, "     ← … and %d more file(s) — --json or --sarif lists them all\n", rest)
 	}
+}
+
+// capitalize upper-cases the first letter of an ASCII word (a severity).
+func capitalize(s string) string {
+	if s == "" || s[0] < 'a' || s[0] > 'z' {
+		return s
+	}
+	return string(s[0]-'a'+'A') + s[1:]
 }
 
 // escalated names the artifacts whose score the judge actually moved, worst drop first,

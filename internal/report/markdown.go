@@ -77,6 +77,8 @@ func Markdown(w io.Writer, r0 model.ScanResult) error {
 		}
 	}
 	trust, coverage := splitNotes(notesOf(r))
+	// LLM-002 is a disclosure, said in the summary with its own text, not a coverage gap (P-058).
+	coverage, disclosed := withoutDisclosure(coverage)
 
 	// SUMMARY — derived sentences only.
 	// The gaps are paths off the scanned tree, so each goes into a code span; the sentence around
@@ -89,6 +91,9 @@ func Markdown(w io.Writer, r0 model.ScanResult) error {
 	}
 	if il := judgeIdentityLine(r.Judge); il != "" {
 		p("%s  \n", text(il))
+	}
+	for _, n := range disclosed {
+		p("%s %s — %s  \n", disclosureText(disclosureOf(r), text), code(n.RuleID), code(n.Why))
 	}
 	if len(trust) > 0 {
 		names := make([]string, 0, len(trust))
@@ -118,11 +123,15 @@ func Markdown(w io.Writer, r0 model.ScanResult) error {
 
 	if len(det) > 0 {
 		p("\n## Findings · static (%d)\n\nDeterministic; these set the score and `--fail-on`.\n\n", len(det))
-		mdGroups(&b, det)
+		mdGroups(&b, r, det, true)
+		// The same derived line as the terminal; #k is the row number of the table above.
+		if why := whyLine(r, det); why != "" {
+			p("\n%s\n", why)
+		}
 	}
 	if len(ai) > 0 {
 		p("\n## Findings · LLM judge (%d)\n\nAdvisory leads; they never set the score or `--fail-on`.\n\n", len(ai))
-		mdGroups(&b, ai)
+		mdGroups(&b, r, ai, false)
 	}
 
 	if r.Inbox != nil {
@@ -189,9 +198,15 @@ func Markdown(w io.Writer, r0 model.ScanResult) error {
 // mdGroups is the findings table — one row per group, the rule id in its own column where an
 // auditor finds it — followed by one <details> per group with the plain label, the hint, the
 // rule's rationale, the judge's triage and every evidence line with its FULL path.
-func mdGroups(b *strings.Builder, groups []Group) {
-	fmt.Fprintf(b, "| Severity | Who · what | Rule | Where |\n|---|---|---|---|\n")
-	for _, g := range groups {
+func mdGroups(b *strings.Builder, r model.ScanResult, groups []Group, numbered bool) {
+	num := func(i int) string {
+		if numbered {
+			return fmt.Sprintf("#%d", i+1)
+		}
+		return "•"
+	}
+	fmt.Fprintf(b, "| # | Severity | Who · what | Rule | Where |\n|---|---|---|---|---|\n")
+	for i, g := range groups {
 		what := cell(friendlyArtifact(g.Artifact)) + " · " + cell(g.Title)
 		if g.Count > 1 {
 			what += fmt.Sprintf(" ×%d", g.Count)
@@ -202,19 +217,35 @@ func mdGroups(b *strings.Builder, groups []Group) {
 		if g.Advisory {
 			what += " · advisory: not confirmed"
 		}
-		fmt.Fprintf(b, "| %s %s | %s | %s | %s |\n", sevIcon(g.Severity), g.Severity, what, cell(g.RuleID), cell(where(g)))
+		fmt.Fprintf(b, "| %s | %s %s | %s | %s | %s |\n", num(i), sevIcon(g.Severity), g.Severity, what, cell(g.RuleID), cell(where(g)))
 	}
-	for _, g := range groups {
-		fmt.Fprintf(b, "\n<details>\n<summary><code>%s</code> — details and evidence</summary>\n\n", html.EscapeString(g.RuleID))
+	offered := map[int]bool{}
+	for i, g := range groups {
+		fmt.Fprintf(b, "\n<details>\n<summary>%s <code>%s</code> — details and evidence</summary>\n\n", num(i), html.EscapeString(g.RuleID))
 		if l := dimLabel(g.Dimension); l != "" {
 			fmt.Fprintf(b, "- In plain terms: %s\n", l)
 		}
-		if a := actionHint(g.Dimension); a != "" {
-			fmt.Fprintf(b, "- What to do: %s\n", a)
-		}
 		fmt.Fprintf(b, "- Why: %s\n", code(g.Why))
-		if g.Triage != "" {
-			fmt.Fprintf(b, "- ⚖ Triage (LLM, advisory): %s\n", code(g.Triage))
+		// The judge's view and the next step: the terminal's sentences, with the model's reason and the
+		// file from disk in code spans (judgeView / stepText split data from composition).
+		if g.triage.Label != "" {
+			view := judgeViewLead + triageWord(g.triage.Label)
+			if _, known := map[string]bool{model.LabelBenign: true, model.LabelReal: true}[g.triage.Label]; !known {
+				view = judgeViewLead + code(g.triage.Label)
+			}
+			if g.triage.Reason != "" {
+				view += " — " + code(g.triage.Reason)
+			}
+			fmt.Fprintf(b, "- %s%s\n", view, oneReading)
+		}
+		if next := stepText(nextOf(g), code); next != "" {
+			fmt.Fprintf(b, "- %s\n", next)
+		}
+		if numbered && !offered[g.art] {
+			if cmd := approveCommand(r, g); cmd != "" {
+				offered[g.art] = true
+				fmt.Fprintf(b, "- %s%s\n", approveLead, code(cmd))
+			}
 		}
 		if len(g.Evidence) > 0 {
 			fmt.Fprintf(b, "- Evidence:\n")
@@ -302,7 +333,9 @@ func mdInbox(b *strings.Builder, ib model.InboxReport) {
 // mdScanDetails is the auditor's footer, last for the same reason it is last in the terminal.
 func mdScanDetails(b *strings.Builder, r model.ScanResult) {
 	fmt.Fprintf(b, "\n## Scan details\n\n")
-	if len(r.Locations) > 0 {
+	if _, single := target(r); single {
+		fmt.Fprintf(b, "Where the scan looked: the target only — %s\n\n", code(r.Root))
+	} else if len(r.Locations) > 0 {
 		fmt.Fprintf(b, "Where the scan looked:\n\n| Place | Status | Path |\n|---|---|---|\n")
 		for _, l := range r.Locations {
 			fmt.Fprintf(b, "| %s | %s | %s |\n", cell(l.Name), l.Status, cell(l.Path))

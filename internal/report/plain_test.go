@@ -86,20 +86,20 @@ func TestText_SummaryLeadsForBothReaders(t *testing.T) {
 	Text(&buf, r)
 	out := buf.String()
 
+	// The reading order since P-058: what this is about, the score with its count, the sentence, what
+	// was checked, then one block per finding (plain phrase, who · what with the rule id last, next step,
+	// evidence), and what --verbose adds. The inventory closes the --verbose view (below).
 	order := []string{
-		"Risk score 69/100 (Elevated)",
-		"Summary",
+		"AgentGuard · /x/.claude",
+		"Risk score 69/100 (Elevated) — 2 findings to look at",
 		"There are problems you should fix before relying on this setup.",
 		"Checked 2 skills, 1 hook.",
-		"start with [EXEC-001] figma plugin, from claude-plugins-official (2.2.107)",
-		"1. figma plugin, from claude-plugins-official (2.2.107) — curl piped to shell (high)",
-		"where: figma › scripts/run.sh:3 (+1 more file)",
-		"Findings · STATIC",
-		"curl piped to shell ×2 in 2 files  [EXEC-001]", // rule id closes the line
-		"in plain terms: can run programs on your machine",
+		"What to look at — 2 findings",
+		"#1 🔴 High · can run programs on your machine",
+		"figma plugin, from claude-plugins-official (2.2.107) · curl piped to shell ×2 in 2 files  [EXEC-001]", // rule id closes the line
+		"Next: read figma › scripts/run.sh around line 3.",
 		"← figma › scripts/run.sh:3",
-		"Scan details",
-		"Inventory: skills=2",
+		"More with --verbose",
 	}
 	last := -1
 	for _, want := range order {
@@ -120,6 +120,9 @@ func TestText_SummaryLeadsForBothReaders(t *testing.T) {
 	TextVerbose(&full, r)
 	if !strings.Contains(full.String(), "plugins/cache/claude-plugins-official/figma/2.2.107/scripts/run.sh:3") {
 		t.Error("verbose view must keep the full evidence path")
+	}
+	if i, j := strings.Index(full.String(), "Scan details"), strings.Index(full.String(), "Inventory: skills=2"); i < 0 || j < i {
+		t.Errorf("--verbose closes with the scan details and the inventory:\n%s", full.String())
 	}
 }
 
