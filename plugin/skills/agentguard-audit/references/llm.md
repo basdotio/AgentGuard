@@ -4,7 +4,8 @@ The static scan is what `aguard` does by default and it needs nothing. The deep 
 extra pass by an isolated model that reads redacted excerpts and looks for what rules cannot:
 a description that says A while the code does B, an injection phrased to dodge keywords, an
 encoded blob's real purpose. It is optional, it costs money on a hosted endpoint, and it can
-only ADD findings — it never removes one and never lowers the deterministic score.
+only ADD findings or raise the risk — it never removes a finding, never changes the deterministic
+score, and never makes a result look safer.
 
 Three commands cover everything; the user never edits YAML or sets an environment variable.
 
