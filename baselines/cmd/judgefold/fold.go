@@ -52,7 +52,7 @@ func fold(o opts) (*folded, error) {
 	// Bin is left empty on purpose: Rebuild reads bytes and stages trees, and nothing here may
 	// execute the binary.
 	ad := &aguardadapter.Adapter{Threshold: model.Severity(o.threshold), Work: work}
-	opt := judgefold.Options{Threshold: model.Severity(o.threshold), Samples: o.judgeSamples}
+	opt := judgefold.Options{Threshold: model.Severity(o.threshold), Samples: o.judgeSamples, CheckJudged: o.checkLLM}
 
 	f := &folded{list: list}
 	for _, d := range o.dirs {

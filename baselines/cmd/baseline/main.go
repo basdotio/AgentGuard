@@ -84,6 +84,7 @@ func main() {
 		agExtra   = flag.String("aguard-extra-args", "", "LOCAL measurement only: extra args appended to every aguard scan invocation (never to check), space separated (e.g. \"--llm --config /path\")")
 		agEnv     = flag.String("aguard-env", "", "LOCAL measurement only: comma-separated NAME=VALUE pairs or NAMEs to copy from this process, added to aguard's isolated env")
 		agTimeout = flag.Duration("aguard-timeout", 0, "LOCAL measurement only: per-sample timeout override for aguard (a judge run needs minutes)")
+		agCheck   = flag.Bool("aguard-check-llm", false, "LOCAL measurement only: also append -aguard-extra-args to `check` on the server-source route (a tree that places nowhere but is MCP server source), so the judge's server pass is measured; recorded in run.yaml as check_llm")
 		scanArgv  = flag.String("scan-argv", "", "override the scan invocation, space separated, with {{sample}} for the path")
 		verArgv   = flag.String("version-argv", "", "override the version invocation, space separated")
 		skipFix   = flag.Bool("no-fixtures", false, "skip the six injected-fault fixtures (they need to materialise a hostile tree)")
@@ -96,7 +97,7 @@ func main() {
 		outDir: *outDir, registryPath: *registry, threshold: *threshold,
 		rawDir: *rawDir, policyPath: *policy, workers: *workers, skipFixtures: *skipFix,
 		toolBin: *toolBin, scanArgv: *scanArgv, versionArgv: *verArgv,
-		agExtra: *agExtra, agEnv: *agEnv, agTimeout: *agTimeout, scoreTool: *scoreTool,
+		agExtra: *agExtra, agEnv: *agEnv, agTimeout: *agTimeout, agCheckLLM: *agCheck, scoreTool: *scoreTool,
 	}); err != nil {
 		var refusal refused
 		if ok := asRefusal(err, &refusal); ok {
@@ -132,6 +133,7 @@ type opts struct {
 	agExtra, agEnv                    string
 	scoreTool                         string
 	agTimeout                         time.Duration
+	agCheckLLM                        bool
 	workers                           int
 	skipFixtures                      bool
 }
@@ -255,7 +257,7 @@ func realMain(o opts) error {
 	uploads, uploadsBasis := uploadsFor(entry, extra)
 	meta := run.Run{
 		Tool: toolID, ToolVersion: version, Threshold: threshold,
-		PolicyHash: policyHash, ToolExtraArgs: extra,
+		PolicyHash: policyHash, ToolExtraArgs: extra, CheckLLM: o.agCheckLLM && toolID == "aguard" && len(extra) > 0,
 		Uploads: uploads, UploadsBasis: uploadsBasis,
 		CorpusCommit: corpusCommit(corpusDir), StartedAt: started,
 		Adapter:      "agent-guard baselines/adapter/" + toolID,
@@ -315,7 +317,7 @@ func pick(o opts, toolID, threshold, work, xdg, rawDir string) (adapter.Adapter,
 		return &aguardadapter.Adapter{
 			Bin: o.bin, Threshold: model.Severity(threshold),
 			Work: work, XDG: xdg, RawDir: rawDir,
-			ExtraArgs: splitArgv(o.agExtra), ExtraEnv: extraEnv, Timeout: o.agTimeout,
+			ExtraArgs: splitArgv(o.agExtra), ExtraEnv: extraEnv, Timeout: o.agTimeout, CheckLLM: o.agCheckLLM,
 		}, nil
 
 	case "ccaudit":

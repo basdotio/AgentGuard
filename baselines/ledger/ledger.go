@@ -82,6 +82,13 @@ const (
 	// real misses, not a coverage gap — but they were produced by a different entry point than
 	// the rest of the run, and a figure that mixes the two without saying so is not readable.
 	SecondarySurface Flag = "secondary-surface"
+	// ServerSource: the tree placed nowhere but looks like MCP server source, so it went to
+	// `check`, which reads it as an artifact of kind `server` (P-053). Always beside
+	// SecondarySurface, never instead of it. It is its own flag because this route is the one
+	// `check` route a run may hand the judge flags to (-aguard-check-llm): a fold has to know
+	// whether a server-source row with no judge summary is a static row by design or a judge
+	// that did not run, and the secondary-surface flag alone cannot say.
+	ServerSource Flag = "server-source"
 )
 
 // Row is one sample's entry. The JSON names are the on-disk ledger format.
@@ -163,7 +170,7 @@ func Explain(r Reason) string {
 
 // knownFlag reports whether f is one of the two disclosure flags.
 func knownFlag(f Flag) bool {
-	return f == OwnFixture || f == SurfaceUndeclared || f == SecondarySurface
+	return f == OwnFixture || f == SurfaceUndeclared || f == SecondarySurface || f == ServerSource
 }
 
 // Counts is the partition. There is no fourth field for a remainder to hide in.

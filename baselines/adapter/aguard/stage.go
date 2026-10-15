@@ -22,6 +22,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/basdotio/AgentGuard/internal/collect"
 )
 
 // StagedRoot is a sample laid out where aguard looks: Root is the config root to scan and Home its
@@ -30,7 +32,13 @@ type StagedRoot struct{ Home, Root string }
 
 // NotPlaceable says a sample tree has no shape aguard loads. It is a distinct type so the caller
 // can tell "we chose not to scan this" from an I/O failure — the two go into different tallies.
-type NotPlaceable struct{ Reason string }
+type NotPlaceable struct {
+	Reason string
+	// Server is true when the tree is MCP server source by aguard's own recogniser
+	// (collect.LooksLikeServerSource): `check` reads it as kind `server`, and it is the one
+	// `check` route the judge may be asked to run on (Adapter.CheckLLM).
+	Server bool
+}
 
 func (e NotPlaceable) Error() string { return e.Reason }
 
@@ -52,7 +60,7 @@ func Stage(src, id, work string) (StagedRoot, error) {
 		return StagedRoot{}, err
 	}
 	if len(entries) == 0 {
-		return StagedRoot{}, NotPlaceable{"nothing in the sample tree"}
+		return StagedRoot{}, NotPlaceable{Reason: "nothing in the sample tree"}
 	}
 	placed := map[string]bool{}
 	has := func(name string, dir bool) bool {
@@ -93,8 +101,18 @@ func Stage(src, id, work string) (StagedRoot, error) {
 		return StagedRoot{Home: home, Root: root}, nil
 	}
 
-	// Nothing on a load path yet. One loose instruction file is what the corpus's instruction
-	// surface ships for its fuzz-derived samples; aguard reads it as CLAUDE.md.
+	// Nothing on a load path yet. Server source is decided before any instruction file is
+	// looked for: a server tree normally carries a README.md beside its code, and reading that
+	// README as the sample's CLAUDE.md measured 36 of the first 89 benign server trees as
+	// instruction files — the judge read the prose and never saw the code (P-059).
+	if collect.LooksLikeServerSource(src) {
+		return StagedRoot{}, NotPlaceable{Reason: "server source has no load path `scan` reads; `check` reads it as kind server", Server: true}
+	}
+
+	// One loose instruction file, ALONE in the tree, is what the corpus's instruction surface
+	// ships for its fuzz-derived samples; aguard reads it as CLAUDE.md. A .md beside source,
+	// manifests or anything else is that project's README, not a file an agent loads, and
+	// the same 89 trees showed the difference (a TypeScript server has a README too).
 	// Several would have no single load path, and guessing one would measure the guess.
 	var loose []string
 	for _, e := range entries {
@@ -103,22 +121,22 @@ func Stage(src, id, work string) (StagedRoot, error) {
 		}
 	}
 	switch {
-	case len(loose) == 1:
+	case len(loose) == 1 && len(entries) == 1:
 		if err := copyFile(filepath.Join(src, loose[0]), filepath.Join(root, "CLAUDE.md")); err != nil {
 			return StagedRoot{}, err
 		}
 		return StagedRoot{Home: home, Root: root}, nil
 	case len(loose) > 1:
-		return StagedRoot{}, NotPlaceable{"several loose instruction files; no single load path"}
+		return StagedRoot{}, NotPlaceable{Reason: "several loose instruction files; no single load path"}
 	}
 	if hasExt(src, ".py") {
-		return StagedRoot{}, NotPlaceable{"server source (.py) has no load path aguard reads"}
+		return StagedRoot{}, NotPlaceable{Reason: "server source (.py) has no load path aguard reads"}
 	}
 	var names []string
 	for _, e := range entries {
 		names = append(names, e.Name())
 	}
-	return StagedRoot{}, NotPlaceable{"no file on a load path aguard reads (top level: " + strings.Join(names, ", ") + ")"}
+	return StagedRoot{}, NotPlaceable{Reason: "no file on a load path aguard reads (top level: " + strings.Join(names, ", ") + ")"}
 }
 
 // stageToolCatalogue writes a tool catalogue as the one shape the connector collector decodes:
@@ -135,10 +153,10 @@ func stageToolCatalogue(path, id, home string) error {
 		Tools   json.RawMessage `json:"tools"`
 	}
 	if err := json.Unmarshal(b, &cat); err != nil {
-		return NotPlaceable{"tools.json is not JSON: " + err.Error()}
+		return NotPlaceable{Reason: "tools.json is not JSON: " + err.Error()}
 	}
 	if len(cat.Tools) == 0 || string(cat.Tools) == "null" {
-		return NotPlaceable{"tools.json without a tools array"}
+		return NotPlaceable{Reason: "tools.json without a tools array"}
 	}
 	name := cat.Package
 	if name == "" {

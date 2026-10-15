@@ -58,13 +58,21 @@ type Adapter struct {
 	XDG string
 	// Work is where staged trees are built.
 	Work string
-	// ExtraArgs are appended to every `scan` invocation, never to `check` (LOCAL measurement
-	// only, e.g. `--llm --config …` to measure the judge — see run); ExtraEnv is appended to the
-	// isolated environment (e.g. the judge's API key variable); Timeout overrides ScanTimeout
-	// when set (a judge run needs minutes).
+	// ExtraArgs are appended to every `scan` invocation and, only when CheckLLM is set, to the
+	// `check` invocation of a server-source route (LOCAL measurement only, e.g. `--llm --config …`
+	// to measure the judge — see exec); ExtraEnv is appended to the isolated environment (e.g.
+	// the judge's API key variable); Timeout overrides ScanTimeout when set (a judge run needs
+	// minutes).
 	ExtraArgs []string
 	ExtraEnv  []string
 	Timeout   time.Duration
+	// CheckLLM hands ExtraArgs to `check` as well, on the server-source route only (a tree that
+	// places nowhere but is MCP server source). Off by default, because every judge run before
+	// P-059 measured the judge on `scan`'s path with every `check`-routed sample static, and a
+	// rerun that silently judged more would carry the old name on a different measurement. The
+	// run records the choice (run.yaml `check_llm`), and the row carries ledger.ServerSource
+	// either way.
+	CheckLLM bool
 	// RawDir, when set, keeps each sample's scan JSON so a run can be re-folded without rerunning it.
 	RawDir string
 	// Keep leaves staged trees in place for inspection.
@@ -131,14 +139,14 @@ func (a *Adapter) Scan(ctx context.Context, s corpus.Sample, tree string) ledger
 	var np NotPlaceable
 	switch {
 	case errors.As(err, &np):
-		return a.checkBare(ctx, row, tree, np.Reason)
+		return a.checkBare(ctx, row, tree, np)
 	case err != nil:
 		row.Outcome = ledger.Errored
 		row.Detail = "staging failed: " + err.Error()
 		return row
 	}
 
-	res, out, err := a.runJSON(ctx, "scan", "--root", st.Root, "--json", "--no-reputation", "--inbox", "off")
+	res, out, err := a.exec(ctx, true, "scan", "--root", st.Root, "--json", "--no-reputation", "--inbox", "off")
 	if err != nil {
 		row.Outcome = ledger.Errored
 		row.Detail = err.Error()
@@ -156,15 +164,16 @@ func scanned(row ledger.Row, res model.ScanResult, out []byte, threshold model.S
 	return row
 }
 
-// checkBare is invocation 2: aguard pointed straight at the sample tree.
-func (a *Adapter) checkBare(ctx context.Context, row ledger.Row, tree, placementReason string) ledger.Row {
-	res, out, err := a.runJSON(ctx, "check", tree, "--json")
+// checkBare is invocation 2: aguard pointed straight at the sample tree. The judge flags go
+// along only on the server-source route, and only when the run asked (CheckLLM).
+func (a *Adapter) checkBare(ctx context.Context, row ledger.Row, tree string, np NotPlaceable) ledger.Row {
+	res, out, err := a.exec(ctx, np.Server && a.CheckLLM, "check", tree, "--json")
 	if err != nil {
 		row.Outcome = ledger.Errored
-		row.Detail = "no load path for `scan` (" + placementReason + "); `check` then failed: " + err.Error()
+		row.Detail = "no load path for `scan` (" + np.Reason + "); `check` then failed: " + err.Error()
 		return row
 	}
-	row = checked(row, res, out, placementReason, a.Threshold)
+	row = checked(row, res, out, np, a.Threshold)
 	if row.Outcome == ledger.Scored {
 		a.keepRaw(row.Sample, out)
 	}
@@ -173,7 +182,8 @@ func (a *Adapter) checkBare(ctx context.Context, row ledger.Row, tree, placement
 
 // checked folds what `check` printed for a tree `scan` could not place. Scan and Rebuild share it
 // (see scanned); raw/ is only ever kept for the scored branch.
-func checked(row ledger.Row, res model.ScanResult, out []byte, placementReason string, threshold model.Severity) ledger.Row {
+func checked(row ledger.Row, res model.ScanResult, out []byte, np NotPlaceable, threshold model.Severity) ledger.Row {
+	placementReason := np.Reason
 	if readNothing(res) {
 		row.Outcome = ledger.NoVerdict
 		row.Reason = ledger.NoLoadPath
@@ -183,13 +193,16 @@ func checked(row ledger.Row, res model.ScanResult, out []byte, placementReason s
 		return row
 	}
 	row = fill(row, res, threshold)
-	row.JudgeUsage = judgeUsage(out, res) // nil today: the judge never runs on `check`'s path here
+	row.JudgeUsage = judgeUsage(out, res) // nil unless the server-source route was handed the judge flags
 	// Disclosed, not hidden. This verdict came from `check` on the bare tree rather than from
 	// the `scan --root` placement this sample's surface implies, and the difference is not
 	// cosmetic: `direction` §4 says aguard does not scan agent application source code, while
 	// `check` measurably does read it. Whether these belong in the headline denominator is a
 	// positioning decision, so the row carries the fact and the scorecard owes both figures.
 	row.Flags = append(row.Flags, ledger.SecondarySurface)
+	if np.Server {
+		row.Flags = append(row.Flags, ledger.ServerSource)
+	}
 	row.Detail = placementReason + "; scored by `check` on the bare tree instead"
 	return row
 }
@@ -309,7 +322,7 @@ func FlaggingRules(res model.ScanResult, threshold model.Severity) []string {
 // XDG_CONFIG_HOME point into the work directory so nothing from the operator's real ~/.claude,
 // ~/.claude.json or aguard config can leak into a sample.
 func (a *Adapter) run(ctx context.Context, args ...string) (model.ScanResult, error) {
-	res, _, err := a.runJSON(ctx, args...)
+	res, _, err := a.exec(ctx, len(args) > 0 && args[0] == "scan", args...)
 	return res, err
 }
 
@@ -318,7 +331,13 @@ func (a *Adapter) run(ctx context.Context, args ...string) (model.ScanResult, er
 // is the RIG's build of the schema, so encoding it again adds every field the rig knows — as
 // zeros — and drops every field it does not. Measuring a binary of another version then writes
 // "triage_calls":0 into the one file a run is re-folded from, for a binary that never counted it.
-func (a *Adapter) runJSON(ctx context.Context, args ...string) (model.ScanResult, []byte, error) {
+//
+// extra says whether ExtraArgs ride along. `scan` always gets them. `check` accepts --llm as
+// well, but every judge run before P-059 measured the judge on scan's path with the
+// check-routed samples static, so `check` gets them only on the server-source route and only
+// when the run asked (CheckLLM); the caller decides, and this function does not guess from the
+// subcommand.
+func (a *Adapter) exec(ctx context.Context, extra bool, args ...string) (model.ScanResult, []byte, error) {
 	timeout := ScanTimeout
 	if a.Timeout > 0 {
 		timeout = a.Timeout
@@ -326,10 +345,7 @@ func (a *Adapter) runJSON(ctx context.Context, args ...string) (model.ScanResult
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	// scan only. `check` accepts --llm as well, but every committed judge run measured the judge
-	// on scan's path with the check-routed samples static; handing the flags to check too would
-	// make the next rerun measure something else under the same name.
-	if len(args) > 0 && args[0] == "scan" {
+	if extra {
 		args = append(append([]string{}, args...), a.ExtraArgs...)
 	}
 	cmd := exec.CommandContext(ctx, a.Bin, args...)

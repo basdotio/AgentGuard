@@ -201,3 +201,28 @@ func TestFold_IncompleteSaysWhy(t *testing.T) {
 		})
 	}
 }
+
+// A `check`-routed row without a judge summary is complete by design, except on the
+// server-source route of a run that asked for the judge there (P-059).
+func TestIncompletenessOnTheServerSourceRoute(t *testing.T) {
+	t.Parallel()
+	secondary := ledger.Row{Flags: []ledger.Flag{ledger.SecondarySurface}}
+	server := ledger.Row{Flags: []ledger.Flag{ledger.SecondarySurface, ledger.ServerSource}}
+	for _, tc := range []struct {
+		name  string
+		row   ledger.Row
+		asked bool
+		want  bool // incomplete
+	}{
+		{"secondary surface, run did not ask", secondary, false, false},
+		{"secondary surface, run asked", secondary, true, false},
+		{"server source, run did not ask", server, false, false},
+		{"server source, run asked", server, true, true},
+		{"scan route, no summary", ledger.Row{}, false, true},
+	} {
+		got := incompleteness(tc.row, nil, tc.asked) != ""
+		if got != tc.want {
+			t.Errorf("%s: incomplete = %v, want %v", tc.name, got, tc.want)
+		}
+	}
+}
