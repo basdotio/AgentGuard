@@ -42,6 +42,7 @@ const (
 type opts struct {
 	samples, corpus, out, threshold string
 	judgeSamples                    int
+	checkLLM                        bool
 	dirs                            []string
 }
 
@@ -52,6 +53,7 @@ func main() {
 	flag.StringVar(&o.out, "out", "", "directory to write the fold's files into")
 	flag.StringVar(&o.threshold, "threshold", "high", "the verdict's severity bar; the run's own threshold")
 	flag.IntVar(&o.judgeSamples, "judge-samples", 0, "the judge config's samples, for raw/ whose judge summary predates `samples`")
+	flag.BoolVar(&o.checkLLM, "check-llm", false, "the run passed the judge flags to `check` on the server-source route (run.yaml check_llm), so a server-source row without a judge summary is incomplete")
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "usage: judgefold -samples FILE -out DIR [flags] RUN_DIR...\n\n"+
 			"Each RUN_DIR holds a raw/ written by baselines/cmd/baseline -raw. Earlier directories win ties.\n\n")

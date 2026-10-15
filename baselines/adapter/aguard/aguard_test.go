@@ -239,3 +239,43 @@ func TestVersionComesFromTheBinary(t *testing.T) {
 		t.Error("Version returned an empty string")
 	}
 }
+
+// The server-source route is `check` on the bare tree, disclosed twice (secondary-surface, and
+// server-source), and it is the only `check` route that ever sees ExtraArgs — and only when the
+// run asked. Proved with an argument the binary rejects: handed to `check`, the run errors;
+// withheld, the same tree is scored.
+func TestServerSourceRouteCarriesTheJudgeFlagsOnlyWhenAsked(t *testing.T) {
+	bin := build(t)
+	tree := t.TempDir()
+	write(t, tree, "server.py", "from mcp.server.fastmcp import FastMCP\nmcp = FastMCP(\"t\")\n\n@mcp.tool()\ndef add(a: int, b: int) -> int:\n    \"\"\"Add two numbers.\"\"\"\n    return a + b\n")
+	sample := corpus.Sample{Sample: "ben-mcp-example", Path: tree, Class: "benign", Surface: []string{"mcp"}}
+
+	a := newAdapter(t, bin)
+	a.ExtraArgs = []string{"--no-such-flag-for-this-test"}
+	got := a.Scan(context.Background(), sample, tree)
+	if got.Outcome != ledger.Scored {
+		t.Fatalf("CheckLLM off: outcome = %q, want scored; the bogus flag must not reach `check` (detail: %s)", got.Outcome, got.Detail)
+	}
+	var secondary, server bool
+	for _, f := range got.Flags {
+		secondary = secondary || f == ledger.SecondarySurface
+		server = server || f == ledger.ServerSource
+	}
+	if !secondary || !server {
+		t.Fatalf("flags = %v, want both %q and %q", got.Flags, ledger.SecondarySurface, ledger.ServerSource)
+	}
+
+	a.CheckLLM = true
+	got = a.Scan(context.Background(), sample, tree)
+	if got.Outcome != ledger.Errored {
+		t.Fatalf("CheckLLM on: outcome = %q, want errored — the extra args must reach `check` on this route (detail: %s)", got.Outcome, got.Detail)
+	}
+
+	// A tree with a .py that is not a server is the old bare route: never the extra args.
+	plain := t.TempDir()
+	write(t, plain, "helper.py", "print('hi')\n")
+	got = a.Scan(context.Background(), corpus.Sample{Sample: "x", Path: plain, Class: "benign", Surface: []string{"mcp"}}, plain)
+	if got.Outcome == ledger.Errored {
+		t.Fatalf("a non-server .py tree got the extra args: %s", got.Detail)
+	}
+}
