@@ -108,29 +108,62 @@ exported by `internal/score` and the shell quoting moved to a leaf package. No `
    sandbox and no judge escalation prints the title, the `✅` score line, the Checked line for an environment, the Judge line and
    the disclosure — two to five lines. Low findings print in full; incomplete coverage keeps its collapsed line with the highest
    severity; a trust decision keeps its block. The hygiene list folds to one line naming `aguard clean` (`--verbose` prints it).
-10. **Markdown** follows the reading order with every datum: the Why line, the plain judge's view and `Next:` in each finding's
+10. **The judge's direction, said the right way round** (added 2026-10-15 on the maintainer's side, found while writing the
+    user guide): `aguard llm setup` said the judge "can only add findings, never remove one or lower the score", and the
+    plugin's `references/llm.md` said it "never lowers the deterministic score". The score runs from 100 (safe) to 0, and the
+    judge's second number can only go **down** (`OverallEffective = min(Overall, …)`); what it never does is remove a finding or
+    make a result look safer. Both now say "the judge can only add findings or raise the risk — it never removes a finding or
+    makes a result look safer"; the report's Judge's-view and Judge lines say nothing that points the other way.
+11. **Markdown** follows the reading order with every datum: the Why line, the plain judge's view and `Next:` in each finding's
     details, the disclosure in the summary (with the note's text) instead of under Not checked, the target-only locations. The
     judge's identity line stays. HTML is untouched.
 
 ## Done criteria
 
-- [ ] `TestText_JudgeViewInPlainWords`, `TestText_JudgeVersionsOnlyInVerbose`, `TestText_JudgeLineSuffix`,
-  `TestText_DisclosureIsNotACoverageGap`, `TestText_TargetListsOnlyWhatApplies`, `TestText_WhyFollowsTheFormula`,
-  `TestText_NextStep`, `TestText_CleanIsShort` (`internal/report`), `TestMarkdown_ReadingOrder`, `TestExplain_IsApply`
-  (`internal/score`) red on the base, green here
-- [ ] Real pipeline: `TestDefaultReportShowsEveryGroup` (`cmd/aguard`) — every static and judge group `report.Aggregate` makes from
-  `scanEnv` and `checkTarget` results (a fixture with every severity, a judge run on a loopback stand-in, notes and a trust
-  decision) has its header in the default report; `TestCheckTargetLocations` — `check` of a skill, a file, a directory and a zip
-  prints no root-derived location in `--verbose` or markdown, while `check <root>` keeps them and the JSON `locations` key is unchanged
-- [ ] `TestCleanSettingsReportIsUnchanged`: the terminal goldens are replaced deliberately (default and `--verbose` now differ); the
-  markdown golden stays byte for byte
-- [ ] **Reverse assertions**: `TestText_FindingsSurviveBothModes`, `TestWriteReport_DefaultStillShowsTheDangerousThing`,
-  `TestText_CollapsedNoteCarriesHighestSeverity`, `TestBrokenSettingsIsNotReportedSafe`, the hedge tests and every `TestZeroDial_*`
-  green; `TestGateCommandsPasteAsPrinted` green with the quoting moved
-- [ ] Measured on the real `~/.claude` and the fixtures, base against branch: the line counts above; the number of static and judge
-  group headers in the default report equals the number of groups; exit codes unchanged; `--json` and `--sarif` byte-identical
-  apart from `scanned_at` (and `tool_version`'s commit)
-- [ ] `make verify` ends with "verify: all gates passed"; `go version` go1.23.5, no toolchain switch; `go.mod` line 2 `go 1.23.5`
+Each new test was committed before the code and run on the base (`1d9ffcb`) with the new API stubbed (never committed); the
+reasons are the base's own output.
+
+- [x] `TestText_JudgeViewInPlainWords` (red: the view is not in plain words), `TestText_JudgeVersionsOnlyInVerbose` (red: no short
+  Judge line; `prompt_version`, `excerpt_version`, `samples 3`, `model fake` in the default view), `TestText_JudgeLineSuffix` (red:
+  no suffix), `TestText_DisclosureIsNotACoverageGap` (red: no disclosure line; `Not checked — 2 coverage note(s), highest medium
+  [LLM-002 COV-000]`), `TestText_TargetListsOnlyWhatApplies` (red: `User MCP config`, `Claude Desktop store`, `Desktop session cache`
+  listed for a single target in `--verbose` and markdown), `TestText_WhyFollowsTheFormula` (red: no line), `TestText_NextStep`
+  (red: no next step, no approve command), `TestText_CleanIsShort` (red: 19-line clean report), `TestMarkdown_ReadingOrder` (red:
+  no Why, judge's view, next step or disclosure; LLM-002 under Not checked) — `internal/report`; `TestExplain_IsApply`
+  (`internal/score`, red: every row) — all green here
+- [x] Real pipeline (`cmd/aguard`): `TestCheckTargetLocations` red on the base for the skill, directory and file targets (every
+  root-derived row listed) and for the zip (no "the target only"); green here, `check <root>` keeps the rows and the JSON
+  `locations` are unchanged. `TestDefaultReportShowsEveryGroup` (scan, scan `--llm`, check, check `--llm` on a loopback stand-in
+  judge) is green on the base and here: every static and judge group keeps its header in the default view.
+  `TestLLMSetupStatesTheJudgesDirection` red on the base (`llm setup` says "lower the score", the plugin reference "never
+  lowers"), green here
+- [x] `TestCleanSettingsReportIsUnchanged`: the two terminal goldens replaced on purpose (the reason is in the test's comment);
+  the markdown golden byte for byte unchanged
+- [x] **Reverse assertions**: `TestText_FindingsSurviveBothModes`, `TestWriteReport_DefaultStillShowsTheDangerousThing`,
+  `TestText_CollapsedNoteCarriesHighestSeverity`, `TestBrokenSettingsIsNotReportedSafe`, `TestArtifactNoteReachesEveryHumanRenderer`,
+  `TestMarkdown_AttackerTextIsInert`, every `TestZeroDial_*` and `TestGateCommandsPasteAsPrinted` green unchanged. Tests that
+  pinned the old layout were updated deliberately, each with its reason in a comment: the summary helpers read the header block
+  (`summaryOf`, `summaryPart`, `checkedOf`), the safe headline is "looks safe" or the ✅ score line, the default single-target view
+  names its target in the title instead of a Checked line, `→ … start with` prints above three findings, the inventory, locations
+  and judge identity are read from `--verbose`, the triage label in plain words
+- [x] Measured, base `1d9ffcb` against this branch (the same binary flags; the judge rows on the loopback stand-in), see the table
+  below: exit codes identical on every row; `--json` byte-identical on every row with `scanned_at` and `tool_version` masked; `--sarif`
+  identical apart from the driver's `version` string (`v0.25.0` against an unstamped `dev` build); 95 of 95 static groups have a
+  header in the default scan report, base and branch
+- [x] `make verify` ends with "verify: all gates passed"; `go version` go1.23.5, no toolchain switch; `go.mod` line 2 `go 1.23.5`;
+  no new dependency
+
+| Run (real `~/.claude`; fixtures) | default lines, base → branch | `--verbose` lines, base → branch | exit |
+|---|---|---|---|
+| `check` of a skill with one high | 28 → 16 | 28 → 21 | 1, 1 |
+| the same, `--llm` | 31 → 19 | 31 → 26 | 1, 1 |
+| `check` of a clean skill | 19 → 2 | 19 → 12 | 0, 0 |
+| the same, `--llm` | 21 → 3 | 21 → 16 | 0, 0 |
+| `check` of a plain directory with a high | 27 → 14 | 27 → 19 | 1, 1 |
+| `check` of a clean file | 21 → 2 | 21 → 12 | 0, 0 |
+| `check` of a `.zip` with a high | 24 → 15 | 24 → 20 | 1, 1 |
+| `check` of a root-shaped directory | 27 → 15 | 27 → 23 | 1, 1 |
+| `scan --root ~/.claude --inbox off` | 665 → 640 | 696 → 699 | 0, 0 |
 
 ## Out of scope
 
@@ -158,8 +191,9 @@ exported by `internal/score` and the shell quoting moved to a leaf package. No `
 | 2 | Shell quoting moved to `internal/cmdline`, the gate delegating to it | `cmdline: the gate's shell quoting, callable from the report (P-058)` |
 | 3 | `score.Explain` shares `overallScore`'s working | `score: the formula's working, for a report to say why (P-058)` |
 | 4 | The default terminal report and markdown as designed; goldens replaced | `report: the default terminal report is written for the reader who does not write code (P-058)` |
-| 5 | `.claude/rules/report.md`, architecture pair, README pair where they show the report | `docs: the default report's reading order (P-058)` |
-| 6 | "Done" in this file, the index | `proposals: P-058 (P-058)` |
+| 5 | `llm setup` and the plugin's judge reference say the judge's direction the right way round (design 10) | `llm setup, plugin: the judge can only raise the risk, never make a result look safer (P-058)` |
+| 6 | `.claude/rules/report.md` and `gate.md`, architecture pair, README pair, judge docs pair, spec §9 | `docs: the default report's reading order, the judge's view in plain words, LLM-002 as a disclosure (P-058)` |
+| 7 | "Done" in this file, the index | `proposals: P-058 (P-058)` |
 
 ## Open questions
 
@@ -169,3 +203,16 @@ exported by `internal/score` and the shell quoting moved to a leaf package. No `
 2. **`check`'s JSON `locations`.** The same root-derived rows are in `check --json` (`model.ScanResult.Locations` says "empty for a
    single-target check", the code fills it). This proposal keeps JSON byte-identical as decided. **Recommendation**: drop them from
    the data in a follow-up that says it changes `check --json`.
+
+## Done
+
+```
+Merged: PR <pending> (2026-10-15; find the sha with git log --grep P-058 after the merge)
+Released: (fill in after stage 5)
+Evidence: TestText_JudgeViewInPlainWords, TestText_NextStep, TestText_WhyFollowsTheFormula, TestText_CleanIsShort,
+  TestText_DisclosureIsNotACoverageGap, TestText_TargetListsOnlyWhatApplies (internal/report/reader_test.go);
+  TestExplain_IsApply (internal/score/explain_test.go); TestDefaultReportShowsEveryGroup, TestCheckTargetLocations,
+  TestLLMSetupStatesTheJudgesDirection (cmd/aguard/reader_test.go); check of a skill with one high 28 → 16 lines, a clean
+  skill 19 → 2; JSON byte-identical, exit codes identical; reverse: TestText_FindingsSurviveBothModes,
+  TestWriteReport_DefaultStillShowsTheDangerousThing, 95 of 95 groups in the default scan report
+```
