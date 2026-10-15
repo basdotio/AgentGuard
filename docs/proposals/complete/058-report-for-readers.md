@@ -207,7 +207,7 @@ reasons are the base's own output.
 ## Done
 
 ```
-Merged: PR <pending> (2026-10-15; find the sha with git log --grep P-058 after the merge)
+Merged: PR #78 (2026-10-15; find the sha with git log --grep P-058 after the merge)
 Released: (fill in after stage 5)
 Evidence: TestText_JudgeViewInPlainWords, TestText_NextStep, TestText_WhyFollowsTheFormula, TestText_CleanIsShort,
   TestText_DisclosureIsNotACoverageGap, TestText_TargetListsOnlyWhatApplies (internal/report/reader_test.go);
