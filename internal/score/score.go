@@ -95,29 +95,51 @@ func findingsScore(fs []model.Finding, keep filter) int {
 // critical drags the whole environment to ≤49 (High), any high (no critical) to ≤69. A unit is an
 // artifact, except that a plugin and its children are one (family.go, P-044): their findings are scored
 // together, so a duplicate adds nothing and a clean child cannot dilute its plugin's.
-func overallScore(units [][]model.Finding, keep filter) int {
-	worst := model.Severity("")
-	sum, n := 0, 0
+func overallScore(units [][]model.Finding, keep filter) int { return breakdown(units, keep).Overall }
+
+// Breakdown is overallScore's working, for a report to say why the number is what it is (P-058):
+// how many units the mean ran over, the mean, the most severe counted finding and the ceiling it
+// imposes. Overall is min(Mean, Ceiling), clamped — the number Apply sets, by construction, because
+// overallScore returns this same struct's Overall.
+type Breakdown struct {
+	Units   int
+	Mean    int
+	Worst   model.Severity // "" when nothing counted
+	Ceiling int            // 49 for a critical, 69 for a high, else 100
+	Overall int
+}
+
+// Explain is the deterministic Breakdown of a result's artifacts — the working behind ScanResult.Overall.
+func Explain(arts []model.ArtifactReport) Breakdown {
+	return breakdown(Families(arts).units(), Deterministic)
+}
+
+// Points is the penalty one finding of this severity costs its dimension (spec appendix A).
+func Points(s model.Severity) int { return penalty[s] }
+
+func breakdown(units [][]model.Finding, keep filter) Breakdown {
+	b := Breakdown{Mean: 100, Ceiling: 100}
+	sum := 0
 	for _, u := range units {
 		sum += findingsScore(u, keep)
-		n++
+		b.Units++
 		for _, f := range u {
-			if keep(f) && f.Severity.Rank() > worst.Rank() {
-				worst = f.Severity
+			if keep(f) && f.Severity.Rank() > b.Worst.Rank() {
+				b.Worst = f.Severity
 			}
 		}
 	}
-	overall := 100
-	if n > 0 {
-		overall = sum / n
+	if b.Units > 0 {
+		b.Mean = sum / b.Units
 	}
-	switch worst {
+	switch b.Worst {
 	case model.SevCritical:
-		overall = min(overall, 49)
+		b.Ceiling = 49
 	case model.SevHigh:
-		overall = min(overall, 69)
+		b.Ceiling = 69
 	}
-	return clamp(overall, 0, 100)
+	b.Overall = clamp(min(b.Mean, b.Ceiling), 0, 100)
+	return b
 }
 
 // Apply sets both scores on every artifact and on the result (spec §5.3).
