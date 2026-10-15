@@ -35,6 +35,10 @@ type Options struct {
 	// Samples is how many times each question was asked, for a raw/ whose judge summary
 	// predates `samples` (P-031). The summary wins; the two disagreeing is an error.
 	Samples int
+	// CheckJudged says the run handed the judge flags to `check` on the server-source route
+	// (run.yaml `check_llm`, P-056). Then a server-source row with no judge summary is a judge
+	// that did not run, not a static row by design.
+	CheckJudged bool
 }
 
 // Answer is one attempt's fold of one sample: its judge.jsonl row and what the table and the
@@ -94,7 +98,7 @@ func Fold(s corpus.Sample, lrow ledger.Row, res model.ScanResult, opt Options) (
 		}
 	}
 	row.TriageCalls, row.Questions = intp(triage), intp(questions)
-	row.Incomplete = incompleteness(lrow, res.Judge)
+	row.Incomplete = incompleteness(lrow, res.Judge, opt.CheckJudged)
 
 	verdict := "benign"
 	if row.Judge {
@@ -223,13 +227,21 @@ func samplesPerQuestion(j *model.JudgeSummary, flag int) (int, error) {
 }
 
 // incompleteness says why a scored row is not a complete judge answer, or "" when it is. A
-// `check`-routed sample (secondary-surface) is complete without a judge, which never runs there.
-func incompleteness(lrow ledger.Row, j *model.JudgeSummary) string {
+// `check`-routed sample (secondary-surface) is complete without a judge, which does not run
+// there — except on the server-source route of a run that asked for it (checkJudged), where a
+// missing summary means the judge did not run.
+func incompleteness(lrow ledger.Row, j *model.JudgeSummary, checkJudged bool) string {
 	if j == nil {
+		server, secondary := false, false
 		for _, f := range lrow.Flags {
-			if f == ledger.SecondarySurface {
-				return ""
-			}
+			server = server || f == ledger.ServerSource
+			secondary = secondary || f == ledger.SecondarySurface
+		}
+		if server && checkJudged {
+			return "the judge did not run on this server-source sample (raw/ carries no judge summary, and the run asked for it on this route)"
+		}
+		if secondary {
+			return ""
 		}
 		return "the judge did not run on this sample (raw/ carries no judge summary)"
 	}

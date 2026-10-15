@@ -1,0 +1,13 @@
+{"sample":"ben-mcp-fm-prompts_as_tools","path":"corpus/benign/mcp/fm-prompts_as_tools","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-gh-ceyeborg-synology-mcp-server-src","path":"corpus/benign/mcp/gh-ceyeborg-synology-mcp-server-src","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-gh-chartrambiz-diamcp","path":"corpus/benign/mcp/gh-chartrambiz-diamcp","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-gh-cyber-sami-trello-guardrails-mcp","path":"corpus/benign/mcp/gh-cyber-sami-trello-guardrails-mcp","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-gh-eddmpython-dartlab-mcp","path":"corpus/benign/mcp/gh-eddmpython-dartlab-mcp","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-gh-gianlucasquarcia-fastmcp-typer","path":"corpus/benign/mcp/gh-gianlucasquarcia-fastmcp-typer","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-gh-litmusautomation-litmus-mcp-server-src","path":"corpus/benign/mcp/gh-litmusautomation-litmus-mcp-server-src","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-gh-nihar-sarkar-chai","path":"corpus/benign/mcp/gh-nihar-sarkar-chai","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-gh-omeryasirkucuk-amx-mcp","path":"corpus/benign/mcp/gh-omeryasirkucuk-amx-mcp","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-gh-pranesh-2005-mcp-client","path":"corpus/benign/mcp/gh-pranesh-2005-mcp-client","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-gh-satishvenkataraman-fastmcp-101-solutions","path":"corpus/benign/mcp/gh-satishvenkataraman-fastmcp-101-solutions","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-gh-techrraj-mcpserverfortuteraiagent","path":"corpus/benign/mcp/gh-techrraj-mcpserverfortuteraiagent","class":"benign","surface":["mcp"]}
+{"sample":"ben-mcp-sdk-simple-auth","path":"corpus/benign/mcp/sdk-simple-auth","class":"benign","surface":["mcp"]}

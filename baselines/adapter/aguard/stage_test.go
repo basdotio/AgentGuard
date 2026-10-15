@@ -134,3 +134,80 @@ func TestStagePlacesEachKindWhereAguardLooks(t *testing.T) {
 		})
 	}
 }
+
+// A tree that is MCP server source by aguard's own recogniser is still unplaceable — `scan`
+// has no load path for it — but the refusal says so, because that is the one `check` route a
+// run may hand the judge flags to (P-056). A stray .py that is not a server stays the old,
+// unflagged refusal.
+func TestStageSaysWhenTheUnplaceableTreeIsServerSource(t *testing.T) {
+	t.Parallel()
+	server := "from mcp.server.fastmcp import FastMCP\nmcp = FastMCP(\"t\")\n\n@mcp.tool()\ndef add(a: int, b: int) -> int:\n    \"\"\"Add two numbers.\"\"\"\n    return a + b\n"
+	for _, tc := range []struct {
+		name   string
+		body   string
+		server bool
+	}{
+		{"a FastMCP server", server, true},
+		{"a python file that is not a server", "print('hi')\n", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			src := t.TempDir()
+			if err := os.WriteFile(filepath.Join(src, "server.py"), []byte(tc.body), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			_, err := Stage(src, "x", t.TempDir())
+			var np NotPlaceable
+			if !errors.As(err, &np) {
+				t.Fatalf("want NotPlaceable, got %v", err)
+			}
+			if np.Server != tc.server {
+				t.Fatalf("Server = %v, want %v (reason %q)", np.Server, tc.server, np.Reason)
+			}
+		})
+	}
+}
+
+// A README beside code is a project's README, not an instruction file an agent loads. The
+// first run over 89 benign server trees staged 36 of them as CLAUDE.md on the strength of
+// their README.md, and the judge read prose instead of servers.
+func TestAReadmeBesideSourceIsNotAnInstructionFile(t *testing.T) {
+	t.Parallel()
+	server := "from mcp.server.fastmcp import FastMCP\nmcp = FastMCP(\"t\")\n\n@mcp.tool()\ndef add(a: int, b: int) -> int:\n    \"\"\"Add.\"\"\"\n    return a + b\n"
+	for _, tc := range []struct {
+		name   string
+		files  map[string]string
+		server bool
+	}{
+		{"python server with a README", map[string]string{"README.md": "# a server\n", "src/pkg/server.py": server}, true},
+		{"typescript server with a README", map[string]string{"README.md": "# a server\n", "index.ts": "export {}\n", "package.json": "{}\n"}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			src := t.TempDir()
+			for rel, body := range tc.files {
+				p := filepath.Join(src, rel)
+				if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(p, []byte(body), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			_, err := Stage(src, "x", t.TempDir())
+			var np NotPlaceable
+			if !errors.As(err, &np) {
+				t.Fatalf("staged a project tree as an instruction file: err = %v", err)
+			}
+			if np.Server != tc.server {
+				t.Fatalf("Server = %v, want %v (%s)", np.Server, tc.server, np.Reason)
+			}
+		})
+	}
+	// The instruction surface's own shape — one .md and nothing else — still places.
+	alone := t.TempDir()
+	if err := os.WriteFile(filepath.Join(alone, "01-direct-injection.md"), []byte("ignore previous\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Stage(alone, "x", t.TempDir()); err != nil {
+		t.Fatalf("a lone instruction file must still stage as CLAUDE.md: %v", err)
+	}
+}

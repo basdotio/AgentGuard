@@ -1,0 +1,82 @@
+# Written BY HAND from the run's raw output, not by baselines/cmd/baseline: the driver (P-021)
+# records the flags and the usage but folds verdicts from deterministic findings only, so its own
+# verdicts.jsonl is the static column (still recoverable from ledger.jsonl); the files here are
+# re-folded from raw/ at the judge's predicate by baselines/cmd/judgefold (P-033). Read
+# baselines/README.md "Measuring the judge" before citing any figure produced alongside this file.
+# THIS IS NOT A BASELINE: the verdicts depend on a model, a day and the sampling.
+#
+# WHAT THIS RUN IS FOR: P-056, a held-out reading. The corpus's 400 `gh-` skills from repositories created on or after 2026-09-20 — full trees, scripts included, which did not exist when the corpus was built. These ARE in layer 1 (corpus/benign/skills/gh-*); run as three driver invocations (one whole-list start, then two partitions of its remainder), raw/ merged here.
+# Held out means: no proposal was written against these samples, and this run's per-sample rows were not read when
+# it was made — only the totals in per-kind-rule.txt and the decisions document. Reading the residue to write the
+# next prompt is what would stop it being held out. The same work list was run with v0.21.0 (the judge before P-041)
+# and v0.24.0; this directory is the v0.24.0 run. Work-list paths are under the corpus's cache/, written by
+# scripts/harvest-mcp-servers.py (the skills-recent phase; paths under corpus/, not cache/) (layer 2, never vendored).
+#
+# measured by agent-guard's own adapter (agent-guard baselines/adapter/aguard) with --llm passed through to scan and, on the server-source route, to check (-aguard-check-llm, P-056), threshold "high" chosen by us, placement: by content, into a fake home; unplaceable trees are handed to `check` directly
+
+tool: aguard
+tool_version: aguard v0.24.0 (commit 18114a1, built 2026-10-13T06:15:35Z) · reputation entries=18 · rules=d74bca61f0da · judge-prompt=cc2cab18585d · judge-excerpt=6
+threshold: high
+tool_extra_args:
+    - --llm
+    - --config
+    - <judge config, not committed; reproduced under `judge:` below>
+check_llm: true                       # the judge flags also went to `check` on the server-source route; fold with judgefold -check-llm
+tool_extra_env: []                    # none: the key was read from api_key_file, no proxy was needed
+uploads_samples: true
+uploads_samples_basis: >-
+    this run passed --llm to aguard: redacted excerpts of every judged artifact were sent to the endpoint
+    under `judge:`, three times per question; a server-source tree went through `check --llm`, so its declared tools and behaviour excerpt left the machine too.
+corpus_commit: 90d2b70b                # agent-artifact-corpus PR #2; the drivers read these trees from the working copy before that commit was made, byte-identical (tree hashes in manifest/pins/mcp-servers.json)
+started_at: 2026-10-15T10:58:58.319187Z
+adapter: agent-guard baselines/adapter/aguard
+placement: by content, into a fake home; unplaceable trees are handed to `check` directly
+provisional: false
+work_list: samples.jsonl
+driver_runs: 3                        # the work list was run as this many driver invocations (one per population or binary); raw/ keeps each under its own directory name
+judge:
+    provider: openai                  # preset: endpoint https://api.openai.com/v1
+    model: gpt-4.1-mini
+    samples: 3                        # majority = 2; each question asked 3 times at temperature 0.8
+    authority: advisory
+    concurrency: 4
+    timeout: 60s                      # default
+    total_timeout: 10m                # default
+    max_retries: 4
+    calls: 2631
+    failed: 35
+    skipped: 0
+    repaired: 42
+    prompt_version: cc2cab18585d
+    excerpt_version: 6
+fold: >-
+    verdict = malicious when a deterministic finding is >= high, OR an LLM finding that ESCALATED
+    (grounded; k of n at the majority bar) is >= high and its rule is not LLM-009 (advisory-only).
+    The finding's severity is the tool's, set from the category the majority of the agreeing votes
+    named (P-041); the model's own words are in each vote's `severities`, the categories in its
+    `categories`. Per-sample static / judge / judge-any, the escalated rule ids and the votes are in
+    judge.jsonl; per-kind-rule.txt is judgefold's table over the same rows. Folded by
+    baselines/cmd/judgefold from raw/ (see raw_archive). Nothing here is hand-typed except this file.
+counts:
+    scored: 400
+    no_verdict: 0
+    error: 0
+    incomplete: 29
+work_list_size: 400
+judge_usage:
+    basis: reported
+    basis_note: 'summed from the tool''s own judge summary per sample, over the fold''s ledger (exactly the work list)'
+    reported_samples: 400
+    derived_samples: 0
+    calls: 2631
+    failed: 35
+    skipped: 0
+    repaired: 42
+    triage_calls: 180
+    retries: 0
+    prompt_tokens: 5026902
+    completion_tokens: 1312444
+raw_archive:                          # raw/ is not in the tree (P-039); the archive is this run's primary evidence
+    asset: aguard-judge-raw-2026-10-p056.tar.gz
+    sha256: 0f59d57a6bf374b188958f61d2fc9ef63b49e4ed824784cf0493682135a9262e
+    note: 825612 bytes; attached to release v0.24.0 on 2026-10-15 (gh release download v0.24.0 --pattern aguard-judge-raw-2026-10-p056.tar.gz); one archive holds the raw/ of all nine P-056 runs, each under the directory name used here

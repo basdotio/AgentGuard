@@ -47,6 +47,11 @@ type Run struct {
 	// invocation nobody can see is a number nobody can rerun; when it carries --llm, Uploads
 	// and UploadsBasis describe this run rather than the registry's default.
 	ToolExtraArgs []string `yaml:"tool_extra_args,omitempty"`
+	// CheckLLM records that ToolExtraArgs also went to `check` on the server-source route
+	// (-aguard-check-llm, P-056). Absent means what every earlier judge run did: the flags
+	// went to `scan` only and every `check`-routed sample stayed static. A fold of this run's
+	// raw/ needs the same answer (judgefold -check-llm), which is why it is written down.
+	CheckLLM bool `yaml:"check_llm,omitempty"`
 	// Uploads records whether sample content left this machine. Not a licence question — every
 	// sample in the corpus is permissively licensed and the corpus repository is public — but a
 	// fact a reader is entitled to, and the trigger for the isolation rules.

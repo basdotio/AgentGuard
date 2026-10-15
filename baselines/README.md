@@ -64,10 +64,15 @@ go run ./baselines/cmd/baseline -tool aguard -aguard bin/aguard -corpus ../agent
   -aguard-extra-args "--llm --config /path/to/judge.yaml" -aguard-env ZHIPU_API_KEY -aguard-timeout 25m
 ```
 
-- `-aguard-extra-args` is appended to `scan` only. `check` takes `--llm` too (P-004), but every
-  committed judge run measured the judge on `scan`'s path and left the samples routed to `check`
-  static; passing the flags there as well would change what a rerun measures, which is a
-  measurement decision of its own, not a rerun.
+- `-aguard-extra-args` is appended to `scan`, and to `check` on one route only, and only when
+  asked: `-aguard-check-llm` hands the flags to `check` for a tree that places nowhere but is MCP
+  server source by aguard's own recogniser (the route `ledger.ServerSource` marks, P-056), so the
+  judge's server pass (P-053, `LLM-010`) is measured on the corpus's server trees. Every other
+  `check`-routed sample stays static, as in every judge run before P-056. `check` takes `--llm`
+  on any tree (P-004); passing it everywhere would change what a rerun measures, which is a
+  measurement decision of its own, not a rerun. A run that asked records `check_llm: true` in
+  its `run.yaml`, and its fold needs `judgefold -check-llm` so a server-source row with no judge
+  summary is counted as a judge that did not run rather than a static row by design.
 - `-aguard-env` adds the named variables and nothing else; a bare `NAME` is copied from this
   process so the key never appears on a command line.
 - `-aguard-timeout` replaces the per-sample limit; a judged sample takes minutes, not seconds.
@@ -134,6 +139,18 @@ name with the key (`-aguard-env OPENAI_API_KEY,HTTPS_PROXY,HTTP_PROXY,NO_PROXY`)
 read the macOS system proxy. Without that, a run whose endpoint needs a proxy answers nothing and
 still exits 0, every call an `LLM-000`. Check a few `raw/` files for `"failed": 0` before waiting
 on the rest.
+Nine more, `results/aguard/2026-10-15-llm-gpt-4.1-mini-p056-*/`, belong to P-056 and are the first runs through the
+server-source route with the judge (`check_llm: true` in their `run.yaml`; fold them with `judgefold -check-llm`).
+`…-benign-servers-s3/` is the server pass's false-positive denominator: every benign server tree the corpus holds after
+agent-artifact-corpus PR #2 (547: 89 derived from four pinned upstreams, 268 third-party servers by code search, 190 from
+repositories created on or after 2026-09-20), three driver invocations merged into one fold. The eight
+`…-heldout-*` directories are one work list each run with two binaries, v0.21.0 (the judge before P-041) and v0.24.0:
+the malicious and the benign skills of `agent-skill-malware` (layer 2, paths under the corpus's `cache/`, written by
+`scripts/prep-agent-skill-malware.py`), a seeded SkillHarm subset (`scripts/prep-skillharm.py`), and the corpus's 400
+`gh-` skills from repositories created on or after the cutoff. Their per-sample rows were not read when they were made,
+by design — a held-out set stays one only while nobody writes a prompt against its residue — so cite their totals
+(`per-kind-rule.txt`, the decisions document) and nothing finer. All nine share one archive,
+`aguard-judge-raw-2026-10-p056.tar.gz` on v0.24.0, each run's raw/ under the directory name used here.
 
 **What a judge run cost is folded by the driver, not by hand.** Each judged sample's ledger row
 carries `judge_usage` — `calls`, `failed`, `skipped`, `triage_calls`, `retries`, `prompt_tokens`,
