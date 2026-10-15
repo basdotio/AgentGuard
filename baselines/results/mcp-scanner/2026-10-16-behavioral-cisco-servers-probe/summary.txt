@@ -1,0 +1,1 @@
+cisco-mcp-scanner-evals, 127 malicious, file mode: scored 33 (a tool found), no_tools 94, errored 0, HIGH 2
