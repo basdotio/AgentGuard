@@ -159,7 +159,7 @@ server and registers no hooks of its own — `aguard hook install` stays an expl
 ```bash
 aguard scan                      # full scan of the current user's ~/.claude
 aguard scan --root ~/.claude     # specify the root
-aguard scan --verbose            # also print the full text of every coverage note
+aguard scan --verbose            # also print every coverage note in full, where the scan looked, the inventory
 aguard scan --html report.html   # also write a self-contained HTML report
 aguard scan --md report.md       # also write the report as markdown, for a PR comment or an issue ("-" = stdout)
 aguard scan --json               # machine-readable output
@@ -183,6 +183,11 @@ aguard version
 The terminal report shows every finding by default and folds the coverage notes into one
 line that still carries their count, their highest severity and their rule IDs. `--verbose`
 prints those notes in full — reach for it when the question is what the scan did *not* read.
+The default view is ordered for a reader who does not write code: each finding comes with a next step
+(which file and line to read, and for a skill the load-time gate can stop, the exact `aguard approve`
+command), the judge's view of it in plain words, and one line says why the score is what it is; a
+result with nothing to look at prints its title and its score. `--verbose` adds where the scan looked,
+the inventory, the judge's versions and the hygiene list.
 That includes a note attached to one item, such as a `settings.json` that does not parse: the
 summary then names the item as not fully checked, and does the same for a file that could not be
 read. When something Claude Code loads was not fully read — a file that could not be read or parsed,

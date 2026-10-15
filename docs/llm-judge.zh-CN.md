@@ -201,7 +201,9 @@ aguard scan --llm --config config.yaml
   最多 1,000 字节;它的文件位置以前没有上限。所有截断都落在字符边界上,不是 UTF-8 的字节按 U+FFFD 发(请求的 JSON
   编码本来就会这么写),所以引文落地比对的就是端点读到的那份文本。每个字段构造的最后一步是对整段再跑一次
   `detect.Redact`,变长了就再截一次:各段分别脱敏再拼起来,第二遍可能还有要改的。
-- **非本地端点 → 一条 `LLM-002` 告警**进报告,因为脱敏后的 skill 内容离开了本机。
+- **非本地端点 → 一条 `LLM-002` 告知**进报告,因为脱敏后的 skill 内容离开了本机。终端和 markdown 报告照它的本意
+  印在 Judge 那行旁边 —— `Sent to <host>: redacted excerpts in N call(s).`,或者一次调用都没发出 —— 不算覆盖缺口;
+  JSON 和 SARIF 里它还在原来的位置。
 - **判官看到的是压缩后的摘录,不是文件。** 每个 skill 最多 6000 字节行为文本(每文件 2000):连续空行折成一行、
   注释行整行去掉(解释器从不读注释;写给审阅者看的那段话,正是攻击者会对审阅者说话的地方)、超上限的文件保留
   头尾两段并放一行 "N line(s) omitted" 标记,而不是只留前缀——payload 放在文件末尾,因为每一次随手翻看都停在那之前。
@@ -264,7 +266,9 @@ aguard scan --llm --config config.yaml
 | `LLM-010` | MCP 服务器源码做了工具描述没说的事(维度 10)。`check <目录>` 指向 Python 写的 MCP 服务器(导入了 SDK、声明了工具)时问意图趟的问题:声明侧是每个工具的名字和 docstring 第一行——客户端看到的只有这些,模块注释永远不算——行为侧是代码,走 skill 脚本的摘录器和预算;意图表和 `disclosed` 照用。普通目录仍然一个问题都不问(P-053)。 **在良性服务器源码上的实测(三票,P-059)**:官方和示例服务器 69 个里报 5 个,但代码搜索找到的第三方 Python 服务器 261 个里报 65 个、语料建成之后新建仓库里的 189 个里报 26 个——合计 506 个里 95 个,五个里一个——176 张升级票里 142 张给的类别是 `credential-read`,针对的是服务器读自己的 key 去调自己的 API。P-062 起,引文落在的文件若按整条静态链(`detect.CredentialGoesHome`,全文)读的是有名字的凭证且只发往它自家的服务或回环,`credential-read` 这票降到 medium 并在理由里注明;在那 547 棵树上离线模拟是 96 个里降 12 个——其余大多是链不认的读法或调用在别的文件里。`LLM-010` 在第三方服务器上仍只当提示看;数字和分母在 `baselines/results/aguard/2026-10-15-llm-gpt-4.1-mini-p059-benign-servers-s3/`。 |
 | `LLM-009` | MCP 服务器配置风险 —— 来源、是否 pin、传输方式、凭证(维度 5)。**只提示**:按模型给的严重度显示,但无论几票都不升级。"`npx -y` 没钉版本还拿着 token"是真实配置的常态,500 个良性配置上它是唯一一条升级过的判官规则(P-019)。 |
 
-triage 标签(`likely-real` / `likely-benign`)以 `⚖ triage (LLM, advisory)` 显示在对应发现下方,纯展示。只有以
+triage 标签(`likely-real` / `likely-benign`)显示在对应发现下方:终端和 markdown 报告用白话
+(`Judge's view (advice; the finding and the score stand): likely a false alarm — <reason> (one reading).`),
+HTML 显示原标签;纯展示。triage 只问一次、温度 0,所以一个标签只有一次读数,没有票数可印。只有以
 `likely-benign` 这个词开头、且通篇没说 `likely-real` 的才算 `likely-benign`,其余一律读作 `likely-real`。标签的规则 ID 必须和送去 triage 的某条一字不差才保留,所以每份报告都把它挂在同一条发现上。reason 先脱敏、截到 256 字节,
 人读的报告再像其它攻击者可影响的文字一样清洗。SARIF 里判官规则的说明用工具自己的定义,不用某一条发现的理由。
 
@@ -390,7 +394,8 @@ triage 只问一次,判官的题问 `samples` 次)、`retries`、`prompt_tokens`
 摘录代码改了而数字没动,有一个 golden 测试会红。判官配置好时块里还有 `model`(每个请求写的模型名,配置没写时是
 `llama3.1`)和 `samples`(每道题问了几次,配置写 0 时是 1)。`aguard version` 在 `rules=` 后面印这两个版本
 (`judge-prompt=`、`judge-excerpt=`);判官跑了时,人读的报告多一行
-`LLM judge: model … · samples … · prompt_version … · excerpt_version …`。两份报告的版本不同,就是判官代码不同;
+`LLM judge: model … · samples … · prompt_version … · excerpt_version …` —— 终端里只在 `--verbose` 下印,
+默认视图改印一行简短的(`Judge: checked 1 skill, nothing to add`)。两份报告的版本不同,就是判官代码不同;
 版本和模型都相同,说明问的是同样的问题、摘录按同样的方式构造——**不等于**答案相同:模型是采样的,厂商也可以不改
 名字就换掉背后的模型。共识、严重度钳制和只提示规则不在任何一个版本里,它们仍然只有 `tool_version` 能标。密钥、
 请求头和 `authority` 一律不记。
@@ -400,7 +405,8 @@ triage 只问一次,判官的题问 `samples` 次)、`retries`、`prompt_tokens`
 开判官之后报告给两个分:
 
 ```
-Risk score 69/100 (Elevated)
+Risk score 69/100 (Elevated) — 3 findings to look at
+  There are problems you should fix before relying on this setup.
    ↳ with LLM advisories: 69/100 (Elevated) — not reproducible, does not gate
      most affected: skill:test-runner 83→52 · hook:PreToolUse[Read]#1 75→51 · +4 more
 ```

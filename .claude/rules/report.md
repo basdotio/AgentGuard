@@ -5,8 +5,10 @@ paths:
 <!-- SPDX-License-Identifier: MIT -->
 ## 终端报告的两种模式(`internal/report/text.go`)
 
-`Text` 是默认档,`TextVerbose` 是完整档,两者都走 `writeText`。**它们只差两样东西,而且都不是发现:**
-维度 0 的覆盖度说明折成一行 / 展开成一段,以及默认档多一行判定摘要(两档都有)。
+`Text` 是默认档,`TextVerbose` 是完整档,两者都走 `writeText`。**它们差的东西都不是发现:**
+维度 0 的覆盖度说明折成一行 / 展开成一段;判官的模型、samples、两个版本号和那行长的判官摘要,卫生项列表,
+以及 Scan details(看了哪些地方、清单、OWASP、静态分析声明)只在 `--verbose` 里,默认档最后一行说 `--verbose` 多给什么;
+没有要看的东西时默认档只印标题、带 ✅ 的分数行和 Judge 行(P-058)。
 
 - **发现在任何一档都不折叠。** 只有维度 0 的元信息会折。把一条发现藏到参数后面,等于让安全工具的
   **默认**视图成为少报的那一个,而一条从没被展示过的发现,读者不可能想到去追问它的细节。
@@ -26,10 +28,12 @@ paths:
   比没有摘要更糟,因为它是大家真正会读的那半。
 - **`--verbose` 是 rootCmd 上的 persistent flag,和 `--quiet` 成对。** 它**只**加宽终端报告:
   `--json` / `--html` 两档内容完全一致,所以一个 CI 任务的输出不会取决于某个人加没加它。
-- **报告有两个读者,阅读顺序为不写代码的那个而定**([plain.go](../../internal/report/plain.go) 是两个
-  渲染器共用的白话层):分数 → 一句人话结论 → "先看什么"(最多 3 条,带位置)→ 全部发现 →
-  白名单压制 → 没检查到的 → 最后才是审计员要的清单和 OWASP 覆盖声明(`writeScanDetails`)。
-  以前清单和 OWASP 行排在最前面,普通用户读到第五行还没见到一句结论。
+- **报告有两个读者,阅读顺序为不写代码的那个而定**([plain.go](../../internal/report/plain.go) 和
+  [reader.go](../../internal/report/reader.go) 是渲染器共用的白话层,P-058):标题说这份报告是关于什么的(`check` 的目标
+  `AgentGuard · <name> (<kind>)`,或 root)→ 分数行带要看几条 → 一句人话结论 → 每条发现一个编号块(`#k`:维度短语、
+  "谁 · 什么 [规则]"、Why、判官的看法、下一步、证据;多于 3 条时前面有 `→ … start with` 和前三条索引)→ "Why N" →
+  Judge 行和外发告知 → 判官自己的发现 → Downloads → 白名单压制 → 没检查到的 → `--verbose` 多给什么。
+  以前清单和 OWASP 行排在最前面,普通用户读到第五行还没见到一句结论;再后来同一条发现在一份 28 行的 `check` 报告里说了三遍。
   - **白话层只做派生,不做判断。** `verdictSentence` 是等级档 + 计数的函数,`actions` 就是 medium
     以上的 group 按既有顺序取前三,`dimLabel` 是每个维度一句固定短语(10 句,不是 70 条规则各写一句)。
     没有任何一处能说出下面列表里没有的东西,也没有任何一处能把严重度说轻。
@@ -51,10 +55,28 @@ paths:
       不点名:说的是已计数项的一部分,证据路径相对 artifact(读不了的子目录那条是 `.`)。
   - **规则 ID 仍在每条发现上,但挪到行尾的方括号里**;行首是"谁 · 什么"(`friendlyArtifact` 把
     `plugin:figma@claude-plugins-official (2.2.107)` 写成 "figma plugin, from claude-plugins-official (2.2.107)")。
-    改这里时注意几个测试钉住的锚点:`Risk score N/100 (Level)`、`→ … start with [ID]`、
-    `Findings · STATIC` / `Findings · LLM JUDGE`、`✅ No risk findings`、`coverage note(s), highest X [ID]`、
-    `advisory: not confirmed`、`×N`、`coverage is incomplete`(Summary 里)、`Not fully checked:`。
-    干净配置的终端默认 / `--verbose` / markdown 整份输出由 `TestCleanSettingsReportIsUnchanged` 的 golden 逐字节钉住。
+    改这里时注意几个测试钉住的锚点:`Risk score N/100 (Level) — <条数>`、`→ … start with [ID]`(多于 3 条时)、
+    `What to look at` / `Findings · LLM JUDGE`、`✅ No risk findings`(非精简时)、`coverage note(s), highest X [ID]`、
+    `advisory: not confirmed`、`×N`、`coverage is incomplete`(标题块里)、`Not fully checked:`、`Judge's view (advice;
+    the finding and the score stand)`、`Judge: `、`Why N:`、`Sent to`。终端的"摘要"现在是标题到第一个空行那一块
+    (测试的 `summaryOf`/`summaryPart`)。干净配置的终端默认 / `--verbose` / markdown 整份输出由
+    `TestCleanSettingsReportIsUnchanged` 的三份 golden 逐字节钉住(P-058 起默认档和 `--verbose` 是两份)。
+  - **判官对静态发现的看法用白话,而且方向只能是"不变"**(`judgeView`):`likely a false alarm` / `likely real`,
+    写明 `the finding and the score stand`,票数写 `(one reading)` —— triage 只问一次、温度 0,标签上没有票数,
+    **不要编一个 "3 of 3"**。不要出现 cleared / dismissed / lowered / removed 这类词(不变量 #4,
+    `TestText_JudgeViewInPlainWords` 盯着)。
+  - **下一步只用固定措辞**(`nextOf`/`stepText`):读哪个文件哪一行 + 维度那句 `actionHint`;`REP-BAD` 是 "remove it"。
+    `aguard approve` 那行**只**给闸门拦得住的东西:skill、有内容哈希(P-011)、没有 critical、是 `check` 的目标或在
+    扫描的 root 里(桌面版的 skill 不走闸门),medium 及以上的静态发现,每个 artifact 一次;scan 的命令带 `--root`。
+    路径一律走 `cmdline.Arg`(闸门自己的引号,P-030,从 `internal/gate` 挪出来以免 report 反向 import gate),
+    **不要在 report 里再写一份引号**。`TestText_NextStep` 钉住每个不给的情形。
+  - **"Why N" 只从 `score.Explain` 和已经印出的编号推**:`Explain` 就是 `score.Apply` 的计算过程(`overallScore` 返回同一个
+    结构的 `Overall`),所以句子和分数不会打架;印出的各组加起来对不上公式时这一行**不印**,宁缺不错。
+  - **Judge 行**(`judgeShort`)只说看了什么、加了什么;失败和没发出的调用留在默认档里(答了一部分不能读成全答了)。
+    `report.JudgeLineSuffix` 是**唯一**的扩展点,本仓库不设它;要往这行加东西就走它,不要另开一行。
+  - **`LLM-002` 是外发告知,不是覆盖缺口**:终端和 markdown 把它从 "Not checked" 里拿出来,印成 `Sent to <host>: redacted
+    excerpts in N call(s). [LLM-002]`(判官一次都没发出时说 no call was made);`--verbose` 和 markdown 带上 note 原文。
+    JSON/SARIF 不动,HTML 仍按旧样子列在 Not checked 里。
   - **默认视图缩短证据路径**(`shortPath`:插件缓存前缀折成 `figma › rest`,过长路径留末三段),
     `--verbose`、JSON、SARIF、HTML 的 `title` 悬停保留全路径。定位靠短路径,复制粘贴靠全路径。
   - **markdown(`markdown.go`,`--md`,P-008)是第三个人读渲染器**,同一套派生数据、同一顺序,没有 `--verbose`。
@@ -71,5 +93,7 @@ paths:
     跟随系统深浅色。JSON/SARIF 不受任何一条影响。
   - **Scan details 里有 "Where the scan looked"**(`ScanResult.Locations`,2026-09-07):配置目录、用户级 MCP 配置、
     桌面版仓库、下载目录,各标 read / absent / off。清单数字分不出"没装桌面版"和"桌面版仓库读了但是空的",只有
-    这张表分得出;`--inbox off` 显示 off 而不是消失,用户关掉的东西也要留痕。`check` 不填它。
+    这张表分得出;`--inbox off` 显示 off 而不是消失,用户关掉的东西也要留痕。`check` 目前在数据里也填了它(按 root
+  推出来的几行对单个目标不成立,JSON 未改,见 P-058 的 open question 2),**人读渲染器对单个目标**(`target()`:有一个
+  路径等于 root 的非子项 artifact)**只写 "the target only"**;按 root 布局的 `check` 和 `scan` 照列每一行。
 

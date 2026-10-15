@@ -257,8 +257,10 @@ everything on your machine. That trade-off is yours.
   is grounded against is the text the endpoint read. The last step of building each field is one more
   `detect.Redact` over the whole field, cut again if that lengthened it: parts redacted one at a time
   and then joined could leave a second pass something to change.
-- **Non-local endpoint → an `LLM-002` warning** is added to the report, because
-  best-effort-redacted skill content is leaving the machine.
+- **Non-local endpoint → an `LLM-002` disclosure** is added to the report, because
+  best-effort-redacted skill content is leaving the machine. The terminal and markdown reports print it
+  as what it is — `Sent to <host>: redacted excerpts in N call(s).`, or that no call was made — beside the
+  Judge line, not as a coverage gap; JSON and SARIF carry the note where they always did.
 - **What the judge sees is a condensed excerpt, not the file.** Per skill, up to 6000 bytes of
   behavior (2000 per file): blank runs collapsed to one line, comment-only lines removed (the
   interpreter never reads them, and a paragraph written for the reviewer is exactly where an
@@ -344,8 +346,10 @@ everything on your machine. That trade-off is yours.
 | `LLM-010` | MCP server source does more than its tools say (dim 10). `check <dir>` on a Python MCP server (the SDK imported, a tool declared) asks the intent question of it: DECLARED is each tool's name and first docstring line — all a client is shown, the module docstring never — BEHAVIOR the code, through the skill passes' walker and caps; the intent table and `disclosed` apply. A plain directory is still asked nothing (P-053). **Measured on benign server source at `samples: 3` (P-059)**: 5 of 69 official and example servers, but 65 of 261 third-party Python servers found by code search and 26 of 189 from repositories created after the corpus was built — 95 of 506 in all, one in five — flagged, 142 of 176 escalating votes naming `credential-read` on a server that reads its own key for its own API. Since P-062 a `credential-read` vote grounded in a file whose named credential goes only to its own service or to loopback (the static chain over the whole file, `detect.CredentialGoesHome`) weighs medium with the reason in the note; offline over those 547 trees that is 12 of the 96 flagged — most of the rest rest on reads the chain does not count or on calls in another file. Treat `LLM-010` as advisory on third-party servers; the numbers and their denominators are in `baselines/results/aguard/2026-10-15-llm-gpt-4.1-mini-p059-benign-servers-s3/`. |
 | `LLM-009` | MCP server configuration risk — source, pinning, transport, credentials (dim 5). **Advisory only**: shown with the model's severity, never escalates, whatever the vote. Unpinned `npx -y` packages holding a token are what real configs look like — measured on 500 benign configs it was the only judge rule to flag benign input (P-019). |
 
-Triage labels (`likely-real` / `likely-benign`) render inline under the matching finding as
-`⚖ triage (LLM, advisory)`; they are display-only. A label counts as `likely-benign` only when
+Triage labels (`likely-real` / `likely-benign`) render inline under the matching finding, in plain
+words in the terminal and markdown reports — `Judge's view (advice; the finding and the score stand):
+likely a false alarm — <reason> (one reading).` — and as the raw label in HTML; they are display-only.
+Triage is asked once, at temperature 0, so a label rests on one reading and carries no vote count. A label counts as `likely-benign` only when
 it starts with exactly that word and never says `likely-real`; anything else reads as
 `likely-real`. A label is kept only if its rule id is exactly one that was sent for triage, so
 every report attaches it to the same finding. The reason is redacted and capped at 256 bytes, and the human-read reports
@@ -532,7 +536,9 @@ excerpt code changes and the number does not. With a configured judge the block 
 the model every request named (`llama3.1` when the config names none), and `samples`, how many times
 each question was asked (1 when the config says 0). `aguard version` prints the two versions after
 `rules=` as `judge-prompt=` and `judge-excerpt=`, and when the judge ran the human reports add one
-line, `LLM judge: model … · samples … · prompt_version … · excerpt_version …`. Two reports whose
+line, `LLM judge: model … · samples … · prompt_version … · excerpt_version …` — in the terminal with
+`--verbose` only, where the default view prints one short line instead (`Judge: checked 1 skill,
+nothing to add`). Two reports whose
 versions differ came from different judge code. Two whose versions and model agree asked the same
 questions of excerpts built the same way — not necessarily with the same answers: the model is
 sampled, and a vendor can change what serves a model name. Consensus, severity clamping and the
@@ -544,7 +550,8 @@ key, the headers and `authority` are never recorded.
 A judge run reports two scores:
 
 ```
-Risk score 69/100 (Elevated)
+Risk score 69/100 (Elevated) — 3 findings to look at
+  There are problems you should fix before relying on this setup.
    ↳ with LLM advisories: 69/100 (Elevated) — not reproducible, does not gate
      most affected: skill:test-runner 83→52 · hook:PreToolUse[Read]#1 75→51 · +4 more
 ```
