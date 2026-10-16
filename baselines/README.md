@@ -165,6 +165,13 @@ servers with the server pass's own-service control (P-062), same lists, config a
 first, and the decisions document separates the control's share (12 of 96, measured offline on the same raws) from the
 draw's (96 → 91 live). Raw in `aguard-judge-raw-2026-10-p062.tar.gz` on v0.25.0.
 
+One more, `results/aguard/2026-10-16-llm-gpt-4.1-mini-p064-skillharm-vendored-s3/`, is v0.26.0 on the 240 SkillHarm
+fixed-payload trees that agent-artifact-corpus PR #3 vendored into layer 1 (20 per risk, PDF payloads included, labels
+derived from the upstream's risk and realization). It is not a held-out reading — the P-059 held-out 120 are among the 240 —
+and not a recall rate: LLM-authored fixtures, a seeded draw, a rule for the dimension. Read it per realization: the two
+zeros (0 of 54 companion-document, 0 of 38 PDF) are a coverage statement about what the engine and the judge read, and the
+decisions document says what follows from them. Raw in `aguard-judge-raw-2026-10-p064.tar.gz` on v0.26.0.
+
 **What a judge run cost is folded by the driver, not by hand.** Each judged sample's ledger row
 carries `judge_usage` — `calls`, `failed`, `skipped`, `triage_calls`, `retries`, `prompt_tokens`,
 `completion_tokens` — read from the binary's own `--json` judge summary, and `run.yaml` sums them

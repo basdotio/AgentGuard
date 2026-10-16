@@ -1,0 +1,3 @@
+{"sample":"mal-skill-sh-anti-forensics-14bf231d92","path":"corpus/malicious/skills/sh-anti-forensics-14bf231d92","class":"malicious","surface":["skills"],"severity":"high"}
+{"sample":"mal-skill-sh-goal-hijacking-c0c6aa9087","path":"corpus/malicious/skills/sh-goal-hijacking-c0c6aa9087","class":"malicious","surface":["skills"],"severity":"high"}
+{"sample":"mal-skill-sh-poisoning-e8ac982ea8","path":"corpus/malicious/skills/sh-poisoning-e8ac982ea8","class":"malicious","surface":["skills"],"severity":"high"}
