@@ -213,6 +213,7 @@ type Rule struct {
 | 服务器源码 | `check` 目标为 MCP 服务器源码(种类 `server`:导入 `mcp`/`fastmcp` 且声明工具的 Python 文件) | 结构前提:有带 docstring 的工具 | 声明侧 = 工具名 + docstring 首行(模块注释不算);行为侧 = 代码,走 skill 脚本摘录器 | 已实现(`LLM-010`,维度 10;P-053)。语料里 127 个 cisco 样本正是这个形状,此前判官一个问题都不问 |
 | **injection(connector)** | Connector | **无条件** | collect 读到的桌面版缓存工具清单(§4) | 已实现:远程 connector 的工具说明就是模型会读并照做的文本,静态那半是 `MCP-001..004`(§5.1),判官跑同一份渲染(`detect.ConnectorText`),两边看不到不同的东西 |
 | **intent** | Skill | **静态先行**:有静态发现 或 信誉库未知 | detect + reputation | 已实现 |
+| **result** | Skill | **无条件**(与 injection 同) | `SKILL.md` 正文 + 正文点名的文档(P-065 的伴随文档) | 已实现(`LLM-011`,维度 1;P-068)。问的是"必须的步骤是否改了用户拿到的结果",不是"有没有超出用途的指令";P-066 把它作为注入问题的一个从句,模型从未选用 |
 | **collusion** | Skill | **静态先行**:`EXFIL-002` 粗筛命中 | 静态跨文件粗筛(§5.1) | 已实现(`LLM-006`,只发能力摘要不发全文) |
 | triage | 任意有静态发现的 kind | **静态先行**(本质如此) | detect / permcheck 的 findings | 已实现(含 permission) |
 | **无** | Plugin / Directory / Quarantined | — | — | **没有任何一趟**(至多分诊,分诊标签到不了 `--fail-on-llm`)。插件的 skill、命令、子 agent 是各自的 artifact,按上面各自的种类问(P-044),所以插件**只有在没有任何可加载子项时**才算"什么都没问"。每次 `--llm` 一条 `LLM-000` 按种类计数点名(`judge.Unasked` 读 `judge.AsksNothingOf`,表由 `TestAsksNothingOf_FollowsPlanFor` 钉在 `planFor` 上;隔离区标成「已不再加载」);`check` 的目标是其中之一时 `--fail-on-llm` 退出 `4`(P-038)。目录该问什么仍见 `issues/023`。Permission 不在此列:它的风险由 permcheck 判,设计上没有要问判官的问题 |

@@ -481,3 +481,7 @@ func TestRun_DeclaredOnlyEvidenceIsDropped(t *testing.T) {
 		})
 	}
 }
+
+// TestInjectionPass_NamesOutputSteering (P-066): the injection task asks about a step that changes the
+// RESULT the user receives, and its table weighs `output-steering` high — 4 of 40 SkillHarm goal-hijacking
+// and output-manipulation samples got a finding while the question was only about host effects.

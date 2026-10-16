@@ -137,8 +137,8 @@ func TestRun_SlowCallDoesNotStarveTheRest(t *testing.T) {
 
 	notes, stats := Run(context.Background(), client, arts, Options{Concurrency: 4, CallTimeout: 60 * time.Millisecond})
 
-	if stats.Failed != 2 { // both of skill01's calls time out
-		t.Errorf("failed calls = %d, want 2 (only the hung artifact)", stats.Failed)
+	if stats.Failed != 3 { // all three of skill01's calls time out
+		t.Errorf("failed calls = %d, want 3 (only the hung artifact)", stats.Failed)
 	}
 	for _, a := range arts {
 		if a.Name == "skill01" {
@@ -166,8 +166,8 @@ func TestRun_BudgetCutsDeterministicallyAndSaysWhat(t *testing.T) {
 		if stats.Calls != 3 {
 			t.Fatalf("run %d: issued %d call(s), want exactly the budget (3)", run, stats.Calls)
 		}
-		if stats.Skipped != 7 { // 5 skills x 2 modes = 10 planned
-			t.Errorf("run %d: skipped = %d, want 7", run, stats.Skipped)
+		if stats.Skipped != 12 { // 5 skills x 3 modes = 15 planned
+			t.Errorf("run %d: skipped = %d, want 12", run, stats.Skipped)
 		}
 		if len(notes) == 0 || !strings.Contains(notes[0].Why, "budget") {
 			t.Fatalf("run %d: budget truncation not reported: %+v", run, notes)

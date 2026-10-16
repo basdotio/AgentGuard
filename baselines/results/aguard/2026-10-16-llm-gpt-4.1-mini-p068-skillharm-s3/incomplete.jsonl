@@ -1,0 +1,11 @@
+{"sample":"mal-skill-sh-backdoor-injection-14ea11a0be","path":"corpus/malicious/skills/sh-backdoor-injection-14ea11a0be","class":"malicious","surface":["skills"],"severity":"high"}
+{"sample":"mal-skill-sh-dos-0b9ff24529","path":"corpus/malicious/skills/sh-dos-0b9ff24529","class":"malicious","surface":["skills"],"severity":"high"}
+{"sample":"mal-skill-sh-goal-hijacking-294f62bd66","path":"corpus/malicious/skills/sh-goal-hijacking-294f62bd66","class":"malicious","surface":["skills"],"severity":"high"}
+{"sample":"mal-skill-sh-goal-hijacking-de3122e501","path":"corpus/malicious/skills/sh-goal-hijacking-de3122e501","class":"malicious","surface":["skills"],"severity":"high"}
+{"sample":"mal-skill-sh-malware-deployment-5680eafded","path":"corpus/malicious/skills/sh-malware-deployment-5680eafded","class":"malicious","surface":["skills"],"severity":"high"}
+{"sample":"mal-skill-sh-malware-deployment-e36c259fe5","path":"corpus/malicious/skills/sh-malware-deployment-e36c259fe5","class":"malicious","surface":["skills"],"severity":"high"}
+{"sample":"mal-skill-sh-output-manipulation-109bd1274a","path":"corpus/malicious/skills/sh-output-manipulation-109bd1274a","class":"malicious","surface":["skills"],"severity":"high"}
+{"sample":"mal-skill-sh-proxy-attack-1d55f72fca","path":"corpus/malicious/skills/sh-proxy-attack-1d55f72fca","class":"malicious","surface":["skills"],"severity":"high"}
+{"sample":"mal-skill-sh-proxy-attack-1f1c2bc825","path":"corpus/malicious/skills/sh-proxy-attack-1f1c2bc825","class":"malicious","surface":["skills"],"severity":"high"}
+{"sample":"mal-skill-sh-unauthorized-file-modification-77d54c9a48","path":"corpus/malicious/skills/sh-unauthorized-file-modification-77d54c9a48","class":"malicious","surface":["skills"],"severity":"high"}
+{"sample":"mal-skill-sh-unauthorized-file-modification-998d8c7f43","path":"corpus/malicious/skills/sh-unauthorized-file-modification-998d8c7f43","class":"malicious","surface":["skills"],"severity":"high"}

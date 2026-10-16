@@ -47,6 +47,7 @@ const (
 	ModeMCPConfig              // MCP servers: what the CONFIG says (see limits in prompt.go)
 	ModeCollusion              // skills: does a capability chain span several files?
 	ModeServer                 // MCP server source: do the tools do more than their docstrings say? (P-053)
+	ModeSteering               // skills: does a required step change the result the user receives? (P-068)
 )
 
 // Request is one artifact submission. Declared and Behavior are ALREADY redacted before
@@ -191,6 +192,8 @@ func modeInfo(m Mode) modeRow {
 		return modeRow{"mcp-config", "LLM-009", dimSupplyChain, "MCP server configuration risk (LLM judge — advisory, not confirmed)"}
 	case ModeServer:
 		return modeRow{"server", "LLM-010", dimIntent, "MCP server source does more than its tools say (LLM judge — advisory, not confirmed)"}
+	case ModeSteering:
+		return modeRow{"result", "LLM-011", dimInjection, "A required step changes the result the user receives (LLM judge — advisory, not confirmed)"}
 	}
 	return modeRow{"intent", "LLM-001", dimIntent, "Intent mismatch (LLM judge — advisory, not confirmed)"}
 }

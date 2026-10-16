@@ -171,9 +171,9 @@ func TestRun_OnlySkills_RedactsBehavior(t *testing.T) {
 	if len(notes) != 0 {
 		t.Errorf("no failures expected, got notes %+v", notes)
 	}
-	// The one skill is judged in BOTH modes (intent + injection); the permission is skipped.
-	if len(fc.reqs) != 2 {
-		t.Fatalf("expected 2 judge calls (intent+injection) on the 1 skill, got %d", len(fc.reqs))
+	// The one skill is judged in its three modes (intent + injection + result); the permission is skipped.
+	if len(fc.reqs) != 3 {
+		t.Fatalf("expected 3 judge calls (intent+injection+result) on the 1 skill, got %d", len(fc.reqs))
 	}
 	modes := map[Mode]bool{}
 	for _, r := range fc.reqs {
@@ -185,9 +185,9 @@ func TestRun_OnlySkills_RedactsBehavior(t *testing.T) {
 	if !modes[ModeIntent] || !modes[ModeInjection] {
 		t.Errorf("both modes must run; got %v", modes)
 	}
-	// Both modes flagged → an intent (LLM-001) and an injection (LLM-003) advisory finding.
-	if n := len(arts[0].Findings); n != 2 {
-		t.Fatalf("expected 2 advisory findings, got %d: %+v", n, arts[0].Findings)
+	// All three modes flagged → intent (LLM-001), injection (LLM-003) and result (LLM-011) advisory findings.
+	if n := len(arts[0].Findings); n != 3 {
+		t.Fatalf("expected 3 advisory findings, got %d: %+v", n, arts[0].Findings)
 	}
 	for _, f := range arts[0].Findings {
 		if f.Source != model.SrcLLM {

@@ -17,8 +17,8 @@ never scores. See [architecture.md](architecture.md#scoring) for the full formul
 **Advisory** means static analysis cannot confirm it — the report says so, and you should
 read the evidence before acting.
 
-**84 rule IDs** in this build — 46 engine rules + 14 structural + 6 permission + 8 LLM
-+ 8 scan notes + 2 gate messages. Of these, **74 score** and 10 never do (dimension 0).
+**85 rule IDs** in this build — 46 engine rules + 14 structural + 6 permission + 9 LLM
++ 8 scan notes + 2 gate messages. Of these, **75 score** and 10 never do (dimension 0).
 These counts are generated from the same tables the drift check reads, so if a count
 anywhere else in this repository disagrees with this line, that other count is stale.
 
@@ -32,7 +32,7 @@ carry falls in exactly one class:
   scan notes that are not `LLM-` IDs, and `GATE-001` (the gate message `scan` raises). The epoch is
   an integer folded into the hash, which the maintainers bump when deterministic detection
   code outside the engine rule table changes; nothing checks that they did.
-- **Outside `rules_version` entirely:** every `LLM-` ID — the 8 judge findings and the 3
+- **Outside `rules_version` entirely:** every `LLM-` ID — the 9 judge findings and the 3
   `LLM-` scan notes. The judge moves only `overall_effective`; a `--llm` report names it in
   its own `judge` block — `prompt_version`, `excerpt_version`, `model` and `samples`.
 
@@ -41,7 +41,7 @@ agree were produced by the same engine rule table.
 
 ## Contents
 
-- [1 — Prompt injection](#1--prompt-injection) (10)
+- [1 — Prompt injection](#1--prompt-injection) (11)
 - [2 — Excessive permissions](#2--excessive-permissions) (7)
 - [3 — Data exfiltration](#3--data-exfiltration) (12)
 - [4 — Code execution](#4--code-execution) (15)
@@ -66,6 +66,7 @@ agree were produced by the same engine rule table.
 | `INJ-005` | high | Fetches remote instructions to act on | The skill downloads a file named like instructions/steps/commands/payload from a remote URL. Whatever that file says, the agent is told to carry out — remote-controlled behaviour delivered after install. |
 | `LLM-003` | medium · advisory | Hidden prompt injection | A directive aimed at the agent, phrased to dodge keyword rules. Runs on skills, CLAUDE.md, subagents, slash commands and hooks. The severity is the tool's, from the category the model names (exfiltration, credential read, remote execution, safety disable, concealed directive, privilege escalation or sandbox escape → high; other directive → medium). |
 | `LLM-007` | high · advisory | Artifact tried to instruct the analyzer | While being examined, the content addressed the analysis model — telling it what to conclude, or to ignore its instructions. Legitimate content has no reason to talk to a scanner. Unlike every other verdict the SEVERITY IS THE TOOL'S, not the model's: a hijacked model would rate its own capture low. |
+| `LLM-011` | medium · advisory | A required step changes the result the user receives | The result pass (P-068), skills only: the SKILL.md body and the documents it names are asked one question — does a step presented as required make the result false to the user's data or task, in a way the declared purpose does not call for and the user cannot see? The severity is the tool's, from the category the model names (forced value, data tampering → high; unrequested artifact, presentation change, other → medium). The step's own rationale is not evidence; conversions, rounding and filtering for presentation, formatting rules, validation and the skill's own scratch files are not findings. |
 | `MCP-001` | high | Tool description asks the agent to read or hand over local files or secrets | A tool's own description tells the model to read a file, key or credential from the user's machine and pass it along. A description explains what a tool does; it has no business directing the model at the user's secrets — that is the tool-poisoning shape. |
 | `MCP-002` | medium | Tool description steers other tools or hides from the user | The description tries to change how the model uses OTHER tools, or tells it to keep something from the user. Sequencing among a connector's own tools is normal; a claim over every tool, or over what the user gets told, is a hijack attempt. |
 | `MCP-003` | medium | Tool description carries system-prompt style directives | Tags like <IMPORTANT> or [SYSTEM], or sentences addressed to 'the assistant', are how a description dresses itself up as the operator's instructions. A tool describes itself; it does not issue orders to the model. |

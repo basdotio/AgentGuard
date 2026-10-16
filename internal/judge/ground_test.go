@@ -141,7 +141,7 @@ func TestRun_UngroundedFindingIsDroppedAndCounted(t *testing.T) {
 	if llm005.Dimension != 0 {
 		t.Errorf("LLM-005 dimension = %d, want 0 (a note must never score)", llm005.Dimension)
 	}
-	if !strings.Contains(llm005.Why, "2") {
+	if !strings.Contains(llm005.Why, "3 flagged") { // one discard per question: intent, injection, result
 		t.Errorf("LLM-005 should count the discards, got %q", llm005.Why)
 	}
 }
