@@ -97,7 +97,7 @@ three votes of this model still believe.
 ## Done
 
 ```
-Merged: PR #88 (2026-10-16; find the sha with git log --grep P-067)
+Merged: PR #89 (2026-10-16; find the sha with git log --grep P-067)
 Evidence: results/aguard/2026-10-16-llm-gpt-4.1-mini-p067-skillharm-s3: judge 152 → 175, injection 9 → 16 of 40, LLM-011 escalated 44 (19 alone); first wording (…-p067-first-wording-skillharm-s3) 191
 Evidence: results/aguard/2026-10-16-llm-gpt-4.1-mini-p067-heldout-asm-benign-s3: 6 → 9 of 216 (first wording 26); …-p067-heldout-fresh-benign-{p065-,}s3: 10 → 11 of 216; …-p067-heldout-asm-malicious-s3: 68 of 123
 Evidence: results/aguard/2026-10-16-llm-gpt-4.1-mini-p067-benign-docs-s3: 384 trees, 67 → 65 (first wording 73)
