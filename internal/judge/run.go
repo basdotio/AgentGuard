@@ -518,6 +518,13 @@ func planFor(i int, a model.ArtifactReport, eg egress) []task {
 			// far sharper question than "contains instructions", which every skill body does.
 			ask(Request{Mode: ModeInjection, Declared: declared, Behavior: body},
 				[]sourceUnit{{file: "SKILL.md", text: body, firstLine: skill.BodyLine, lineMap: offsetLines(bodyLM, skill.BodyLine-1)}})
+
+			// The documents the body tells the agent to read are instruction text too (P-065): the
+			// same question, against the same declared purpose, over what SKILL.md points at.
+			if text, units, shortened := companionExcerpt(a.Path, skill.Body, eg); text != "" {
+				ask(Request{Mode: ModeInjection, Declared: declared, Behavior: text}, units)
+				out[len(out)-1].shortened = shortened
+			}
 		}
 
 		if text, units, shortened := explainExcerpt(decodedPayloads(a.Path, eg)); text != "" {

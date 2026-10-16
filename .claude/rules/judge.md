@@ -36,6 +36,7 @@ Bearer 头,明文 http 等于把它送上网),setup/test/judge 三处都过它,j
 `TestRun_PaddingBelowTheFoldStillShowsTheDirective` 替它守着那条路。intent 提示词多了一类**"披露了也要报"**(改包源、写 git hook / shell 启动文件 /
 定时任务):dev-env-setup 那个样本的描述老老实实写着"配置企业 npm 镜像",按"目的已披露不报"的老规则判官放行了它。LLM-005
 的 `Why` 现在带最多三条没落地的引文(截 120 字符,再过一次 Redact),用来区分"模型在转述"和"摘录切掉了它要引的那行"。
+**伴随文档趟**(`judge/companion.go`,P-065):skill 正文点名的 `.md`/`.txt`/`.pdf` 走一趟注入问题,只读**点名的**(按路径,其次按裸名在树内找,`FileReach` 过滤,最多 8 份,同一个 6000 字节预算,放不下的经 `boundedNote` 披露),不读树里所有文档——真实 skill 中位带 3 份、最多 69 份 `references/*.md`,全读是误报和费用。PDF 只走 `pdfText`(标准库,ASCII85/Flate + 文本算子,不认的过滤器一律返回空),引文落到文件不落到行(collapsed)。**别把这一趟改成"读树里所有 .md"**,也别跟第二层(文档点名的文档):240 棵 SkillHarm 里 92 棵的载荷就在第一层的点名文档里,P-065 之前判官一棵没抓到。
 **判官的两个版本号**(P-031):`ExcerptVersion`(`ground.go`)是**手动**的 —— 改了 `planFor` 给哪些 artifact 跑哪几趟、摘录怎么切
 (condense / capHeadTail / lineMap / 解码上限 / 声明用途和 hook、MCP、connector 的渲染 / 家目录替换与脱敏顺序)或引文怎么落地,**同一个提交里加一**,
 并把 `excerpt_version_test.go` 钉的 {版本, 摘要} 一起换掉;只换摘要不加版本,两份报告就会自称同样的摘录。
