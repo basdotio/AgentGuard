@@ -5,15 +5,14 @@
 # baselines/README.md "Measuring the judge" before citing any figure produced alongside this file.
 # THIS IS NOT A BASELINE: the verdicts depend on a model, a day and the sampling.
 #
-# WHAT THIS RUN IS FOR: the baseline for P-067's fresh held-out — 216 benign skill trees drawn by seed 20261016 from the
-# SkillMD and skillet-wild populations outside the 384 companion-naming set, never read per sample — on the P-065 binary
-# (main at the time), so the second wording has a same-day, same-model comparison on trees no proposal was tuned against.
-# The ClawHub held-out benign had already been used, as totals, to reword the question once.
+# WHAT THIS RUN IS FOR: P-068's false-positive control on the 384 benign trees that name a companion document, read
+# against the P-065 run of the same list: a benign workflow, formatting or calibration rule read as a forced value or
+# data tampering is the new question's cost. One more question per skill.
 #
 # measured by agent-guard's own adapter (agent-guard baselines/adapter/aguard) with --llm passed through to scan and, on the server-source route, to check (-aguard-check-llm, P-056), threshold "high" chosen by us, placement: by content, into a fake home; unplaceable trees are handed to `check` directly
 
 tool: aguard
-tool_version: aguard v0.26.0-2-ge4005c6-dirty (commit e4005c6, built 2026-10-16T03:22:34Z) · reputation entries=18 · rules=8fc8772b2951 · judge-prompt=cc2cab18585d · judge-excerpt=8
+tool_version: aguard v0.26.0-9-gbe2b423 (commit be2b423, built 2026-10-16T05:08:26Z) · reputation entries=18 · rules=8fc8772b2951 · judge-prompt=f7ddc1c6f745 · judge-excerpt=9
 threshold: high
 tool_extra_args:
     - --llm
@@ -26,7 +25,7 @@ uploads_samples_basis: >-
     this run passed --llm to aguard: redacted excerpts of every judged artifact were sent to the endpoint
     under `judge:`, three times per question; a server-source tree went through `check --llm`, so its declared tools and behaviour excerpt left the machine too.
 corpus_commit: 4f9c61be
-started_at: 2026-10-16T05:36:49.154327Z
+started_at: 2026-10-16T05:09:20.776465Z
 adapter: agent-guard baselines/adapter/aguard
 placement: by content, into a fake home; unplaceable trees are handed to `check` directly
 provisional: false
@@ -41,12 +40,12 @@ judge:
     timeout: 60s                      # default
     total_timeout: 10m                # default
     max_retries: 4
-    calls: 1319
-    failed: 3
+    calls: 4790
+    failed: 83
     skipped: 0
-    repaired: 6
-    prompt_version: cc2cab18585d
-    excerpt_version: 8
+    repaired: 103
+    prompt_version: f7ddc1c6f745
+    excerpt_version: 9
 fold: >-
     verdict = malicious when a deterministic finding is >= high, OR an LLM finding that ESCALATED
     (grounded; k of n at the majority bar) is >= high and its rule is not LLM-009 (advisory-only).
@@ -56,25 +55,25 @@ fold: >-
     judge.jsonl; per-kind-rule.txt is judgefold's table over the same rows. Folded by
     baselines/cmd/judgefold from raw/ (see raw_archive). Nothing here is hand-typed except this file.
 counts:
-    scored: 216
+    scored: 384
     no_verdict: 0
     error: 0
-    incomplete: 3
-work_list_size: 216
+    incomplete: 54
+work_list_size: 384
 judge_usage:
     basis: reported
     basis_note: 'summed from the tool''s own judge summary per sample, over the fold''s ledger (exactly the work list)'
-    reported_samples: 216
+    reported_samples: 384
     derived_samples: 0
-    calls: 1319
-    failed: 3
+    calls: 4790
+    failed: 83
     skipped: 0
-    repaired: 6
-    triage_calls: 20
-    retries: 1
-    prompt_tokens: 1984591
-    completion_tokens: 487983
+    repaired: 103
+    triage_calls: 173
+    retries: 2
+    prompt_tokens: 9913269
+    completion_tokens: 3114949
 raw_archive:                          # raw/ is not in the tree (P-039); the archive is this run's primary evidence
     asset: aguard-judge-raw-2026-10-p067.tar.gz
     sha256: 58219090259bcb3be4dbe0a30698cf5cf67b063b7712242fa449b5ed267fe3b1
-    note: 871625 bytes; attached to release v0.26.0 on 2026-10-16 (gh release download v0.26.0 --pattern aguard-judge-raw-2026-10-p067.tar.gz); the raw/ of the ten P-067 runs (four of the first wording, four of the second, the fresh held-out on both binaries), each under the directory name used here
+    note: 871625 bytes; attached to release v0.26.0 on 2026-10-16 (gh release download v0.26.0 --pattern aguard-judge-raw-2026-10-p067.tar.gz); the raw/ of the ten P-068 runs (four of the first wording, four of the second, the fresh held-out on both binaries), each under the directory name used here; attached before the proposal was renumbered from P-067 to P-068 (the v0.27.0 release record took 067), so the asset and the directories inside it carry the old number

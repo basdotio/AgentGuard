@@ -3,8 +3,8 @@
 
 - **Source**: the maintainer, 2026-10-16 ("做1、2"), after P-064 found injection the weakest dimension where visible (4 of 40)
 - **Depends on**: P-065 (the companion pass, which is what makes most of the 40 visible at all), P-041 (categories set the severity), P-049 (`categoryShown`)
-- **Branch**: `p/066-output-steering` (the measurement commits; the code was replaced by P-067 on the same branch)
-- **Rejected**: 2026-10-16, by the maintainer ("2": redo it as a separate question) — see Done. Superseded by [067](../complete/067-result-pass.md); the four result directories stay as the record., on top of `p/065-companion-documents`
+- **Branch**: `p/066-output-steering` (the measurement commits; the code was replaced by P-068 on the same branch)
+- **Rejected**: 2026-10-16, by the maintainer ("2": redo it as a separate question) — see Done. Superseded by [067](../complete/068-result-pass.md); the four result directories stay as the record., on top of `p/065-companion-documents`
 
 ## Problem
 
@@ -83,7 +83,7 @@ record either way.
 ## Done
 
 ```
-Rejected: 2026-10-16 — the maintainer chose the separate question (P-067); the clause and the row are reverted in the same branch, PromptVersion returns to cc2cab18585d for the injection pass
+Rejected: 2026-10-16 — the maintainer chose the separate question (P-068); the clause and the row are reverted in the same branch, PromptVersion returns to cc2cab18585d for the injection pass
 Evidence: results/aguard/2026-10-16-llm-gpt-4.1-mini-p066-skillharm-s3: judge 152 → 164, injection 9 → 15 of 40, output-steering named 0 times
 Evidence: results/aguard/2026-10-16-llm-gpt-4.1-mini-p066-benign-docs-s3: 384 trees, judge 67 → 68, any 73 → 78
 Evidence: results/aguard/2026-10-16-llm-gpt-4.1-mini-p066-heldout-asm-{malicious,benign}-s3: 68/123, 6/216 (any 7)

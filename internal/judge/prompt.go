@@ -139,7 +139,7 @@ const serverTask = "You are a security reviewer for MCP servers. Inside the data
 	"WHEN a description discloses it, for code that changes where this machine gets software. A tool that does " +
 	"exactly what its description says, with ordinary input validation and error handling, is NOT a finding."
 
-// steeringTask is the result pass's question (P-067): not "does the text hide a directive" (the
+// steeringTask is the result pass's question (P-068): not "does the text hide a directive" (the
 // injection pass) nor "does the behaviour match the description" (the intent pass), but "does a
 // required step change what the user GETS". SkillHarm's goal_hijacking and output_manipulation
 // samples touch no host and agree with their declared purpose; the harm is the answer — a mask

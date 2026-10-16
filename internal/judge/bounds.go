@@ -167,7 +167,7 @@ func boundedNote(tasks []task) (model.Finding, bool) {
 
 // fitsByUnits reports whether a mode's behavior is assembled by fitUnits, and so may leave whole units out.
 // Injection is here for the companion pass (P-065); the SKILL.md body pass never sets shortened. The
-// result pass (P-067) fits the body and the named documents together.
+// result pass (P-068) fits the body and the named documents together.
 func fitsByUnits(m Mode) bool {
 	return m == ModeExplain || m == ModeCollusion || m == ModeInjection || m == ModeSteering
 }

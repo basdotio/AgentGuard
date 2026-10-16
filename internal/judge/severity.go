@@ -82,7 +82,7 @@ var categoryTables = map[Mode][]category{
 		{"credential-to-network", model.SevHigh, "one file collects credentials or data and another sends it out"},
 		{"other", model.SevMedium, "a chain of some other kind"},
 	},
-	// The result pass (P-067). The two high rows are the result itself changed; a record nobody
+	// The result pass (P-068). The two high rows are the result itself changed; a record nobody
 	// asked for is medium — real skills write summaries and notes beside their output, and the
 	// injection pass already weighs one written under /root as privilege.
 	ModeSteering: {

@@ -47,7 +47,7 @@ const (
 	ModeMCPConfig              // MCP servers: what the CONFIG says (see limits in prompt.go)
 	ModeCollusion              // skills: does a capability chain span several files?
 	ModeServer                 // MCP server source: do the tools do more than their docstrings say? (P-053)
-	ModeSteering               // skills: does a required step change the result the user receives? (P-067)
+	ModeSteering               // skills: does a required step change the result the user receives? (P-068)
 )
 
 // Request is one artifact submission. Declared and Behavior are ALREADY redacted before

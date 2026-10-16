@@ -3,7 +3,7 @@ package judge
 
 import "fmt"
 
-// The result pass (P-067) asks one question of a skill's whole instruction text: does a step it
+// The result pass (P-068) asks one question of a skill's whole instruction text: does a step it
 // presents as required change what the user receives? It is a question neither of the two skill
 // passes asks — the intent pass compares the description with the scripts, the injection pass
 // looks for a directive beyond the declared purpose — and P-066 showed that folding it into the

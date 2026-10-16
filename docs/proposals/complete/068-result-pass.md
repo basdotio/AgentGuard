@@ -45,8 +45,9 @@ excerpt); `PromptVersion` moves because a mode was added, and the injection task
 ## Measured
 
 Live, `samples: 3`, gpt-4.1-mini, 2026-10-16, the P-065 binary (`judge-prompt cc2cab18585d`, what `main` was) against this
-branch, the same lists the same day; ten result directories under `results/aguard/2026-10-16-llm-gpt-4.1-mini-p067-*`, raw
-in `aguard-judge-raw-2026-10-p067.tar.gz` on v0.26.0. "judge" is the fold's predicate (escalated, grounded, 2 of 3 at
+branch, the same lists the same day; ten result directories under `results/aguard/2026-10-16-llm-gpt-4.1-mini-p068-*`, raw
+in `aguard-judge-raw-2026-10-p067.tar.gz` on v0.26.0 (named before this proposal was renumbered from 067 to 068 — the v0.27.0
+release record took 067 — so the asset and the directories inside it carry the old number). "judge" is the fold's predicate (escalated, grounded, 2 of 3 at
 high), "any" one vote at high; the held-out sets are read as totals only.
 
 **Two wordings.** The first (`f7ddc1c6f745`, commit be2b423) asked whether a required step "changes the result the
@@ -97,9 +98,9 @@ three votes of this model still believe.
 ## Done
 
 ```
-Merged: PR #89 (2026-10-16; find the sha with git log --grep P-067)
-Evidence: results/aguard/2026-10-16-llm-gpt-4.1-mini-p067-skillharm-s3: judge 152 → 175, injection 9 → 16 of 40, LLM-011 escalated 44 (19 alone); first wording (…-p067-first-wording-skillharm-s3) 191
-Evidence: results/aguard/2026-10-16-llm-gpt-4.1-mini-p067-heldout-asm-benign-s3: 6 → 9 of 216 (first wording 26); …-p067-heldout-fresh-benign-{p065-,}s3: 10 → 11 of 216; …-p067-heldout-asm-malicious-s3: 68 of 123
-Evidence: results/aguard/2026-10-16-llm-gpt-4.1-mini-p067-benign-docs-s3: 384 trees, 67 → 65 (first wording 73)
+Merged: PR #89 (2026-10-16; find the sha with git log --grep P-068)
+Evidence: results/aguard/2026-10-16-llm-gpt-4.1-mini-p068-skillharm-s3: judge 152 → 175, injection 9 → 16 of 40, LLM-011 escalated 44 (19 alone); first wording (…-p068-first-wording-skillharm-s3) 191
+Evidence: results/aguard/2026-10-16-llm-gpt-4.1-mini-p068-heldout-asm-benign-s3: 6 → 9 of 216 (first wording 26); …-p068-heldout-fresh-benign-{p065-,}s3: 10 → 11 of 216; …-p068-heldout-asm-malicious-s3: 68 of 123
+Evidence: results/aguard/2026-10-16-llm-gpt-4.1-mini-p068-benign-docs-s3: 384 trees, 67 → 65 (first wording 73)
 Evidence: raw aguard-judge-raw-2026-10-p067.tar.gz on v0.26.0 (sha256 58219090…fe3b1, 871,625 bytes); schema round-trip 58 files / 29,684 lines; ExcerptVersion 9 (digest 9b48519aaa7b6b16); PromptVersion ee01c8aa0cab; make verify: all gates passed
 ```

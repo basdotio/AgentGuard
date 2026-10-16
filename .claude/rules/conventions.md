@@ -43,7 +43,7 @@
   3 字节",那正是 `Shift+Down` 被拆成 keep-both 的原因);fixture 在结构上造不出多于一对的场景,
   于是"没有一个按键能一次回答多对"这条头号承诺一次都没被断言;fallback 那条路一行测试都没有。
   **只测"回答了正确的"等于没测。**
-- **`baselines/cmd/judgefold` 的金标测试自己 `go build` 一个 aguard 再跑**,所以 `go test` 的结果缓存看不见判官或流水线的源码改动:P-067 加了一趟之后 `make verify` 照样"全过",是复用了旧的通过结果,fresh worktree 里才红。改了 `planFor`、模式表或回复解析,**用 `go test -count=1 ./baselines/cmd/judgefold/` 再跑一次**;金标确实该变时 `JUDGEFOLD_WRITE_GOLDEN=1` 重生成并逐行看 diff。
+- **`baselines/cmd/judgefold` 的金标测试自己 `go build` 一个 aguard 再跑**,所以 `go test` 的结果缓存看不见判官或流水线的源码改动:P-068 加了一趟之后 `make verify` 照样"全过",是复用了旧的通过结果,fresh worktree 里才红。改了 `planFor`、模式表或回复解析,**用 `go test -count=1 ./baselines/cmd/judgefold/` 再跑一次**;金标确实该变时 `JUDGEFOLD_WRITE_GOLDEN=1` 重生成并逐行看 diff。
 - 测试是 table-driven 的,fixture 用 `t.TempDir()` 现搭(没有 `testdata/` 目录);judge 的测试用
   `httptest`。真正值钱的是**不变量测试** —— 不执行、符号链接不越界、secret 已脱敏、LLM 发现不动分数、
   `--fail-on` 契约。上面编号的不变量只要有改动,就补一条对应的测试。

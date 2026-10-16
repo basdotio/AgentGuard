@@ -179,7 +179,7 @@ Four more, `results/aguard/2026-10-16-llm-gpt-4.1-mini-p066-*`, are P-066 (the o
 question) against the P-065 binary on the same four lists: SkillHarm judge 152 → 164 (injection 9 → 15 of 40), the 384
 benign trees 67 → 68, the held-out sets unchanged. The new category name was never chosen by the model; read the
 proposal before citing the gain. Raw in `aguard-judge-raw-2026-10-p066.tar.gz` on v0.26.0.
-Ten more, `results/aguard/2026-10-16-llm-gpt-4.1-mini-p067-*`, are P-067 (the result pass, `LLM-011`) against the P-065
+Ten more, `results/aguard/2026-10-16-llm-gpt-4.1-mini-p068-*`, are P-068 (the result pass, `LLM-011`) against the P-065
 binary: a first wording on four lists (`…-first-wording-*`, kept because it put the held-out ClawHub benign at 26 of 216),
 the second wording on the same four (SkillHarm judge 152 → 175, the 384 benign trees 67 → 65, ClawHub benign 6 → 9,
 malicious 68), and a fresh held-out benign 216 (seed 20261016, outside every list a proposal was tuned on) on both

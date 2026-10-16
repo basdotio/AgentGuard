@@ -5,9 +5,9 @@
 # baselines/README.md "Measuring the judge" before citing any figure produced alongside this file.
 # THIS IS NOT A BASELINE: the verdicts depend on a model, a day and the sampling.
 #
-# WHAT THIS RUN IS FOR: P-067's second wording on the fresh held-out benign 216 (seed 20261016, SkillMD + skillet-wild
+# WHAT THIS RUN IS FOR: P-068's second wording on the fresh held-out benign 216 (seed 20261016, SkillMD + skillet-wild
 # trees outside the 384 companion-naming set, never read per sample), against the P-065 run of the same list. This is the
-# one benign reading nothing in P-067 was tuned against; totals only.
+# one benign reading nothing in P-068 was tuned against; totals only.
 #
 # measured by agent-guard's own adapter (agent-guard baselines/adapter/aguard) with --llm passed through to scan and, on the server-source route, to check (-aguard-check-llm, P-056), threshold "high" chosen by us, placement: by content, into a fake home; unplaceable trees are handed to `check` directly
 
@@ -76,4 +76,4 @@ judge_usage:
 raw_archive:                          # raw/ is not in the tree (P-039); the archive is this run's primary evidence
     asset: aguard-judge-raw-2026-10-p067.tar.gz
     sha256: 58219090259bcb3be4dbe0a30698cf5cf67b063b7712242fa449b5ed267fe3b1
-    note: 871625 bytes; attached to release v0.26.0 on 2026-10-16 (gh release download v0.26.0 --pattern aguard-judge-raw-2026-10-p067.tar.gz); the raw/ of the ten P-067 runs (four of the first wording, four of the second, the fresh held-out on both binaries), each under the directory name used here
+    note: 871625 bytes; attached to release v0.26.0 on 2026-10-16 (gh release download v0.26.0 --pattern aguard-judge-raw-2026-10-p067.tar.gz); the raw/ of the ten P-068 runs (four of the first wording, four of the second, the fresh held-out on both binaries), each under the directory name used here; attached before the proposal was renumbered from P-067 to P-068 (the v0.27.0 release record took 067), so the asset and the directories inside it carry the old number
