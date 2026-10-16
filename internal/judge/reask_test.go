@@ -138,7 +138,7 @@ func TestHTTP_ReaskCarriesTheRuleUnderAFreshNonce(t *testing.T) {
 		if nonce(first) == nonce(repeat) {
 			t.Fatalf("call %d: the repeat reused the nonce %s", i, nonce(first))
 		}
-		if strings.TrimSuffix(repeat, " "+reaskRule) != strings.Replace(first, nonce(first), nonce(repeat), -1) {
+		if strings.TrimSuffix(repeat, " "+reaskRule) != strings.ReplaceAll(first, nonce(first), nonce(repeat)) {
 			t.Fatalf("call %d: the repeat differs from the first beyond the nonce and the rule", i)
 		}
 	}
