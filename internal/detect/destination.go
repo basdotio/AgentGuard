@@ -4,6 +4,8 @@ package detect
 import (
 	"regexp"
 	"strings"
+
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // Destination consistency. A file that reads DEEPL_API_KEY and sends it to api.deepl.com
@@ -98,8 +100,8 @@ func hostMatchesService(host string, services map[string]bool) bool {
 		if hosted && i > n-3 {
 			continue // the platform's own label
 		}
-		if i+1 < n-1 && tldLike[labels[i+1]] {
-			continue // a whole domain embedded in a longer host
+		if i+1 < n-1 && tldLike[labels[i+1]] && !(i+2 == n-1 && len(labels[n-1]) == 2) {
+			continue // a whole domain embedded in a longer host (`coles.com.au` is a ccSLD, not one)
 		}
 		return true
 	}
@@ -181,4 +183,77 @@ func resolvedHosts(line string, assigns map[string]string) []string {
 		add(m[1], "")
 	}
 	return out
+}
+
+// CredentialGoesHome reports whether a file that reads a NAMED credential sends it only where that
+// credential belongs: every non-loopback destination the file names (after one level of same-file
+// resolution) carries the service token of a credential the file reads, or every destination is
+// loopback. It is the judge's question on the server pass (P-062): a tool that reads
+// WEATHER_API_KEY to call api.weather.com has not read a credential in the sense `credential-read`
+// means, and the model cannot tell that from the excerpt it is shown. The answer is computed over
+// the FULL file, by the same chain EXFIL-001 runs, so the two passes cannot disagree about where a
+// key went. A file that reads no named credential, or names no destination, answers false — the
+// absence of a chain is not a verdict about one.
+func CredentialGoesHome(path, text string) bool {
+	comments := commentOnlyLines(langForFile(path), text)
+	c := chain{literalIsEgress: true, assigns: urlAssignments(text)}
+	for _, ll := range logicalLines(langForFile(path), text, comments) {
+		if ll.comment {
+			continue
+		}
+		c.observe(ll.raw, ll.norm, func() model.Evidence { return model.Evidence{} })
+	}
+	if !c.cred || !c.net || len(c.credService) == 0 {
+		return false
+	}
+	if !c.netOffBox {
+		return true
+	}
+	return c.destConsistent()
+}
+
+// FileText is one file of an artifact, by its path relative to the artifact root.
+type FileText struct{ Path, Text string }
+
+// CredentialGoesHomeAcross is CredentialGoesHome over a whole artifact: the credentials named
+// anywhere in it against the destinations named anywhere in it. A server reads its key in
+// config.py and spends it in client.py, so the per-file answer is false for both files while the
+// server as a whole plainly talks only to its own service. The aggregate keeps every guard of the
+// per-file chain: one unreadable destination in any file, one destination that matches no named
+// credential, or no named credential at all, and the answer is false.
+func CredentialGoesHomeAcross(files []FileText) bool {
+	services := map[string]bool{}
+	var hosts []string
+	cred, net, offBox, unreadable := false, false, false, false
+	for _, f := range files {
+		comments := commentOnlyLines(langForFile(f.Path), f.Text)
+		c := chain{literalIsEgress: true, assigns: urlAssignments(f.Text)}
+		for _, ll := range logicalLines(langForFile(f.Path), f.Text, comments) {
+			if ll.comment {
+				continue
+			}
+			c.observe(ll.raw, ll.norm, func() model.Evidence { return model.Evidence{} })
+		}
+		cred, net = cred || c.cred, net || c.net
+		offBox, unreadable = offBox || c.netOffBox, unreadable || c.destUnreadable
+		for k := range c.credService {
+			services[k] = true
+		}
+		hosts = append(hosts, c.destHosts...)
+	}
+	if !cred || !net || len(services) == 0 || unreadable {
+		return false
+	}
+	if !offBox {
+		return true
+	}
+	if len(hosts) == 0 {
+		return false
+	}
+	for _, h := range hosts {
+		if !hostMatchesService(h, services) {
+			return false
+		}
+	}
+	return true
 }

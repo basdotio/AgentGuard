@@ -160,6 +160,11 @@ named a sample not in the corpus") and is kept verbatim as the scorer's own stat
 trees and, as a probe, on the 127 Cisco servers, run by the script beside each directory because no adapter exists; the
 decisions document says why that column is not a false-positive figure.
 
+Two more, `results/aguard/2026-10-16-llm-gpt-4.1-mini-p062-*/`, rerun P-059's 547 benign servers and P-053's 127 Cisco
+servers with the server pass's own-service control (P-062), same lists, config and model; they are a second draw beside the
+first, and the decisions document separates the control's share (12 of 96, measured offline on the same raws) from the
+draw's (96 → 91 live). Raw in `aguard-judge-raw-2026-10-p062.tar.gz` on v0.25.0.
+
 **What a judge run cost is folded by the driver, not by hand.** Each judged sample's ledger row
 carries `judge_usage` — `calls`, `failed`, `skipped`, `triage_calls`, `retries`, `prompt_tokens`,
 `completion_tokens` — read from the binary's own `--json` judge summary, and `run.yaml` sums them

@@ -50,6 +50,12 @@ type sourceUnit struct {
 	// which lived on one line in its encoded form. Every position in it maps to firstLine;
 	// counting lines inside it would invent a location that was never in the file.
 	collapsed bool
+	// goesHome is set on a behaviour unit whose FULL file reads a named credential and sends it
+	// only to that credential's own service or to loopback (detect.CredentialGoesHome, P-062).
+	// The judge sees a 2,000-byte excerpt and cannot tell WEATHER_API_KEY going to
+	// api.weather.com from a key going anywhere; the static chain over the whole file can, and
+	// on the server pass a `credential-read` grounded in such a file weighs medium.
+	goesHome bool
 	// lineMap, when set, gives the 1-based ORIGINAL line of each line of text. Condensed
 	// excerpts (excerpt.go: blank runs collapsed, comments dropped, head+tail kept) are no
 	// longer contiguous with the file, so firstLine arithmetic would cite the wrong place —
