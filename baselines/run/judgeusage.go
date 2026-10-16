@@ -31,6 +31,7 @@ type JudgeUsage struct {
 	Failed           int  `yaml:"failed"`
 	Skipped          int  `yaml:"skipped"`
 	Repaired         int  `yaml:"repaired,omitempty"` // answered calls read by the closed-early repair (P-034)
+	Reasked          int  `yaml:"reasked,omitempty"`  // calls asked once more after an unreadable reply (P-068)
 	TriageCalls      int  `yaml:"triage_calls"`
 	Retries          *int `yaml:"retries,omitempty"`
 	PromptTokens     *int `yaml:"prompt_tokens,omitempty"`
@@ -58,6 +59,7 @@ func SumJudgeUsage(rows []ledger.Row) *JudgeUsage {
 		t.Failed += u.Failed
 		t.Skipped += u.Skipped
 		t.Repaired += u.Repaired
+		t.Reasked += u.Reasked
 		t.TriageCalls += u.TriageCalls
 		if u.Retries == nil {
 			retriesKnown = false
