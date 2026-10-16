@@ -67,7 +67,7 @@
 {"sample":"ben-skill-asm-533197dd15f8","verdict":"benign"}
 {"sample":"ben-skill-asm-556837ed8dd3","verdict":"benign"}
 {"sample":"ben-skill-asm-55e9d3a099a5","verdict":"benign"}
-{"sample":"ben-skill-asm-587dbb503749","verdict":"malicious","severity":"high","dimensions":["injection"]}
+{"sample":"ben-skill-asm-587dbb503749","verdict":"benign"}
 {"sample":"ben-skill-asm-594389f6d5d0","verdict":"benign","severity":"medium"}
 {"sample":"ben-skill-asm-5a32900a01e1","verdict":"benign"}
 {"sample":"ben-skill-asm-5ebc27240999","verdict":"benign"}
@@ -95,7 +95,7 @@
 {"sample":"ben-skill-asm-765c294784d9","verdict":"benign"}
 {"sample":"ben-skill-asm-76f6e18cb7ee","verdict":"benign"}
 {"sample":"ben-skill-asm-77c68b284903","verdict":"benign"}
-{"sample":"ben-skill-asm-77fc4c820ce8","verdict":"benign"}
+{"sample":"ben-skill-asm-77fc4c820ce8","verdict":"malicious","severity":"high","dimensions":["injection"]}
 {"sample":"ben-skill-asm-7b95dc92985a","verdict":"benign"}
 {"sample":"ben-skill-asm-7c6544423d41","verdict":"benign"}
 {"sample":"ben-skill-asm-7d3dd5b5fbab","verdict":"benign"}
@@ -179,7 +179,7 @@
 {"sample":"ben-skill-asm-d7e26f159d81","verdict":"benign"}
 {"sample":"ben-skill-asm-d935cc481fe8","verdict":"benign"}
 {"sample":"ben-skill-asm-d96a286fd3fa","verdict":"benign"}
-{"sample":"ben-skill-asm-d9b52bdd1ec1","verdict":"malicious","severity":"high","dimensions":["exfiltration"]}
+{"sample":"ben-skill-asm-d9b52bdd1ec1","verdict":"malicious","severity":"high","dimensions":["exfiltration","injection"]}
 {"sample":"ben-skill-asm-da204a3ce17e","verdict":"benign"}
 {"sample":"ben-skill-asm-dcb562bb963a","verdict":"benign"}
 {"sample":"ben-skill-asm-dce0cf602137","verdict":"benign"}

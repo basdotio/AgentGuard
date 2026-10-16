@@ -28,7 +28,7 @@ const closingFence = "```"
 // first half: the second half is where a different `flagged` or a barrier quote would sit, and the
 // judge may only add (invariant #4) — a misread must fail visibly, not decide.
 // ReplyError says the endpoint answered and the answer could not be read as one verdict object: a
-// different failure from a transport error, and the one the judge asks once more about (P-068).
+// different failure from a transport error, and the one the judge asks once more about (P-069).
 type ReplyError struct{ Err error }
 
 func (e *ReplyError) Error() string { return e.Err.Error() }

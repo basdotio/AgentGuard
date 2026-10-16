@@ -81,7 +81,7 @@ type Stats struct {
 	// failures; counted so the repair is never silent.
 	Repaired int
 	// Reasked is the part of the judge calls whose first reply could not be read as a verdict and
-	// that were asked once more (P-068). An answered repeat is an answer; a failed one is in Failed.
+	// that were asked once more (P-069). An answered repeat is an answer; a failed one is in Failed.
 	Reasked int
 	// TriageCalls is the part of Calls that was triage. A judge question is asked `Samples`
 	// times and triage once, so without this split what one question costs can only be guessed.
@@ -169,7 +169,7 @@ type result struct {
 	ungrounded bool           // something was claimed but couldn't be quoted — dropped
 	unquoted   string         // the quote that failed to ground, clipped — for the LLM-005 note
 	repaired   bool           // the reply was read only by the closed-early repair (P-034)
-	reasked    bool           // the first reply was unreadable and the question was asked once more (P-068)
+	reasked    bool           // the first reply was unreadable and the question was asked once more (P-069)
 	// modelSeverity is the word the model wrote, clamped, and category the name it chose: both are
 	// shown in the vote list so a later run can audit the table, neither is weighed (P-041).
 	modelSeverity model.Severity
@@ -822,7 +822,7 @@ dispatch:
 // judge run shared one clock, so a handful of slow calls could starve every remaining check.
 //
 // A reply the reader refuses (ReplyError) is not a transport failure and is not retried as one;
-// the question is asked ONCE more, with reaskRule in its system message and a fresh nonce (P-068).
+// the question is asked ONCE more, with reaskRule in its system message and a fresh nonce (P-069).
 // The repeat is another draw of the same sampled question, so it decides nothing the first call
 // could not have; a second unreadable reply fails the call as before, visibly, in LLM-000.
 func execute(ctx context.Context, c Client, t task, opts Options) result {

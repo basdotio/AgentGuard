@@ -174,15 +174,15 @@
 {"sample":"ben-skill-gh-sparklecatta-lang-xsxb-band-xsxb-band","verdict":"benign","severity":"medium"}
 {"sample":"ben-skill-gh-sravansai04-engineering-skills-browser-testing","verdict":"malicious","severity":"high","dimensions":["exfiltration"]}
 {"sample":"ben-skill-gh-srezai-team-srezai-web-search-pro-skill","verdict":"malicious","severity":"high","dimensions":["exfiltration"]}
-{"sample":"ben-skill-gh-stakost-kubik-kubik","verdict":"benign","severity":"medium"}
+{"sample":"ben-skill-gh-stakost-kubik-kubik","verdict":"malicious","severity":"high","dimensions":["exfiltration"]}
 {"sample":"ben-skill-gh-subliminalcoding-bilbroswagginz-skills-trace-it","verdict":"benign"}
 {"sample":"ben-skill-gh-sumitkaulkar-adaptive-technical-learning-coach-adaptive-technical-lear","verdict":"benign"}
 {"sample":"ben-skill-gh-sven-ericmolzahn-iphone-duo-skill-iphone-duo-adaptation","verdict":"benign"}
 {"sample":"ben-skill-gh-syedzeerak-phouppo-phouppo","verdict":"benign","severity":"medium"}
 {"sample":"ben-skill-gh-t0nyn1-mishu-skill-mishu","verdict":"benign","severity":"medium"}
-{"sample":"ben-skill-gh-tanim913-odoo-migrate-to-20","verdict":"benign","severity":"medium"}
+{"sample":"ben-skill-gh-tanim913-odoo-migrate-to-20","verdict":"malicious","severity":"high","dimensions":["exfiltration"]}
 {"sample":"ben-skill-gh-taylorarndt-taylors-skill-collection-opensource-project-init","verdict":"benign"}
-{"sample":"ben-skill-gh-tbristo01-scratchpool-scratchpool","verdict":"malicious","severity":"high"}
+{"sample":"ben-skill-gh-tbristo01-scratchpool-scratchpool","verdict":"benign","severity":"medium"}
 {"sample":"ben-skill-gh-theigwe-moneyproof","verdict":"benign"}
 {"sample":"ben-skill-gh-thelazydevsinc-lazytools-help-me-review","verdict":"benign","severity":"medium"}
 {"sample":"ben-skill-gh-thomasyusheng-sketch-ielts-writing-tutor","verdict":"benign"}
@@ -256,7 +256,7 @@
 {"sample":"ben-skill-sk-GondaDaikon__tri-ssd__skills__gen-l1","verdict":"benign"}
 {"sample":"ben-skill-sk-ItamarZand88__claude-code-agentic-engineering__plugins__agent-sdk-pro__skills__sdk-agent-control","verdict":"benign"}
 {"sample":"ben-skill-sk-ItamarZand88__claude-code-agentic-engineering__plugins__agent-sdk-pro__skills__sdk-hooks-development","verdict":"malicious","severity":"high","dimensions":["filesystem"]}
-{"sample":"ben-skill-sk-ItamarZand88__claude-code-agentic-engineering__plugins__agent-sdk-pro__skills__sdk-typescript-patterns","verdict":"malicious","severity":"high"}
+{"sample":"ben-skill-sk-ItamarZand88__claude-code-agentic-engineering__plugins__agent-sdk-pro__skills__sdk-typescript-patterns","verdict":"malicious","severity":"high","dimensions":["injection"]}
 {"sample":"ben-skill-sk-ItamarZand88__claude-code-agentic-engineering__plugins__workflow__skills__best-practices-extractor","verdict":"benign"}
 {"sample":"ben-skill-sk-Ketomihine__my_skills__envi-pkg-local-improved","verdict":"benign"}
 {"sample":"ben-skill-sk-Ketomihine__my_skills__giottosuite-local","verdict":"benign"}
@@ -274,7 +274,7 @@
 {"sample":"ben-skill-sk-Okeysir198__P20251122-claude-skills__canvas-design","verdict":"benign"}
 {"sample":"ben-skill-sk-Okeysir198__P20251122-claude-skills__mcp-builder","verdict":"benign"}
 {"sample":"ben-skill-sk-Okeysir198__P20251122-claude-skills__skills-reference__tts-livekit-plugin","verdict":"benign","severity":"medium"}
-{"sample":"ben-skill-sk-Okeysir198__P20251122-claude-skills__skills-reference__webapp-testing","verdict":"benign","severity":"medium"}
+{"sample":"ben-skill-sk-Okeysir198__P20251122-claude-skills__skills-reference__webapp-testing","verdict":"malicious","severity":"high"}
 {"sample":"ben-skill-sk-Okeysir198__P20251122-claude-skills__tts-livekit-plugin","verdict":"benign","severity":"low"}
 {"sample":"ben-skill-sk-SHAJAR5110__Hackathon-II-phase2__.claude__skills__Authentication","verdict":"benign"}
 {"sample":"ben-skill-sk-SHAJAR5110__Hackathon-II-phase2__.claude__skills__fastapi-expert","verdict":"benign","severity":"low"}
@@ -295,7 +295,7 @@
 {"sample":"ben-skill-sk-Z1-Test__temp-harshdeep-st17__.github__skills__doc-gherkin-authoring","verdict":"benign"}
 {"sample":"ben-skill-sk-Z1-Test__temp-harshdeep-st17__.github__skills__research-prd-authoring","verdict":"benign"}
 {"sample":"ben-skill-sk-aadilmallick__claude-skills__github-cli","verdict":"benign"}
-{"sample":"ben-skill-sk-aadilmallick__claude-skills__plan-preview-skill","verdict":"benign"}
+{"sample":"ben-skill-sk-aadilmallick__claude-skills__plan-preview-skill","verdict":"malicious","severity":"high"}
 {"sample":"ben-skill-sk-aadilmallick__claude-skills__resume-creator","verdict":"benign"}
 {"sample":"ben-skill-sk-aj-geddes__claude-code-bmad-skills__bmad-planning-orchestrator__skills__bmad-parallel-plan","verdict":"benign"}
 {"sample":"ben-skill-sk-aj-geddes__claude-code-bmad-skills__bmad-planning-orchestrator__skills__bmad-prd","verdict":"benign","severity":"medium"}

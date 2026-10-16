@@ -316,7 +316,7 @@ everything on your machine. That trade-off is yours.
   first object that starts with a comma, and any reply holding two objects, fails the call: the
   first half is never read alone, because the second may carry a different `flagged`. A repaired
   reply is an answer, not a failure; the judge block counts it as `repaired`.
-- **A reply the reader refuses is asked once more** (P-068). Measured on real skill trees, 1.7% of calls came
+- **A reply the reader refuses is asked once more** (P-069). Measured on real skill trees, 1.7% of calls came
   back as JSON the parser rejects — a `\x` escape inside a quoted line, a stray `]` or `}` after a member — and
   each was a question that counted as never asked (an `LLM-000` note; 12% of the 384 trees in one run were short a
   question). Such a reply is not a transport failure and is not retried as one: the same question goes once more,

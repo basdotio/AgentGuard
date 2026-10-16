@@ -5,13 +5,15 @@
 # baselines/README.md "Measuring the judge" before citing any figure produced alongside this file.
 # THIS IS NOT A BASELINE: the verdicts depend on a model, a day and the sampling.
 #
-# WHAT THIS RUN IS FOR: P-068 on the 240 SkillHarm trees against the P-067 run of the same list: failed calls and re-asks,
-# and the judge totals unchanged within the run band.
+# WHAT THIS RUN IS FOR: P-068, SECOND WORDING (judge-prompt ee01c8aa0cab: the result must be false to the data and invisible in it; presentation changes listed as not findings) (the result pass, LLM-011: its own question over the SKILL.md body and the named documents —
+# does a required step change the result the user receives?), on the 240 SkillHarm trees, read against the P-065 run of
+# the same list (P-066's clause and row are reverted in this binary). The cells that should move are goal_hijacking and
+# output_manipulation (40); the rest is the run-to-run band.
 #
 # measured by agent-guard's own adapter (agent-guard baselines/adapter/aguard) with --llm passed through to scan and, on the server-source route, to check (-aguard-check-llm, P-056), threshold "high" chosen by us, placement: by content, into a fake home; unplaceable trees are handed to `check` directly
 
 tool: aguard
-tool_version: aguard v0.26.0-15-gb46ddde (commit b46ddde, built 2026-10-16T11:53:24Z) · reputation entries=18 · rules=8fc8772b2951 · judge-prompt=b851dfd5412b · judge-excerpt=9
+tool_version: aguard v0.26.0-10-g868707b (commit 868707b, built 2026-10-16T05:35:52Z) · reputation entries=18 · rules=8fc8772b2951 · judge-prompt=ee01c8aa0cab · judge-excerpt=9
 threshold: high
 tool_extra_args:
     - --llm
@@ -24,7 +26,7 @@ uploads_samples_basis: >-
     this run passed --llm to aguard: redacted excerpts of every judged artifact were sent to the endpoint
     under `judge:`, three times per question; a server-source tree went through `check --llm`, so its declared tools and behaviour excerpt left the machine too.
 corpus_commit: 4f9c61be
-started_at: 2026-10-16T11:54:37.460706Z
+started_at: 2026-10-16T05:37:07.601912Z
 adapter: agent-guard baselines/adapter/aguard
 placement: by content, into a fake home; unplaceable trees are handed to `check` directly
 provisional: false
@@ -40,11 +42,11 @@ judge:
     total_timeout: 10m                # default
     max_retries: 4
     calls: 2594
-    failed: 1
+    failed: 11
     skipped: 0
-    repaired: 48
-    reasked: 10
-    prompt_version: b851dfd5412b
+    repaired: 36
+    reasked: 0
+    prompt_version: ee01c8aa0cab
     excerpt_version: 9
 fold: >-
     verdict = malicious when a deterministic finding is >= high, OR an LLM finding that ESCALATED
@@ -58,7 +60,7 @@ counts:
     scored: 240
     no_verdict: 0
     error: 0
-    incomplete: 1
+    incomplete: 11
 work_list_size: 240
 judge_usage:
     basis: reported
@@ -66,15 +68,15 @@ judge_usage:
     reported_samples: 240
     derived_samples: 0
     calls: 2594
-    failed: 1
+    failed: 11
     skipped: 0
-    repaired: 48
-    reasked: 10
+    repaired: 36
+    reasked: 0
     triage_calls: 71
-    retries: 0
-    prompt_tokens: 4576740
-    completion_tokens: 1005845
+    retries: 1
+    prompt_tokens: 4556996
+    completion_tokens: 1032258
 raw_archive:                          # raw/ is not in the tree (P-039); the archive is this run's primary evidence
-    asset: aguard-judge-raw-2026-10-p068.tar.gz
-    sha256: ca45065558c46b420a70095f49108e2dfc9e3df3163d63edb8f381b25d694313
-    note: 327858 bytes; attached to release v0.26.0 on 2026-10-16 (gh release download v0.26.0 --pattern aguard-judge-raw-2026-10-p068.tar.gz); the raw/ of the three P-068 runs, each under the directory name used here
+    asset: aguard-judge-raw-2026-10-p067.tar.gz
+    sha256: 58219090259bcb3be4dbe0a30698cf5cf67b063b7712242fa449b5ed267fe3b1
+    note: 871625 bytes; attached to release v0.26.0 on 2026-10-16 (gh release download v0.26.0 --pattern aguard-judge-raw-2026-10-p067.tar.gz); the raw/ of the ten P-068 runs (four of the first wording, four of the second, the fresh held-out on both binaries), each under the directory name used here; attached before the proposal was renumbered from P-067 to P-068 (the v0.27.0 release record took 067), so the asset and the directories inside it carry the old number

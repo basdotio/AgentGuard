@@ -31,7 +31,7 @@ type JudgeUsage struct {
 	Failed           int  `yaml:"failed"`
 	Skipped          int  `yaml:"skipped"`
 	Repaired         int  `yaml:"repaired,omitempty"` // answered calls read by the closed-early repair (P-034)
-	Reasked          int  `yaml:"reasked,omitempty"`  // calls asked once more after an unreadable reply (P-068)
+	Reasked          int  `yaml:"reasked,omitempty"`  // calls asked once more after an unreadable reply (P-069)
 	TriageCalls      int  `yaml:"triage_calls"`
 	Retries          *int `yaml:"retries,omitempty"`
 	PromptTokens     *int `yaml:"prompt_tokens,omitempty"`

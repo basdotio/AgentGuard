@@ -112,7 +112,7 @@ func systemPrompt(mode Mode, nonce string) string {
 }
 
 // reaskRule is appended to the system message of the one repeat of a question whose first reply
-// could not be read (P-068). It names the failure in general terms only — never the reply's own
+// could not be read (P-069). It names the failure in general terms only — never the reply's own
 // text, which may carry anything from the artifact — and asks for the shape again. Measured
 // before this: 1.7% of calls on real skill trees came back as JSON the reader refuses (a `\x`
 // escape inside a quoted line, a stray `]` or `}` after a member), and each was a question that

@@ -68,7 +68,7 @@ type Request struct {
 	// would measure nothing at all.
 	Temperature float64
 	// Reask marks the one repeat of a question whose first reply could not be read as a verdict
-	// object (P-068): the same content under a fresh nonce, with reaskRule added to the system
+	// object (P-069): the same content under a fresh nonce, with reaskRule added to the system
 	// message. Run sets it; a request that arrives with it set is never repeated again.
 	Reask bool
 }

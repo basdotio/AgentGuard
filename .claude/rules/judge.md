@@ -69,6 +69,6 @@ hook capability(`LLM-008`,维度 2)、server source(`LLM-010`,维度 10,P-053:`c
 且之后只剩空白或收尾围栏、成员名不重复(`EqualFold`,和 encoding/json 匹配字段的方式一样)。**不要改成"解码第一个值、忽略后面"**:
 第一个对象后面以逗号开头的那段正是另一个 `flagged` 或 barrier 引文所在,只读前半个就是替判官换了答案(不变量 #4),`{…}{…}` 同理。
 干净回复仍按最外层 `{…}` 读,一个字节不变(`TestParseVerdict_ReadsOneObject` 拿旧读法当参照,`FuzzParseVerdict` 用独立判据);
-`Verdict.repaired` 不导出,模型写不进来,`Run` 数进 `repaired`。改读法不动 `PromptVersion`/`ExcerptVersion`(两者都不覆盖回复解析),由 `tool_version` 标识。**读不了的回复只再问一次**(`ReplyError` → `execute` 带 `Request.Reask` 重问,系统消息加 `reaskRule`,P-068):不是传输错误、不走退避重试;重问只是同一个抽样问题再抽一次,所以它决定不了第一次决定不了的事。**别把回复的原文塞进重问**(那是被扫内容),**别重问第二次**(两次都读不了就是失败,进 `LLM-000`),`reaskRule` 是固定文本、进 `PromptVersion` 的 call shape。
+`Verdict.repaired` 不导出,模型写不进来,`Run` 数进 `repaired`。改读法不动 `PromptVersion`/`ExcerptVersion`(两者都不覆盖回复解析),由 `tool_version` 标识。**读不了的回复只再问一次**(`ReplyError` → `execute` 带 `Request.Reask` 重问,系统消息加 `reaskRule`,P-069):不是传输错误、不走退避重试;重问只是同一个抽样问题再抽一次,所以它决定不了第一次决定不了的事。**别把回复的原文塞进重问**(那是被扫内容),**别重问第二次**(两次都读不了就是失败,进 `LLM-000`),`reaskRule` 是固定文本、进 `PromptVersion` 的 call shape。
 完整参考:[docs/llm-judge.md](../../docs/llm-judge.md)。
 
