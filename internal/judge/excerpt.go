@@ -512,9 +512,16 @@ func boundedRedact(s string, max int, eg egress) string {
 // the whole point: grounding (ground.go) checks a verdict's quote against what the model was
 // actually shown, so a unit holding text that never got sent would ground a claim about
 // something the model could not have seen.
-func behaviorExcerpt(dir string, eg egress) (string, []sourceUnit) {
+//
+// named are the files the instruction text points the agent at (namedFiles), by path from the skill
+// root or by bare name; they go first, in the order named, and the rest follow in walk order (P-070).
+// Measured before this: of 62 SkillHarm trees the judge missed, 13 had their payload in a file the
+// model never saw and 16 in one it saw a part of — a `scripts/preflight_env.py` the SKILL.md says to
+// run, behind nine other scripts in a 6,000-byte budget that walk order spent first.
+func behaviorExcerpt(dir string, eg egress, named []string) (string, []sourceUnit) {
 	var units []sourceUnit
 	total := 0
+	var paths []string
 	_ = filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil
@@ -533,9 +540,16 @@ func behaviorExcerpt(dir string, eg egress) (string, []sourceUnit) {
 		if !behaviorExts[strings.ToLower(filepath.Ext(p))] {
 			return nil
 		}
+		paths = append(paths, p)
+		return nil
+	})
+	for _, p := range namedFirst(dir, paths, named) {
+		if total >= maxExcerptBytes {
+			break
+		}
 		raw := readAtMost(p, maxFileRead)
 		if raw == nil {
-			return nil
+			continue
 		}
 		// Redact BEFORE condensing or truncating: a secret straddling the byte cap must not
 		// survive as a sub-threshold partial. The rel path is redacted too (a path segment could
@@ -547,14 +561,13 @@ func behaviorExcerpt(dir string, eg egress) (string, []sourceUnit) {
 		header := "# " + detect.Redact(rel) + "\n"
 		room := maxExcerptBytes - total - len(header) - 2 // 2 = the blank line after each file
 		if room <= 0 {
-			return filepath.SkipAll
+			break
 		}
 		red, lm = capHeadTail(red, lm, room)
 		units = append(units, sourceUnit{file: detect.Redact(rel), text: red, firstLine: 1, lineMap: lm,
 			goesHome: detect.CredentialGoesHome(rel, string(raw))})
 		total += len(header) + len(red) + 2
-		return nil
-	})
+	}
 
 	// Each file fits the budget as walked; settled as one field, a file the final redaction pushed past it is
 	// left out like any file past the budget (fitUnits), and the rest are read back from what is sent.
@@ -568,6 +581,64 @@ func behaviorExcerpt(dir string, eg egress) (string, []sourceUnit) {
 		units[k].text = sent[k]
 	}
 	return text, units
+}
+
+// fileRefRe finds the file names an instruction text can point the agent at: a path-ish token with an
+// extension. Links, backticks and prose surround the name with characters outside the class.
+var fileRefRe = regexp.MustCompile(`[\w./\\-]+\.[A-Za-z0-9]{1,6}\b`)
+
+// namedFiles returns the files body names whose extension is in exts, in order of first mention,
+// as written (slashes normalised, leading ./ dropped), deduplicated.
+func namedFiles(body string, exts map[string]bool) []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, tok := range fileRefRe.FindAllString(body, -1) {
+		name := strings.TrimLeft(strings.ReplaceAll(tok, `\`, "/"), "./")
+		if name == "" || !exts[strings.ToLower(filepath.Ext(name))] || seen[name] {
+			continue
+		}
+		seen[name] = true
+		out = append(out, name)
+	}
+	return out
+}
+
+// namedFirst orders the walked paths: those the instruction text names, by path from dir or by bare
+// name, in the order named; then the rest as walked. A name that matches nothing changes nothing.
+func namedFirst(dir string, paths, named []string) []string {
+	if len(named) == 0 {
+		return paths
+	}
+	byRel, byBase := map[string]string{}, map[string]string{}
+	for _, p := range paths {
+		rel, err := filepath.Rel(dir, p)
+		if err != nil {
+			continue
+		}
+		rel = filepath.ToSlash(rel)
+		byRel[rel] = p
+		if base := strings.ToLower(filepath.Base(rel)); byBase[base] == "" {
+			byBase[base] = p
+		}
+	}
+	var out []string
+	taken := map[string]bool{}
+	for _, n := range named {
+		p := byRel[n]
+		if p == "" {
+			p = byBase[strings.ToLower(filepath.Base(n))]
+		}
+		if p != "" && !taken[p] {
+			taken[p] = true
+			out = append(out, p)
+		}
+	}
+	for _, p := range paths {
+		if !taken[p] {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // headed renders the intent pass's behavior: each file's text under a `# <file>` line, with a blank line
