@@ -316,6 +316,14 @@ everything on your machine. That trade-off is yours.
   first object that starts with a comma, and any reply holding two objects, fails the call: the
   first half is never read alone, because the second may carry a different `flagged`. A repaired
   reply is an answer, not a failure; the judge block counts it as `repaired`.
+- **A reply the reader refuses is asked once more** (P-069). Measured on real skill trees, 1.7% of calls came
+  back as JSON the parser rejects — a `\x` escape inside a quoted line, a stray `]` or `}` after a member — and
+  each was a question that counted as never asked (an `LLM-000` note; 12% of the 384 trees in one run were short a
+  question). Such a reply is not a transport failure and is not retried as one: the same question goes once more,
+  under a fresh nonce, with a fixed format rule added to the system message (one JSON object, nothing else, escape
+  backslashes and quotes). The repeat is another draw of a sampled question, so it decides nothing the first call
+  could not have; a second unreadable reply fails the call as before. The judge block counts the repeats as
+  `reasked`; the reply's own text never goes back to the model.
 - **The severity of a judge finding is the tool's, not the model's** (P-041). Each pass asks the
   model for a `category` from a closed list — the kind of thing it found — and a table in
   `internal/judge/severity.go` maps the category to a severity. The model's own `severity` word is
@@ -529,9 +537,9 @@ a "consensus" of 1-of-3.
 With `--llm` the summary carries one line about the judge itself — `LLM judge ran over N
 artifact(s) in M call(s) and had nothing to add`, `… and added K advisory leads`, or `LLM judge
 did not run: <reason>` — and the "LLM judge leads" section is present even when empty, carrying
-that line. When some replies needed the closed-early repair, the line says how many beside the
-failures (`(0 failed, 0 skipped, 1 repaired)`); with none it reads as before. JSON has the same as
-`judge` (`ran`, `reason`, `artifacts`, `calls`, `failed`, `skipped`, `repaired` — always present, like
+that line. When some replies needed the closed-early repair or a re-ask, the line says how many beside the
+failures (`(0 failed, 0 skipped, 1 repaired, 2 re-asked)`); with none it reads as before. JSON has the same as
+`judge` (`ran`, `reason`, `artifacts`, `calls`, `failed`, `skipped`, `repaired`, `reasked` — always present, like
 the two before it — `findings`, `endpoint`, and `temperature_omitted` when the endpoint refused the temperature member), plus what it cost: `triage_calls` (the part of `calls` that
 was triage, asked once where a question is asked `samples` times), `retries`, and
 `prompt_tokens` / `completion_tokens` — the last two absent when the endpoint reported no usage,

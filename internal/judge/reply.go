@@ -27,7 +27,24 @@ const closingFence = "```"
 // twice. Any other text after the first object that starts with `,` is refused, never read as its
 // first half: the second half is where a different `flagged` or a barrier quote would sit, and the
 // judge may only add (invariant #4) — a misread must fail visibly, not decide.
+// ReplyError says the endpoint answered and the answer could not be read as one verdict object: a
+// different failure from a transport error, and the one the judge asks once more about (P-069).
+type ReplyError struct{ Err error }
+
+func (e *ReplyError) Error() string { return e.Err.Error() }
+func (e *ReplyError) Unwrap() error { return e.Err }
+
+// parseVerdict reads one reply; every failure to read it is a ReplyError, so execute can tell an
+// unreadable answer from an endpoint that did not answer.
 func parseVerdict(content string) (Verdict, error) {
+	v, err := parseReply(content)
+	if err != nil {
+		return Verdict{}, &ReplyError{Err: err}
+	}
+	return v, nil
+}
+
+func parseReply(content string) (Verdict, error) {
 	v, err := sliceOutermost(content)
 	first, rest, ok := firstObject(content)
 	if !ok || !strings.HasPrefix(strings.TrimLeft(rest, jsonSpace), ",") {

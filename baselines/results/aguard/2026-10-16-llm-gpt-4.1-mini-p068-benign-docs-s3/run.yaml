@@ -44,6 +44,7 @@ judge:
     failed: 58
     skipped: 0
     repaired: 96
+    reasked: 0
     prompt_version: ee01c8aa0cab
     excerpt_version: 9
 fold: >-
@@ -69,6 +70,7 @@ judge_usage:
     failed: 58
     skipped: 0
     repaired: 96
+    reasked: 0
     triage_calls: 173
     retries: 3
     prompt_tokens: 10066599

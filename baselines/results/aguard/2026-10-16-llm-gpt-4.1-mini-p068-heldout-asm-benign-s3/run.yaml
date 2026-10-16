@@ -43,6 +43,7 @@ judge:
     failed: 6
     skipped: 0
     repaired: 42
+    reasked: 0
     prompt_version: ee01c8aa0cab
     excerpt_version: 9
 fold: >-
@@ -68,6 +69,7 @@ judge_usage:
     failed: 6
     skipped: 0
     repaired: 42
+    reasked: 0
     triage_calls: 31
     retries: 1
     prompt_tokens: 3386570

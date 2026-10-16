@@ -103,7 +103,7 @@ func TestPromptVersion_EveryInputIsDecided(t *testing.T) {
 		fields map[string]string
 	}{
 		{reflect.TypeOf(Request{}), map[string]string{
-			"Artifact": notSent, "Mode": enumerated, "Declared": standIn, "Behavior": standIn, "Temperature": enumerated}},
+			"Artifact": notSent, "Mode": enumerated, "Declared": standIn, "Behavior": standIn, "Temperature": enumerated, "Reask": enumerated}},
 		{reflect.TypeOf(TriageItem{}), map[string]string{"RuleID": standIn, "Evidence": standIn}},
 		{reflect.TypeOf(chatRequest{}), map[string]string{"Model": standIn, "Messages": rendered, "Temperature": rendered}},
 		{reflect.TypeOf(chatMessage{}), map[string]string{"Role": rendered, "Content": rendered}},
@@ -147,8 +147,8 @@ func TestPromptVersion_EveryInputIsDecided(t *testing.T) {
 	}
 	for _, m := range passModes {
 		for _, temp := range []float64{0, samplingTemperature} {
-			if n := variants[key{m, temp}]; n != 4 {
-				t.Errorf("mode %d at temperature %v has %d shapes, want 4 (both sides, declared empty, behavior empty, both empty)", m, temp, n)
+			if n := variants[key{m, temp}]; n != 5 {
+				t.Errorf("mode %d at temperature %v has %d shapes, want 5 (both sides, declared empty, behavior empty, both empty, re-asked)", m, temp, n)
 			}
 		}
 	}

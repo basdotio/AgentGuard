@@ -67,6 +67,10 @@ type Request struct {
 	// the same answer N times: the votes would be identical by construction and the "agreement"
 	// would measure nothing at all.
 	Temperature float64
+	// Reask marks the one repeat of a question whose first reply could not be read as a verdict
+	// object (P-069): the same content under a fresh nonce, with reaskRule added to the system
+	// message. Run sets it; a request that arrives with it set is never repeated again.
+	Reask bool
 }
 
 // twoSided reports whether this request compares a declared side against a behavior side (and

@@ -603,9 +603,16 @@ func judgeLine(j *model.JudgeSummary) string {
 	}
 	s := fmt.Sprintf("LLM judge ran over %d artifact(s) in %d call(s)", j.Artifacts, j.Calls)
 	switch {
-	case j.Repaired > 0:
-		// A repaired reply is an answer, but the reader should be able to see that some needed it.
-		s += fmt.Sprintf(" (%d failed, %d skipped, %d repaired)", j.Failed, j.Skipped, j.Repaired)
+	case j.Repaired > 0 || j.Reasked > 0:
+		// A repaired or re-asked reply is an answer, but the reader should be able to see that some needed it.
+		s += fmt.Sprintf(" (%d failed, %d skipped", j.Failed, j.Skipped)
+		if j.Repaired > 0 {
+			s += fmt.Sprintf(", %d repaired", j.Repaired)
+		}
+		if j.Reasked > 0 {
+			s += fmt.Sprintf(", %d re-asked", j.Reasked)
+		}
+		s += ")"
 	case j.Failed > 0 || j.Skipped > 0:
 		s += fmt.Sprintf(" (%d failed, %d skipped)", j.Failed, j.Skipped)
 	}

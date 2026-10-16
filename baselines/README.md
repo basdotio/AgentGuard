@@ -184,6 +184,10 @@ binary: a first wording on four lists (`…-first-wording-*`, kept because it pu
 the second wording on the same four (SkillHarm judge 152 → 175, the 384 benign trees 67 → 65, ClawHub benign 6 → 9,
 malicious 68), and a fresh held-out benign 216 (seed 20261016, outside every list a proposal was tuned on) on both
 binaries (10 → 11). Raw in `aguard-judge-raw-2026-10-p067.tar.gz` on v0.26.0.
+Three more, `results/aguard/2026-10-16-llm-gpt-4.1-mini-p069-*`, are P-069 (a reply the reader refuses is asked once
+more) against the P-068 binary: on the 384 benign trees failed calls 58 → 4 and trees short a question 48 → 4; SkillHarm
+11 → 1; the held-out ClawHub benign 3 → 1 trees short; judge totals within the run band. Raw in
+`aguard-judge-raw-2026-10-p068.tar.gz` on v0.26.0.
 
 **What a judge run cost is folded by the driver, not by hand.** Each judged sample's ledger row
 carries `judge_usage` — `calls`, `failed`, `skipped`, `triage_calls`, `retries`, `prompt_tokens`,
