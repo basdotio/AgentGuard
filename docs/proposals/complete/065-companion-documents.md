@@ -118,6 +118,7 @@ deferred proposal, with the false-positive measurement on the 400 real trees it 
 
 ```
 Merged: PR #87 (2026-10-16; find the sha with git log --grep P-065)
+Released: v0.27.0
 Evidence: results/aguard/2026-10-16-llm-gpt-4.1-mini-p065-skillharm-s3: 240 asked, static 17, judge 96 → 152 (doc 0 → 34 of 54, PDF 0 → 26 of 38), any 108 → 173
 Evidence: results/aguard/2026-10-16-llm-gpt-4.1-mini-p065-benign-docs-{v0.26.0-,}s3: 384 benign trees naming a companion, judge 66 → 67, companion-grounded flags 0; calls 2,525 → 3,641
 Evidence: results/aguard/2026-10-16-llm-gpt-4.1-mini-p065-heldout-asm-{malicious,benign}-s3: 68/123 and 6/216, unchanged (no tree names a companion)

@@ -17,7 +17,33 @@ rate copied into prose goes stale on the next rule. `git tag` and the Releases p
 - Invariants: never executes scanned content, no cross-root symlink reads, secret redaction before storage (+ high-entropy fallback).
 - Single static binary (`CGO_ENABLED=0`), MIT + SPDX, CI, bilingual README.
 
-## v0.2.0 – v0.26.0
+## v0.2.0 – v0.27.0
+
+**v0.27.0 (2026-10-16) — the terminal report is written for a reader who does not write code, and the judge reads the
+documents a skill tells the agent to read, PDFs included.**
+
+No rule was added or removed and no score formula, flag or exit code changed; `--fail-on` is untouched. On the `aguard
+version` line `judge-excerpt` changes (7 → 8: the judge is shown the companion documents a `SKILL.md` names) and `rules`
+(`8fc8772b2951`) and `judge-prompt` (`cc2cab18585d`) do not, so LLM findings are not comparable with earlier runs. **Two
+things a reader should know**: the default terminal report is shorter and in a different order — every finding is still
+printed, `--verbose` keeps everything the old report showed, and `--json`, `--sarif` and `--html` are unchanged; and with
+`--llm`, a skill that names documents in its `SKILL.md` sends those documents to the judge too, so such a skill costs more
+judge calls.
+
+- **A report for readers.** The default terminal report puts, under each static finding, the judge's view in plain words
+  as advice that leaves the finding and the score standing; a "Why N" line naming the findings that set the score; a fixed
+  next step (the file and line to read, and for a skill the load-time gate can approve, the exact `aguard approve`
+  command); and the disclosure of what was sent to the judge as one "Sent to" line instead of a coverage note. Judge
+  versions move to `--verbose`; a single-target `check` no longer lists environment locations that do not apply to it; a
+  clean result prints in three lines. `aguard llm setup` now says the judge can only add findings or raise the risk, never
+  remove a finding or make a result look safer (P-058).
+- **Companion documents.** "Read `PREFLIGHT.md` in full before starting" makes the named file an instruction file. The
+  judge now reads the documents a `SKILL.md` names — Markdown and PDF text — as part of what the skill tells the agent,
+  bounded and redacted like every excerpt; it reads what is named, not every document in the tree. Measured on 240
+  malicious skill trees: the judge's catches on the document and PDF cases go from 0 of 54 and 0 of 38 to 34 and 26, with
+  no companion-grounded flag on 384 benign trees that name a companion (P-065).
+- **Measurement.** 240 malicious skill trees join the corpus as a recall denominator for full trees, with what v0.26.0
+  catches of them (P-064).
 
 **v0.26.0 (2026-10-16) — `EXFIL-001` tells a key sent home from a key sent away; the judge's server pass asks the same
 question; and the measurements that forced both: a benign server denominator, a held-out reading, the comparison tools.**
