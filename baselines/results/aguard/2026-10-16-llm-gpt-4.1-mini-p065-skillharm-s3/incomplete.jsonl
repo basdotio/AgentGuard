@@ -1,0 +1,4 @@
+{"sample":"mal-skill-sh-backdoor-injection-14ea11a0be","path":"corpus/malicious/skills/sh-backdoor-injection-14ea11a0be","class":"malicious","surface":["skills"],"severity":"high"}
+{"sample":"mal-skill-sh-backdoor-injection-d3751a3917","path":"corpus/malicious/skills/sh-backdoor-injection-d3751a3917","class":"malicious","surface":["skills"],"severity":"high"}
+{"sample":"mal-skill-sh-privilege-escalation-95caa63a2f","path":"corpus/malicious/skills/sh-privilege-escalation-95caa63a2f","class":"malicious","surface":["skills"],"severity":"high"}
+{"sample":"mal-skill-sh-proxy-attack-1f1c2bc825","path":"corpus/malicious/skills/sh-proxy-attack-1f1c2bc825","class":"malicious","surface":["skills"],"severity":"high"}
