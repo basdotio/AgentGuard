@@ -37,6 +37,7 @@ Bearer 头,明文 http 等于把它送上网),setup/test/judge 三处都过它,j
 定时任务):dev-env-setup 那个样本的描述老老实实写着"配置企业 npm 镜像",按"目的已披露不报"的老规则判官放行了它。LLM-005
 的 `Why` 现在带最多三条没落地的引文(截 120 字符,再过一次 Redact),用来区分"模型在转述"和"摘录切掉了它要引的那行"。
 **伴随文档趟**(`judge/companion.go`,P-065):skill 正文点名的 `.md`/`.txt`/`.pdf` 走一趟注入问题,只读**点名的**(按路径,其次按裸名在树内找,`FileReach` 过滤,最多 8 份,同一个 6000 字节预算,放不下的经 `boundedNote` 披露),不读树里所有文档——真实 skill 中位带 3 份、最多 69 份 `references/*.md`,全读是误报和费用。PDF 只走 `pdfText`(标准库,ASCII85/Flate + 文本算子,不认的过滤器一律返回空),引文落到文件不落到行(collapsed)。**别把这一趟改成"读树里所有 .md"**,也别跟第二层(文档点名的文档):240 棵 SkillHarm 里 92 棵的载荷就在第一层的点名文档里,P-065 之前判官一棵没抓到。
+**注入趟多一问"结果被改了没有"**(`output-steering`,P-066):一条"必须"的步骤,效果是用户拿到的结果和要的不一样(往输出里硬塞一个值/区域/字段、替换、四舍五入、丢数据、写一个任务根本不需要的文件),只靠自己说"required"、用户毫不知情——high;格式和风格规则不算。来由是 SkillHarm 的 goal_hijacking / output_manipulation 40 棵只抓 4,它们不碰主机,意图趟"声明和行为对不对得上"问不到。**别把这条放宽到"任何没被要求的步骤"**:真实 skill 满是"先跑 lint 再提交"。
 **判官的两个版本号**(P-031):`ExcerptVersion`(`ground.go`)是**手动**的 —— 改了 `planFor` 给哪些 artifact 跑哪几趟、摘录怎么切
 (condense / capHeadTail / lineMap / 解码上限 / 声明用途和 hook、MCP、connector 的渲染 / 家目录替换与脱敏顺序)或引文怎么落地,**同一个提交里加一**,
 并把 `excerpt_version_test.go` 钉的 {版本, 摘要} 一起换掉;只换摘要不加版本,两份报告就会自称同样的摘录。

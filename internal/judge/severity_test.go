@@ -481,3 +481,20 @@ func TestRun_DeclaredOnlyEvidenceIsDropped(t *testing.T) {
 		})
 	}
 }
+
+// TestInjectionPass_NamesOutputSteering (P-066): the injection task asks about a step that changes the
+// RESULT the user receives, and its table weighs `output-steering` high — 4 of 40 SkillHarm goal-hijacking
+// and output-manipulation samples got a finding while the question was only about host effects.
+func TestInjectionPass_NamesOutputSteering(t *testing.T) {
+	for _, want := range []string{"DIFFERENT RESULT", "forced into the output", "formatting or style rule is not this"} {
+		if !strings.Contains(injectionTask, want) {
+			t.Errorf("the injection task does not say %q", want)
+		}
+	}
+	if got := severityFor(ModeInjection, Verdict{Flagged: true, Severity: "medium", Category: "output-steering"}); got != model.SevHigh {
+		t.Errorf("output-steering on the injection pass = %s, want high whatever the model's word", got)
+	}
+	if got := severityFor(ModeIntent, Verdict{Flagged: true, Severity: "high", Category: "output-steering"}); got != model.SevMedium {
+		t.Errorf("output-steering is an injection-pass row only; on the intent pass it is an unknown name = %s, want medium", got)
+	}
+}

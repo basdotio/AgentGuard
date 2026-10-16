@@ -239,7 +239,7 @@ aguard scan --llm --config config.yaml
 
   | 趟 | high | medium |
   |------|------|--------|
-  | 注入(`LLM-003`) | exfiltration · credential-read · remote-execution · safety-disable · concealed-directive · privilege | other-directive |
+  | 注入(`LLM-003`) | exfiltration · credential-read · remote-execution · safety-disable · concealed-directive · privilege · output-steering | other-directive |
   | 意图(`LLM-001`) | 上述五类 · software-source · persistence · file-deletion · privilege | other |
   | hook 越权(`LLM-008`) | network · credential · install · permission-override | file-write · process-control · other |
   | 解码(`LLM-004`) | network · remote-execution · credential-read · file-deletion | other |

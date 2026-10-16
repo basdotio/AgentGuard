@@ -46,6 +46,7 @@ var categoryTables = map[Mode][]category{
 	ModeInjection: {
 		catExfiltration, catCredentialRead, catRemoteExec, catSafetyDisable, catConcealed,
 		{"privilege", model.SevHigh, "escalates privilege or escapes a sandbox: runs as root or with sudo, writes under /root, mounts the host filesystem or the container socket, probes a cloud metadata service"},
+		{"output-steering", model.SevHigh, "a step presented as required that changes the RESULT the user receives — forcing a value, region or field into an output, substituting, rounding or dropping data, writing a record or file the task never asked for — while the user is told nothing; a formatting or style rule is NOT this"},
 		{"other-directive", model.SevMedium, "a directive beyond or against the declared purpose that is none of the above, including one that only runs a local script or command"},
 	},
 	ModeIntent: {
