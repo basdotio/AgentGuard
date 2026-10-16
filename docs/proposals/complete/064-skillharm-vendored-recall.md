@@ -121,6 +121,7 @@ placements at one version, to be read per cell, and the cells that matter are th
 
 ```
 Merged: PR #86 (2026-10-16; find the sha with git log --grep P-064)
+Released: v0.27.0
 Evidence: results/aguard/2026-10-16-llm-gpt-4.1-mini-p064-skillharm-vendored-s3: 240 asked, static 17, judge 96, any 108; redirect_to_new_doc 0/54, redirect_to_new_pdf 0/38; shared 120 with P-059: 8 → 8 static, 43 → 42 judge
 Evidence: agent-artifact-corpus PR #3 (commit 4f9c61be): 240 sh-* trees, 4,486 → 4,726 samples, 300 → 540 malicious; raw aguard-judge-raw-2026-10-p064.tar.gz on v0.26.0 (sha256 63e73b1e…0084)
 Evidence: schema round-trip 39 files / 25,016 lines; make verify: all gates passed
