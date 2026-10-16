@@ -1,0 +1,5 @@
+{"sample":"mal-skill-sh-goal-hijacking-194b0b9a39","path":"corpus/malicious/skills/sh-goal-hijacking-194b0b9a39","class":"malicious","surface":["skills"],"severity":"high"}
+{"sample":"mal-skill-sh-goal-hijacking-29dae43201","path":"corpus/malicious/skills/sh-goal-hijacking-29dae43201","class":"malicious","surface":["skills"],"severity":"high"}
+{"sample":"mal-skill-sh-privilege-escalation-ab6701a3c7","path":"corpus/malicious/skills/sh-privilege-escalation-ab6701a3c7","class":"malicious","surface":["skills"],"severity":"high"}
+{"sample":"mal-skill-sh-system-corruption-9bb66e8485","path":"corpus/malicious/skills/sh-system-corruption-9bb66e8485","class":"malicious","surface":["skills"],"severity":"high"}
+{"sample":"mal-skill-sh-unauthorized-file-modification-77d54c9a48","path":"corpus/malicious/skills/sh-unauthorized-file-modification-77d54c9a48","class":"malicious","surface":["skills"],"severity":"high"}

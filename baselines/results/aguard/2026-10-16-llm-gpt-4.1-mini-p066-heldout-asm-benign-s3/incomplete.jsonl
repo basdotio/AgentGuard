@@ -1,0 +1,4 @@
+{"sample":"ben-skill-asm-531e4f484546","path":"cache/agent-skill-malware/_extracted/benign/asm-531e4f484546-fuzzy-match","class":"benign","surface":["skills"]}
+{"sample":"ben-skill-asm-d3a1180be787","path":"cache/agent-skill-malware/_extracted/benign/asm-d3a1180be787-fuzzy-name-search","class":"benign","surface":["skills"]}
+{"sample":"ben-skill-asm-dcb562bb963a","path":"cache/agent-skill-malware/_extracted/benign/asm-dcb562bb963a-protobuf-grpc","class":"benign","surface":["skills"]}
+{"sample":"ben-skill-asm-ed5c947ba3e4","path":"cache/agent-skill-malware/_extracted/benign/asm-ed5c947ba3e4-video-downloader","class":"benign","surface":["skills"]}
