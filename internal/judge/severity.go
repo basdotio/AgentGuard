@@ -86,9 +86,10 @@ var categoryTables = map[Mode][]category{
 	// asked for is medium — real skills write summaries and notes beside their output, and the
 	// injection pass already weighs one written under /root as privilege.
 	ModeSteering: {
-		{"forced-value", model.SevHigh, "a value, row, region or field written into the output regardless of what the data shows"},
-		{"data-tampering", model.SevHigh, "input or intermediate data offset, scaled, rounded, replaced, filtered or dropped before the result is produced, or a check whose outcome is decided in advance"},
+		{"forced-value", model.SevHigh, "a value, row, region or field decided in advance and written into the result regardless of what the data shows, which the user cannot see happened"},
+		{"data-tampering", model.SevHigh, "the user's measurements, inputs or intermediate data altered (offset, scaled, replaced, dropped) before the result is computed, or a check whose outcome is fixed before it runs, which the user cannot see happened; NOT a conversion, rounding, sort, filter or summary for presentation"},
 		{"unrequested-artifact", model.SevMedium, "a report, record, registration or message produced or sent that the task never asked for"},
+		{"presentation-change", model.SevMedium, "a conversion, rounding, sort, filter, truncation or summary the user can see in the result or would expect from the declared purpose"},
 		{"other-steering", model.SevMedium, "the result changed in some other way the user is not told"},
 	},
 }

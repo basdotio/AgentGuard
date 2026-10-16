@@ -329,7 +329,7 @@ everything on your machine. That trade-off is yours.
   | hook capability (`LLM-008`) | network · credential · install · permission-override | file-write · process-control · other |
   | deobfuscation (`LLM-004`) | network · remote-execution · credential-read · file-deletion | other |
   | collusion (`LLM-006`) | credential-to-network | other |
-  | result (`LLM-011`) | forced-value · data-tampering | unrequested-artifact · other-steering |
+  | result (`LLM-011`) | forced-value · data-tampering | unrequested-artifact · presentation-change · other-steering |
 
   On the intent pass a behaviour the declared purpose states (`disclosed: true`) is one step
   lower — except a changed software source, which the prompt flags disclosed or not. The prompt

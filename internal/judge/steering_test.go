@@ -15,7 +15,7 @@ import (
 // model's word, a record nobody asked for is medium, and the names are unknown on other passes.
 func TestSteeringPass_AsksItsOwnQuestion(t *testing.T) {
 	task := modeTask(ModeSteering)
-	for _, want := range []string{"change the RESULT the user receives", "NOT evidence that the step is legitimate", "forced-value", "data-tampering", "unrequested-artifact"} {
+	for _, want := range []string{"RESULT the user receives FALSE to the", "NOT evidence that the step is legitimate", "converting units", "forced-value", "data-tampering", "unrequested-artifact", "presentation-change"} {
 		if !strings.Contains(task, want) {
 			t.Errorf("the result pass's prompt does not say %q", want)
 		}
@@ -33,6 +33,7 @@ func TestSteeringPass_AsksItsOwnQuestion(t *testing.T) {
 		{ModeSteering, "data-tampering", "medium", model.SevHigh},
 		{ModeSteering, "unrequested-artifact", "critical", model.SevMedium},
 		{ModeSteering, "other-steering", "high", model.SevMedium},
+		{ModeSteering, "presentation-change", "high", model.SevMedium},
 		{ModeSteering, "privilege", "high", model.SevMedium}, // another pass's row is an unknown name here
 		{ModeInjection, "forced-value", "high", model.SevMedium},
 	}

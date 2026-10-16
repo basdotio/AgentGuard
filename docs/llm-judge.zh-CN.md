@@ -251,7 +251,7 @@ aguard scan --llm --config config.yaml
   | hook 越权(`LLM-008`) | network · credential · install · permission-override | file-write · process-control · other |
   | 解码(`LLM-004`) | network · remote-execution · credential-read · file-deletion | other |
   | 共谋(`LLM-006`) | credential-to-network | other |
-  | 结果(`LLM-011`) | forced-value · data-tampering | unrequested-artifact · other-steering |
+  | 结果(`LLM-011`) | forced-value · data-tampering | unrequested-artifact · presentation-change · other-steering |
 
   意图趟里,声明用途里写明了的行为(`disclosed: true`)降一档——改软件源除外,那条无论披露与否都报。提示词要求类别只按文本本身
   显示的内容来定,不许从脚本名猜:只跑一个本地文件的 hook 就是 `process-control`(medium),文件叫什么都一样。`samples: 3` 时类别也
