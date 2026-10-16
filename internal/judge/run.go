@@ -262,6 +262,7 @@ func clipQuote(q string) string {
 //   - ModeInjection  : hidden directives in text an agent reads → dim 1,  LLM-003 · skills,
 //     CLAUDE.md, subagents, commands, hooks — UNCONDITIONALLY
 //   - ModeIntent     : declared purpose vs. scripts             → dim 10, LLM-001 · skills
+//   - ModeSteering   : a required step changes the result        → dim 1,  LLM-011 · skills (P-067)
 //   - ModeExplain    : decode+explain obfuscated payloads        → dim 6,  LLM-004 · skills with a decodable blob
 //   - ModeCollusion  : capability chain across files             → dim 3,  LLM-006 · skills the static screen flagged
 //   - ModeCapability : hook command vs. its interception point   → dim 2,  LLM-008 · hooks
@@ -516,13 +517,21 @@ func planFor(i int, a model.ArtifactReport, eg egress) []task {
 			body, bodyLM = settleExcerpt(capHeadTail(body, bodyLM, maxExcerptBytes))
 			// The description is the second side here too: "beyond what it says it is for" is a
 			// far sharper question than "contains instructions", which every skill body does.
-			ask(Request{Mode: ModeInjection, Declared: declared, Behavior: body},
-				[]sourceUnit{{file: "SKILL.md", text: body, firstLine: skill.BodyLine, lineMap: offsetLines(bodyLM, skill.BodyLine-1)}})
+			bodyUnit := sourceUnit{file: "SKILL.md", text: body, firstLine: skill.BodyLine, lineMap: offsetLines(bodyLM, skill.BodyLine-1)}
+			ask(Request{Mode: ModeInjection, Declared: declared, Behavior: body}, []sourceUnit{bodyUnit})
 
 			// The documents the body tells the agent to read are instruction text too (P-065): the
 			// same question, against the same declared purpose, over what SKILL.md points at.
-			if text, units, shortened := companionExcerpt(a.Path, skill.Body, eg); text != "" {
-				ask(Request{Mode: ModeInjection, Declared: declared, Behavior: text}, units)
+			text, companions, shortened := companionExcerpt(a.Path, skill.Body, eg)
+			if text != "" {
+				ask(Request{Mode: ModeInjection, Declared: declared, Behavior: text}, companions)
+				out[len(out)-1].shortened = shortened
+			}
+
+			// The result pass (P-067): one question of the whole instruction text — body, then the
+			// named documents — does a required step change what the user gets?
+			if text, units, shortened := steeringExcerpt(bodyUnit, companions); text != "" {
+				ask(Request{Mode: ModeSteering, Declared: declared, Behavior: text}, units)
 				out[len(out)-1].shortened = shortened
 			}
 		}

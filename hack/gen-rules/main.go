@@ -107,6 +107,8 @@ var llm = []entry{
 		"The hook command does more than intercepting its own event requires. The severity is the tool's, from the category the model names (network, credential, install, permission override → high; file write, process control, other → medium)."},
 	{"LLM-010", 10, model.SevMedium, true, "MCP server source does more than its tools say",
 		"The server-source pass (P-053): `check <dir>` on an MCP server's source — a Python file importing mcp or fastmcp and declaring tools — asks whether the tools do more than their docstrings say, with the intent pass's category table; the module docstring is never the declared side. Runs on kind server only; a plain directory is still asked nothing."},
+	{"LLM-011", 1, model.SevMedium, true, "A required step changes the result the user receives",
+		"The result pass (P-067), skills only: the SKILL.md body and the documents it names are asked one question — does a step presented as required change what the user gets, in a way the declared purpose does not call for and the user is never told? The severity is the tool's, from the category the model names (forced value, data tampering → high; unrequested artifact, other → medium). The step's own rationale is not evidence; formatting rules, validation and the skill's own scratch files are not findings."},
 	{"LLM-009", 5, model.SevMedium, true, "MCP server configuration risk",
 		"Unpinned package, unknown publisher, remote endpoint, or credentials passed through env. Advisory only: reported with the model's severity but never escalates, whatever the vote — on 500 real configs it was the only judge rule to flag benign input."},
 }

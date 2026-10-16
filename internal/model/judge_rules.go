@@ -27,6 +27,7 @@ var judgeRuleText = map[string]string{
 	"LLM-008": "The hook does more than intercepting this event plausibly requires.",
 	"LLM-010": "The tools an MCP server implements do things their docstrings — the only description a client is shown — do not disclose: reading credentials or environment secrets, sending data out, running shell built from a parameter, writing outside their own data, changing privilege, persisting. The source was read; the server was never run.",
 	"LLM-009": "The server's configuration (source, pinning, transport, credentials) carries supply-chain risk.",
+	"LLM-011": "A step the skill's instruction text presents as required changes the result the user receives — a value forced into the output, data altered before the result, a check decided in advance, a record nobody asked for — with the user told nothing; the text's own rationale for the step is not evidence.",
 }
 
 // JudgeRuleText returns the tool's definition of an LLM judge rule, or "" for an id that is not

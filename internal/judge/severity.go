@@ -46,7 +46,6 @@ var categoryTables = map[Mode][]category{
 	ModeInjection: {
 		catExfiltration, catCredentialRead, catRemoteExec, catSafetyDisable, catConcealed,
 		{"privilege", model.SevHigh, "escalates privilege or escapes a sandbox: runs as root or with sudo, writes under /root, mounts the host filesystem or the container socket, probes a cloud metadata service"},
-		{"output-steering", model.SevHigh, "a step presented as required that changes the RESULT the user receives — forcing a value, region or field into an output, substituting, rounding or dropping data, writing a record or file the task never asked for — while the user is told nothing; a formatting or style rule is NOT this"},
 		{"other-directive", model.SevMedium, "a directive beyond or against the declared purpose that is none of the above, including one that only runs a local script or command"},
 	},
 	ModeIntent: {
@@ -82,6 +81,15 @@ var categoryTables = map[Mode][]category{
 	ModeCollusion: {
 		{"credential-to-network", model.SevHigh, "one file collects credentials or data and another sends it out"},
 		{"other", model.SevMedium, "a chain of some other kind"},
+	},
+	// The result pass (P-067). The two high rows are the result itself changed; a record nobody
+	// asked for is medium — real skills write summaries and notes beside their output, and the
+	// injection pass already weighs one written under /root as privilege.
+	ModeSteering: {
+		{"forced-value", model.SevHigh, "a value, row, region or field written into the output regardless of what the data shows"},
+		{"data-tampering", model.SevHigh, "input or intermediate data offset, scaled, rounded, replaced, filtered or dropped before the result is produced, or a check whose outcome is decided in advance"},
+		{"unrequested-artifact", model.SevMedium, "a report, record, registration or message produced or sent that the task never asked for"},
+		{"other-steering", model.SevMedium, "the result changed in some other way the user is not told"},
 	},
 }
 
