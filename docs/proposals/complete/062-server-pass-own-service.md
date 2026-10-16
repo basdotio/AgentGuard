@@ -63,3 +63,13 @@ ships because it is a correctness rule, the connector pass's twin, with a zero r
 moved a headline number. What would move it is in the breakdown above: 41 of the 74 `credential-read` flags rest on a read
 the chain does not count or a call in another file, which is a different control (a credential's path through a config
 object, an artifact-wide answer that does not inherit every file's unreadable destinations) and a separate proposal, if ever.
+
+## Done
+
+```
+Merged: PR #84 (2026-10-16; find the sha with git log --grep P-062)
+Released: v0.26.0
+Evidence: TestCredentialGoesHome, TestCredentialGoesHomeAcross (internal/detect); TestRun_ServerOwnKeyCredentialReadWeighsMedium (internal/judge) — red on bd01158
+Evidence: offline on P-059 raws: 12 of 96 flagged benign servers pass, 0 of Cisco's 18; live samples 3: 96 → 91 of 519, Cisco 108 → 105, both inside the draw noise; raw aguard-judge-raw-2026-10-p062.tar.gz on v0.25.0
+Evidence: judge-prompt cc2cab18585d and judge-excerpt 7 unchanged; make verify: all gates passed
+```

@@ -69,3 +69,13 @@ project's own installer text, `FS-001` on defensive prose, `PERM-007`). No benig
 The gain is one in nine of the real-tree false positives on the development set and one in seven on the fresh draw, with recall intact and a spoofing hole closed. What remains is
 not a precision bug in this rule but the limits of a one-file, one-level view: the next step on this surface is not another
 regex but the judge's own-service control (P-049) applied to the server pass, and a per-author cap in the harvest.
+
+## Done
+
+```
+Merged: PR #83 (2026-10-16; PR #82 was closed with its stacked base; find the sha with git log --grep P-061)
+Released: v0.26.0
+Evidence: TestChain_DestinationResolvesSameFileBaseURL, TestHostMatchesService, TestChain_CredentialLegPrecision, TestChain_ResolvedLoopbackBaseStaysOnBox (internal/detect) — red on 18a9770
+Evidence: static: recent 400 72 → 64; fresh draw 200 (seed 20261017) 44 → 38; other benign 763 135 → 128; malicious 543 182 → 182 with 49 EXFIL highs intact; no sample gained a high
+Evidence: rulesEpoch 3 → 4; rules 629837fddcba → 8fc8772b2951; make verify: all gates passed
+```

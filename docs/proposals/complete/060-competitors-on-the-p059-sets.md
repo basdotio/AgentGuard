@@ -68,3 +68,12 @@ cannot tell "own key to own API" from "key to somewhere else"; the connector pas
 static rule has none. The same discount applies to the competitors' 84 and 236. Changing `EXFIL-001` on this evidence
 would make the 400 no longer held out for the static rules; the next draw from newer repositories is the set to measure it on.
 
+## Done
+
+```
+Merged: PR #81 (2026-10-16; find the sha with git log --grep P-060)
+Released: v0.26.0
+Evidence: results/ccaudit/2026-10-16-p059-*, results/skill-scanner/2026-10-16-p059-*, results/mcp-scanner/2026-10-16-behavioral-*: recent skills 400 — aguard 72 / 81, cc-audit 236, skill-scanner 84; ClawHub benign 216 — 7 / 7 / 51 / 10; ClawHub malicious 123 — 68 / 68 / 53 / 58; SkillHarm 120 — 8 / 43 / 40 / 8; mcp-scanner behavioral 0 of 547 benign and 2 of 127 Cisco
+Evidence: label review, seed 20261016: 20 of 20 flagged recent trees false positives (14 own key to own API)
+Evidence: make verify: all gates passed
+```

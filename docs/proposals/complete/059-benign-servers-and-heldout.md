@@ -102,3 +102,13 @@ added flags are 4 → 9 of 400, inside a `samples: 3` noise band and in the wron
 scripts that read an environment variable and make a request. That last number is the largest finding of the set and
 belongs to the static rules, not the judge.
 
+## Done
+
+```
+Merged: PR #80 (2026-10-15; find the sha with git log --grep P-059)
+Released: v0.26.0
+Evidence: TestStageSaysWhenTheUnplaceableTreeIsServerSource, TestAReadmeBesideSourceIsNotAnInstructionFile, TestServerSourceRouteCarriesTheJudgeFlagsOnlyWhenAsked (baselines/adapter/aguard); TestIncompletenessOnTheServerSourceRoute (baselines/judgefold) — each red on 18114a1
+Evidence: results/aguard/2026-10-15-llm-gpt-4.1-mini-p059-benign-servers-s3: LLM-010 95/506 (official 5/69, code search 65/261, recent 26/189); eight heldout-* directories: ClawHub malicious 68/68 → 68/68, ClawHub benign 7 → 7, SkillHarm 15 → 43 of 120, recent skills 76 → 81 of 400 with static 72
+Evidence: corpus: agent-artifact-corpus PR #2 merged 2026-10-15 (810f3d46); 4,486 layer-1 samples
+Evidence: make verify: all gates passed; rebased on v0.25.0
+```

@@ -17,7 +17,42 @@ rate copied into prose goes stale on the next rule. `git tag` and the Releases p
 - Invariants: never executes scanned content, no cross-root symlink reads, secret redaction before storage (+ high-entropy fallback).
 - Single static binary (`CGO_ENABLED=0`), MIT + SPDX, CI, bilingual README.
 
-## v0.2.0 – v0.25.0
+## v0.2.0 – v0.26.0
+
+**v0.26.0 (2026-10-16) — `EXFIL-001` tells a key sent home from a key sent away; the judge's server pass asks the same
+question; and the measurements that forced both: a benign server denominator, a held-out reading, the comparison tools.**
+
+No rule was added or removed, no score formula, flag or exit code changed; `--fail-on` is untouched. On the `aguard version`
+line `rules` changes (`629837fddcba` → `8fc8772b2951`: the rules epoch, for a deterministic finding that now fires less often)
+and `judge-prompt` (`cc2cab18585d`) and `judge-excerpt` (7) do not. **Two things a reader of reports should know**: a script
+that reads a named credential and sends it only to that credential's own service — `DEEPL_API_KEY` to `api.deepl.com`, a base
+URL set at the top of the file and used below, a tenant subdomain such as `purdue.brightspace.com` — now carries `EXFIL-001`
+at low + advisory where it carried high, so `check` can exit 0 where it exited 1; and on an MCP server's source the judge's
+`credential-read` weighs medium when the static chain over the whole file says the key went home, with the reason in the
+finding's note. Nothing a key sends elsewhere, nothing with an unreadable destination, and no whole-environment dump moves.
+
+- **Destination precision for `EXFIL-001`.** A destination written as a variable is resolved one level within the same file;
+  a host label vouches for the credential's service only in a position that can be the service's own — not a whole domain
+  embedded in a longer host (`api.openai.com.evil.net`, a hole now closed), not the platform's label under a hosted suffix
+  (`evil.github.io`), only by exact equality; the `$VAR` credential leg is upper-case and case-sensitive (`${key}` in a
+  JavaScript template is a local), and the environment copied into a child process (`{ ...process.env, X }`,
+  `dict(os.environ, X="1")`) is not a credential read unless the same line serialises or sends it. Measured on 400 real
+  skill trees and a fresh draw of 200: one in seven to one in nine of the real-tree false positives, no malicious sample
+  lost a finding, none gained a high (P-061).
+- **The server pass's own-service control.** `detect.CredentialGoesHome` answers, over the full file, whether a named
+  credential goes only to its own service or loopback; a `credential-read` vote on the server pass grounded in such a file
+  weighs medium. Offline on 547 benign servers that is 12 of 96 flags; the live draw cannot show it against the
+  `samples: 3` noise, and the control ships as a correctness rule with no recall cost by construction (P-062).
+- **The driver measures the server pass.** A tree that places nowhere but is MCP server source goes to `check` on its own
+  route (`server-source`), and `-aguard-check-llm` hands the judge flags to that route alone; `judgefold -check-llm` reads
+  the run's `check_llm`. Two staging fixes on the way: a server's README is no longer staged as its CLAUDE.md, and a lone
+  `.md` places as an instruction file only when it is the whole tree (P-059).
+- **The numbers.** 547 benign MCP server trees in the corpus (agent-artifact-corpus PR #2) put `LLM-010` at one in four on
+  real third-party servers, where a 76-server panel had said one in twenty; a held-out reading of the whole judge round
+  (v0.21.0 against v0.24.0 on populations no prompt was written against) found the gain real where the judge has work the
+  static rules lack and absent where they already carry it; the comparison tools measured on the same populations leave
+  the static false-positive rate on real full trees as the shape of the problem rather than this scanner's (P-059, P-060).
+  All of it is in `baselines/results/` with its denominators and in `docs/decisions/`.
 
 **v0.25.0 (2026-10-13) — a skill whose SKILL.md is a symlink is read, hashed and scored as the file Claude Code loads,
 instead of hashing as empty input with a clean score.**
