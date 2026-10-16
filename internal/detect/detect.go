@@ -322,6 +322,9 @@ func (e *Engine) scanUnits(root string, units []unit) []model.Finding {
 			}
 		}
 		fileChain := chain{literalIsEgress: u.role == roleScript && !u.synthetic}
+		if u.role != roleDoc && u.role != roleToolDesc {
+			fileChain.assigns = urlAssignments(u.text)
+		}
 		// File-level half of PERM-007: a script that names a Claude settings file on one line and
 		// writes on another. Only real scripts and hook commands — an instruction file
 		// naming settings.json is telling a person where to paste, and a config unit is data.
@@ -443,6 +446,9 @@ type chain struct {
 	credService    map[string]bool
 	destHosts      []string
 	destUnreadable bool
+	// assigns is the file's NAME -> host table from urlAssignments, consulted only for an off-box
+	// line that names no readable host of its own (P-061).
+	assigns map[string]string
 }
 
 // egress decides whether a line is the network leg for THIS chain's file. An outbound action
@@ -499,21 +505,34 @@ func (c *chain) observe(raw, norm string, ev func() model.Evidence) {
 		// either view let that one string turn a high chain into a low one; requiring both is
 		// the fail-closed direction. Unknown destinations (no host literal) fail the same way.
 		if !(lineLoopbackOnly(norm) && lineLoopbackOnly(raw)) {
-			c.netOffBox = true
 			// Destination consistency reads the RAW host so a folded homoglyph cannot pose as the
 			// service. An off-box line that names no readable non-loopback host is unverifiable.
-			readable := 0
+			var direct []string
 			for _, h := range networkHosts(raw) {
-				if h == "?" || loopbackHost(h) {
-					continue
+				if h != "?" {
+					direct = append(direct, h)
 				}
-				c.destHosts = append(c.destHosts, h)
+			}
+			// One level of same-file resolution when the line names no host of its own: a base
+			// URL assigned above and used here is the destination (P-061). A line whose every
+			// resolved host is loopback stays on-box, like a literal one would.
+			resolved := resolvedHosts(raw, c.assigns)
+			if len(direct) == 0 && len(resolved) > 0 && allLoopback(resolved) {
+				goto afterEgress
+			}
+			c.netOffBox = true
+			readable := 0
+			for _, h := range append(direct, resolved...) {
 				readable++
+				if !loopbackHost(h) {
+					c.destHosts = append(c.destHosts, h)
+				}
 			}
 			if readable == 0 {
 				c.destUnreadable = true
 			}
 		}
+	afterEgress:
 	}
 }
 
@@ -1626,4 +1645,17 @@ func ConnectorText(c *model.Connector) string {
 		}
 	}
 	return b.String()
+}
+
+// allLoopback reports whether every host is loopback; an empty list is not.
+func allLoopback(hosts []string) bool {
+	if len(hosts) == 0 {
+		return false
+	}
+	for _, h := range hosts {
+		if !loopbackHost(h) {
+			return false
+		}
+	}
+	return true
 }

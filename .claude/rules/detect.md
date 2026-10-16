@@ -22,6 +22,7 @@ paths:
     `url.Parse` 拒绝非数字端口,而 `http://localhost:${PORT}/` 是 JS sidecar 调用的标准写法
     (superpowers 的 brainstorm-server 测试全是这个形状),第一版只靠 `url.Parse` 时真实插件照样 high。
     host 里本身带未展开语法的(`${HOST}`)仍是未知目标。
+  - **目的地一致性是第二条降级**([destination.go](../../internal/detect/destination.go)):文件读**有名字的**凭证(`DEEPL_API_KEY` → `deepl`)且每个可读非回环目的地都属于它,EXFIL-001 降到回环那一档。四条防护点(P-061):host 标签**按位置**认(任何一级都可以——`purdue.brightspace.com` 是租户、`otx.alienvault.com` 是产品——但后面紧跟 TLD 词而不在末尾的不算,`api.openai.com.evil.net` 是 evil 的;`*.github.io`/`*.ts.net` 这类托管后缀下平台自己的标签不算;只认相等,`openaievil.net` 不算);变量写的目的地**只在同一文件解析一层**(`urlAssignments`/`resolvedHosts`:`API=${API:-https://x}` 在上、`"$API/…"`/`fetch(\`${BASE}/…\`)`/`requests.get(url)`/`API_BASE + "/x"` 在下;没赋过 URL 的变量仍是读不出来,`${API}.evil.net` 后面接 `.` 的不解析);**任何读不出来的目的地让整条链保持 high**;整环境 dump 永远不降。 凭证腿同时收窄两处:`$VAR` 支改大写敏感(`${key}`、`${totalTokens(project)}` 是 JS 模板局部变量),`{...process.env, X}`/`dict(os.environ, X=…)`/`patch.dict(os.environ` 是往子进程塞环境,不算——除非同一行还在序列化或发送(`envLeavesRE`)。实测:语料 300 恶意 + held-out 243 一条 EXFIL 没少;真实 skill 树 400 棵 72 → 64,另抽 200 棵没见过的 44 → 38,零新增 high。**别把"一层"放宽成跨文件或从环境变量猜,别让 medium 成为"大概是自家服务"的中间档**:把 key 发去 `os.environ['CB']` 的木马正是靠那条读不出来的目的地保持 high 的。
   - 同一文件内三条腿 → `EXFIL-003`(high)**加** `OBF-004`(dimension 6,medium),且**不再出**
     `EXFIL-001`(同一件事报两遍会读成两个问题)。回环降级时**不出** `OBF-004`(没有"出门前编码")。
   - 同一 artifact 内跨文件凑齐两条腿 → `EXFIL-002`(low + advisory,**仅在没有同文件链时**才出)。
@@ -197,4 +198,3 @@ paths:
 **十个维度:** 1 注入 · 2 过度权限 · 3 数据外泄 · 4 代码执行 · 5 供应链 · 6 混淆 ·
 7 后门(advisory) · 8 资源滥用(advisory) · 9 文件系统 · 10 意图不符(仅 LLM)。
 **0 = 扫描/覆盖率 note,永不计分。**
-
