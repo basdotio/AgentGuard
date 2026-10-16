@@ -171,6 +171,10 @@ derived from the upstream's risk and realization). It is not a held-out reading 
 and not a recall rate: LLM-authored fixtures, a seeded draw, a rule for the dimension. Read it per realization: the two
 zeros (0 of 54 companion-document, 0 of 38 PDF) are a coverage statement about what the engine and the judge read, and the
 decisions document says what follows from them. Raw in `aguard-judge-raw-2026-10-p064.tar.gz` on v0.26.0.
+Five more, `results/aguard/2026-10-16-llm-gpt-4.1-mini-p065-*`, are P-065 (the companion pass) against v0.26.0: the same
+240 SkillHarm trees (judge 96 → 152), the 384 benign layer-1 skill trees whose `SKILL.md` names a companion document, before
+and after on the same day (judge 66 → 67, no flag grounded in a companion), and the two held-out ClawHub sets (unchanged;
+none names a companion). Raw in `aguard-judge-raw-2026-10-p065.tar.gz` on v0.26.0.
 
 **What a judge run cost is folded by the driver, not by hand.** Each judged sample's ledger row
 carries `judge_usage` — `calls`, `failed`, `skipped`, `triage_calls`, `retries`, `prompt_tokens`,

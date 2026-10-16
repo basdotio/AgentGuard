@@ -271,6 +271,15 @@ everything on your machine. That trade-off is yours.
   characters — which is how grounding already reads it. Without that, one line padded with a few
   thousand blanks was sent as the omission marker or a prefix of blanks, and the judge never saw the
   directive on it. Padding broken up by a visible character every 128 bytes still counts as content.
+- **The documents a `SKILL.md` names are read too** (P-065). "Read `PREFLIGHT.md` in full before starting"
+  makes that file an instruction file, and an agent follows the line. The companion pass sends the `.md`,
+  `.txt` and `.pdf` files the body names — by path or by bare name, inside the tree, in the order named,
+  the first 8, within the same 6000-byte budget — to the injection question beside the declared purpose;
+  a PDF contributes its text layer (ASCII85/Flate streams and the text operators, nothing else; a PDF
+  with no readable layer is disclosed, not guessed). Named, not every document in the tree: real
+  skills ship `references/*.md` by the dozen, and what the agent reads is what `SKILL.md` points it at.
+  One level only. On 240 SkillHarm trees, 92 put the payload in such a companion and the judge caught
+  0 before this pass.
 - **Downloads items are judged too** when `--llm` is on: the agent-shaped candidates under
   `~/Downloads` (already read and scored by the static check) get the same passes; the rest of
   the folder is still never read. The Downloads section says whether the judge ran and carries
