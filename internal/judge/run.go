@@ -204,6 +204,14 @@ func groundedFinding(t task, v Verdict) (verdict, barrier *model.Finding, droppe
 			if cat := categoryName(v); !categoryShown(t.req.Mode, t.req.Artifact, cat, t.req.Behavior, s.text) {
 				f.Severity = model.SevMedium
 				f.Why += " [category not shown by the text: " + cat + "]"
+			} else if cat == "credential-read" && t.req.Mode == ModeServer && unitGoesHome(units, s.file) {
+				// P-062: the file the quote landed in reads a named credential and sends it only
+				// to that credential's own service (or loopback) — the static chain over the
+				// whole file says so. Reading WEATHER_API_KEY to call api.weather.com is what
+				// the key is for, and the excerpt alone cannot show the model that. One category
+				// on one pass; the connector pass's own-service control is categoryShown's.
+				f.Severity = model.SevMedium
+				f.Why += " [category not shown by the text: credential-read (the credential's own service)]"
 			}
 			verdict = f
 		} else {
@@ -974,6 +982,18 @@ func lowestSeverity(votes []model.Finding) model.Severity {
 // behaviourUnits is the units that are behaviour, not declaration: on the intent and server passes
 // the declared purpose travels as one collapsed unit (a skill's description, a server's tool
 // docstrings), and a quote that lands only there is not evidence that the behaviour exists (P-054).
+// unitGoesHome reports whether the behaviour unit a quote landed in was built from a file whose
+// named credential goes only to its own service (sourceUnit.goesHome). The file name is the
+// redacted relative path groundSpan cites, the same string the unit carries.
+func unitGoesHome(units []sourceUnit, file string) bool {
+	for _, u := range units {
+		if u.file == file && !u.collapsed {
+			return u.goesHome
+		}
+	}
+	return false
+}
+
 func behaviourUnits(units []sourceUnit) []sourceUnit {
 	out := make([]sourceUnit, 0, len(units))
 	for _, u := range units {
