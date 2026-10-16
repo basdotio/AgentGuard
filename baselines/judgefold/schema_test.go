@@ -23,7 +23,7 @@ func TestSchema_RoundTripsTheCommittedJudgeFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(files) != 48 {
+	if len(files) != 58 {
 		t.Fatalf("found %d committed judge.jsonl files, want the twenty-seven judge runs (four of 2026-09, four each of P-041, P-048 and P-049, five of P-050, the full-benign denominator at samples 3, two of P-053, three of P-054): %v", len(files), files)
 	}
 	total := 0
@@ -50,8 +50,8 @@ func TestSchema_RoundTripsTheCommittedJudgeFiles(t *testing.T) {
 			total++
 		}
 	}
-	if total != 27326 {
-		t.Errorf("round-tripped %d lines, want 27,326 (819 + 819 + 224 + 224 of 2026-09; 224 + 224 + 819 + 3,220 of P-041; 819 + 3,220 + 541 + 541 of P-048; 541 + 541 + 819 + 3,220 of P-049; 28 + 28 + 100 + 100 + 819 of P-050; 3,220 at samples 3; 127 + 76 of P-053; 76 + 224 + 224 of P-054; 547 + 123 + 123 + 216 + 216 + 120 + 120 + 400 + 400 of P-059; 547 + 127 of P-062; 240 of P-064; 240 + 384 + 384 + 123 + 216 of P-065; 240 + 384 + 123 + 216 of P-066)", total)
+	if total != 29684 {
+		t.Errorf("round-tripped %d lines, want 29,684 (819 + 819 + 224 + 224 of 2026-09; 224 + 224 + 819 + 3,220 of P-041; 819 + 3,220 + 541 + 541 of P-048; 541 + 541 + 819 + 3,220 of P-049; 28 + 28 + 100 + 100 + 819 of P-050; 3,220 at samples 3; 127 + 76 of P-053; 76 + 224 + 224 of P-054; 547 + 123 + 123 + 216 + 216 + 120 + 120 + 400 + 400 of P-059; 547 + 127 of P-062; 240 of P-064; 240 + 384 + 384 + 123 + 216 of P-065; 240 + 384 + 123 + 216 of P-066; 240 + 384 + 123 + 216 twice + 216 + 216 of P-067)", total)
 	}
 }
 
