@@ -1,0 +1,5 @@
+population          n scored no_tools errored  HIGH >=MED any unsafe
+official           89     58       31       0     0     0          0
+servers           268    224       44       0     0     0          0
+servers-recent    190    176       14       0     0     0          0
+all               547    458       89       0     0     0          0

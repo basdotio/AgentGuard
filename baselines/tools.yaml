@@ -134,3 +134,39 @@ tools:
       mcp: >-
         strict mode requires SKILL.md; 0 of 487 mcp trees carry one, all refused with
         "Error loading skill: SKILL.md not found" (2026-09-24, v2.1.0, default policy).
+
+  - id: mcp-scanner
+    # Same convention as skill-scanner: the product name, not the vendor.
+    name: Cisco mcp-scanner
+    repo: https://github.com/cisco-ai-defense/mcp-scanner
+    # The one analyzer of this tool that reads SERVER SOURCE — `behavioral`, "LLM-powered
+    # alignment checking combined with cross-file dataflow tracking" — sends what it reads to
+    # the LLM endpoint the operator configures (MCP_SCANNER_LLM_*). So a behavioral run uploads
+    # by construction, the way `aguard --llm` does, and is the like-for-like column for the
+    # judge's server pass (LLM-010), never for the static rules. Its YARA and API analyzers read
+    # a RUNNING server's tool descriptions, which this rig never starts, so they are not measured.
+    uploads_samples: true
+    uploads_samples_basis: >-
+      By construction: the behavioral analyzer is LLM-based and the run names the model and
+      endpoint it was pointed at (P-060: gpt-4.1-mini at api.openai.com, the judge's own model, so
+      the two columns differ in the tool and not in the model).
+    # Read in docs/behavioral-scanning.md and README at the commit installed 2026-10-15: the
+    # behavioral path parses source and never runs it ("package code is never executed").
+    executes_scanned_content: false
+    provisional: true
+    # Its own ladder per tool (HIGH/MEDIUM/LOW/SAFE on each tool's behavioral finding); a sample
+    # is folded at HIGH on its worst tool, which is the bar aguard is measured at.
+    #
+    # NO DRIVER ADAPTER YET. P-060 ran it with a script beside the run (`mcp-run.py`, `mcp-fold.py`,
+    # recorded in the run directory) because its unit is a tool, not a tree, and a tree in which it
+    # finds no `@mcp.tool()` is a no-verdict row, not a clean one — 60% of the benign server
+    # trees, measured. Wire it into baselines/cmd/baseline before citing a second run.
+    threshold: high
+    surfaces_declared_uncovered:
+      skills: >-
+        reads MCP server source only; a skill tree is not an input it has a subcommand for
+        (2026-10-15, behavioral analyzer, commit installed that day).
+      hooks: "same"
+      permission: "same"
+      connector: "same"
+      instruction: "same"

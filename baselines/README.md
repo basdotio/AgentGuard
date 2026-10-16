@@ -152,6 +152,14 @@ by design — a held-out set stays one only while nobody writes a prompt against
 (`per-kind-rule.txt`, the decisions document) and nothing finer. All nine share one archive,
 `aguard-judge-raw-2026-10-p059.tar.gz` on v0.24.0, each run's raw/ under the directory name used here.
 
+The same four skill populations were then run through the two comparison tools, static, with their existing adapters
+(`results/ccaudit/2026-10-16-p059-*/`, `results/skill-scanner/2026-10-16-p059-*/`, P-060). Three of the four work lists are
+layer-2 samples under the corpus's `cache/`, which `corpus score` does not know: their `scorecard.txt` says so ("verdict(s)
+named a sample not in the corpus") and is kept verbatim as the scorer's own statement; the figures are read from
+`ledger.jsonl`. `results/mcp-scanner/2026-10-16-behavioral-*/` is Cisco mcp-scanner's LLM analyzer on the 547 benign server
+trees and, as a probe, on the 127 Cisco servers, run by the script beside each directory because no adapter exists; the
+decisions document says why that column is not a false-positive figure.
+
 **What a judge run cost is folded by the driver, not by hand.** Each judged sample's ledger row
 carries `judge_usage` — `calls`, `failed`, `skipped`, `triage_calls`, `retries`, `prompt_tokens`,
 `completion_tokens` — read from the binary's own `--json` judge summary, and `run.yaml` sums them

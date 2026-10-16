@@ -1,0 +1,44 @@
+# Written BY HAND beside a run made by the script in this directory (mcp-run.py), not by
+# baselines/cmd/baseline: Cisco mcp-scanner has no driver adapter yet (baselines/tools.yaml says so).
+# verdicts.jsonl and ledger.jsonl are mcp-fold.py's fold of the tool's raw JSON, one record per tool,
+# a sample at HIGH on its worst tool. THIS IS NOT A BASELINE and, read with the decisions document,
+# NOT A FALSE-POSITIVE FIGURE EITHER: the analyzer is LLM-based, its answers depend on the model and
+# the day, and the probe beside this run shows it quiet on the vendor's own malicious servers.
+#
+# WHAT THIS RUN IS FOR: P-060: Cisco mcp-scanner's LLM analyzer on every benign server tree the corpus holds (547), the like-for-like column for the judge's server pass (LLM-010, 95 of 506). Read with the probe beside it.
+#
+# measured by a script beside the run (mcp-run.py; directory mode: the tool was pointed at each sample tree), threshold "high" chosen by us (the tool's own per-tool HIGH), placement: none
+
+tool: mcp-scanner
+tool_version: cisco-ai-mcp-scanner from git main at 5d147dc7e363 (installed 2026-10-15; `mcp-scanner --version` is not a flag it accepts)
+threshold: high
+tool_extra_args:
+    - --log-level
+    - error
+    - behavioral
+    - <sample>
+    - --format
+    - raw
+tool_extra_env:
+    - MCP_SCANNER_LLM_MODEL=gpt-4.1-mini
+    - MCP_SCANNER_LLM_BASE_URL=https://api.openai.com/v1
+    - MCP_SCANNER_LLM_API_KEY=<read from ~/.config/aguard/openai.key, never printed>
+uploads_samples: true
+uploads_samples_basis: >-
+    by construction: the behavioral analyzer is LLM-based; its alignment prompts (about 15,000 tokens each,
+    carrying the tool's source) went to api.openai.com under the model above, the judge's own model.
+corpus_commit: 810f3d46
+started_at: 2026-10-16
+adapter: none (script beside the run)
+placement: none
+provisional: true
+work_list: samples.jsonl
+counts:
+    scored: 458 (a tool found)
+    no_verdict: 89 (no tool found)
+    error: 0
+    high: 0
+raw_archive:                          # raw/ is not in the tree; the archive is this run's primary evidence
+    asset: mcp-scanner-raw-2026-10-p060.tar.gz
+    sha256: 63a95953a727f762f1126ac68258c890f3a49884a6e240b5a8596a3016fd780d   # 86444 bytes; attached to release v0.25.0 on 2026-10-16 (gh release download v0.25.0 --pattern mcp-scanner-raw-2026-10-p060.tar.gz)
+    note: one archive holds the raw/ of both mcp-scanner runs, each under the directory name used here
