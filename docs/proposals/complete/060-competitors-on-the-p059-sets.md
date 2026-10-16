@@ -59,3 +59,12 @@ well. Directory mode found no tool in any of those 127 (8 of 8 probed returned a
 `results/mcp-scanner/2026-10-16-behavioral-*`, with the runner and the fold beside the run; the tool is registered in
 `baselines/tools.yaml` with no driver adapter yet.
 
+**Label review, after the fact (2026-10-16; labels only, no code)**: a seeded 20 (seed 20261016) of the 72 recent skill trees
+aguard flags at high, read at the flagged lines against the SKILL.md's declared purpose: 20 of 20 are false positives — 14
+read the service's own key from the environment to call that service's own API (four of them the same author's four
+repositories), two are test files, one an example page fetching a CDN texture, one the project's own `curl | bash` installer
+quoted in generated page text, one defensive prose naming the commands to block, one a settings hint in a string. `EXFIL-001`
+cannot tell "own key to own API" from "key to somewhere else"; the connector pass of the judge got that control in P-049, the
+static rule has none. The same discount applies to the competitors' 84 and 236. Changing `EXFIL-001` on this evidence
+would make the 400 no longer held out for the static rules; the next draw from newer repositories is the set to measure it on.
+
