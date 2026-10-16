@@ -61,6 +61,11 @@ var urlAuthorityHostRE = regexp.MustCompile(`(?i)^[a-z][a-z0-9+.-]*://(?:[^@/?#\
 // by hand. Unresolved syntax IN the host (`${HOST}`, `localhost${X}`) comes back verbatim and
 // fails the loopback test — the fallback reads more, it never guesses more.
 func urlHost(raw string) string {
+	// `API=${API:-https://host}`: the default's closing brace is not part of the host. Only a
+	// brace with no opening one in the URL is trimmed; `https://${HOST}/x` keeps its syntax.
+	if strings.HasSuffix(raw, "}") && !strings.Contains(raw, "{") {
+		raw = strings.TrimRight(raw, "}")
+	}
 	if u, err := url.Parse(raw); err == nil && u.Hostname() != "" {
 		return u.Hostname()
 	}

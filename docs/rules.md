@@ -22,7 +22,7 @@ read the evidence before acting.
 These counts are generated from the same tables the drift check reads, so if a count
 anywhere else in this repository disagrees with this line, that other count is stale.
 
-**Rules version `629837fddcba`** — reports from this build carry it as `rules_version` (`--json`),
+**Rules version `8fc8772b2951`** — reports from this build carry it as `rules_version` (`--json`),
 and `aguard version` prints it. It covers deterministic detection only. Each ID a report can
 carry falls in exactly one class:
 
@@ -86,7 +86,7 @@ agree were produced by the same engine rule table.
 
 | ID | Severity | Title | Why it fires |
 |---|---|---|---|
-| `EXFIL-001` | high | Exfiltration chain in one file | The same file both reads a credential and makes an outbound request. Two legs (credential + egress) complete a chain; encoding is an amplifier, not a requirement. When every network target in that file is loopback (127.0.0.1, localhost, or ::1), the finding stays but drops to low + advisory — same band as EXFIL-002 — because the data has not left the machine. In SKILL.md and CLAUDE.md a bare URL is documentation, not a request: the network leg there needs an actual client call or covert-channel tool, while in scripts a URL literal still counts. |
+| `EXFIL-001` | high | Exfiltration chain in one file | The same file both reads a credential and makes an outbound request. Two legs (credential + egress) complete a chain; encoding is an amplifier, not a requirement. When every network target in that file is loopback (127.0.0.1, localhost, or ::1), the finding stays but drops to low + advisory — same band as EXFIL-002 — because the data has not left the machine. In SKILL.md and CLAUDE.md a bare URL is documentation, not a request: the network leg there needs an actual client call or covert-channel tool, while in scripts a URL literal still counts. A second downgrade is destination consistency: when every readable non-loopback destination in the file belongs to the service a NAMED credential the file reads is for (DEEPL_API_KEY to api.deepl.com), the chain drops to the same low + advisory band — the key went where it exists to go. A label of the host vouches only in a position that can be the service's own — not a whole domain embedded in a longer host (api.openai.com.evil.net), not the platform under a hosted suffix (evil.github.io), never a lookalike that merely begins with the name — a destination written as a variable is resolved one level within the same file (API=https://… above, $API/… below), and any destination that cannot be read keeps the finding high (P-061). |
 | `EXFIL-002` | low · advisory | Exfiltration surface split across files | One file in the artifact reads credentials, a different one makes outbound requests. Much weaker than the same-file chain — unrelated files legitimately do each half — so it is advisory, and only raised when no same-file chain was found. |
 | `EXFIL-003` | high | Exfiltration chain with encoding | All three legs in one file — credential read, encode, egress. Raised INSTEAD of EXFIL-001 (one fact reported twice reads as two problems), together with OBF-004. Same loopback downgrade as EXFIL-001; OBF-004 is not raised when nothing left the machine. |
 | `EXFIL-004` | medium | Whole environment dumped | Enumerates every environment variable — the agent's own API keys and tokens included — and prints, serialises or writes them out. A skill that needs a setting reads it by name; taking all of them is collection. |

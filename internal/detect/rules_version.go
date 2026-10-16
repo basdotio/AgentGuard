@@ -36,7 +36,7 @@ import (
 // Nothing enforces this mechanically. Hashing the source would move on every comment edit, which
 // is the false alarm this value exists to avoid; the cost is that a forgotten bump lets two
 // reports claim the same rules while different detection code produced them.
-const rulesEpoch = 3 // 3: a symlinked SKILL.md is read where it loads, a refused file is scored (P-056); 2: plugin children (P-044)
+const rulesEpoch = 4 // 4: EXFIL-001 destination resolves a same-file base URL, matches the registrable label, and the credential leg drops JS template locals and child-env copies (P-061); 3: a symlinked SKILL.md is read where it loads, a refused file is scored (P-056); 2: plugin children (P-044)
 
 // rulesVersionLen is how many hex digits of the sha256 the version keeps.
 const rulesVersionLen = 12

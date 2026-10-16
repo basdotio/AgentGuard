@@ -264,7 +264,25 @@ var (
 	// reads `~/.ssh/id_rsa` or `$GITHUB_TOKEN` by accident. (The secret-word list here is wider
 	// than it was: `$AWS_CREDENTIAL` and `$MY_PASSWD` now count, which they should have all
 	// along.)
-	credFileRE = regexp.MustCompile(`(?i)(\$\{?[A-Z_]*` + secretNamePat + `|\.ssh/|\.aws/|/etc/passwd|id_rsa)`)
+	credFileRE = regexp.MustCompile(`(?i)(\.ssh/|\.aws/|/etc/passwd|id_rsa)`)
+
+	// credShellVarRE — the `$VAR` half of the above, CASE-SENSITIVE and upper-case on purpose
+	// (P-061). Shell exports secrets as `$GITHUB_TOKEN`; a JavaScript template interpolates
+	// locals as `${key}` and `${totalTokens(project)}`, and under (?i) both of those were
+	// "a credential named outright" — one real skill's HTML demos chained `${key}` in a button
+	// label with a CDN texture URL. Digits are allowed (`$S3_KEY`); a lower-case letter in the
+	// name is not. Measured: no malicious sample in the corpus or the held-out sets reads a
+	// lower-case `$token`.
+	credShellVarRE = regexp.MustCompile(`\$\{?[A-Z0-9_]*` + secretNamePat + `[A-Z0-9_]*\b`)
+
+	// envChildCopyRE — the environment copied INTO A CHILD PROCESS: `{ ...process.env, X }`,
+	// `dict(os.environ, X="1")`, `patch.dict(os.environ, …)`. Same reasoning as EXFIL-004's
+	// `.copy()` exemption: the map does not leave the process, it seeds another one, which is
+	// the standard way to run a subprocess in both languages. It stays a credential leg when
+	// the same line also serialises or sends it (envLeavesRE) — `fetch(u, {body: JSON.stringify({...process.env})})`
+	// is the dump, spread or not (P-061).
+	envChildCopyRE = regexp.MustCompile(`(?i)(\.\.\.\s*process\.env\b|\bdict\(\s*os\.environ\s*,|patch\.dict\(\s*os\.environ\b)`)
+	envLeavesRE    = regexp.MustCompile(`(?i)(stringify|dumps|\.write|print\(|console\.log|logger|fetch\(|axios|requests\.|\.post\(|\.send\(|urlopen|curl\s)`)
 
 	// envReadRE — an environment access of any kind. On its own this is NOT a credential read;
 	// it becomes one only in the company of secretNameRE below, or in the bulk shape.
@@ -379,7 +397,12 @@ var (
 // raw only — it is the one branch a substitution can falsely satisfy.
 func credentialLine(raw, norm string) bool {
 	for _, v := range [2]string{norm, raw} {
-		if credFileRE.MatchString(v) || envWholeRE.MatchString(v) || credReadFileRE.MatchString(v) {
+		if credFileRE.MatchString(v) || credShellVarRE.MatchString(v) || credReadFileRE.MatchString(v) {
+			return true
+		}
+		// A whole-environment read is a leg unless it is the child-process copy idiom and nothing on
+		// the line serialises or sends it.
+		if envWholeRE.MatchString(v) && !(envChildCopyRE.MatchString(v) && !envLeavesRE.MatchString(v)) {
 			return true
 		}
 		// A line that itself begins with `|` is a Markdown table row, not a pipeline: shell never
