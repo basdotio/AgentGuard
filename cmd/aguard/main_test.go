@@ -609,7 +609,9 @@ func TestWriteReport_DefaultStillShowsTheDangerousThing(t *testing.T) {
 	if !strings.Contains(brief.String(), worstID) {
 		t.Errorf("default view omits the worst finding [%s] (%s):\n%s", worstID, worst, brief.String())
 	}
-	if !strings.Contains(brief.String(), "→ ") {
+	// The count of things to look at is on the score line since P-058; the "→ … start with" index
+	// prints only above three findings.
+	if !strings.Contains(brief.String(), "to look at") {
 		t.Error("default view should carry the verdict line")
 	}
 	// Routing check: the two modes must actually differ, or the flag is decorative.

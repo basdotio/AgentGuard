@@ -85,7 +85,7 @@ func TestScanLevelNotesThatHedge(t *testing.T) {
 			if s == "" {
 				t.Fatalf("%s/%s: no summary found in:\n%s", c.name, h.name, h.body)
 			}
-			if safe := strings.Contains(s, "looks safe"); safe == c.hedge {
+			if safe := saysSafe(s); safe == c.hedge {
 				t.Errorf("%s/%s: summary says looks safe = %v, want %v:\n%s", c.name, h.name, safe, !c.hedge, s)
 			}
 			if c.hedge && !strings.Contains(s, "coverage is incomplete") {
@@ -99,14 +99,20 @@ func TestScanLevelNotesThatHedge(t *testing.T) {
 func checkedOf(t *testing.T, r model.ScanResult) string {
 	t.Helper()
 	for _, h := range humanReports(t, r) {
-		if h.name != "terminal" {
+		// --verbose: the default view of a single target prints the line only when something was not
+		// fully checked (P-058); --verbose always prints it, in the header block.
+		if h.name != "verbose" {
 			continue
 		}
-		lines := strings.Split(strings.TrimSpace(summaryOf(h.name, h.body)), "\n")
-		if len(lines) < 2 {
-			t.Fatalf("summary has no Checked line:\n%s", h.body)
+		for _, l := range strings.Split(summaryOf(h.name, h.body), "\n") {
+			l = strings.TrimSpace(l)
+			for _, lead := range []string{"Checked ", "Not fully checked:", "Nothing was found to check"} {
+				if strings.HasPrefix(l, lead) {
+					return l
+				}
+			}
 		}
-		return strings.TrimSpace(lines[1])
+		t.Fatalf("summary has no Checked line:\n%s", h.body)
 	}
 	t.Fatal("no terminal report")
 	return ""

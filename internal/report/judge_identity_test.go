@@ -26,7 +26,7 @@ func ranJudge(modelName string) *model.JudgeSummary {
 func render(t *testing.T, r model.ScanResult) map[string]string {
 	t.Helper()
 	var text, md, html bytes.Buffer
-	Text(&text, r)
+	TextVerbose(&text, r) // the terminal names the judge's versions in --verbose only (P-058)
 	if err := Markdown(&md, r); err != nil {
 		t.Fatal(err)
 	}

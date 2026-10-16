@@ -122,18 +122,20 @@ func actionable(det []Group) int {
 // verdictSentence is the one sentence a non-specialist reads. It is a function of the level
 // band and the counts already printed below it, so it can never say something the list does not.
 func verdictSentence(level string, act, total int) string {
-	var lead string
+	return levelLead(level) + countClause(act, total)
+}
+
+// levelLead is the verdict's first sentence: one per level band.
+func levelLead(level string) string {
 	switch level {
 	case "Low":
-		lead = "Your Claude Code setup looks safe."
+		return "Your Claude Code setup looks safe."
 	case "Watch":
-		lead = "Mostly fine, with a few things to review."
+		return "Mostly fine, with a few things to review."
 	case "Elevated":
-		lead = "There are problems you should fix before relying on this setup."
-	default:
-		lead = "Serious problems were found. Stop and review before using this setup."
+		return "There are problems you should fix before relying on this setup."
 	}
-	return lead + countClause(act, total)
+	return "Serious problems were found. Stop and review before using this setup."
 }
 
 // incompleteLead replaces the Low band's "looks safe" when something Claude Code loads was not

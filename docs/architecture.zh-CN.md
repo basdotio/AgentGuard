@@ -67,6 +67,7 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
 | [`inbox`](../internal/inbox/) | 下载目录扫描:候选发现、带上限且拒绝路径穿越的 zip 解包 | 376 |
 | [`safeio`](../internal/safeio/) | 打开一个不是自己写的文件的唯一途径:非常规文件在 Open 前拒绝,大小由读强制 | 101 |
 | [`redact`](../internal/redact/) | 唯一的脱敏器:已知 token 前缀、键名/旗标自证的凭据、URL userinfo、高熵串。是叶子包,`collect` 也用它;`detect.Redact` 委托它 | 209 |
+| [`cmdline`](../internal/cmdline/) | 把路径印进一条要复制粘贴的命令的唯一途径:完整路径、按 POSIX shell 加引号、绝不截短。`gate.CommandArg` 委托它;报告里 `aguard approve` 那一步也用它 | 97 |
 | [`cmd/aguard`](../cmd/aguard/) | CLI 接线、`analyze()`、下载目录那一趟、hook runner、`llm setup/test/status/preview` | — |
 
 有一处职责是被刻意切成两半的,值得先知道,因为两半都叫"permission":
@@ -116,10 +117,21 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
 Claude Code 加载的东西没读全时(挂在 artifact 上的说明、任何位置的 `IO-000` / `PARSE-000`、扫描级的 `COV-000` ——
 detect 和 collect 把没读的东西记在这里 —— 或带 `SUP-004` 的 artifact),摘要说 coverage is incomplete,不说 "looks safe"。
 四条扫描级说明是按设计不读的披露,不动这句:无人认领的顶层条目、空 root、第三方 / VCS 树、随插件一起读过的 hook 脚本 ——
-数据里只有标题能把它们和缺口分开,所以经生产方导出的标题常量比较;判官的说明(含隐私告知)同样只进 "Not checked"。
+数据里只有标题能把它们和缺口分开,所以经生产方导出的标题常量比较;判官的说明同样只进 "Not checked",`LLM-002` 除外:
+它不是缺口,而是"摘录离开了本机"的告知,所以在 Judge 那行旁边照这个意思印出来(`Sent to <host>: redacted excerpts in N call(s).`)。
 Checked 那句数清单,清单什么都没数到时改数扫过的 artifact(`check` 单个文件或普通目录、只有 `CLAUDE.md` 的 root)。`--json`、`--html` 和 `--md`
 不受这个开关影响,所以 CI 的输出不会取决于某个人选了哪种模式。`--md`(P-008)是第三个人读渲染器,给 PR 评论
 和 issue:同一份派生数据、同一顺序,被扫目录来的字符串全在代码跨度里。
+
+默认视图按不写代码的读者排序(P-058):标题说这份报告是关于什么的(`check` 的目标,或 root);分数行带上要看几条;
+一句白话;然后每条发现一个编号块 —— 每个维度一句固定短语说它是哪类问题、"谁 · 什么"且规则 ID 收尾、规则自己的 Why、
+判官的 triage 标签换成白话("likely a false alarm"、"one reading",并写明发现和分数都不变)、固定措辞的下一步
+(从哪个文件哪一行读起、这个维度该问的问题,以及只对闸门拦得住、有哈希、没有 critical 的 skill 给出确切的
+`aguard approve` 命令,用闸门自己的 `internal/cmdline` 加引号)。接着是一行 "Why N",由 `score.Explain` 推出 ——
+它就是 `score.Apply` 的计算过程,所以不会和分数打架;然后是一行简短的 Judge(版本号归 `--verbose`;
+`report.JudgeLineSuffix` 是唯一的扩展点)、白名单信任、没检查到的,最后一行说 `--verbose` 多给什么:扫描看了哪些地方
+(单个目标只写"只看了目标")、清单、OWASP 声明、卫生项列表。没有要看的东西时只印标题、带 ✅ 的分数行和 Judge 行。
+JSON、SARIF、HTML 不变。
 
 7. **终端渲染器要清掉控制字符**(`report.sanitize`)—— finding 里带有攻击者可影响的文件名,以及
    (开 `--llm` 时)模型生成的文本。JSON 和 HTML 由各自的编码器转义。

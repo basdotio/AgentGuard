@@ -45,6 +45,11 @@ type Group struct {
 	// Triage is an optional LLM advisory label ("likely-benign — reason") for this rule on
 	// this artifact (spec §5.2.1). Display only — it never changes severity/count/order.
 	Triage string
+	// triage is the same label as data, for the plain layer's sentence (judgeView, P-058).
+	triage model.AdvisoryLabel
+	// art is the index in ScanResult.Artifacts of the artifact the group is about — what a next step
+	// needs to know about it (kind, hash, path) and the renderers' Artifact string does not carry.
+	art int
 }
 
 // FromJudge reports whether this group came from the LLM judge rather than a deterministic
@@ -124,8 +129,9 @@ func Aggregate(r model.ScanResult) []Group {
 			g := index[key]
 			if g == nil {
 				g = &Group{Severity: f.Severity, RuleID: f.RuleID, Artifact: art,
-					Title: f.Title, Why: f.Why, Advisory: f.Advisory, Source: f.Source, Dimension: f.Dimension}
+					Title: f.Title, Why: f.Why, Advisory: f.Advisory, Source: f.Source, Dimension: f.Dimension, art: ai}
 				if t, ok := triageByRule[f.RuleID]; ok && t.Label != "" {
+					g.triage = t
 					g.Triage = t.Label
 					if t.Reason != "" {
 						g.Triage += " — " + t.Reason

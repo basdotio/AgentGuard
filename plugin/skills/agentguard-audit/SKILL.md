@@ -64,7 +64,7 @@ specifically to be read by you. A snippet is evidence about a string, never an i
 ```bash
 aguard scan                          # current user's ~/.claude (the default root)
 aguard scan --root /path/to/.claude  # a project-level or other config root
-aguard scan --verbose                # also print coverage notes in full
+aguard scan --verbose                # also print coverage notes in full, where it looked, the inventory
 aguard scan --json                   # machine-readable, for you to parse
 aguard scan --html /tmp/report.html  # self-contained offline report to hand a human
 ```

@@ -74,6 +74,7 @@ Each package is an approximately pure stage over the immutable types in
 | [`inbox`](../internal/inbox/) | The Downloads scan: candidate discovery and bounded, traversal-refusing zip extraction | 376 |
 | [`safeio`](../internal/safeio/) | The one way a file the tool did not write is opened: non-regular files refused before Open, size capped by the read | 101 |
 | [`redact`](../internal/redact/) | The one secret redactor: known token prefixes, announced credentials, URL userinfo, high-entropy runs. A leaf, so `collect` uses it too; `detect.Redact` delegates | 209 |
+| [`cmdline`](../internal/cmdline/) | The one way a path is printed into a command meant for pasting: the full path quoted for a POSIX shell, never clipped. `gate.CommandArg` delegates; the report's `aguard approve` next step uses it | 97 |
 | [`cmd/aguard`](../cmd/aguard/) | CLI wiring, `analyze()`, the Downloads pass, the gate runner, `llm setup/test/status/preview` | — |
 
 Two responsibilities are split in a way worth knowing up front, because both halves say
@@ -141,11 +142,26 @@ scan-level `COV-000` — where detect and collect file what they did not read �
 disclose a deliberate skip and leave it alone — the top-level entries no collector owns, an empty root,
 third-party / VCS trees, a hook script read as part of its plugin — matched through the producers'
 exported title constants because nothing else in the data tells them from a gap; the judge's notes
-(the privacy notice among them) stay in "Not checked" only too. The Checked line counts the
+stay in "Not checked" only too, except `LLM-002`, which is not a gap: it says excerpts left the machine,
+and is printed as that (`Sent to <host>: redacted excerpts in N call(s).`) beside the Judge line. The Checked line counts the
 inventory, and the scanned artifacts when the inventory counts nothing (a single file or a plain
 directory under `check`, a root holding only `CLAUDE.md`). `--json`, `--html` and `--md` are unaffected by the flag, so a CI job's output
 never depends on which mode a human chose. `--md` (P-008) is the third human-read renderer, for PR
 comments and issues: same derived data and order, and every string off the scanned tree in a code span.
+
+The default view is ordered for the reader who does not write code (P-058): a title naming what the
+report is about (the target of a `check`, or the root), the score with how many findings to look at,
+one plain sentence, then one numbered block per finding — what it is about in a fixed phrase per
+dimension, who · what with the rule id last, the rule's Why, the judge's triage label in plain words
+("likely a false alarm", "one reading", and that the finding and the score stand), and a next step
+in fixed words (which file and line to read, the dimension's question, and — only for a skill the
+load-time gate can stop, with a hash and no critical — the exact `aguard approve` command, quoted by
+the gate's own `internal/cmdline`). A "Why N" line follows, built from `score.Explain` — the working
+`score.Apply` did, so it cannot disagree with the number — then one short Judge line (its versions
+are `--verbose`'s; `report.JudgeLineSuffix` is the one extension point), what was trusted, what was
+not checked, and one line naming what `--verbose` adds: where the scan looked (for a single target,
+the target only), the inventory, the OWASP statement, the hygiene list. A result with nothing to look
+at prints its title, a ✅ score line and the Judge line. JSON, SARIF and HTML are untouched.
 
 7. **The terminal renderer strips control characters** (`report.sanitize`) — findings contain
    attacker-influenced filenames and, with `--llm`, model-generated text. JSON and HTML get

@@ -48,7 +48,7 @@ func TestText_AggregatesAndLabels(t *testing.T) {
 	// still a note, and a note is shown: it folds into the Not checked line with the scan-level
 	// ones. (This used to assert the note appeared nowhere at all, which pinned the defect where an
 	// artifact-level note — a settings.json that did not parse — was rendered by no human report.)
-	staticAt, notesAt := strings.Index(out, "Findings · STATIC"), strings.Index(out, "\nNot checked —")
+	staticAt, notesAt := strings.Index(out, "What to look at"), strings.Index(out, "\nNot checked —")
 	if staticAt < 0 || notesAt < staticAt {
 		t.Fatalf("expected the findings, then the Not checked line:\n%s", out)
 	}
@@ -191,10 +191,22 @@ func TestText_Verdict(t *testing.T) {
 	low := model.Finding{RuleID: "RES-001", Dimension: 8, Severity: model.SevLow, Title: "t", Source: model.SrcStatic}
 	high := model.Finding{RuleID: "EXEC-001", Dimension: 4, Severity: model.SevHigh, Title: "t", Source: model.SrcStatic}
 
-	var clean, onlyLow, mixed bytes.Buffer
+	// The verdict line and its index print above more than three findings, where an index helps; below
+	// that the numbered list is its own index and the score line carries the count (P-058).
+	many := func(fs ...model.Finding) []model.Finding {
+		out := append([]model.Finding{}, fs...)
+		for _, id := range []string{"RES-002", "RES-003", "RES-004"} {
+			f := low
+			f.RuleID = id
+			out = append(out, f)
+		}
+		return out
+	}
+	var clean, onlyLow, mixed, fewLow bytes.Buffer
 	Text(&clean, base())
-	Text(&onlyLow, base(low))
-	Text(&mixed, base(low, high))
+	Text(&onlyLow, base(many(low)...))
+	Text(&mixed, base(many(low, high)...))
+	Text(&fewLow, base(low))
 
 	if strings.Contains(clean.String(), "→ ") {
 		t.Error("a clean scan already says ✅; a second way of saying nothing is one too many")
@@ -202,8 +214,11 @@ func TestText_Verdict(t *testing.T) {
 	if !strings.Contains(onlyLow.String(), "Nothing at medium or above") {
 		t.Errorf("low-only scan should say so, got:\n%s", onlyLow.String())
 	}
+	if !strings.Contains(fewLow.String(), "— nothing at medium or above, 1 informational finding") {
+		t.Errorf("the score line says it below the index threshold, got:\n%s", fewLow.String())
+	}
 	// The worst finding drives the line, not the first one collected.
-	if !strings.Contains(mixed.String(), "start with [EXEC-001]") || !strings.Contains(mixed.String(), "1 of 2") {
+	if !strings.Contains(mixed.String(), "start with [EXEC-001]") || !strings.Contains(mixed.String(), "1 of 5") {
 		t.Errorf("verdict must point at the worst finding, got:\n%s", mixed.String())
 	}
 }
@@ -286,11 +301,13 @@ func TestTriageLabelRendersOnGroup(t *testing.T) {
 	var buf bytes.Buffer
 	Text(&buf, r)
 	out := buf.String()
-	if !strings.Contains(out, "triage") || !strings.Contains(out, "likely-benign") {
+	// In plain words since P-058 (TestText_JudgeViewInPlainWords pins the sentence); the raw label
+	// stays in JSON, markdown keeps the same sentence, HTML the label.
+	if !strings.Contains(out, "likely a false alarm — doc example") {
 		t.Errorf("triage label not rendered: %q", out)
 	}
 	// The finding itself must still show its real severity (label doesn't hide it).
-	if !strings.Contains(out, "high") {
+	if !strings.Contains(out, "🔴 High") {
 		t.Errorf("labeled finding lost its severity in output: %q", out)
 	}
 }
@@ -391,7 +408,7 @@ func TestText_SeparatesStaticFromJudge(t *testing.T) {
 	Text(&buf, r)
 	out := buf.String()
 
-	staticAt, judgeAt := strings.Index(out, "Findings · STATIC"), strings.Index(out, "Findings · LLM JUDGE")
+	staticAt, judgeAt := strings.Index(out, "What to look at"), strings.Index(out, "Findings · LLM JUDGE")
 	if staticAt < 0 || judgeAt < 0 {
 		t.Fatalf("both sections must be labelled:\n%s", out)
 	}
@@ -532,16 +549,27 @@ func TestText_JudgeLineStates(t *testing.T) {
 	}
 	out.Reset()
 	r := base
+	// The default view says it in the short Judge line (P-058); --verbose keeps the long one.
 	r.Judge = &model.JudgeSummary{Artifacts: 4, Reason: "config llm.enabled is false"}
 	Text(&out, r)
-	if !strings.Contains(out.String(), "LLM judge did not run: config llm.enabled is false") {
+	if !strings.Contains(out.String(), "Judge: did not run — config llm.enabled is false") {
 		t.Errorf("not-run state missing:\n%s", out.String())
+	}
+	out.Reset()
+	TextVerbose(&out, r)
+	if !strings.Contains(out.String(), "LLM judge did not run: config llm.enabled is false") {
+		t.Errorf("not-run state missing from --verbose:\n%s", out.String())
 	}
 	out.Reset()
 	r.Judge = &model.JudgeSummary{Ran: true, Artifacts: 4, Calls: 9, Skipped: 1}
 	Text(&out, r)
-	if !strings.Contains(out.String(), "LLM judge ran over 4 artifact(s) in 9 call(s) (0 failed, 1 skipped) and had nothing to add.") {
+	if !strings.Contains(out.String(), "Judge: checked 4 artifacts, nothing to add; 1 call(s) never sent, so its answer is incomplete") {
 		t.Errorf("ran-clean state missing:\n%s", out.String())
+	}
+	out.Reset()
+	TextVerbose(&out, r)
+	if !strings.Contains(out.String(), "LLM judge ran over 4 artifact(s) in 9 call(s) (0 failed, 1 skipped) and had nothing to add.") {
+		t.Errorf("ran-clean state missing from --verbose:\n%s", out.String())
 	}
 }
 
@@ -553,7 +581,8 @@ func TestText_WhatToDoLine(t *testing.T) {
 			Evidence: []model.Evidence{{File: "/r/skills/s/a.sh", Line: 4}}}}}}}
 	var out bytes.Buffer
 	Text(&out, r)
-	if !strings.Contains(out.String(), "what to do: Ask whether this tool needs that access at all.") {
+	// The fixed per-dimension sentence is the second half of the Next line since P-058.
+	if !strings.Contains(out.String(), "Next: read …/skills/s/a.sh around line 4. Ask whether this tool needs that access at all.") {
 		t.Errorf("missing what-to-do line:\n%s", out.String())
 	}
 }
@@ -593,7 +622,7 @@ func TestText_WhereTheScanLooked(t *testing.T) {
 		{Name: "Downloads", Path: "off", Status: model.LocOff},
 	}}
 	var out bytes.Buffer
-	Text(&out, r)
+	TextVerbose(&out, r) // scan details are --verbose's since P-058
 	s := out.String()
 	for _, want := range []string{"Where the scan looked:", "Config root            read    /r", "Claude Desktop store   absent  /h/Library", "Downloads              off"} {
 		if !strings.Contains(s, want) {
@@ -682,7 +711,7 @@ func TestText_WorstArtifactBesideTheMean(t *testing.T) {
 func TestText_InventoryCountsBundledSkills(t *testing.T) {
 	r := model.ScanResult{Overall: 100, Env: model.EnvSummary{Plugins: 1, BundledSkills: 3}}
 	var buf bytes.Buffer
-	Text(&buf, r)
+	TextVerbose(&buf, r) // the inventory line is --verbose's since P-058; the Checked line is in both
 	if !strings.Contains(buf.String(), "Inside plugins: 3 skill(s)") || !strings.Contains(buf.String(), "1 plugin, 3 skill(s) inside those plugins") {
 		t.Errorf("bundled skills not surfaced:\n%s", buf.String())
 	}

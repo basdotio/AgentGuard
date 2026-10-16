@@ -142,7 +142,7 @@ hook —— `aguard hook install` 仍然是一个显式的、先 `--dry-run` 给
 ```bash
 aguard scan                      # 全盘体检当前用户的 ~/.claude
 aguard scan --root ~/.claude     # 指定根目录
-aguard scan --verbose            # 额外打印每条覆盖度说明的完整正文
+aguard scan --verbose            # 额外打印每条覆盖度说明的完整正文、扫描看了哪些地方、清单
 aguard scan --html report.html   # 额外写出自包含 HTML 报告
 aguard scan --md report.md       # 额外写出 markdown 版报告,贴进 PR 评论或 issue("-" = stdout)
 aguard scan --json               # 机器可读输出
@@ -165,6 +165,9 @@ aguard version
 
 终端报告默认列出**全部**发现,并把覆盖度说明折成一行 —— 这行仍然带着条数、其中的最高严重度和
 规则 ID。`--verbose` 把这些说明的正文完整打出来,想知道"这次扫描哪些地方**没读**"时用它。
+默认视图按不写代码的读者排序:每条发现带一个下一步(从哪个文件哪一行读起;闸门拦得住的 skill 还给出确切的
+`aguard approve` 命令)、判官对它的看法(白话),再用一行说明分数为什么是这个数;没有要看的东西时只印标题和分数。
+`--verbose` 另外给出扫描看了哪些地方、清单、判官的版本号和卫生项列表。
 挂在单个条目上的说明也在其中,比如一个解析不了的 `settings.json`:摘要会点名它"没检查全",读不了的文件同样点名。
 当 Claude Code 加载的东西没读全 —— 有文件读不了或解析不了、某个条目带着自己的覆盖度说明、skill 里有打不开的目录、
 文件超过大小上限、hook 调的脚本跟不进去 —— 摘要就说覆盖不全(coverage is incomplete),不说配置安全。按设计不读的

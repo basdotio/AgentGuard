@@ -190,6 +190,11 @@ func pinned(out model.ScanResult) model.ScanResult {
 // in full, renders byte for byte what it rendered before artifact-level notes reached the human
 // reports. The goldens were recorded from main; a clean config has no note of either kind,
 // so nothing in this change may touch its output.
+//
+// The two terminal goldens were replaced on purpose by P-058, the one change allowed to move them: the
+// default view of a clean result is its title, its ✅ score line and (for an environment) what was
+// checked, and the scan details moved to --verbose, so the two modes no longer print the same bytes.
+// The markdown golden did not move.
 func TestCleanSettingsReportIsUnchanged(t *testing.T) {
 	root := settingsRoot(t, goodSettings)
 	out, err := checkTarget(root, scanOpts{})
@@ -202,7 +207,7 @@ func TestCleanSettingsReportIsUnchanged(t *testing.T) {
 	reports := humanReports(t, pinned(out))
 	for _, g := range []struct{ name, want string }{
 		{"terminal", cleanTerminalGolden},
-		{"verbose", cleanTerminalGolden},
+		{"verbose", cleanVerboseGolden},
 		{"markdown", cleanMarkdownGolden},
 	} {
 		for _, r := range reports {
@@ -224,13 +229,15 @@ func TestCleanSettingsReportIsUnchanged(t *testing.T) {
 	}
 }
 
-const cleanTerminalGolden = `AgentGuard scan · root=<TMP>/.claude
-Risk score 100/100 (Low)
-
-Summary
-  Your Claude Code setup looks safe. No findings.
+const cleanTerminalGolden = `AgentGuard · <TMP>/.claude
+✅ Risk score 100/100 (Low) — nothing to fix
   Checked 1 hook.
+`
 
+const cleanVerboseGolden = `AgentGuard · <TMP>/.claude
+✅ Risk score 100/100 (Low) — nothing to fix
+  Your Claude Code setup looks safe.
+  Checked 1 hook.
 
 ✅ No risk findings (static).
 

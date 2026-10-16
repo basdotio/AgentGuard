@@ -190,7 +190,7 @@ func runLLMSetup(w io.Writer, cfgPath string, o llmSetupOpts) error {
 	fmt.Fprintf(w, "config written to %s\n", cfgPath)
 	fmt.Fprintf(w, "endpoint %s · model %s\n", llm.BaseURL, llm.Model)
 	fmt.Fprintf(w, "\nWith `aguard scan --llm`, redacted excerpts of your skills, hooks and config are sent to %s for analysis. "+
-		"Raw secrets are redacted first; the judge can only add findings, never remove one or lower the score.\n"+
+		"Raw secrets are redacted first; the judge can only add findings or raise the risk — it never removes a finding or makes a result look safer.\n"+
 		"Next: `aguard llm test` to confirm the endpoint answers.\n", llm.BaseURL)
 	return nil
 }

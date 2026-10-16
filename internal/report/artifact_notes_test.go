@@ -66,11 +66,19 @@ func TestArtifactNoteReachesEveryHumanRenderer(t *testing.T) {
 // summaryOf cuts the part of a report that states the verdict: the terminal's Summary block, the
 // markdown's Summary section, the HTML summary card. "coverage is incomplete" appears further down
 // in all three already (the Not checked line); the question here is what the HEADLINE says.
+// saysSafe reports whether a summary calls the result safe: the Low band's sentence, or — in the
+// default terminal view of a result with nothing to look at, which prints no sentence under its score
+// line (P-058) — the ✅ score line, which is printed only when nothing went unread.
+func saysSafe(summary string) bool {
+	return strings.Contains(summary, "looks safe") || strings.Contains(summary, "✅ Risk score")
+}
+
 func summaryOf(name, body string) string {
 	var from, to string
 	switch name {
 	case "terminal", "verbose":
-		from, to = "\nSummary\n", "\n\n"
+		// The terminal's summary is its header block, title to the first blank line (P-058).
+		from, to = "", "\n\n"
 	case "markdown":
 		from, to = "## Summary", "## What to look at"
 	case "html":
@@ -133,7 +141,7 @@ func TestSummaryDoesNotCallIncompleteCoverageSafe(t *testing.T) {
 			if s == "" {
 				t.Fatalf("%s/%s: no summary found in:\n%s", c.name, h.name, h.body)
 			}
-			safe := strings.Contains(s, "looks safe")
+			safe := saysSafe(s)
 			if safe != c.wantSafe {
 				t.Errorf("%s/%s: summary says looks safe = %v, want %v:\n%s", c.name, h.name, safe, c.wantSafe, s)
 			}
