@@ -53,7 +53,7 @@ type callShape struct {
 }
 
 // callShapes is every request shape the client can send: each pass with both sides, with the
-// declared side empty, with the behavior empty and with both empty (the placeholders the layout
+// declared side empty, with the behavior empty and with both empty, and re-asked (P-068) (the placeholders the layout
 // fills in, and the injection pass's switch between one and two sides), at temperature 0 and at
 // samplingTemperature; and triage with one item more than it sends, so its cap is in the body.
 func callShapes() []callShape {
@@ -74,6 +74,11 @@ func callShapes() []callShape {
 					req:  Request{Mode: m, Declared: v.declared, Behavior: v.behavior, Temperature: temp},
 				})
 			}
+			// The one repeat of an unreadable reply carries reaskRule in its system message (P-068).
+			out = append(out, callShape{
+				name: fmt.Sprintf("mode %d, temperature %v, re-asked", m, temp),
+				req:  Request{Mode: m, Declared: declaredStandIn, Behavior: behaviorStandIn, Temperature: temp, Reask: true},
+			})
 		}
 	}
 	items := make([]TriageItem, maxTriageItems+1)
@@ -88,7 +93,7 @@ func callShapes() []callShape {
 // inline in Triage, so they are restated here — exactly, or the capture test fails.
 func (s callShape) messages() (system, user string, temperature float64) {
 	if s.triage == nil {
-		return systemPrompt(s.req.Mode, nonceStandIn), userPrompt(s.req, nonceStandIn), s.req.Temperature
+		return systemPromptFor(s.req, nonceStandIn), userPrompt(s.req, nonceStandIn), s.req.Temperature
 	}
 	items := s.triage
 	if len(items) > maxTriageItems {

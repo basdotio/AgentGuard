@@ -111,6 +111,25 @@ func systemPrompt(mode Mode, nonce string) string {
 	return modeTask(mode) + " " + barrierRule(nonce)
 }
 
+// reaskRule is appended to the system message of the one repeat of a question whose first reply
+// could not be read (P-068). It names the failure in general terms only — never the reply's own
+// text, which may carry anything from the artifact — and asks for the shape again. Measured
+// before this: 1.7% of calls on real skill trees came back as JSON the reader refuses (a `\x`
+// escape inside a quoted line, a stray `]` or `}` after a member), and each was a question that
+// counted as never asked.
+const reaskRule = "FORMAT RULE: your previous reply to this same question could not be read as a JSON object. Reply " +
+	"with ONE JSON object and nothing else — no prose before or after it, no code fence. Inside its strings, " +
+	"escape every backslash as \\\\ and every double quote as \\\"; never write \\x, \\u without four hex " +
+	"digits, or a raw control character; close every string, array and object you open."
+
+// systemPromptFor is systemPrompt for a request: the mode's message, plus reaskRule on a repeat.
+func systemPromptFor(r Request, nonce string) string {
+	if r.Reask {
+		return systemPrompt(r.Mode, nonce) + " " + reaskRule
+	}
+	return systemPrompt(r.Mode, nonce)
+}
+
 // modeTask is the task sentence plus, for a pass that has a category table, the closed list the
 // model picks from (P-041). The list is part of the question, so it is part of what
 // PromptVersion hashes; a pass without a table (MCP config) adds nothing.

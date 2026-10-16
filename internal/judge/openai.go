@@ -129,7 +129,7 @@ func (c *HTTPClient) Judge(ctx context.Context, r Request) (Verdict, error) {
 	if err != nil {
 		return Verdict{}, err
 	}
-	content, err := c.chat(ctx, systemPrompt(r.Mode, nonce), userPrompt(r, nonce), r.Temperature)
+	content, err := c.chat(ctx, systemPromptFor(r, nonce), userPrompt(r, nonce), r.Temperature)
 	if err != nil {
 		return Verdict{}, err
 	}

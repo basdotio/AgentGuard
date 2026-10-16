@@ -595,6 +595,7 @@ type JudgeSummary struct {
 	Failed    int    `json:"failed"`           // calls that ended in error after retries
 	Skipped   int    `json:"skipped"`          // calls never issued: budget or deadline
 	Repaired  int    `json:"repaired"`         // answered calls read only by the closed-early repair (P-034)
+	Reasked   int    `json:"reasked"`          // calls whose first reply was unreadable and that were asked once more (P-068)
 	// TemperatureOmitted: the endpoint refused the temperature member (a model that allows only its
 	// default) and the calls went without it, so a consensus run sampled at that default (P-052).
 	TemperatureOmitted bool   `json:"temperature_omitted,omitempty"`

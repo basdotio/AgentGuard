@@ -240,6 +240,11 @@ aguard scan --llm --config config.yaml
   前提是去掉之后恰好是一个对象、后面只有空白或一个收尾围栏、没有哪个成员名出现两次(不分大小写比较)。
   第一个对象之后以逗号开头的其他任何东西、以及含两个对象的回复,这次调用一律失败:绝不只读前半个,因为后半个
   可能带着另一个 `flagged`。修过的回复是回答了,不是失败;判官区块把它记为 `repaired`。
+- **读不了的回复再问一次**(P-068)。在真实 skill 树上实测,1.7% 的调用回来的 JSON 解析器拒收——引号里的一行带 `\x` 转义、
+  某个成员后面多了 `]` 或 `}`——每一次都等于那个问题没问(一条 `LLM-000`;某次跑里 384 棵树有 12% 少问了一问)。这种回复不是
+  传输失败,不按传输错误重试:同一个问题再问一次,换新的 nonce,系统消息末尾加一条固定的格式规则(只回一个 JSON 对象、别的
+  都不要、反斜杠和引号要转义)。重问只是同一个抽样问题的又一次抽样,决定不了第一次决定不了的事;第二次还读不了就照旧算失败。
+  判官区块把重问计为 `reasked`;回复本身的文字永远不会回传给模型。
 - **判官发现的严重度由工具定,不由模型定**(P-041)。每一趟都让模型从一个封闭列表里选一个 `category`(它发现的是哪一类事),
   `internal/judge/severity.go` 里的一张表把类别映射成严重度。模型自己写的 `severity` 一词只记录(票数列表里能看到),不决定任何事;
   不在表里的类别一律 medium,所以被诱导编造类别的模型抬不高自己的权重。表:
@@ -390,8 +395,8 @@ em 空格(U+2003)、不换行空格和 tab 一样折叠,所以用它们垫开的
 开了 `--llm`,摘要会多一行说判官自己 —— `LLM judge ran over N artifact(s) in M call(s) and had nothing
 to add`、`… and added K advisory leads`,或 `LLM judge did not run: <原因>` —— 并且 "LLM judge leads"
 那一节即使为空也会出现,里面就是这一行。有回复用到了"提前合上"的修补时,这一行在失败数旁边写出几个
-(`(0 failed, 0 skipped, 1 repaired)`);一个都没有时和以前一样。JSON 里对应 `judge` 字段(`ran`、`reason`、
-`artifacts`、`calls`、`failed`、`skipped`、`repaired`——和前两个一样总是出现——`findings`、`endpoint`,端点拒收温度字段时还有 `temperature_omitted`),外加成本:`triage_calls`(`calls` 里属于 triage 的部分——
+(`(0 failed, 0 skipped, 1 repaired, 2 re-asked)`);一个都没有时和以前一样。JSON 里对应 `judge` 字段(`ran`、`reason`、
+`artifacts`、`calls`、`failed`、`skipped`、`repaired`、`reasked`——和前两个一样总是出现——`findings`、`endpoint`,端点拒收温度字段时还有 `temperature_omitted`),外加成本:`triage_calls`(`calls` 里属于 triage 的部分——
 triage 只问一次,判官的题问 `samples` 次)、`retries`、`prompt_tokens` / `completion_tokens`——端点没报用量时
 后两个键不出现,而不是写一个看起来像测量值的 0。不开 `--llm` 这些一律不出现。以前"判官跑了没发现"和"判官
 没跑"在报告上长得一样,而这正是读一份干净报告的人最需要分清的一件事。

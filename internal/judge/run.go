@@ -80,6 +80,9 @@ type Stats struct {
 	// early and was read by dropping that brace (parseVerdict, P-034). They are answers, not
 	// failures; counted so the repair is never silent.
 	Repaired int
+	// Reasked is the part of the judge calls whose first reply could not be read as a verdict and
+	// that were asked once more (P-068). An answered repeat is an answer; a failed one is in Failed.
+	Reasked int
 	// TriageCalls is the part of Calls that was triage. A judge question is asked `Samples`
 	// times and triage once, so without this split what one question costs can only be guessed.
 	TriageCalls int
@@ -166,6 +169,7 @@ type result struct {
 	ungrounded bool           // something was claimed but couldn't be quoted — dropped
 	unquoted   string         // the quote that failed to ground, clipped — for the LLM-005 note
 	repaired   bool           // the reply was read only by the closed-early repair (P-034)
+	reasked    bool           // the first reply was unreadable and the question was asked once more (P-068)
 	// modelSeverity is the word the model wrote, clamped, and category the name it chose: both are
 	// shown in the vote list so a later run can audit the table, neither is weighed (P-041).
 	modelSeverity model.Severity
@@ -313,6 +317,9 @@ func Run(ctx context.Context, c Client, arts []model.ArtifactReport, opts Option
 			stats.TriageCalls++
 		}
 		stats.Retries += r.retries
+		if r.reasked {
+			stats.Reasked++
+		}
 		stats.Latencies = append(stats.Latencies, r.latency)
 		if r.err != nil {
 			failed++
@@ -813,37 +820,54 @@ dispatch:
 // execute performs one task under its OWN timeout, retrying a retryable transport error with
 // exponential backoff. The per-call deadline is the point of the exercise: previously a whole
 // judge run shared one clock, so a handful of slow calls could starve every remaining check.
+//
+// A reply the reader refuses (ReplyError) is not a transport failure and is not retried as one;
+// the question is asked ONCE more, with reaskRule in its system message and a fresh nonce (P-068).
+// The repeat is another draw of the same sampled question, so it decides nothing the first call
+// could not have; a second unreadable reply fails the call as before, visibly, in LLM-000.
 func execute(ctx context.Context, c Client, t task, opts Options) result {
 	start := time.Now()
 	res := result{done: true}
-	for attempt := 0; ; attempt++ {
-		cctx, cancel := context.WithTimeout(ctx, opts.CallTimeout)
-		var err error
-		switch t.kind {
-		case taskJudge:
-			var v Verdict
-			if v, err = c.Judge(cctx, t.req); err == nil {
-				res.finding, res.barrier, res.ungrounded, res.unquoted = groundedFinding(t, v)
-				res.repaired = v.repaired
-				res.modelSeverity = clampSeverity(v.Severity)
-				res.category = categoryName(v)
+	try := func(req Request) error {
+		for attempt := 0; ; attempt++ {
+			cctx, cancel := context.WithTimeout(ctx, opts.CallTimeout)
+			var err error
+			switch t.kind {
+			case taskJudge:
+				var v Verdict
+				if v, err = c.Judge(cctx, req); err == nil {
+					res.finding, res.barrier, res.ungrounded, res.unquoted = groundedFinding(t, v)
+					res.repaired = v.repaired
+					res.modelSeverity = clampSeverity(v.Severity)
+					res.category = categoryName(v)
+				}
+			case taskTriage:
+				res.labels, err = c.Triage(cctx, t.label, t.items)
 			}
-		case taskTriage:
-			res.labels, err = c.Triage(cctx, t.label, t.items)
+			cancel()
+			if err == nil || attempt >= opts.MaxRetries || !isRetryable(err) || ctx.Err() != nil {
+				return err
+			}
+			res.retries++
+			if !waitBackoff(ctx, attempt, err) {
+				return err // run deadline hit while backing off — report the original failure
+			}
 		}
-		cancel()
-		if err == nil || attempt >= opts.MaxRetries || !isRetryable(err) || ctx.Err() != nil {
-			res.err = err
-			break
-		}
-		res.retries++
-		if !waitBackoff(ctx, attempt, err) {
-			res.err = err // run deadline hit while backing off — report the original failure
-			break
-		}
+	}
+	res.err = try(t.req)
+	if res.err != nil && t.kind == taskJudge && !t.req.Reask && isUnreadable(res.err) && ctx.Err() == nil {
+		res.reasked = true
+		req := t.req
+		req.Reask = true
+		res.err = try(req)
 	}
 	res.latency = time.Since(start)
 	return res
+}
+
+func isUnreadable(err error) bool {
+	var re *ReplyError
+	return errors.As(err, &re)
 }
 
 func isRetryable(err error) bool {
