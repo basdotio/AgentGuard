@@ -36,7 +36,7 @@ messages. Numbers stay in the proposals and in `baselines/results/`.
 ## Done
 
 ```
-Merged: PR to be opened (2026-10-16; find the sha with git log --grep P-067 after the merge)
+Merged: PR #88 (2026-10-16; find the sha with git log --grep P-067)
 Released: v0.27.0
 Evidence: make verify: all gates passed on the branch; go1.23.5, go.mod line 3 unchanged
 Evidence: TestMarketplaceEntryVersionMatchesPlugin green with both files at 0.27.0
