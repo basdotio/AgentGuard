@@ -98,6 +98,21 @@ and P-062 touched nothing here, as they should not have, and the two runs are tw
    these artifacts declare a purpose they then subvert in prose; the triage pass passes them. A different question, not a
    different threshold.
 
+**The two comparison tools on the same 240** (static, the P-060 adapters and policies; `results/ccaudit/2026-10-16-p064-sh/`,
+`results/skill-scanner/2026-10-16-p064-sh/`):
+
+| | `SKILL.md` 50 | new script 66 | existing script 17 | helper 15 | companion `.md` 54 | PDF 38 | all 240 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| aguard static / judge | 6 / 33 | 11 / 46 | 0 / 9 | 0 / 8 | 0 / 0 | 0 / 0 | 17 / 96 |
+| cc-audit 3.23.9 | 27 | 20 | 5 | 7 | **25** | 6 | 90 |
+| skill-scanner 2.3.0 | 1 | 8 | 0 | 0 | 2 | **35** | 46 |
+
+cc-audit reads companion `.md` files and some PDFs, and that is where its 90 comes from; it also flagged 236 of the 400
+real trees in P-060 (59%), so its figure is bought with a false-positive rate no one would run. skill-scanner's 35 on the
+PDFs is one rule, `LOW_ANALYZABILITY` ("there is a file here I cannot read"), on 35 of its 46 flags — a disclosure, not a
+detection — and 11 of 240 otherwise. Neither changes the reading above; cc-audit's 25 of 54 does say that reading the
+companion document is a cheap, ordinary thing to do.
+
 What this is not: a recall rate. Every sample was written by an LLM the upstream names, 20 per risk were drawn, and the
 corpus's own label for the dimension is a rule over the upstream's category. It is coverage of twelve risk shapes by six
 placements at one version, to be read per cell, and the cells that matter are the two zeros.
