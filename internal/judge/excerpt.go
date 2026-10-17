@@ -20,6 +20,7 @@ import (
 const (
 	maxExcerptBytes = 6000    // total behavior text sent per artifact
 	maxFileBytes    = 2000    // per-file cap so one big file can't crowd out the rest
+	maxNamedBytes   = 4000    // the files a SKILL.md names, on top of maxExcerptBytes (P-070)
 	maxFileRead     = 1 << 20 // hard ceiling on bytes read from any one file (memory-DoS guard);
 	// a hostile skill can ship a multi-GB blob — never materialize it. 1 MiB comfortably
 	// covers real scripts, so redaction still sees whole secrets before truncation.
@@ -543,13 +544,16 @@ func behaviorExcerpt(dir string, eg egress, named []string) (string, []sourceUni
 		paths = append(paths, p)
 		return nil
 	})
-	for _, p := range namedFirst(dir, paths, named) {
-		if total >= maxExcerptBytes {
-			break
-		}
+	// Two budgets (P-070): the files the instruction text names get maxNamedBytes of their own, the rest
+	// keep maxExcerptBytes in walk order. Measured with ONE shared budget and the named files first: the
+	// named scripts got in, and the unnamed files that carry SkillHarm's executable_code and
+	// import_new_helper payloads were pushed out (178 → 174, 11 caught for 15 lost). A tree that names
+	// nothing sends exactly what it sent before.
+	ordered, nNamed := namedFirst(dir, paths, named)
+	add := func(p string, budget int, total *int) bool {
 		raw := readAtMost(p, maxFileRead)
 		if raw == nil {
-			continue
+			return true
 		}
 		// Redact BEFORE condensing or truncating: a secret straddling the byte cap must not
 		// survive as a sub-threshold partial. The rel path is redacted too (a path segment could
@@ -559,23 +563,48 @@ func behaviorExcerpt(dir string, eg egress, named []string) (string, []sourceUni
 		red, lm = capHeadTail(red, lm, maxFileBytes)
 		rel, _ := filepath.Rel(dir, p)
 		header := "# " + detect.Redact(rel) + "\n"
-		room := maxExcerptBytes - total - len(header) - 2 // 2 = the blank line after each file
+		room := budget - *total - len(header) - 2 // 2 = the blank line after each file
 		if room <= 0 {
-			break
+			return false
 		}
 		red, lm = capHeadTail(red, lm, room)
 		units = append(units, sourceUnit{file: detect.Redact(rel), text: red, firstLine: 1, lineMap: lm,
 			goesHome: detect.CredentialGoesHome(rel, string(raw))})
-		total += len(header) + len(red) + 2
+		*total += len(header) + len(red) + 2
+		return true
+	}
+	// A named file past the named budget is not dropped: it goes back to its place in the walk and
+	// competes for the general budget exactly as it did before P-070, so no file is sent less than it was.
+	namedTotal, sentNamed := 0, map[string]bool{}
+	for _, p := range ordered[:nNamed] {
+		n := len(units)
+		if !add(p, maxNamedBytes, &namedTotal) {
+			break
+		}
+		if len(units) > n {
+			sentNamed[p] = true
+		}
+	}
+	for _, p := range paths {
+		if sentNamed[p] {
+			continue
+		}
+		if !add(p, maxExcerptBytes, &total) {
+			break
+		}
 	}
 
-	// Each file fits the budget as walked; settled as one field, a file the final redaction pushed past it is
+	// Each file fits its budget as walked; settled as one field, a file the final redaction pushed past it is
 	// left out like any file past the budget (fitUnits), and the rest are read back from what is sent.
 	files, texts := make([]string, len(units)), make([]string, len(units))
 	for k, u := range units {
 		files[k], texts[k] = u.file, u.text
 	}
-	text, sent, _ := fitUnits(texts, maxExcerptBytes, headed(files))
+	limit := maxExcerptBytes
+	if nNamed > 0 {
+		limit += maxNamedBytes
+	}
+	text, sent, _ := fitUnits(texts, limit, headed(files))
 	units = units[:len(sent)]
 	for k := range sent {
 		units[k].text = sent[k]
@@ -604,10 +633,11 @@ func namedFiles(body string, exts map[string]bool) []string {
 }
 
 // namedFirst orders the walked paths: those the instruction text names, by path from dir or by bare
-// name, in the order named; then the rest as walked. A name that matches nothing changes nothing.
-func namedFirst(dir string, paths, named []string) []string {
+// name, in the order named; then the rest as walked. It also says how many lead. A name that matches
+// nothing changes nothing.
+func namedFirst(dir string, paths, named []string) ([]string, int) {
 	if len(named) == 0 {
-		return paths
+		return paths, 0
 	}
 	byRel, byBase := map[string]string{}, map[string]string{}
 	for _, p := range paths {
@@ -633,12 +663,13 @@ func namedFirst(dir string, paths, named []string) []string {
 			out = append(out, p)
 		}
 	}
+	n := len(out)
 	for _, p := range paths {
 		if !taken[p] {
 			out = append(out, p)
 		}
 	}
-	return out
+	return out, n
 }
 
 // headed renders the intent pass's behavior: each file's text under a `# <file>` line, with a blank line

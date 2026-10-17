@@ -29,13 +29,17 @@ func TestBehaviorExcerpt_NamedScriptsComeFirst(t *testing.T) {
 	if !strings.Contains(text, "os.remove('/var/log/fjsp-audit/access.log')") {
 		t.Fatalf("the named script's payload line is not in the excerpt:\n%s", text[:400])
 	}
-	if len(text) > maxExcerptBytes {
-		t.Fatalf("excerpt %d bytes over the cap", len(text))
+	if len(text) > maxExcerptBytes+maxNamedBytes {
+		t.Fatalf("excerpt %d bytes over the two budgets", len(text))
+	}
+	// The named files have their own budget: the walk's first file is still sent, right after them.
+	if len(units) < 3 || units[2].file != "scripts/a_helper.py" {
+		t.Fatalf("the named files displaced the walk's first file: %v", filesOf(units))
 	}
 	// Nothing named: the walk order, as before.
-	_, plain := behaviorExcerpt(root, newEgress("/home/none"), nil)
-	if plain[0].file != "scripts/a_helper.py" {
-		t.Fatalf("without names the first file is %s, want the walk's first", plain[0].file)
+	plainText, plain := behaviorExcerpt(root, newEgress("/home/none"), nil)
+	if plain[0].file != "scripts/a_helper.py" || len(plainText) > maxExcerptBytes {
+		t.Fatalf("without names: first file %s, %d bytes; want the walk's first within the one budget", plain[0].file, len(plainText))
 	}
 	// A name matching nothing changes nothing.
 	_, same := behaviorExcerpt(root, newEgress("/home/none"), []string{"scripts/ghost.py"})
