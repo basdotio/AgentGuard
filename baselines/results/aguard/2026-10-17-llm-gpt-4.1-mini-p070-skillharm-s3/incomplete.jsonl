@@ -1,0 +1,2 @@
+{"sample":"mal-skill-sh-malware-deployment-daf0bc8363","path":"corpus/malicious/skills/sh-malware-deployment-daf0bc8363","class":"malicious","surface":["skills"],"severity":"high"}
+{"sample":"mal-skill-sh-proxy-attack-cb77ac0712","path":"corpus/malicious/skills/sh-proxy-attack-cb77ac0712","class":"malicious","surface":["skills"],"severity":"high"}

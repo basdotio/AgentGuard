@@ -188,6 +188,10 @@ Three more, `results/aguard/2026-10-16-llm-gpt-4.1-mini-p069-*`, are P-069 (a re
 more) against the P-068 binary: on the 384 benign trees failed calls 58 → 4 and trees short a question 48 → 4; SkillHarm
 11 → 1; the held-out ClawHub benign 3 → 1 trees short; judge totals within the run band. Raw in
 `aguard-judge-raw-2026-10-p068.tar.gz` on v0.26.0.
+Nine more, `results/aguard/2026-10-17-llm-gpt-4.1-mini-p070-*`, are P-070 (the files a `SKILL.md` names sent first, in
+two variants) against `main`: no recall gain beyond the run band, the development benign list up; rejected, the code
+reverted, the runs kept as the evidence that the judge's SkillHarm misses are judgement rather than visibility. Raw in
+`aguard-judge-raw-2026-10-p070.tar.gz` on v0.26.0.
 
 **What a judge run cost is folded by the driver, not by hand.** Each judged sample's ledger row
 carries `judge_usage` — `calls`, `failed`, `skipped`, `triage_calls`, `retries`, `prompt_tokens`,
