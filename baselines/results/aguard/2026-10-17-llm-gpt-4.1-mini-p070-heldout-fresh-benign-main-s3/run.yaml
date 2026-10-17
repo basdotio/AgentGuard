@@ -1,0 +1,79 @@
+# Written BY HAND from the run's raw output, not by baselines/cmd/baseline: the driver (P-021)
+# records the flags and the usage but folds verdicts from deterministic findings only, so its own
+# verdicts.jsonl is the static column (still recoverable from ledger.jsonl); the files here are
+# re-folded from raw/ at the judge's predicate by baselines/cmd/judgefold (P-033). Read
+# baselines/README.md "Measuring the judge" before citing any figure produced alongside this file.
+# THIS IS NOT A BASELINE: the verdicts depend on a model, a day and the sampling.
+#
+# WHAT THIS RUN IS FOR: the baseline for P-070 on the fresh held-out benign 216: main (P-069) the same day, same list.
+#
+# measured by agent-guard's own adapter (agent-guard baselines/adapter/aguard) with --llm passed through to scan and, on the server-source route, to check (-aguard-check-llm, P-056), threshold "high" chosen by us, placement: by content, into a fake home; unplaceable trees are handed to `check` directly
+
+tool: aguard
+tool_version: aguard v0.27.0-15-g33a3f0b (commit 33a3f0b, built 2026-10-16T14:15:59Z) · reputation entries=18 · rules=8fc8772b2951 · judge-prompt=b851dfd5412b · judge-excerpt=9
+threshold: high
+tool_extra_args:
+    - --llm
+    - --config
+    - <judge config, not committed; reproduced under `judge:` below>
+check_llm: true                       # the judge flags also went to `check` on the server-source route; fold with judgefold -check-llm
+tool_extra_env: []                    # none: the key was read from api_key_file, no proxy was needed
+uploads_samples: true
+uploads_samples_basis: >-
+    this run passed --llm to aguard: redacted excerpts of every judged artifact were sent to the endpoint
+    under `judge:`, three times per question; a server-source tree went through `check --llm`, so its declared tools and behaviour excerpt left the machine too.
+corpus_commit: 6c7eef52
+started_at: 2026-10-16T23:57:01.277339Z
+adapter: agent-guard baselines/adapter/aguard
+placement: by content, into a fake home; unplaceable trees are handed to `check` directly
+provisional: false
+work_list: samples.jsonl
+driver_runs: 1                        # the work list was run as this many driver invocations (one per population or binary); raw/ keeps each under its own directory name
+judge:
+    provider: openai                  # preset: endpoint https://api.openai.com/v1
+    model: gpt-4.1-mini
+    samples: 3                        # majority = 2; each question asked 3 times at temperature 0.8
+    authority: advisory
+    concurrency: 4
+    timeout: 60s                      # default
+    total_timeout: 10m                # default
+    max_retries: 4
+    calls: 1967
+    failed: 2
+    skipped: 0
+    repaired: 18
+    reasked: 3
+    prompt_version: b851dfd5412b
+    excerpt_version: 9
+fold: >-
+    verdict = malicious when a deterministic finding is >= high, OR an LLM finding that ESCALATED
+    (grounded; k of n at the majority bar) is >= high and its rule is not LLM-009 (advisory-only).
+    The finding's severity is the tool's, set from the category the majority of the agreeing votes
+    named (P-041); the model's own words are in each vote's `severities`, the categories in its
+    `categories`. Per-sample static / judge / judge-any, the escalated rule ids and the votes are in
+    judge.jsonl; per-kind-rule.txt is judgefold's table over the same rows. Folded by
+    baselines/cmd/judgefold from raw/ (see raw_archive). Nothing here is hand-typed except this file.
+counts:
+    scored: 216
+    no_verdict: 0
+    error: 0
+    incomplete: 1
+work_list_size: 216
+judge_usage:
+    basis: reported
+    basis_note: 'summed from the tool''s own judge summary per sample, over the fold''s ledger (exactly the work list)'
+    reported_samples: 216
+    derived_samples: 0
+    calls: 1967
+    failed: 2
+    skipped: 0
+    repaired: 18
+    reasked: 3
+    triage_calls: 20
+    retries: 0
+    prompt_tokens: 3304656
+    completion_tokens: 821230
+raw_archive:                          # raw/ is not in the tree (P-039); the archive is this run's primary evidence
+    asset: aguard-judge-raw-2026-10-p070.tar.gz
+    sha256: 6dc0d69d4261abf3fab13a447f88c24f8c47319f45e3f614eadd56b4e0844f08
+    note: 792203 bytes; attached to release v0.26.0 on 2026-10-17 (gh release download v0.26.0 --pattern aguard-judge-raw-2026-10-p070.tar.gz); the raw/ of the nine P-070 runs, each under the directory name used here

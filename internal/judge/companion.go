@@ -23,11 +23,9 @@ import (
 // injection question as text the agent will read, beside the declared purpose. Named, not every
 // document in the tree: real skills ship references/*.md by the dozen (58% of 400 real trees name at
 // least one; the median is three, the longest 69), and what the agent reads is what the SKILL.md
-// points it at. Two levels — a document named by a named document is read, nothing deeper — and the
+// points it at. One level only — a document naming another document is not followed — and the
 // first maxCompanionDocs named, within the excerpt budget the behaviour pass has; what is left out
-// is disclosed through boundedNote like the other fitted fields (invariant #5). Since P-070 the documents
-// those documents name are read too — two levels, not one — and the scripts the body names go first in
-// the behaviour excerpt (behaviorExcerpt).
+// is disclosed through boundedNote like the other fitted fields (invariant #5).
 const maxCompanionDocs = 8
 
 // companionRefRe finds the file names a SKILL.md body can point the agent at: a path-ish token
@@ -75,43 +73,26 @@ func companionDocs(dir, body string) []string {
 	}
 	var out []string
 	seen := map[string]bool{}
-	add := func(text string) {
-		for _, tok := range companionRefRe.FindAllString(text, -1) {
-			name := strings.TrimLeft(strings.ReplaceAll(tok, `\`, "/"), "./")
-			base := strings.ToLower(filepath.Base(name))
-			if base == "skill.md" || strings.HasPrefix(base, "license") {
-				continue
-			}
-			if index == nil {
-				build()
-			}
-			rel := index[name]
-			if rel == "" {
-				rel = index[base]
-			}
-			if rel == "" || seen[rel] {
-				continue
-			}
-			seen[rel] = true
-			out = append(out, rel)
-			if len(out) == maxCompanionDocs {
-				return
-			}
-		}
-	}
-	add(body)
-	// One more level (P-070): a document the body names may itself say "read workspace.md first", and
-	// the agent does. Measured: 4 of 62 SkillHarm trees the judge missed kept the payload exactly there.
-	// The documents named by THOSE are not followed, and the cap is shared.
-	for _, rel := range append([]string(nil), out...) {
-		if len(out) == maxCompanionDocs {
-			break
-		}
-		if strings.EqualFold(filepath.Ext(rel), ".pdf") {
+	for _, tok := range companionRefRe.FindAllString(body, -1) {
+		name := strings.TrimLeft(strings.ReplaceAll(tok, `\`, "/"), "./")
+		base := strings.ToLower(filepath.Base(name))
+		if base == "skill.md" || strings.HasPrefix(base, "license") {
 			continue
 		}
-		if raw := readAtMost(filepath.Join(dir, filepath.FromSlash(rel)), maxFileRead); raw != nil {
-			add(string(raw))
+		if index == nil {
+			build()
+		}
+		rel := index[name]
+		if rel == "" {
+			rel = index[base]
+		}
+		if rel == "" || seen[rel] {
+			continue
+		}
+		seen[rel] = true
+		out = append(out, rel)
+		if len(out) == maxCompanionDocs {
+			break
 		}
 	}
 	return out

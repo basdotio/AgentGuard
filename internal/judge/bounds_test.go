@@ -37,16 +37,8 @@ func fieldsOf(tk task) []payloadField {
 	pass := modeInfo(tk.req.Mode).pass
 	return []payloadField{
 		{pass + " declared", tk.req.Declared, maxDeclaredBytes},
-		{pass + " behavior", tk.req.Behavior, behaviorCap(tk.req.Mode)},
+		{pass + " behavior", tk.req.Behavior, maxExcerptBytes},
 	}
-}
-
-// behaviorCap is a behaviour field's ceiling: the intent pass adds the named files' budget (P-070).
-func behaviorCap(m Mode) int {
-	if m == ModeIntent {
-		return maxExcerptBytes + maxNamedBytes
-	}
-	return maxExcerptBytes
 }
 
 // asReceived is s as the endpoint reads it: what the client's json.Encoder writes, decoded again.

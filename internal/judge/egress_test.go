@@ -234,7 +234,7 @@ func TestEgress_ClipRepairIsForStaticSnippetsOnly(t *testing.T) {
 		"skill tree": func() string {
 			dir := t.TempDir()
 			writeFile(t, filepath.Join(dir, "run.sh"), text)
-			out, _ := behaviorExcerpt(dir, e, nil)
+			out, _ := behaviorExcerpt(dir, e)
 			return out
 		},
 	}
@@ -420,7 +420,7 @@ func TestEgress_RedactsBeforeItStripsTheHome(t *testing.T) {
 		"skill tree": func() string {
 			dir := t.TempDir()
 			writeFile(t, filepath.Join(dir, "run.sh"), line+"\n")
-			text, _ := behaviorExcerpt(dir, e, nil)
+			text, _ := behaviorExcerpt(dir, e)
 			return text
 		},
 		"mcp": func() string {
