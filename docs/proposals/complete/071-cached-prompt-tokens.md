@@ -28,23 +28,23 @@ and the run sum. It is a subset of `prompt_tokens`, never added to it. Response 
 
 ## Done criteria
 
-- [ ] `TestHTTPClient_CountsCachedPromptTokens` (`internal/judge`): a stub whose replies carry
+- [x] `TestHTTPClient_CountsCachedPromptTokens` (`internal/judge`): a stub whose replies carry
   `prompt_tokens_details.cached_tokens` sums it next to the other two; absent, `null` or a `null` details object count 0;
   a non-200 reply or an undecodable envelope adds nothing, as for the other two
-- [ ] `TestE2E_JudgeSummaryCarriesCachedPromptTokens` (`cmd/aguard`): at `samples: 3`, with the first request answered
+- [x] `TestE2E_JudgeSummaryCarriesCachedPromptTokens` (`cmd/aguard`): at `samples: 3`, with the first request answered
   503 and retried, the JSON judge block's `cached_prompt_tokens` is the per-call figure times `calls` (the 503 adds
   nothing), and `prompt_tokens` / `completion_tokens` are what they were
-- [ ] Reverse assertion, `TestE2E_UncachedEndpointBlockUnchanged`: a stub without the field leaves the key out
+- [x] Reverse assertion, `TestE2E_UncachedEndpointBlockUnchanged`: a stub without the field leaves the key out
   (omitempty), and the marshalled block equals the same run's block with the new key deleted — every other byte as before
-- [ ] `TestJudgeUsageLine` (`cmd/aguard`): the stderr line for an endpoint without the field is byte-identical to the old
+- [x] `TestJudgeUsageLine` (`cmd/aguard`): the stderr line for an endpoint without the field is byte-identical to the old
   format string; with it, `(N cached)` follows the input count; `TestScanInbox_JudgeCostAddsUp` sums the Downloads items'
   cached tokens
-- [ ] Baselines: the ledger row carries `judge_usage.cached_prompt_tokens` (omitempty), `run.yaml`'s sum carries it;
+- [x] Baselines: the ledger row carries `judge_usage.cached_prompt_tokens` (omitempty), `run.yaml`'s sum carries it;
   a sample without it is not "tokens unreported" (`TestSumJudgeUsage_*`, `TestJudgeUsage_*`)
-- [ ] Request bytes unchanged: `aguard llm preview --json` on a fixed fixture is byte-identical before and after, and
+- [x] Request bytes unchanged: `aguard llm preview --json` on a fixed fixture is byte-identical before and after, and
   `judge-prompt=` in `aguard version` does not move
-- [ ] `docs/llm-judge.md` / `.zh-CN.md`, spec §8, `baselines/README.md`
-- [ ] `make verify` green with `go version` go1.23.5 and no toolchain switch; `head -3 go.mod` second line `go 1.23.5`
+- [x] `docs/llm-judge.md` / `.zh-CN.md`, spec §8, `baselines/README.md`
+- [x] `make verify` green with `go version` go1.23.5 and no toolchain switch; `head -3 go.mod` second line `go 1.23.5`
 
 ## Out of scope
 
@@ -91,3 +91,17 @@ and the run sum. It is a subset of `prompt_tokens`, never added to it. Response 
 4. Does the stderr line show the cached share when the endpoint reported none? Recommended: no — the line stays
    byte-identical for every endpoint that does not report it, which is every local one.
    **Decided (2026-10-19)**: as recommended.
+
+## Done
+
+```
+Merged: PR to be opened (2026-10-19; find the sha with git log --grep P-071 after the merge)
+Released: pending release
+Evidence: TestHTTPClient_CountsCachedPromptTokens (internal/judge/run_test.go): 7 replies — cached 100 + 64, three without a usable field, a 400 and a broken envelope adding nothing → 600 / 150 / 164
+Evidence: TestE2E_JudgeSummaryCarriesCachedPromptTokens (cmd/aguard/judge_usage_test.go): samples 3, first request 503 and retried → cached_prompt_tokens = 64 x calls, prompt/completion = 100 / 7 x calls
+Evidence: reverse — TestE2E_UncachedEndpointBlockUnchanged: no key, block byte-equal to the pre-P-071 key set; TestJudgeUsageLine: line byte-equal to the old format string; TestE2E_UnreportedUsageIsNotAZero, TestE2E_JudgeSummaryCarriesCost unchanged and green
+Evidence: TestScanInbox_JudgeCostAddsUp sums the Downloads items' cached tokens; TestJudgeUsage_CachedPromptTokensReachTheRow, TestSumJudgeUsage_CachedPromptTokensAreSummed (1280 over three rows; no key when 0; no total beside an unreported prompt total)
+Evidence: check --llm against a local stub, samples 3, 13 calls: without the field the --json output (tool_version aside) is byte-identical before → after and the stderr line reads "1300 tokens in / 91 out" on both; with cached_tokens 64 per reply → "cached_prompt_tokens": 832 and "1300 tokens in (832 cached) / 91 out"
+Evidence: request bytes — aguard llm preview --json on a fixed fixture: 13,107 bytes, sha256 09b6278b…5e7a before and after (cmp identical); judge-prompt=b851dfd5412b, judge-excerpt=9 unchanged
+Evidence: make verify: all gates passed; go version go1.23.5 darwin/arm64, no toolchain switch; go.mod line 3 "go 1.23.5"
+```
