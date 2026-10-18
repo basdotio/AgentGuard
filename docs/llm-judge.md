@@ -137,7 +137,11 @@ Every run prints one line to stderr — `N call(s) in 12.4s (p50 …, p95 …) �
 · 41k tokens in / 900 out`; `--quiet` suppresses it. The same cost is in the JSON summary
 whether or not you pass `--quiet` (see [What the report says about the judge](#what-the-report-says-about-the-judge)),
 so a quiet run — every Downloads item is one — is still accounted for. Token counts are what the
-endpoint reports: a baseline, not a bill.
+endpoint reports: a baseline, not a bill. When the endpoint reports prompt tokens it served from its
+prompt cache (`usage.prompt_tokens_details.cached_tokens`, which OpenAI-compatible endpoints send and
+bill at their own, lower rate), the line names them after the input count — `41k tokens in (30k cached)
+/ 900 out` — as part of that count, not in addition to it; an endpoint that reports none gets the line
+exactly as above.
 
 ### Choosing a model / endpoint
 
@@ -543,7 +547,10 @@ failures (`(0 failed, 0 skipped, 1 repaired, 2 re-asked)`); with none it reads a
 the two before it — `findings`, `endpoint`, and `temperature_omitted` when the endpoint refused the temperature member), plus what it cost: `triage_calls` (the part of `calls` that
 was triage, asked once where a question is asked `samples` times), `retries`, and
 `prompt_tokens` / `completion_tokens` — the last two absent when the endpoint reported no usage,
-rather than a 0 that would read as a measurement. Without `--llm` none of this appears: a judge that ran and
+rather than a 0 that would read as a measurement — and `cached_prompt_tokens`, the part of `prompt_tokens`
+the endpoint reported serving from its prompt cache (a subset, never to be added to it; the vendor bills
+it at its own rate). It is absent when the endpoint reported none, which is also how an endpoint that does
+not report the field looks: the two cannot be told apart. Without `--llm` none of this appears: a judge that ran and
 found nothing and a judge that never ran used to look identical, which is the one distinction a
 reader of a clean report needs.
 
