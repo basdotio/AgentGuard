@@ -25,27 +25,27 @@ it was. The line never carries anything from the scanned content and never the e
 
 ## Done criteria
 
-- [ ] `TestUsageLog_CheckLLMAppendsTheJudgeBlock` (`cmd/aguard/usagelog_test.go`, new; drives the built binary): with
+- [x] `TestUsageLog_CheckLLMAppendsTheJudgeBlock` (`cmd/aguard/usagelog_test.go`, new; drives the built binary): with
   `AGUARD_USAGE_LOG` set, `check --llm` against an `httptest` stub appends exactly one line whose every shared field
   equals the JSON `judge` block's (plus `tool_version` and `rules_version` equal to the report's); a second run makes
   two lines; the endpoint is the origin alone (`http://127.0.0.1:<port>`) though `base_url` carries `user:pass@`, a
   path and a query; a created file is mode 0600
-- [ ] The line never carries the scanned target: the fixture's directory and skill name are a unique marker, and no line
+- [x] The line never carries the scanned target: the fixture's directory and skill name are a unique marker, and no line
   contains it, the target's path, the userinfo, the path or the query
-- [ ] `TestUsageLog_ScanLLMOneLinePerJudgeBlock`: `scan --llm` with a Downloads folder of two items writes two lines —
+- [x] `TestUsageLog_ScanLLMOneLinePerJudgeBlock`: `scan --llm` with a Downloads folder of two items writes two lines —
   `section: environment` equal to `judge`, `section: downloads` equal to `inbox.judge` (already summed over the items)
-- [ ] Reverse assertions (`TestUsageLog_UnsetWritesNothingAndChangesNoOutput`): without the variable, or with it empty,
+- [x] Reverse assertions (`TestUsageLog_UnsetWritesNothingAndChangesNoOutput`): without the variable, or with it empty,
   no file appears in the working directory; with it set, stdout (the `scanned_at` clock reading masked), stderr and the
   exit code equal the run without it; a run that made no call (`llm.enabled: false`, or no `--llm`) creates no file
-- [ ] `TestUsageLog_RefusesWhatIsNotARegularFile`: a symlink to a file, a dangling symlink, a directory, and a path
+- [x] `TestUsageLog_RefusesWhatIsNotARegularFile`: a symlink to a file, a dangling symlink, a directory, and a path
   under a regular file each give exactly one stderr warning, write nothing through (the symlink's target stays empty,
   the dangling one's target is not created), and leave the exit code as it is without the variable
-- [ ] `TestUsageLog_LLMTestRecordsItsOneCall`: `llm test` appends one line for its one call, answered (tokens as
+- [x] `TestUsageLog_LLMTestRecordsItsOneCall`: `llm test` appends one line for its one call, answered (tokens as
   reported) or failed (`failed: 1`), with no `samples`
-- [ ] `TestZeroDial_OnlyTheJudgeConnects` runs with `AGUARD_USAGE_LOG` set; each positive-control row appends what its
+- [x] `TestZeroDial_OnlyTheJudgeConnects` runs with `AGUARD_USAGE_LOG` set; each positive-control row appends what its
   command appends and the table checks one line per row; every zero row is still zero
-- [ ] Docs: `docs/llm-judge.md` and `docs/llm-judge.zh-CN.md`, spec §3, invariant #1's note in `.claude/rules/invariants.md`
-- [ ] `make verify` green under `go version go1.23.5` with no toolchain switch; `head -3 go.mod` line 2 `go 1.23.5`
+- [x] Docs: `docs/llm-judge.md` and `docs/llm-judge.zh-CN.md`, spec §3, invariant #1's note in `.claude/rules/invariants.md`
+- [x] `make verify` green under `go version go1.23.5` with no toolchain switch; `head -3 go.mod` line 2 `go 1.23.5`
 
 ## Out of scope
 
@@ -120,4 +120,11 @@ it was. The line never carries anything from the scanned content and never the e
 
 ## Done
 
-Fill in at stage 4.
+```
+Merged: PR <number> (find the sha with git log --grep P-073 after the merge)
+Evidence: TestUsageLog_CheckLLMAppendsTheJudgeBlock, TestUsageLog_ScanLLMOneLinePerJudgeBlock, TestUsageLog_LLMTestRecordsItsOneCall, TestEndpointOrigin, TestUsageLog_ExistingFileKeepsItsModeAndLines (cmd/aguard/usagelog_test.go); the five binary-driven ones red with the three call sites removed, green with them
+Evidence: reverse — TestUsageLog_UnsetWritesNothingAndChangesNoOutput (unset/empty: no file; set: stdout with scanned_at masked, stderr and exit equal; llm.enabled false and no --llm: no file), TestUsageLog_RefusesWhatIsNotARegularFile (symlink, dangling symlink, directory, parent a file: one warning each, nothing written through, exit unchanged)
+Evidence: TestZeroDial_OnlyTheJudgeConnects with AGUARD_USAGE_LOG set: 4 control rows, 4 lines, every zero row still zero
+Evidence: a line with every field at a realistic maximum measures 446 bytes
+Evidence: make verify: all gates passed (go version go1.23.5 darwin/arm64, no toolchain switch; go.mod line 2 go 1.23.5)
+```
