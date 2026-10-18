@@ -288,8 +288,49 @@ func TestHTTPClient_CountsTokens(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if p, comp := c.Usage(); p != 360 || comp != 90 {
-		t.Errorf("usage = %d/%d, want 360/90", p, comp)
+	if u := c.Usage(); u != (TokenUsage{Prompt: 360, Completion: 90}) {
+		t.Errorf("usage = %+v, want 360/90 and nothing cached", u)
+	}
+}
+
+// TestHTTPClient_CountsCachedPromptTokens (P-071): an OpenAI-compatible endpoint reports the prompt
+// tokens it served from its prompt cache under usage.prompt_tokens_details.cached_tokens. They are
+// a subset of prompt_tokens, summed under the same conditions as the other two — a 200 with a
+// decodable envelope — and an endpoint that leaves the field out, or sends null, counts 0.
+func TestHTTPClient_CountsCachedPromptTokens(t *testing.T) {
+	const verdict = `{"choices":[{"message":{"content":"{\"flagged\":false}"}}],`
+	replies := []struct {
+		status int
+		body   string
+	}{
+		{200, verdict + `"usage":{"prompt_tokens":120,"completion_tokens":30,"prompt_tokens_details":{"cached_tokens":100}}}`},
+		{200, verdict + `"usage":{"prompt_tokens":120,"completion_tokens":30,"prompt_tokens_details":{"cached_tokens":64,"audio_tokens":0}}}`},
+		{200, verdict + `"usage":{"prompt_tokens":120,"completion_tokens":30}}`},
+		{200, verdict + `"usage":{"prompt_tokens":120,"completion_tokens":30,"prompt_tokens_details":null}}`},
+		{200, verdict + `"usage":{"prompt_tokens":120,"completion_tokens":30,"prompt_tokens_details":{"cached_tokens":null}}}`},
+		// Neither of these is counted, for any of the three totals.
+		{400, `{"usage":{"prompt_tokens":999,"completion_tokens":999,"prompt_tokens_details":{"cached_tokens":999}}}`},
+		{200, `{"usage":{"prompt_tokens":999,"prompt_tokens_details":{"cached_tokens":999}`},
+	}
+	i := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		r := replies[i]
+		i++
+		w.WriteHeader(r.status)
+		_, _ = w.Write([]byte(r.body))
+	}))
+	defer srv.Close()
+
+	c := NewHTTP(srv.URL, "", "m", srv.Client())
+	for range replies {
+		_, _ = c.Judge(context.Background(), Request{Mode: ModeIntent})
+	}
+	if i != len(replies) {
+		t.Fatalf("%d request(s) reached the stub, want %d", i, len(replies))
+	}
+	want := TokenUsage{Prompt: 5 * 120, Completion: 5 * 30, CachedPrompt: 164}
+	if u := c.Usage(); u != want {
+		t.Errorf("usage = %+v, want %+v", u, want)
 	}
 }
 

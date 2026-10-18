@@ -222,8 +222,8 @@ func runLLMTest(w io.Writer, cfgPath string) error {
 	if err != nil {
 		return fmt.Errorf("%s did not answer for model %s: %w", cfg.LLM.BaseURL, cfg.LLM.Model, err)
 	}
-	in, out := client.Usage()
-	fmt.Fprintf(w, "OK · %s answered in %s via %s (%d tokens in / %d out)\n", cfg.LLM.Model, took.Round(1e6), cfg.LLM.BaseURL, in, out)
+	usage := client.Usage()
+	fmt.Fprintf(w, "OK · %s answered in %s via %s (%d tokens in / %d out)\n", cfg.LLM.Model, took.Round(1e6), cfg.LLM.BaseURL, usage.Prompt, usage.Completion)
 	return nil
 }
 

@@ -338,7 +338,8 @@ func runJudge(cfg config.Config, arts []model.ArtifactReport, home string, quiet
 	// Downloads item is judged, and a driver that reads --json (the baseline adapter) never sees
 	// stderr at all — those are the runs a cost is read from afterwards.
 	summary.TriageCalls, summary.Retries = stats.TriageCalls, stats.Retries
-	summary.PromptTokens, summary.CompletionTokens = client.Usage()
+	usage := client.Usage()
+	summary.PromptTokens, summary.CompletionTokens = usage.Prompt, usage.Completion
 	for _, a := range arts {
 		for _, f := range a.Findings {
 			if f.Source == model.SrcLLM && f.Dimension > 0 {

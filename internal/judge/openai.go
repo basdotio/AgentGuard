@@ -42,6 +42,10 @@ type HTTPClient struct {
 	// telemetry only: nothing here can reach a finding or the score.
 	promptTokens     atomic.Int64
 	completionTokens atomic.Int64
+	// cachedPromptTokens is the part of promptTokens the endpoint says it served from its prompt
+	// cache (usage.prompt_tokens_details.cached_tokens, P-071): a subset, never added to the
+	// prompt count. The vendor bills it at its own rate; nothing here prices anything.
+	cachedPromptTokens atomic.Int64
 	// noTemperature is set the first time the endpoint refuses the temperature member (a 400
 	// naming the parameter, as some models do: only their default is allowed), after which every
 	// call omits it (P-052). A consensus run then samples at the model's default, which is what
@@ -86,10 +90,24 @@ func NewHTTP(baseURL, apiKey, model string, httpClient *http.Client) *HTTPClient
 	}
 }
 
+// TokenUsage is what an endpoint reported about the tokens of the calls made so far. A struct, not
+// three positional ints of one type, so two of them cannot be swapped at a call site (P-071).
+type TokenUsage struct {
+	Prompt     int
+	Completion int
+	// CachedPrompt is the part of Prompt the endpoint served from its prompt cache — a subset of
+	// Prompt, never in addition to it. 0 when the endpoint does not report the field.
+	CachedPrompt int
+}
+
 // Usage returns the tokens this endpoint has reported so far. Endpoints that omit the usage
 // field report zeros — this is a cost baseline, not an accounting guarantee.
-func (c *HTTPClient) Usage() (prompt, completion int) {
-	return int(c.promptTokens.Load()), int(c.completionTokens.Load())
+func (c *HTTPClient) Usage() TokenUsage {
+	return TokenUsage{
+		Prompt:       int(c.promptTokens.Load()),
+		Completion:   int(c.completionTokens.Load()),
+		CachedPrompt: int(c.cachedPromptTokens.Load()),
+	}
 }
 
 type chatMessage struct {
@@ -110,6 +128,10 @@ type chatResponse struct {
 	Usage struct {
 		PromptTokens     int64 `json:"prompt_tokens"`
 		CompletionTokens int64 `json:"completion_tokens"`
+		// Optional (P-071): absent, null, or a null cached_tokens all decode as 0.
+		PromptTokensDetails struct {
+			CachedTokens int64 `json:"cached_tokens"`
+		} `json:"prompt_tokens_details"`
 	} `json:"usage"`
 }
 
@@ -231,6 +253,7 @@ func (c *HTTPClient) chatOnce(ctx context.Context, system, user string, temperat
 	}
 	c.promptTokens.Add(cr.Usage.PromptTokens)
 	c.completionTokens.Add(cr.Usage.CompletionTokens)
+	c.cachedPromptTokens.Add(cr.Usage.PromptTokensDetails.CachedTokens)
 	if len(cr.Choices) == 0 {
 		return "", sentTemperature, fmt.Errorf("judge returned no choices")
 	}
