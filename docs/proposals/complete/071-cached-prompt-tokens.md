@@ -95,7 +95,7 @@ and the run sum. It is a subset of `prompt_tokens`, never added to it. Response 
 ## Done
 
 ```
-Merged: PR to be opened (2026-10-19; find the sha with git log --grep P-071 after the merge)
+Merged: PR #92 (2026-10-19; find the sha with git log --grep P-071 after the merge)
 Released: pending release
 Evidence: TestHTTPClient_CountsCachedPromptTokens (internal/judge/run_test.go): 7 replies — cached 100 + 64, three without a usable field, a 400 and a broken envelope adding nothing → 600 / 150 / 164
 Evidence: TestE2E_JudgeSummaryCarriesCachedPromptTokens (cmd/aguard/judge_usage_test.go): samples 3, first request 503 and retried → cached_prompt_tokens = 64 x calls, prompt/completion = 100 / 7 x calls
