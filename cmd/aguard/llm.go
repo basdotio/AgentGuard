@@ -14,7 +14,9 @@ import (
 	"golang.org/x/term"
 
 	"github.com/basdotio/AgentGuard/internal/config"
+	"github.com/basdotio/AgentGuard/internal/detect"
 	"github.com/basdotio/AgentGuard/internal/judge"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // `aguard llm` — set up, test and inspect the optional LLM judge without editing YAML.
@@ -219,11 +221,25 @@ func runLLMTest(w io.Writer, cfgPath string) error {
 	defer cancel()
 	client := judge.NewHTTP(cfg.LLM.BaseURL, key, cfg.LLM.Model, nil)
 	took, err := client.Ping(ctx)
+	recordJudgeUsage(os.Stderr, "llm test", version, detect.RulesVersion(), []usageBlock{{judge: llmTestUsage(cfg.LLM, client, err)}})
 	if err != nil {
 		return fmt.Errorf("%s did not answer for model %s: %w", cfg.LLM.BaseURL, cfg.LLM.Model, err)
 	}
 	fmt.Fprintf(w, "OK · %s answered in %s via %s (%s)\n", cfg.LLM.Model, took.Round(1e6), cfg.LLM.BaseURL, tokensInOut(client.Usage()))
 	return nil
+}
+
+// llmTestUsage is the judge block `llm test` would have: one call, failed or not, and what the
+// endpoint reported for it. No samples — the connectivity check is not a sampled question.
+func llmTestUsage(llm config.LLMConfig, client *judge.HTTPClient, err error) *model.JudgeSummary {
+	j := judgeConfigured(llm, 0)
+	j.Ran, j.Calls, j.Samples = true, 1, 0
+	if err != nil {
+		j.Failed = 1
+	}
+	j.PromptTokens, j.CompletionTokens = client.Usage()
+	j.TemperatureOmitted = client.TemperatureOmitted()
+	return j
 }
 
 // runLLMStatus prints the effective configuration. The key itself never appears.
