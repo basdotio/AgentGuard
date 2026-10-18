@@ -25,6 +25,10 @@
    正对照多一条路径而清单没写、清单写了而没有正对照看着它出网,两个方向都红;每条路径还必须出现在
    `baselines/tools.yaml` 那句和 spec §16.4 里。
 
+   **判官用量日志**(`AGUARD_USAGE_LOG`,P-073)只追加一个本地文件,不是出网路径;`TestZeroDial_OnlyTheJudgeConnects` 整张表都在
+   设了这个变量的情况下跑,正对照每行照命令的 RunE 调一次 `recordJudgeUsage` 并核对一行一条(它在 RunE 闭包里,下面那条
+   "只写在闭包里的代码看不见"对它不成立,是因为正对照替它调了)。
+
    **它只看得见经过 `judge.Transport` 或 `http.DefaultTransport` 的请求**,不是"进程内所有 `net/http` 请求"。看不见的,逐条:
    - **自带 `http.Transport` 的 client**:两个计数器都不经过。本模块的产品代码由 `TestZeroDial_NoClientOutsideTheJudge`
      (`cmd/aguard/zero_dial_source_test.go`)从源码上堵住:`cmd/`、`internal/` 的非测试文件里,`internal/judge` 之外
