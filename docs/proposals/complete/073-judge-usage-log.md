@@ -121,7 +121,7 @@ it was. The line never carries anything from the scanned content and never the e
 ## Done
 
 ```
-Merged: PR <number> (find the sha with git log --grep P-073 after the merge)
+Merged: PR #93 (find the sha with git log --grep P-073 after the merge)
 Evidence: TestUsageLog_CheckLLMAppendsTheJudgeBlock, TestUsageLog_ScanLLMOneLinePerJudgeBlock, TestUsageLog_LLMTestRecordsItsOneCall, TestEndpointOrigin, TestUsageLog_ExistingFileKeepsItsModeAndLines (cmd/aguard/usagelog_test.go); the five binary-driven ones red with the three call sites removed, green with them
 Evidence: reverse — TestUsageLog_UnsetWritesNothingAndChangesNoOutput (unset/empty: no file; set: stdout with scanned_at masked, stderr and exit equal; llm.enabled false and no --llm: no file), TestUsageLog_RefusesWhatIsNotARegularFile (symlink, dangling symlink, directory, parent a file: one warning each, nothing written through, exit unchanged)
 Evidence: TestZeroDial_OnlyTheJudgeConnects with AGUARD_USAGE_LOG set: 4 control rows, 4 lines, every zero row still zero
