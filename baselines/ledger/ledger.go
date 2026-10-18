@@ -133,7 +133,9 @@ const (
 // counts are pointers because "the tool did not say" is not 0: a derived sample has no retry
 // count, and an endpoint that reports no usage leaves the tokens out. Repaired is not a pointer: a
 // binary that does not print it predates the repair (P-034), so its count is exactly 0, and a row
-// with none reads as it did before the count existed.
+// with none reads as it did before the count existed. CachedPromptTokens is not a pointer for the
+// same kind of reason (P-071): the binary leaves a zero out, and an endpoint that does not report
+// the field cannot be told from one that cached nothing, so absent and 0 mean the same.
 type JudgeUsage struct {
 	Basis            string `json:"basis"`
 	Calls            int    `json:"calls"`
@@ -145,6 +147,9 @@ type JudgeUsage struct {
 	Retries          *int   `json:"retries,omitempty"`
 	PromptTokens     *int   `json:"prompt_tokens,omitempty"`
 	CompletionTokens *int   `json:"completion_tokens,omitempty"`
+	// CachedPromptTokens is the part of PromptTokens the endpoint reported serving from its prompt
+	// cache, which the vendor bills at its own rate (P-071): a subset, never added to it.
+	CachedPromptTokens int `json:"cached_prompt_tokens,omitempty"`
 }
 
 // KnownReasons returns the closed set, sorted so callers and error messages are stable.

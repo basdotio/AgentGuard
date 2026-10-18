@@ -36,14 +36,17 @@ type JudgeUsage struct {
 	Retries          *int `yaml:"retries,omitempty"`
 	PromptTokens     *int `yaml:"prompt_tokens,omitempty"`
 	CompletionTokens *int `yaml:"completion_tokens,omitempty"`
-	TokensUnreported int  `yaml:"tokens_unreported_samples,omitempty"`
+	// CachedPromptTokens is the part of PromptTokens the endpoint reported serving from its prompt
+	// cache (P-071). Written only beside a prompt total, and only when above 0.
+	CachedPromptTokens int `yaml:"cached_prompt_tokens,omitempty"`
+	TokensUnreported   int `yaml:"tokens_unreported_samples,omitempty"`
 }
 
 // SumJudgeUsage totals the ledger's judge usage, or returns nil when no row carries any — every
 // static run — so run.yaml gains no block.
 func SumJudgeUsage(rows []ledger.Row) *JudgeUsage {
 	var t JudgeUsage
-	retries, prompt, completion := 0, 0, 0
+	retries, prompt, completion, cached := 0, 0, 0, 0
 	retriesKnown := true
 	for _, r := range rows {
 		u := r.JudgeUsage
@@ -67,6 +70,8 @@ func SumJudgeUsage(rows []ledger.Row) *JudgeUsage {
 			retries += *u.Retries
 		}
 		// A sample that made no call has no tokens to report, and the binary leaves a zero out.
+		// Only prompt and completion decide this: an endpoint that does not report cached prompt
+		// tokens is normal, and leaves the cached count 0 (P-071).
 		if u.PromptTokens == nil || u.CompletionTokens == nil {
 			if u.Calls > 0 {
 				t.TokensUnreported++
@@ -75,6 +80,7 @@ func SumJudgeUsage(rows []ledger.Row) *JudgeUsage {
 		}
 		prompt += *u.PromptTokens
 		completion += *u.CompletionTokens
+		cached += u.CachedPromptTokens
 	}
 	if t.ReportedSamples+t.DerivedSamples == 0 {
 		return nil
@@ -84,6 +90,7 @@ func SumJudgeUsage(rows []ledger.Row) *JudgeUsage {
 	}
 	if t.TokensUnreported == 0 {
 		t.PromptTokens, t.CompletionTokens = &prompt, &completion
+		t.CachedPromptTokens = cached // a subset of the prompt total, so never without one
 	}
 	t.Basis, t.BasisNote = usageBasis(t.ReportedSamples, t.DerivedSamples)
 	return &t
