@@ -71,7 +71,8 @@ func (c *HTTPClient) TemperatureOmitted() bool { return c.noTemperature.Load() }
 var Transport http.RoundTripper
 
 // NewHTTP builds a client. httpClient may be nil; tests inject their own. baseURL is the
-// OpenAI-compatible root (…/v1); "/chat/completions" is appended.
+// OpenAI-compatible root (…/v1); "/chat/completions" is appended to its path, and a query in it is
+// kept (chatURL, P-078).
 //
 // The default client follows a redirect only within the configured origin (sameOriginOnly): the
 // endpoint CheckEndpoint vetted is the only place the key and the excerpts may go, and a 30x is the
