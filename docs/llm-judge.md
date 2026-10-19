@@ -554,7 +554,16 @@ was triage, asked once where a question is asked `samples` times), `retries`, an
 rather than a 0 that would read as a measurement — and `cached_prompt_tokens`, the part of `prompt_tokens`
 the endpoint reported serving from its prompt cache (a subset, never to be added to it; the vendor bills
 it at its own rate). It is absent when the endpoint reported none, which is also how an endpoint that does
-not report the field looks: the two cannot be told apart. Without `--llm` none of this appears: a judge that ran and
+not report the field looks: the two cannot be told apart. `usage_by_pass` breaks those counts down by
+the question that made the calls (P-072): one entry per pass that was called, keyed by the name
+`aguard llm preview` gives the pass — `intent`, `injection`, `result`, `deobfuscation`, `collusion`,
+`capability`, `mcp-config`, `server`, `triage` — each with `calls`, `reasked` and the three token counts
+(absent when the endpoint reported none, as above). A retried call and a re-asked one count under the
+pass that asked the question, every reply the endpoint reported usage for included, so the entries add
+up exactly to the block's `calls`, `reasked` and token totals; a block that made no call has no key.
+They are token counts as the endpoint reported them, not a cost: what a pass's tokens are worth depends
+on the vendor, and two models' counts for the same pass are not comparable. The stderr line keeps its
+totals; the breakdown is in the JSON. Without `--llm` none of this appears: a judge that ran and
 found nothing and a judge that never ran used to look identical, which is the one distinction a
 reader of a clean report needs.
 
@@ -593,7 +602,8 @@ the items), `check` and `llm test` one each. A line carries `time` (RFC 3339, UT
 `rules_version`, `prompt_version`, `excerpt_version`, `model`, `endpoint`, `samples` (not on `llm test`), and the
 block's counts — `calls`, `failed`, `skipped`, `retries`, `triage_calls`, `repaired`, `reasked`,
 `temperature_omitted` when true, `prompt_tokens` / `completion_tokens` when the endpoint reported them, and
-`cached_prompt_tokens` when it reported some (P-071). The values are
+`cached_prompt_tokens` when it reported some (P-071), and `usage_by_pass` (P-072; not on `llm test`, whose one
+call is a connectivity check and no pass of the judge's). The values are
 the block's own, so a line equals the `judge` block of the same run. `endpoint` is the origin only
 (`scheme://host[:port]`): a `base_url` can carry credentials as `user:pass@` or a key in its query, and neither is
 written. Nothing from the scanned content is: no artifact name, path, finding, excerpt or reason.
@@ -603,8 +613,9 @@ keeps its mode and is only appended to). A path that is a symlink, a directory o
 not a directory, is refused with one warning on stderr — printed under `--quiet` too, since a missing record you were
 not told about is what the log exists to prevent — and a failed write never changes the exit code or a report. Each
 line is one `write` on an `O_APPEND` descriptor, so runs in parallel append whole lines on a local file system; POSIX
-promises that only for pipes up to `PIPE_BUF` (512 bytes on macOS), a typical line is under 500 bytes, and a long model
-name or host can exceed it; a network file system may not honour `O_APPEND`. It is a local file write: nothing about
+promises that only for pipes up to `PIPE_BUF` (512 bytes on macOS, 4096 on Linux), and a line is longer than 512 bytes
+as a rule: about 400 bytes before `usage_by_pass`, about 100 more for each pass, so about 800 for a skill checked by
+four passes and about 1,600 with all nine at large counts; a network file system may not honour `O_APPEND`. It is a local file write: nothing about
 it connects anywhere (invariant #1).
 
 This is not a cost record. The tool computes no money: a line holds the counts the judge kept and the tokens the

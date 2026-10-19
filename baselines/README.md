@@ -214,6 +214,12 @@ does not print it predates the repair, so its count is 0. `cached_prompt_tokens`
 a subset, never to be added to `prompt_tokens`. It too appears only when above 0, and a sample without it does
 not count towards `tokens_unreported_samples` — an endpoint that does not report the field is normal; the run
 total is written only beside a `prompt_tokens` total. Runs committed before it was read carry no such key.
+A row's `judge_usage` also names the `model` the binary printed, so a row copied or folded out of its run still says
+which model answered, and carries the summary's `usage_by_pass` (P-072): `calls`, `reasked` and the three token counts
+per pass, keyed by the pass names `aguard llm preview` prints, summing to the row's totals. `run.yaml` sums each pass
+over the samples under `judge_usage: usage_by_pass:`, only when every sample that made calls carried a breakdown, and
+the per-pass token counts only beside the run's token totals. They are token counts, not a cost, and two models'
+counts for one pass are not comparable. Rows committed before P-072 carry neither key and are read as before.
 Questions asked are
 `(calls − triage_calls) / samples`, with `samples` from the judge config (the summary does not
 carry it), exact only when `skipped` is 0; a `judge.jsonl` folded from a new run takes
