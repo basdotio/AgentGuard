@@ -2,7 +2,7 @@
 # 075 — Tests read the developer's own config: an invalid `llm.provider` in `~/.config/aguard/config.yaml` turns `make verify` red
 
 - **Source**: new finding (2026-10-19): on a maintainer's machine whose real config sets `llm.provider` to a value this
-  build does not accept, `TestAdversarialCorpus` and some forty other `cmd/aguard` tests fail with a config error
+  build does not accept, `TestAdversarialCorpus` and 70 other top-level `cmd/aguard` tests fail with a config error
 - **Depends on**: none
 - **Branch**: `p/075-test-home-isolation`
 
@@ -130,7 +130,7 @@ Found during stage 2:
 Merged: PR to be opened (find the sha with git log --grep P-075 after the merge)
 Evidence: TestIsolation_RealHomeConfigIsNotSeen (cmd/aguard/testhome_test.go): red before cmd/aguard had its TestMain (every probe failed on `config llm.provider "not-a-provider-this-build-accepts"`), green after
 Evidence: TestEveryTestPackageIsolatesTheHome, TestMain_MovesTheHomeAway, TestOriginalEnviron_IsTheStartingEnvironment (internal/testhome/testhome_test.go); the guard listed all 18 test packages before their main_test.go files, none after
-Evidence: go test -count=1 ./... with `llm.provider: not-a-provider` in the shell's XDG_CONFIG_HOME: cmd/aguard FAIL (≈40 tests) on 1c7ff83 → ok; the same with the file under HOME and XDG_CONFIG_HOME unset: FAIL → ok
+Evidence: go test -count=1 ./... with `llm.provider: not-a-provider` in the shell's XDG_CONFIG_HOME: cmd/aguard FAIL (71 top-level tests) on 1c7ff83 → ok; the same with the file under HOME and XDG_CONFIG_HOME unset: FAIL → ok
 Evidence: reverse — go test -v ./cmd/aguard prints no --- SKIP (builtAguard still builds with the original environment); the self-scan's environment on a `curl … | bash` skill exits 1; `bin/aguard check plugin` in a shell whose config names an unaccepted provider exits 2
 Evidence: make verify: all gates passed on a machine whose real config names a provider this build rejects (go version go1.23.5 darwin/arm64, no toolchain switch; go.mod line 2 go 1.23.5; fresh test cache)
 ```

@@ -5,7 +5,7 @@
 // HOME (the default scan root, `~/` in config paths, the Downloads folder), XDG_CONFIG_HOME
 // (the user-level config.yaml, the key file, the reports folder) and CLAUDE_CONFIG_DIR (the
 // default root). A test that leaves them alone runs against whatever the developer has there:
-// a config.yaml naming a provider this build does not accept turned some forty tests in
+// a config.yaml naming a provider this build does not accept turned 71 tests in
 // cmd/aguard red for reasons that had nothing to do with the code under test, and a valid one
 // would silently have changed what they test.
 //
