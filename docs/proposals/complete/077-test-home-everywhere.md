@@ -55,29 +55,29 @@ still refused. No product code changes.
 
 ## Done criteria
 
-- [ ] With a poisoned real home — `~/.config/aguard/config.yaml` = `llm: {enabled: true, provider: bogus}`, a
+- [x] With a poisoned real home — `~/.config/aguard/config.yaml` = `llm: {enabled: true, provider: bogus}`, a
   `~/.claude/settings.json` marker, marker files under `$XDG_CACHE_HOME/aguard`, `$XDG_STATE_HOME/aguard`,
   `$XDG_DATA_HOME/aguard` (all three set into that home), and `AGUARD_USAGE_LOG` at a one-line marker file —
   `HOME=<that> XDG_CONFIG_HOME= go test -count=1 ./...` passes and **every** marker file is byte-identical afterwards,
   the usage log included (it gains 42 lines on `origin/main`). Go's own cache paths are resolved before `HOME` moves
-- [ ] `TestEveryTestPackageIsolatesTheHome` walks the whole module, not only `cmd/` and `internal/`; `hack/gen-rules` and
+- [x] `TestEveryTestPackageIsolatesTheHome` walks the whole module, not only `cmd/` and `internal/`; `hack/gen-rules` and
   `hack/reputation-refresh` call `testhome.Main`; `baselines/` is skipped by a named entry that carries its reason, and
   the positive control requires the walk to have seen `cmd/aguard`, `internal/testhome` and both `hack/` packages
-- [ ] `TestMain_MovesTheHomeAway` also pins: `XDG_CACHE_HOME`, `XDG_STATE_HOME`, `XDG_DATA_HOME` lie under the temporary
+- [x] `TestMain_MovesTheHomeAway` also pins: `XDG_CACHE_HOME`, `XDG_STATE_HOME`, `XDG_DATA_HOME` lie under the temporary
   home and none is the value the binary started with; `AGUARD_USAGE_LOG` is unset; `testhome.Home()` is the isolated home
-- [ ] `TestDefaultLocations_AreInsideTheTestHome` (`cmd/aguard`, new) pins: every default location listed under Problem
+- [x] `TestDefaultLocations_AreInsideTheTestHome` (`cmd/aguard`, new) pins: every default location listed under Problem
   item 4, resolved through the product's own functions (`config.DefaultPath`, `config.DefaultKeyPath`,
   `defaultReportPath`, `defaultRoot`, `gate.ApprovalsPath`, `gate.SettingsPath`, `collect.TrashDir` under the root,
   every entry of `scanLocations`, `defaultInbox`, `config.ExpandHome`, `os.UserHomeDir`, `os.UserCacheDir`,
   `os.UserConfigDir`, the three XDG variables) lies under `testhome.Home()`, and `AGUARD_USAGE_LOG` is unset. It fails
   with "testhome.Main did not run" when the package's `TestMain` is removed, rather than passing against the real home
-- [ ] Reverse assertion `TestIsolatedHome_OwnConfigIsStillRefused` (`cmd/aguard`, new): a config the test writes itself
+- [x] Reverse assertion `TestIsolatedHome_OwnConfigIsStillRefused` (`cmd/aguard`, new): a config the test writes itself
   with `provider: bogus` is refused by `scanEnv` and `checkTarget` through `--config`, and by `scanEnv` at the default
   location inside the temporary home, with `XDG_CONFIG_HOME` set and with it empty (the `HOME` fallback); without it the
   scan runs on defaults
-- [ ] The guards bite: removing `hack/gen-rules`' `TestMain` turns `TestEveryTestPackageIsolatesTheHome` red naming
+- [x] The guards bite: removing `hack/gen-rules`' `TestMain` turns `TestEveryTestPackageIsolatesTheHome` red naming
   `hack/gen-rules`; removing `cmd/aguard`'s turns `TestDefaultLocations_AreInsideTheTestHome` red
-- [ ] `make verify` green under `go version go1.23.5` with no toolchain switch; `go.mod` line 2 `go 1.23.5`
+- [x] `make verify` green under `go version go1.23.5` with no toolchain switch; `go.mod` line 2 `go 1.23.5`
 
 ## Out of scope
 
@@ -144,7 +144,60 @@ still refused. No product code changes.
 
 ## Done
 
+The poisoned-home run, on `origin/main` (eba242f) and on this branch. Go's own paths are resolved before `HOME` moves:
+`go` derives its build cache, module cache and `GOENV` from the home, and a `$(go env …)` evaluated under the poisoned
+one would download modules into it.
+
+```
+$ GC=$(go env GOCACHE) GM=$(go env GOMODCACHE) GP=$(go env GOPATH) GE=$(go env GOENV)
+$ P=$(mktemp -d)        # then, under $P:
+    .config/aguard/config.yaml      llm: {enabled: true, provider: bogus}
+    .claude/settings.json           {"marker": "p077 settings"}
+    .cache/aguard/marker  .local/state/aguard/marker  .local/share/aguard/marker
+    usage.jsonl                     one marker line
+$ (cd $P && find . -type f -not -path './Library/*' | sort | xargs shasum -a 256) > before
+$ HOME=$P XDG_CONFIG_HOME= XDG_CACHE_HOME=$P/.cache XDG_STATE_HOME=$P/.local/state XDG_DATA_HOME=$P/.local/share \
+    AGUARD_USAGE_LOG=$P/usage.jsonl GOCACHE=$GC GOMODCACHE=$GM GOPATH=$GP GOENV=$GE go test -count=1 ./...
+
+origin/main:   exit 0, 34 packages ok; usage.jsonl 1 → 43 lines (all 42 from cmd/aguard: 27 check, 13 scan, 2 llm test,
+               model fake / test-model, endpoint http://127.0.0.1:<port>); the other five files byte-identical
+this branch:   exit 0, 34 packages ok, 0 FAIL lines; all six files byte-identical, no new path outside Library/
+               (Library/ holds only the Go toolchain's own telemetry)
+```
+
+The guards bite:
+
+```
+cmd/aguard's TestMain removed:
+--- FAIL: TestDefaultLocations_AreInsideTheTestHome
+    testhome.Main did not run: this package's TestMain must call it, or every default below is the developer's
+(TestEveryTestPackageIsolatesTheHome: cmd/aguard has tests but no TestMain running them through testhome.Main)
+
+hack/gen-rules' TestMain removed:
+--- FAIL: TestEveryTestPackageIsolatesTheHome
+    hack/gen-rules has tests but no TestMain running them through testhome.Main
+
+testhome as P-075 left it for these two (AGUARD_USAGE_LOG not unset, XDG_CACHE_HOME not moved), both set in the shell:
+--- FAIL: TestDefaultLocations_AreInsideTheTestHome
+    $XDG_CACHE_HOME resolves to "/tmp/…/cache", outside the test home …/aguard-testhome-…/home
+    AGUARD_USAGE_LOG is set to "/tmp/…/u.jsonl": every judge run in this package would append to it
+```
+
+Before this change the guard walk listed `hack/gen-rules` and `hack/reputation-refresh` as missing their `TestMain`, and
+nothing else.
+
+The default locations `TestDefaultLocations_AreInsideTheTestHome` resolves (20 rows): the config file, the judge key
+file, the `--report` directory, the default root, the gate approvals and pending verdicts, the `settings.json` that
+`hook install` edits (its backups sit beside it), `clean`'s quarantine and manifest, the default `--inbox`, `~` in a
+configured path, `os.UserHomeDir`, `os.UserConfigDir`, `os.UserCacheDir`, the four XDG variables, and every entry of
+`scanLocations` (the root, the user-level MCP config, the Claude Desktop store, the desktop session cache); plus
+`AGUARD_USAGE_LOG` and `CLAUDE_CONFIG_DIR` unset.
+
 ```
 Merged: PR <number> (find the sha with git log --grep P-077 after the merge)
-Evidence: <filled in at stage 4>
+Evidence: go test -count=1 ./... under a poisoned home with AGUARD_USAGE_LOG set: origin/main appends 42 lines to the usage log; this branch leaves all six marker files byte-identical, exit 0
+Evidence: TestMain_MovesTheHomeAway, TestEveryTestPackageIsolatesTheHome (internal/testhome/testhome_test.go): the three XDG variables and the two unset ones pinned; the walk covers the module with baselines/ named, red naming hack/gen-rules without its TestMain
+Evidence: TestDefaultLocations_AreInsideTheTestHome (cmd/aguard/testhome_locations_test.go): 20 default locations inside testhome.Home(); red without cmd/aguard's TestMain, red with the usage log or the cache directory left to the shell
+Evidence: reverse — TestIsolatedHome_OwnConfigIsStillRefused: a test's own provider: bogus refused by scanEnv and checkTarget through --config, and by scanEnv at the default location with XDG_CONFIG_HOME set and empty
+Evidence: make verify: all gates passed (go version go1.23.5 darwin/arm64, no toolchain switch; go.mod line 2 go 1.23.5)
 ```
