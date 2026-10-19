@@ -112,6 +112,7 @@ func assertLineIsBlock(t *testing.T, line usageLine, j *model.JudgeSummary, out 
 		Calls: j.Calls, Failed: j.Failed, Skipped: j.Skipped, Retries: j.Retries, TriageCalls: j.TriageCalls,
 		Repaired: j.Repaired, Reasked: j.Reasked, TemperatureOmitted: j.TemperatureOmitted,
 		PromptTokens: j.PromptTokens, CompletionTokens: j.CompletionTokens,
+		CachedPromptTokens: j.CachedPromptTokens,
 	}
 	if line != want {
 		t.Errorf("the line is not the judge block:\n line  %+v\n block %+v", line, want)
@@ -408,4 +409,26 @@ func TestUsageLog_ExistingFileKeepsItsModeAndLines(t *testing.T) {
 	if fi, err := os.Stat(path); err != nil || fi.Mode().Perm() != 0o640 {
 		t.Errorf("an existing file's mode must not change: %v %v", fi.Mode(), err)
 	}
+}
+
+// TestUsageLog_CarriesCachedPromptTokens: an endpoint that reports cached prompt tokens (P-071) has
+// them in the line, equal to the judge block's.
+func TestUsageLog_CarriesCachedPromptTokens(t *testing.T) {
+	srv := cachedUsageServer(t, 100, 7, 64)
+	cfg := writeJudgeConfig(t, srv.URL, "advisory")
+	logPath := filepath.Join(t.TempDir(), "usage.jsonl")
+	so, se, code := runAguardEnv(t, t.TempDir(), []string{usageLogEnv + "=" + logPath}, "check", markerSkill(t),
+		"--llm", "--config", cfg, "--json")
+	if code != 0 {
+		t.Fatalf("exit %d, want 0; stderr:\n%s", code, se)
+	}
+	out := decodeScan(t, so)
+	_, lines := readUsageLines(t, logPath)
+	if len(lines) != 1 {
+		t.Fatalf("%d line(s), want 1", len(lines))
+	}
+	if out.Judge == nil || out.Judge.CachedPromptTokens == 0 || lines[0].CachedPromptTokens != out.Judge.CachedPromptTokens {
+		t.Fatalf("cached prompt tokens: line %d, block %+v", lines[0].CachedPromptTokens, out.Judge)
+	}
+	assertLineIsBlock(t, lines[0], out.Judge, out)
 }

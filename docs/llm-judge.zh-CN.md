@@ -431,7 +431,8 @@ aguard check ./some-skill --llm
 Downloads 候选项一行(`"section":"downloads"`,就是那个块对各项的合计),`check` 和 `llm test` 各一行。一行里有
 `time`(RFC 3339,UTC)、`command`、`tool_version`、`rules_version`、`prompt_version`、`excerpt_version`、`model`、
 `endpoint`、`samples`(`llm test` 没有),以及块里的计数 —— `calls`、`failed`、`skipped`、`retries`、`triage_calls`、
-`repaired`、`reasked`、为真时的 `temperature_omitted`、端点报了用量时的 `prompt_tokens` / `completion_tokens`。值就是
+`repaired`、`reasked`、为真时的 `temperature_omitted`、端点报了用量时的 `prompt_tokens` / `completion_tokens`、
+端点报了缓存命中时的 `cached_prompt_tokens`(P-071)。值就是
 块里那份,所以一行等于同一次运行的 `judge` 块。`endpoint` 只写源(`scheme://host[:port]`):`base_url` 可能以
 `user:pass@` 或 query 里的 key 带着凭据,两样都不写。被扫内容一样都不写:没有 artifact 名、路径、发现、摘录或原因。
 

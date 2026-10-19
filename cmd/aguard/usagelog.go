@@ -70,6 +70,7 @@ type usageLine struct {
 	TemperatureOmitted bool   `json:"temperature_omitted,omitempty"`
 	PromptTokens       int    `json:"prompt_tokens,omitempty"`
 	CompletionTokens   int    `json:"completion_tokens,omitempty"`
+	CachedPromptTokens int    `json:"cached_prompt_tokens,omitempty"` // P-071: part of PromptTokens
 }
 
 // usageBlock is one judge block of a run and the section it stands for ("" when a command has one).
@@ -120,6 +121,7 @@ func usageLineFor(command, section, toolVersion, rulesVersion, now string, j *mo
 		TriageCalls: j.TriageCalls, Repaired: j.Repaired, Reasked: j.Reasked,
 		TemperatureOmitted: j.TemperatureOmitted,
 		PromptTokens:       j.PromptTokens, CompletionTokens: j.CompletionTokens,
+		CachedPromptTokens: j.CachedPromptTokens,
 	}
 }
 

@@ -237,7 +237,8 @@ func llmTestUsage(llm config.LLMConfig, client *judge.HTTPClient, err error) *mo
 	if err != nil {
 		j.Failed = 1
 	}
-	j.PromptTokens, j.CompletionTokens = client.Usage()
+	u := client.Usage()
+	j.PromptTokens, j.CompletionTokens, j.CachedPromptTokens = u.Prompt, u.Completion, u.CachedPrompt
 	j.TemperatureOmitted = client.TemperatureOmitted()
 	return j
 }

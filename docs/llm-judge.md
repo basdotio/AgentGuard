@@ -588,7 +588,8 @@ environment (`"section":"environment"`) and one for the Downloads items (`"secti
 the items), `check` and `llm test` one each. A line carries `time` (RFC 3339, UTC), `command`, `tool_version`,
 `rules_version`, `prompt_version`, `excerpt_version`, `model`, `endpoint`, `samples` (not on `llm test`), and the
 block's counts — `calls`, `failed`, `skipped`, `retries`, `triage_calls`, `repaired`, `reasked`,
-`temperature_omitted` when true, `prompt_tokens` / `completion_tokens` when the endpoint reported them. The values are
+`temperature_omitted` when true, `prompt_tokens` / `completion_tokens` when the endpoint reported them, and
+`cached_prompt_tokens` when it reported some (P-071). The values are
 the block's own, so a line equals the `judge` block of the same run. `endpoint` is the origin only
 (`scheme://host[:port]`): a `base_url` can carry credentials as `user:pass@` or a key in its query, and neither is
 written. Nothing from the scanned content is: no artifact name, path, finding, excerpt or reason.
