@@ -128,6 +128,7 @@ Found during stage 2:
 
 ```
 Merged: PR #95 (find the sha with git log --grep P-075 after the merge)
+Released: v0.28.0
 Evidence: TestIsolation_RealHomeConfigIsNotSeen (cmd/aguard/testhome_test.go): red before cmd/aguard had its TestMain (every probe failed on `config llm.provider "not-a-provider-this-build-accepts"`), green after
 Evidence: TestEveryTestPackageIsolatesTheHome, TestMain_MovesTheHomeAway, TestOriginalEnviron_IsTheStartingEnvironment (internal/testhome/testhome_test.go); the guard listed all 18 test packages before their main_test.go files, none after
 Evidence: go test -count=1 ./... with `llm.provider: not-a-provider` in the shell's XDG_CONFIG_HOME: cmd/aguard FAIL (71 top-level tests) on 1c7ff83 → ok; the same with the file under HOME and XDG_CONFIG_HOME unset: FAIL → ok

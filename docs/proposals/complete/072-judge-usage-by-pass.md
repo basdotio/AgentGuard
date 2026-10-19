@@ -94,6 +94,7 @@ endpoint, and their price depends on the vendor. Do not compare passes across mo
 
 ```
 Merged: PR #99 (find the sha with git log --grep P-072 after the merge)
+Released: v0.28.0
 Evidence: TestRun_UsageByPass (internal/judge/usage_by_pass_test.go): every pass of the preview's fixture plus a server, samples 3, 41 calls; one entry per pass (9), each equal to what the stub reported for that pass; the first capability call answered 503 and retried (counted once, the 503 adds nothing), the first injection call unreadable and re-asked (its two replies counted, reasked 1 under injection); the entries sum to calls, reasked and the client's three token totals
 Evidence: TestRun_UsageByPassNamesThePreviewsPasses: the keys are the preview's pass names; TestRun_UsageByPassReverse: no call → no map, a client reporting no tokens → calls only
 Evidence: TestE2E_JudgeBlockUsageByPass, TestScanInbox_JudgeCostAddsUp (cmd/aguard): the JSON block and the Downloads block sum to their totals, 100 / 7 / 64 per call, the retried call once; TestUsageLog_* hold the line's usage_by_pass equal to the block's, none on llm test
