@@ -10,9 +10,11 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/redact"
 )
 
 // The judge usage log (P-073). A judge run's usage — calls, failures, retries, tokens, which model
@@ -128,8 +130,16 @@ func usageLineFor(command, section, toolVersion, rulesVersion, now string, j *mo
 // endpointOrigin is scheme://host[:port] of a base_url, and "" for anything that does not parse
 // into both. The path, query, fragment and userinfo are dropped: a base_url can carry credentials
 // as user:pass@ or a key in its query, and the log is a file nobody thinks of as holding one.
-func endpointOrigin(baseURL string) string {
-	u, err := url.Parse(baseURL)
+//
+// The judge block's endpoint is the shown form (P-076: userinfo as `<REDACTED>@`, which url.Parse
+// refuses), so the host comes from redact.EndpointHost, the splitter that made it.
+func endpointOrigin(endpoint string) string {
+	i := strings.Index(endpoint, "://")
+	host := redact.EndpointHost(endpoint)
+	if i <= 0 || host == "" {
+		return ""
+	}
+	u, err := url.Parse(strings.ToLower(endpoint[:i]) + "://" + host)
 	if err != nil || u.Scheme == "" || u.Host == "" {
 		return ""
 	}
