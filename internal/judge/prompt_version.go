@@ -19,9 +19,9 @@ import (
 // get a different answer (P-031). It is computed, never maintained: a sha256 over the exact JSON
 // body of each call shape, with three things stood in because they are not the judge's to version
 // — the scanned content (an input), the model (reported on its own, as JudgeSummary.Model) and the
-// nonce (random per call). TestPromptVersion_HashesWhatTheClientSends drives the real client over
-// every shape and requires each body to be the one hashed here, so a change to what is sent either
-// moves this value or turns that test red.
+// nonce (random; one per question since P-080). TestPromptVersion_HashesWhatTheClientSends drives
+// the real client over every shape and requires each body to be the one hashed here, so a change to
+// what is sent either moves this value or turns that test red.
 //
 // Not in it: the endpoint and the headers (the Authorization header is the key), Ping (`llm test`
 // sends nothing scanned and yields no finding), and how an artifact becomes the excerpt in the

@@ -51,8 +51,8 @@ const (
 )
 
 // Request is one artifact submission. Declared and Behavior are ALREADY redacted before
-// construction. Both are UNTRUSTED artifact content and are fenced with a per-call nonce
-// so the model can't be hijacked by instructions embedded in them (spec §5.2 barrier).
+// construction. Both are UNTRUSTED artifact content and are fenced with a nonce so the model
+// can't be hijacked by instructions embedded in them (spec §5.2 barrier).
 type Request struct {
 	Artifact string // "kind:name", redacted, for labeling only
 	Mode     Mode
@@ -71,6 +71,10 @@ type Request struct {
 	// object (P-069): the same content under a fresh nonce, with reaskRule added to the system
 	// message. Run sets it; a request that arrives with it set is never repeated again.
 	Reask bool
+	// Nonce is the barrier the k samples of one question share (P-080): Run draws it once per
+	// question, so the k requests are byte-identical and an endpoint's prompt cache can serve the
+	// repeats. Empty, malformed (validNonce) or on a re-ask, the client draws its own per call.
+	Nonce string
 }
 
 // twoSided reports whether this request compares a declared side against a behavior side (and

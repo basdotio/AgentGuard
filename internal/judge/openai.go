@@ -32,6 +32,34 @@ func newNonce() (string, error) {
 	return hex.EncodeToString(b[:]), nil
 }
 
+// nonceLen is the length of what newNonce returns: 16 random bytes, hex-encoded.
+const nonceLen = 32
+
+// validNonce reports whether s has the shape newNonce gives: 32 lowercase hex digits. A nonce a
+// caller hands the client (Request.Nonce, P-080) is used only when it does, so a field filled in
+// wrongly falls back to a fresh draw and never fences content with a short or guessable line.
+func validNonce(s string) bool {
+	if len(s) != nonceLen {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		if c := s[i]; (c < '0' || c > '9') && (c < 'a' || c > 'f') {
+			return false
+		}
+	}
+	return true
+}
+
+// requestNonce is the barrier for one judge call: the question's shared nonce when Run gave one
+// (P-080), otherwise a fresh draw. A re-ask always draws (P-069): it is the one repeat whose
+// first reply was not read, and nothing about it needs to match its question's other samples.
+func requestNonce(r Request) (string, error) {
+	if !r.Reask && validNonce(r.Nonce) {
+		return r.Nonce, nil
+	}
+	return newNonce()
+}
+
 // HTTPClient talks to an OpenAI-compatible /chat/completions endpoint (default: a LOCAL
 // model, e.g. Ollama at http://localhost:11434/v1). The API key, when present, comes from
 // an env var (config.APIKey) — never from disk.
@@ -180,7 +208,7 @@ func (c *HTTPClient) Ping(ctx context.Context) (time.Duration, error) {
 }
 
 func (c *HTTPClient) Judge(ctx context.Context, r Request) (Verdict, error) {
-	nonce, err := newNonce()
+	nonce, err := requestNonce(r)
 	if err != nil {
 		return Verdict{}, err
 	}

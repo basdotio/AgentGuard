@@ -87,7 +87,7 @@ func TestPromptVersion_HashesWhatTheClientSends(t *testing.T) {
 // Decisions for every input a request is built from. A field nobody has decided about is a field
 // that could change what is sent while the version stays put.
 const (
-	standIn    = "content or model: replaced by a fixed stand-in"
+	standIn    = "content, model or nonce: replaced by a fixed stand-in"
 	enumerated = "every value the client uses has its own shapes"
 	rendered   = "part of the body that is hashed"
 	notSent    = "never in a request body"
@@ -103,7 +103,7 @@ func TestPromptVersion_EveryInputIsDecided(t *testing.T) {
 		fields map[string]string
 	}{
 		{reflect.TypeOf(Request{}), map[string]string{
-			"Artifact": notSent, "Mode": enumerated, "Declared": standIn, "Behavior": standIn, "Temperature": enumerated, "Reask": enumerated}},
+			"Artifact": notSent, "Mode": enumerated, "Declared": standIn, "Behavior": standIn, "Temperature": enumerated, "Reask": enumerated, "Nonce": standIn}},
 		{reflect.TypeOf(TriageItem{}), map[string]string{"RuleID": standIn, "Evidence": standIn}},
 		{reflect.TypeOf(chatRequest{}), map[string]string{"Model": standIn, "Messages": rendered, "Temperature": rendered}},
 		{reflect.TypeOf(chatMessage{}), map[string]string{"Role": rendered, "Content": rendered}},
