@@ -125,7 +125,7 @@ llm:
 |-------|---------|
 | `enabled` | Master switch. Must be `true` **and** `--llm` must be passed. |
 | `provider` | A preset — `deepseek`, `openai`, `qwen` — or `openai_compatible` for any OpenAI-style endpoint (Ollama, vLLM, LM Studio, a proxy…). An unknown name is a load error, not a fallback. |
-| `base_url` | Endpoint root. The tool POSTs to `<base_url>/chat/completions`. A preset fills it in; set it to override. |
+| `base_url` | Endpoint root. The tool POSTs to `<base_url>/chat/completions`, the suffix going on the path: a query in `base_url` (`https://gw.example/v1?api-version=2024-01-01`) is sent as written after it, a trailing `/` makes no difference, and a fragment is dropped. A preset fills it in; set it to override. |
 | `model` | **Which model to use.** A preset supplies a default; write the exact name your endpoint serves to override. |
 | `api_key_env` | The **name** of an env var holding the key. Checked first; for CI and for people who prefer it. |
 | `api_key_file` | Path of a file holding the key (`~` allowed). Must be readable by its owner only — a group- or world-readable file is refused with the `chmod 600` to run. `aguard llm setup` writes it. |
