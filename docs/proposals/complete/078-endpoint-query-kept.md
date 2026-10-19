@@ -113,7 +113,7 @@ expression unchanged.
 ## Done
 
 ```
-Merged: PR pending (find the sha with git log --grep P-078 after the merge)
+Merged: PR #97 (find the sha with git log --grep P-078 after the merge)
 Evidence: TestHTTP_QueryBaseURLKeepsPathAndQuery (internal/judge/chaturl_test.go): base_url …/v1?api-version=2024-01-01&api-key=k123 → Judge and Ping received path /v1, query "api-version=2024-01-01&api-key=k123/chat/completions" at the tests commit; path /v1/chat/completions, query "api-version=2024-01-01&api-key=k123" after the fix; all six rows red → green
 Evidence: TestLLMTest_QueryBaseURLReachesChatCompletions (cmd/aguard/endpoint_query_test.go): llm test reached path "/v1" at the tests commit, /v1/chat/completions with the query as written after
 Evidence: reverse — TestHTTP_PlainBaseURLRequestLineUnchanged (7 base_urls without query or fragment) and TestHTTP_PresetURLsUnchanged (default local endpoint + deepseek, openai, qwen) green at the tests commit and after; dropping the trailing-slash trim turns them and FuzzChatURL red (11 FAIL lines)
