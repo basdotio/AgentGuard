@@ -24,25 +24,39 @@ func envValue(env []string, key string) (string, bool) {
 	return val, ok
 }
 
-// TestMain_MovesTheHomeAway: inside a test, HOME, XDG_CONFIG_HOME and CLAUDE_CONFIG_DIR are
-// none of the values the binary was started with, the home is an empty directory of its own,
-// and the user-level config directory is inside it — so a config.yaml in the developer's own
-// home cannot be what a test reads.
+// TestMain_MovesTheHomeAway: inside a test, HOME, the four XDG base directories,
+// CLAUDE_CONFIG_DIR and AGUARD_USAGE_LOG are none of the values the binary was started with,
+// the home is an empty directory of its own, and every XDG directory is inside it at the place
+// the base-directory specification gives as its default — so a config.yaml in the developer's
+// own home cannot be what a test reads, and a usage log in the developer's shell cannot be what
+// a test appends to (P-075, P-077).
 func TestMain_MovesTheHomeAway(t *testing.T) {
-	home, xdg := os.Getenv("HOME"), os.Getenv("XDG_CONFIG_HOME")
-	for _, key := range []string{"HOME", "XDG_CONFIG_HOME"} {
+	home := os.Getenv("HOME")
+	if Home() == "" || Home() != home {
+		t.Fatalf("Home() = %q, want the isolated HOME %q", Home(), home)
+	}
+	for _, key := range []string{"HOME", "XDG_CONFIG_HOME", "XDG_CACHE_HOME", "XDG_STATE_HOME", "XDG_DATA_HOME"} {
 		if was, ok := envValue(OriginalEnviron(), key); ok && was != "" && was == os.Getenv(key) {
 			t.Errorf("%s is still the value the binary started with: %s", key, was)
 		}
 	}
-	if v, ok := os.LookupEnv("CLAUDE_CONFIG_DIR"); ok {
-		t.Errorf("CLAUDE_CONFIG_DIR is still set: %q", v)
+	for _, key := range []string{"CLAUDE_CONFIG_DIR", "AGUARD_USAGE_LOG"} {
+		if v, ok := os.LookupEnv(key); ok {
+			t.Errorf("%s is still set: %q", key, v)
+		}
 	}
 	if got, err := os.UserHomeDir(); err != nil || got != home {
 		t.Errorf("os.UserHomeDir() = %q, %v; want the isolated home %q", got, err, home)
 	}
-	if want := filepath.Join(home, ".config"); xdg != want {
-		t.Errorf("XDG_CONFIG_HOME = %q, want %q", xdg, want)
+	for key, rel := range map[string]string{
+		"XDG_CONFIG_HOME": ".config",
+		"XDG_CACHE_HOME":  ".cache",
+		"XDG_STATE_HOME":  filepath.Join(".local", "state"),
+		"XDG_DATA_HOME":   filepath.Join(".local", "share"),
+	} {
+		if got, want := os.Getenv(key), filepath.Join(home, rel); got != want {
+			t.Errorf("%s = %q, want %q", key, got, want)
+		}
 	}
 	entries, err := os.ReadDir(home)
 	if err != nil {
