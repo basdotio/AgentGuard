@@ -192,6 +192,9 @@ Nine more, `results/aguard/2026-10-17-llm-gpt-4.1-mini-p070-*`, are P-070 (the f
 two variants) against `main`: no recall gain beyond the run band, the development benign list up; rejected, the code
 reverted, the runs kept as the evidence that the judge's SkillHarm misses are judgement rather than visibility. Raw in
 `aguard-judge-raw-2026-10-p070.tar.gz` on v0.26.0.
+Six static runs, `results/aguard/2026-10-19-p074-*`, are P-074 (`EXFIL-001` at medium for a named key sent to a
+destination the file does not spell out) against `main` over every skill tree, every other surface and the held-out
+sets: benign high −49 across the corpus, the wild malicious held-out 68 → 65; rejected. Static, so no raw archive.
 
 **What a judge run cost is folded by the driver, not by hand.** Each judged sample's ledger row
 carries `judge_usage` — `calls`, `failed`, `skipped`, `triage_calls`, `retries`, `prompt_tokens`,
