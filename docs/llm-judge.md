@@ -572,6 +572,40 @@ sampled, and a vendor can change what serves a model name. Consensus, severity c
 advisory-only rule are in neither version; `tool_version` is still the only stamp for those. The
 key, the headers and `authority` are never recorded.
 
+### A record of every judge run (`AGUARD_USAGE_LOG`)
+
+The `judge` block reaches you only with `--json`; otherwise what a run did is one stderr line, which `--quiet`
+suppresses and the Downloads pass never prints, and `llm test` prints its tokens to stdout. To add up judge runs made
+by hand or from scripts over days, set an append-only log:
+
+```bash
+export AGUARD_USAGE_LOG=~/.local/state/aguard/usage.jsonl
+aguard check ./some-skill --llm
+```
+
+Every judge run that issued at least one call then appends one JSON line per judge block: `scan` one for the
+environment (`"section":"environment"`) and one for the Downloads items (`"section":"downloads"`, the block's sum over
+the items), `check` and `llm test` one each. A line carries `time` (RFC 3339, UTC), `command`, `tool_version`,
+`rules_version`, `prompt_version`, `excerpt_version`, `model`, `endpoint`, `samples` (not on `llm test`), and the
+block's counts — `calls`, `failed`, `skipped`, `retries`, `triage_calls`, `repaired`, `reasked`,
+`temperature_omitted` when true, `prompt_tokens` / `completion_tokens` when the endpoint reported them, and
+`cached_prompt_tokens` when it reported some (P-071). The values are
+the block's own, so a line equals the `judge` block of the same run. `endpoint` is the origin only
+(`scheme://host[:port]`): a `base_url` can carry credentials as `user:pass@` or a key in its query, and neither is
+written. Nothing from the scanned content is: no artifact name, path, finding, excerpt or reason.
+
+Unset or empty, nothing is written anywhere and every output is as before. The file is created 0600 (an existing one
+keeps its mode and is only appended to). A path that is a symlink, a directory or a special file, or whose parent is
+not a directory, is refused with one warning on stderr — printed under `--quiet` too, since a missing record you were
+not told about is what the log exists to prevent — and a failed write never changes the exit code or a report. Each
+line is one `write` on an `O_APPEND` descriptor, so runs in parallel append whole lines on a local file system; POSIX
+promises that only for pipes up to `PIPE_BUF` (512 bytes on macOS), a typical line is under 500 bytes, and a long model
+name or host can exceed it; a network file system may not honour `O_APPEND`. It is a local file write: nothing about
+it connects anywhere (invariant #1).
+
+This is not a cost record. The tool computes no money: a line holds the counts the judge kept and the tokens the
+endpoint reported, and an endpoint that reports no usage leaves the token keys out.
+
 ## The second number
 
 A judge run reports two scores:

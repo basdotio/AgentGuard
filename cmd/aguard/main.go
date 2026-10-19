@@ -668,6 +668,9 @@ func main() {
 					dl.Path, dl.Status = ib.Dir, model.LocRead
 				}
 			}
+			// The judge's work is done: record it before any report is written, so a report that
+			// fails to write does not take the record of calls already made with it (P-073).
+			recordJudgeUsage(os.Stderr, "scan", out.ToolVersion, out.RulesVersion, scanUsageBlocks(out))
 			out.Locations = append(out.Locations, dl)
 			// Appended AFTER scoring, which is safe and deliberate: it is a dimension-0 note,
 			// so score.Deterministic excludes it from both the number and --fail-on. The gate's
@@ -749,6 +752,7 @@ func main() {
 			if err != nil {
 				return err
 			}
+			recordJudgeUsage(os.Stderr, "check", out.ToolVersion, out.RulesVersion, []usageBlock{{judge: out.Judge}})
 			if sarifOut != "" {
 				if err := writeSARIF(sarifOut, out); err != nil {
 					return err

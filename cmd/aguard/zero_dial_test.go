@@ -63,6 +63,7 @@ import (
 	"github.com/basdotio/AgentGuard/internal/config"
 	"github.com/basdotio/AgentGuard/internal/gate"
 	"github.com/basdotio/AgentGuard/internal/judge"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // unroutableJudge is the endpoint every config here names: loopback, port 9 (discard). Should a
@@ -238,16 +239,26 @@ type controlCase struct {
 func zeroDialControl(fx zeroDialFixture) []controlCase {
 	return []controlCase{
 		{"scan --llm", dialCase{"scan --llm", func() error {
-			_, err := scanEnv(fx.root, scanOpts{cfgPath: fx.on, llm: true, quiet: true})
-			return err
+			out, err := scanEnv(fx.root, scanOpts{cfgPath: fx.on, llm: true, quiet: true})
+			if err != nil {
+				return err
+			}
+			return recordUsageQuietly("scan", out, scanUsageBlocks(out))
 		}}},
 		{"scan --llm", dialCase{"scan --llm, Downloads items", func() error {
-			_, err := scanInbox(fx.downloads, true, scanOpts{cfgPath: fx.on, llm: true, quiet: true})
-			return err
+			ib, err := scanInbox(fx.downloads, true, scanOpts{cfgPath: fx.on, llm: true, quiet: true})
+			if err != nil {
+				return err
+			}
+			out := model.ScanResult{ToolVersion: version, Inbox: ib}
+			return recordUsageQuietly("scan", out, scanUsageBlocks(out))
 		}}},
 		{"check --llm", dialCase{"check --llm", func() error {
-			_, err := checkTarget(fx.skill, scanOpts{cfgPath: fx.on, llm: true, quiet: true})
-			return err
+			out, err := checkTarget(fx.skill, scanOpts{cfgPath: fx.on, llm: true, quiet: true})
+			if err != nil {
+				return err
+			}
+			return recordUsageQuietly("check", out, []usageBlock{{judge: out.Judge}})
 		}}},
 		{"llm test", dialCase{"llm test", func() error {
 			// Refused by the counter, so it must report the endpoint as not answering.
@@ -257,6 +268,18 @@ func zeroDialControl(fx zeroDialFixture) []controlCase {
 			return nil
 		}}},
 	}
+}
+
+// recordUsageQuietly appends the usage lines the command's RunE appends after this call (P-073), so
+// the positive control runs with AGUARD_USAGE_LOG set the way a CI job sets it. A warning is an
+// error here: the log is a local file, and a row that could not write it would prove nothing.
+func recordUsageQuietly(command string, out model.ScanResult, blocks []usageBlock) error {
+	var warn bytes.Buffer
+	recordJudgeUsage(&warn, command, out.ToolVersion, out.RulesVersion, blocks)
+	if warn.Len() != 0 {
+		return errors.New(warn.String())
+	}
+	return nil
 }
 
 // lateRequestSettle is how long the run waits after its last row before reading the counters a
@@ -271,6 +294,10 @@ const lateRequestSettle = 50 * time.Millisecond
 func TestZeroDial_OnlyTheJudgeConnects(t *testing.T) {
 	judgeRT, defaultRT := installDialCounters(t)
 	fx := newZeroDialFixture(t)
+	// The usage log (P-073) is on for the whole table: writing it is a local file append, and the
+	// counters below are what say it sends nothing.
+	usageLog := filepath.Join(t.TempDir(), "usage.jsonl")
+	t.Setenv(usageLogEnv, usageLog)
 
 	// A row's counts are what landed while it ran, so both counters must already be empty when it
 	// starts: anything there landed after the previous row RETURNED. Resetting them at row start
@@ -300,6 +327,12 @@ func TestZeroDial_OnlyTheJudgeConnects(t *testing.T) {
 			}
 		})
 		prev = c.name
+	}
+
+	// Every control row issued calls, refused or not, so every one of them left its line: the
+	// environment, the Downloads items, the target, and the connectivity check.
+	if _, lines := readUsageLines(t, usageLog); len(lines) != len(zeroDialControl(fx)) {
+		t.Errorf("the positive control wrote %d usage line(s), want one per row (%d)", len(lines), len(zeroDialControl(fx)))
 	}
 
 	hook := func(event string, check func(gate.Output) error) func() error {

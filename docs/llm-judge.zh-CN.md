@@ -417,6 +417,33 @@ triage 只问一次,判官的题问 `samples` 次)、`retries`、`prompt_tokens`
 名字就换掉背后的模型。共识、严重度钳制和只提示规则不在任何一个版本里,它们仍然只有 `tool_version` 能标。密钥、
 请求头和 `authority` 一律不记。
 
+### 每次判官运行留一条记录(`AGUARD_USAGE_LOG`)
+
+`judge` 块只有加 `--json` 才拿得到;不加时一次运行做了什么只是 stderr 上的一行,`--quiet` 会把它压掉,Downloads 那一趟
+从来不印,`llm test` 则把 token 印在 stdout。要把手动或脚本里跑了好几天的判官运行加总起来,设一个只追加的日志:
+
+```bash
+export AGUARD_USAGE_LOG=~/.local/state/aguard/usage.jsonl
+aguard check ./some-skill --llm
+```
+
+之后每次至少发出了一次调用的判官运行,按判官块各追加一行 JSON:`scan` 环境一行(`"section":"environment"`)、
+Downloads 候选项一行(`"section":"downloads"`,就是那个块对各项的合计),`check` 和 `llm test` 各一行。一行里有
+`time`(RFC 3339,UTC)、`command`、`tool_version`、`rules_version`、`prompt_version`、`excerpt_version`、`model`、
+`endpoint`、`samples`(`llm test` 没有),以及块里的计数 —— `calls`、`failed`、`skipped`、`retries`、`triage_calls`、
+`repaired`、`reasked`、为真时的 `temperature_omitted`、端点报了用量时的 `prompt_tokens` / `completion_tokens`、
+端点报了缓存命中时的 `cached_prompt_tokens`(P-071)。值就是
+块里那份,所以一行等于同一次运行的 `judge` 块。`endpoint` 只写源(`scheme://host[:port]`):`base_url` 可能以
+`user:pass@` 或 query 里的 key 带着凭据,两样都不写。被扫内容一样都不写:没有 artifact 名、路径、发现、摘录或原因。
+
+不设或设为空,哪儿都不写,所有输出和以前一样。文件以 0600 创建(已存在的保留原权限,只追加)。路径是符号链接、
+目录或特殊文件,或者它的父路径不是目录,就拒写并在 stderr 印一行警告 —— `--quiet` 下也印,因为一条没人告诉你的缺失记录
+正是这个日志要防的事 —— 写失败永远不改退出码、不改报告。每行是 `O_APPEND` 描述符上的一次 `write`,所以并行的运行在
+本地文件系统上追加的都是整行;POSIX 只对不超过 `PIPE_BUF`(macOS 上 512 字节)的管道写入作这个保证,一行通常不到
+500 字节,模型名或主机名很长时会超过;网络文件系统可能不遵守 `O_APPEND`。它只写本地文件,不连任何地方(不变量 #1)。
+
+这不是费用记录。工具不算钱:一行只有判官自己记的计数和端点报告的 token,端点不报用量时 token 两个键不出现。
+
 ## 第二个数
 
 开判官之后报告给两个分:
