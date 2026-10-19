@@ -102,6 +102,10 @@ A remote endpoint must be https; plain http is accepted only for a model on this
 The judge follows a redirect only within the configured origin (same scheme, host and port). A
 redirect anywhere else is not followed and nothing is sent there: the call fails, `aguard llm test`
 says where the endpoint tried to send it, and a scan reports it as an `LLM-000` note.
+Wherever aguard shows the endpoint — the report's `judge.endpoint`, the `LLM-002` note, an error, `llm status`,
+`llm setup`, `llm test`, `llm preview` — a user name and password in it (`https://user:pass@host`), every query value
+and a fragment are shown as `<REDACTED>`; scheme, host, port, path and the query keys are kept. The requests use the
+URL as written.
 
 `setup` writes `~/.config/aguard/config.yaml` (or `$XDG_CONFIG_HOME/aguard/…`), which every
 command reads when `--config` is not given, and stores the key in `llm.key` next to it with
@@ -544,7 +548,7 @@ did not run: <reason>` — and the "LLM judge leads" section is present even whe
 that line. When some replies needed the closed-early repair or a re-ask, the line says how many beside the
 failures (`(0 failed, 0 skipped, 1 repaired, 2 re-asked)`); with none it reads as before. JSON has the same as
 `judge` (`ran`, `reason`, `artifacts`, `calls`, `failed`, `skipped`, `repaired`, `reasked` — always present, like
-the two before it — `findings`, `endpoint`, and `temperature_omitted` when the endpoint refused the temperature member), plus what it cost: `triage_calls` (the part of `calls` that
+the two before it — `findings`, `endpoint` (with its credentials redacted, see [Configuration](#configuration)), and `temperature_omitted` when the endpoint refused the temperature member), plus what it cost: `triage_calls` (the part of `calls` that
 was triage, asked once where a question is asked `samples` times), `retries`, and
 `prompt_tokens` / `completion_tokens` — the last two absent when the endpoint reported no usage,
 rather than a 0 that would read as a measurement — and `cached_prompt_tokens`, the part of `prompt_tokens`

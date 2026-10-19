@@ -85,6 +85,9 @@
    - **判官请求的每个字段,最后一步是整段 `Redact` 到不动点**(`settle`/`fitUnits`,P-037):声明用途、行为、triage 证据各段分别
      脱敏后再拼、再截,整段再过一次,变长了按该字段自己的上限重截;字节截断一律用 `detect.RunePrefix` 落在字符边界上。
      `FuzzPlanFields` 钉着每个字段 `Redact(f)==f`、合法 UTF-8、不超上限,且每个 unit 的文本都在发出去的字段里。
+   - **配置的端点(`llm.base_url`)展示时只经 `redact.Endpoint`**(P-076):结构性地换掉 userinfo 整段、每个 query 值和 fragment,
+     再整段过 `Secrets`;按字符串切分不靠 `url.Parse`,所以解析失败的 URL 在报错里一样脱敏。config、judge、cmd、report 直接调它
+     (它不是 snippet 路径,detect 没有对应的委托)。**新加一处印端点的地方就用它**;请求本身用原样 URL。
    - 笔记的划线:进 snippet 的、从文件正文或配置值抄来的那段过它,同一段也进 `Why` 的印同一份;扫描器自己从磁盘列出的名字、
      就是该发现 `Evidence.File` 的路径不归它(全引擎问题,未定)。**不要逐条笔记各自另划一条线**。
 4. **两个分数:`Overall` 纯确定性,`OverallEffective` 含 LLM 单向升级**(spec v1.1 §5.2.1/§5.3,
