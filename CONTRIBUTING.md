@@ -21,6 +21,9 @@ conventions in `.claude/rules/conventions.md` explain the one dependency that tr
 - Every `.go` file starts with `// SPDX-License-Identifier: MIT`. Code and user-visible strings
   are English. Documents that exist as a bilingual pair (`README`, `docs/architecture`,
   `docs/llm-judge`, `docs/install-gate`) are changed together.
+- A package with tests has a `TestMain` that runs them through `testhome.Main`
+  (`func TestMain(m *testing.M) { os.Exit(testhome.Main(m)) }`), so its tests see a temporary
+  home and never your own `~/.config/aguard/config.yaml`; a test fails if a package lacks it.
 - A change to a detection rule runs against the corpus benchmark (`make bench`, needs a sibling
   checkout of `agent-artifact-corpus`) and states its before/after per source, with n. Numbers are
   never pooled across sources.

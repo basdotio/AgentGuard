@@ -75,6 +75,7 @@ Each package is an approximately pure stage over the immutable types in
 | [`safeio`](../internal/safeio/) | The one way a file the tool did not write is opened: non-regular files refused before Open, size capped by the read | 101 |
 | [`redact`](../internal/redact/) | The one secret redactor: known token prefixes, announced credentials, URL userinfo, high-entropy runs. A leaf, so `collect` uses it too; `detect.Redact` delegates | 209 |
 | [`cmdline`](../internal/cmdline/) | The one way a path is printed into a command meant for pasting: the full path quoted for a POSIX shell, never clipped. `gate.CommandArg` delegates; the report's `aguard approve` next step uses it | 97 |
+| [`testhome`](../internal/testhome/) | Tests only: every test binary under `cmd/` and `internal/` runs with a temporary `HOME` and `XDG_CONFIG_HOME` and no `CLAUDE_CONFIG_DIR`, so no test reads the developer's own config; `TestEveryTestPackageIsolatesTheHome` requires its `TestMain` in each package with tests | 89 |
 | [`cmd/aguard`](../cmd/aguard/) | CLI wiring, `analyze()`, the Downloads pass, the gate runner, `llm setup/test/status/preview` | — |
 
 Two responsibilities are split in a way worth knowing up front, because both halves say
