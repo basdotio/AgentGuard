@@ -90,11 +90,31 @@ func TestOriginalEnviron_IsTheStartingEnvironment(t *testing.T) {
 // unqualified.
 var testMainRE = regexp.MustCompile(`func TestMain\(m \*testing\.M\) \{\s*os\.Exit\((testhome\.)?Main\(m\)\)\s*\}`)
 
-// TestEveryTestPackageIsolatesTheHome: every directory under cmd/ and internal/ that holds
-// tests has a TestMain that runs them through Main. Isolating only the packages that read the
-// home today is a list that drifts: collect, judge and config read it directly, and every
-// package that imports collect reaches it. A new package with tests and no TestMain fails
-// here, before it can read a developer's config.
+// excludedTrees are top-level directories of the module whose tests do not run under Main, each
+// with its reason. Anything not named here is walked, so a new top-level directory with tests is
+// covered by default (P-077; P-075 walked cmd/ and internal/ only, and hack/ was outside).
+var excludedTrees = map[string]string{
+	// Its tests and its non-test code start the Go toolchain (go build, go list, go run
+	// ./cmd/corpus, the scorer) with the inherited environment. Under the isolated home those
+	// children get an empty build and module cache and lose the developer's GOENV — slow online,
+	// failing offline — and steering the non-test spawns to OriginalEnviron would change
+	// non-test code. In process it reads no aguard config, and the aguard it runs gets an
+	// environment the adapter builds from nothing (HOME and XDG_CONFIG_HOME in its work
+	// directory, no AGUARD_USAGE_LOG).
+	"baselines": "starts the Go toolchain from non-test code; its aguard children get an environment built from nothing",
+}
+
+// skipDir reports whether the walk never descends into a directory of this name: hidden trees
+// (.git, .claude worktrees), fixtures and third-party code are not this module's test packages.
+func skipDir(name string) bool {
+	return strings.HasPrefix(name, ".") || name == "testdata" || name == "node_modules" || name == "vendor"
+}
+
+// TestEveryTestPackageIsolatesTheHome: every directory of the module that holds tests has a
+// TestMain that runs them through Main, except the trees excludedTrees names. Isolating only the
+// packages that read the home today is a list that drifts: collect, judge and config read it
+// directly, and every package that imports collect reaches it. A new package with tests and no
+// TestMain fails here, before it can read a developer's config.
 func TestEveryTestPackageIsolatesTheHome(t *testing.T) {
 	root, err := filepath.Abs(filepath.Join("..", ".."))
 	if err != nil {
@@ -104,28 +124,33 @@ func TestEveryTestPackageIsolatesTheHome(t *testing.T) {
 		t.Fatalf("module root not found at %s: %v", root, err)
 	}
 	withTests, isolated := map[string]bool{}, map[string]bool{}
-	for _, top := range []string{"cmd", "internal"} {
-		err := filepath.WalkDir(filepath.Join(root, top), func(p string, d fs.DirEntry, err error) error {
-			if err != nil {
-				return err
-			}
-			if d.IsDir() || !strings.HasSuffix(p, "_test.go") {
-				return nil
-			}
-			dir, _ := filepath.Rel(root, filepath.Dir(p))
-			withTests[dir] = true
-			b, err := os.ReadFile(p)
-			if err != nil {
-				return err
-			}
-			if testMainRE.Match(b) {
-				isolated[dir] = true
+	err = filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, _ := filepath.Rel(root, p)
+		if d.IsDir() {
+			if _, excluded := excludedTrees[rel]; excluded || (p != root && skipDir(d.Name())) {
+				return filepath.SkipDir
 			}
 			return nil
-		})
-		if err != nil {
-			t.Fatal(err)
 		}
+		if !strings.HasSuffix(p, "_test.go") {
+			return nil
+		}
+		dir := filepath.Dir(rel)
+		withTests[dir] = true
+		b, err := os.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		if testMainRE.Match(b) {
+			isolated[dir] = true
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 	var missing []string
 	for dir := range withTests {
@@ -135,13 +160,22 @@ func TestEveryTestPackageIsolatesTheHome(t *testing.T) {
 	}
 	sort.Strings(missing)
 	for _, dir := range missing {
-		t.Errorf("%s has tests but no TestMain running them through testhome.Main; add a main_test.go with\n"+
+		t.Errorf("%s has tests but no TestMain running them through testhome.Main; add, in a _test.go file,\n"+
 			"\tfunc TestMain(m *testing.M) { os.Exit(testhome.Main(m)) }", dir)
 	}
-	// Positive control: the walk saw this package and cmd/aguard, or it proves nothing.
-	for _, dir := range []string{filepath.Join("internal", "testhome"), filepath.Join("cmd", "aguard")} {
+	// Positive control: the walk saw this package, cmd/aguard and the hack/ tools, or it proves
+	// nothing; and every excluded tree exists, so a rename cannot leave a stale exclusion behind.
+	for _, dir := range []string{
+		filepath.Join("internal", "testhome"), filepath.Join("cmd", "aguard"),
+		filepath.Join("hack", "gen-rules"), filepath.Join("hack", "reputation-refresh"),
+	} {
 		if !withTests[dir] {
 			t.Errorf("control: the walk did not see %s", dir)
+		}
+	}
+	for dir := range excludedTrees {
+		if fi, err := os.Stat(filepath.Join(root, dir)); err != nil || !fi.IsDir() {
+			t.Errorf("excludedTrees names %s, which is not a directory of the module: %v", dir, err)
 		}
 	}
 }
