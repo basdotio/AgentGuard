@@ -23,6 +23,10 @@ Bearer 头,明文 http 等于把它送上网),setup/test/judge 三处都过它,j
 只比主机名就把 key 带到下一跳(实测 https→http 同主机、换端口、子域都带),307/308 还把摘录原样重发给任何主机。**不要换回默认
 策略,也不要放宽成"同主机"**:scheme 或端口不同就是另一个源。被拒是**不重试**的调用失败,经
 `Run` 汇成 `LLM-000`;报错只写 scheme://host,不写 `Location` 的路径和 query(签名 URL 把一次性凭据放在那里)。
+**配置的端点在任何地方展示都过 `redact.Endpoint`**(P-076):`judge.endpoint`、`LLM-002`、`CheckEndpoint` 的报错、`llm setup/test/status/preview`,
+以及 `chatOnce` 里 net/http 自己的 `*url.Error`(它只藏密码,用户名和 query 照印;`shownURL` 换掉 URL、保留被包的原因,重试分类不变)。
+userinfo 整段、每个 query 值、fragment 换成 `<REDACTED>`,再过 `Secrets`;**请求用的仍是原样 URL**——不要把显示形式传进 `NewHTTP`。
+`<REDACTED>@` 不是 `url.Parse` 认的 userinfo,所以报告从 `judge.endpoint` 取主机用 `redact.EndpointHost`,别换回 `url.Parse`。
 **送给模型的摘录先压缩、再截两头**(`judge/excerpt.go`,2026-09-08):`condense` 把连续空行折成一行、把注释行整行去掉
 (用 `detect.CommentOnlyLines`,和 A1 同一个分类器),`capHeadTail` 在字节上限内保留文件头 2/3 和文件尾 1/3,中间放一行
 "N line(s) omitted" 标记。两个都是对着真实样本改的:十万个空行把 payload 推到 2000 字节前缀之外,模型看到的和 `head` 一样
@@ -42,6 +46,7 @@ Bearer 头,明文 http 等于把它送上网),setup/test/judge 三处都过它,j
 (condense / capHeadTail / lineMap / 解码上限 / 声明用途和 hook、MCP、connector 的渲染 / 家目录替换与脱敏顺序)或引文怎么落地,**同一个提交里加一**,
 并把 `excerpt_version_test.go` 钉的 {版本, 摘要} 一起换掉;只换摘要不加版本,两份报告就会自称同样的摘录。
 **`internal/redact` 下的任何改动都会改摘录字节**(每个字段最后都整段过 `Redact`,P-037),同一个提交里也要给 `ExcerptVersion` 加一。
+(例外只有摘录路径不调用的新函数,如 `redact.Endpoint`(P-076):`Secrets`/`Credentials` 一个字节没动,`excerpt_version_test.go` 钉的摘要不变就是证据。)
 **新字段、新的拼接或截断,最后一步必须走 `settle`(单段)或 `fitUnits`(多 unit,整块丢、按行读回 unit)**,截断只用 `detect.RunePrefix`;
 `FuzzPlanFields` 只看得见 `buildTasks` 产出的字段,绕过它们拼进 `Request` 的文本它不会替你发现。`PromptVersion` 是**算出来的**,不要手改,
 也不要让 nonce、被扫内容或模型名进它(那三样是占位);`prompt_version.go` 里 triage 的两条消息是 `Triage` 内联拼法的复述,改 `triage.go` 的拼法

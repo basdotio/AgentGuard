@@ -13,6 +13,7 @@ import (
 	"github.com/basdotio/AgentGuard/internal/config"
 	"github.com/basdotio/AgentGuard/internal/judge"
 	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/redact"
 	"github.com/basdotio/AgentGuard/internal/report"
 )
 
@@ -127,7 +128,7 @@ func runLLMPreview(w io.Writer, o previewOpts) error {
 		return err
 	}
 	sink := newPreviewSink()
-	rep := previewReport{Endpoint: cfg.LLM.BaseURL, Model: judge.RequestModel(cfg.LLM.Model),
+	rep := previewReport{Endpoint: redact.Endpoint(cfg.LLM.BaseURL), Model: judge.RequestModel(cfg.LLM.Model),
 		JudgeEnabled: cfg.JudgeReady(), MaxCalls: cfg.LLM.MaxCalls, Instructions: map[string]string{}}
 	// The options each command passes, minus llm: the preview never runs the judge, it plans it.
 	if o.target != "" {

@@ -86,6 +86,9 @@ aguard llm preview ./some-skill         # --llm 对它会发什么;什么都不�
 远程端点必须是 https;明文 http 只对本机上的模型放行。
 判官只跟同一个源(scheme、主机、端口都和配置的一样)里的重定向。指向别处的重定向不跟,那边什么都收不到:这次调用失败,
 `aguard llm test` 会说端点想把请求转到哪里,扫描时则是一条 `LLM-000` note。
+aguard 展示端点的每一处——报告里的 `judge.endpoint`、`LLM-002` note、报错、`llm status`、`llm setup`、`llm test`、
+`llm preview`——端点里的用户名和密码(`https://user:pass@host`)、每个 query 值和 fragment 都显示成 `<REDACTED>`;
+scheme、主机、端口、路径和 query 的键名保留。请求用的仍是写在配置里的原样 URL。
 
 `setup` 写 `~/.config/aguard/config.yaml`(或 `$XDG_CONFIG_HOME/aguard/…`),不传 `--config` 时所有命令都读它;
 密钥存在旁边的 `llm.key`,权限 0600。在 Claude Code 里,`/aguard-llm` 用对话走同样几步。
@@ -398,7 +401,7 @@ em 空格(U+2003)、不换行空格和 tab 一样折叠,所以用它们垫开的
 to add`、`… and added K advisory leads`,或 `LLM judge did not run: <原因>` —— 并且 "LLM judge leads"
 那一节即使为空也会出现,里面就是这一行。有回复用到了"提前合上"的修补时,这一行在失败数旁边写出几个
 (`(0 failed, 0 skipped, 1 repaired, 2 re-asked)`);一个都没有时和以前一样。JSON 里对应 `judge` 字段(`ran`、`reason`、
-`artifacts`、`calls`、`failed`、`skipped`、`repaired`、`reasked`——和前两个一样总是出现——`findings`、`endpoint`,端点拒收温度字段时还有 `temperature_omitted`),外加成本:`triage_calls`(`calls` 里属于 triage 的部分——
+`artifacts`、`calls`、`failed`、`skipped`、`repaired`、`reasked`——和前两个一样总是出现——`findings`、`endpoint`(凭据已脱敏,见[配置](#配置)),端点拒收温度字段时还有 `temperature_omitted`),外加成本:`triage_calls`(`calls` 里属于 triage 的部分——
 triage 只问一次,判官的题问 `samples` 次)、`retries`、`prompt_tokens` / `completion_tokens`——端点没报用量时
 后两个键不出现,而不是写一个看起来像测量值的 0——以及 `cached_prompt_tokens`:端点报告从它的提示词缓存里取的那部分
 `prompt_tokens`(是子集,永远不要加到 `prompt_tokens` 上;厂商按它自己的费率计)。端点一个都没报时这个键不出现,

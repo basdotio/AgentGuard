@@ -7,6 +7,7 @@ import (
 	"github.com/basdotio/AgentGuard/internal/config"
 	"github.com/basdotio/AgentGuard/internal/judge"
 	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/redact"
 )
 
 // The judge block of a report is built here and only here, for the environment, a single target
@@ -16,13 +17,15 @@ import (
 // the client sends, and excerpt_version, for how an artifact becomes the excerpt and how a quote is
 // grounded — because the block exists exactly when --llm was requested, and a missing key should
 // mean only "older report". A configured judge adds how it is run: the model every request names
-// and the samples each question takes, both as the run will use them, and the endpoint, as before.
-// Nothing else from the llm config goes in — no key, no headers, no authority.
+// and the samples each question takes, both as the run will use them, and the endpoint, shown as
+// redact.Endpoint shows it — its userinfo, query values and fragment replaced (P-076); an endpoint
+// with none of them reads as written. Nothing else from the llm config goes in — no key, no headers,
+// no authority.
 
 // judgeConfigured starts the block for a judge configured to run over the given artifacts.
 func judgeConfigured(llm config.LLMConfig, artifacts int) *model.JudgeSummary {
 	return &model.JudgeSummary{
-		Artifacts: artifacts, Endpoint: llm.BaseURL,
+		Artifacts: artifacts, Endpoint: redact.Endpoint(llm.BaseURL),
 		PromptVersion: judge.PromptVersion(), ExcerptVersion: judge.ExcerptVersion,
 		Model: judge.ModelFor(llm.Model), Samples: judge.SamplesFor(llm.Samples),
 	}

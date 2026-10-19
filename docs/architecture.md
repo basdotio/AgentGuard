@@ -111,6 +111,9 @@ container's `.claude/rules/invariants.md` (moved out of `CLAUDE.md` 2026-09-16) 
    and `collect` — below `detect` in the import graph — calls it directly for the text its
    notes copy out of a file or a config value (an `@import` line, a plugin key, a hook event key),
    which it used to print unredacted because it could not reach `detect`.
+   The configured judge endpoint is shown through the same package (`redact.Endpoint`): its
+   userinfo, query values and fragment replaced, then `Secrets` over the result; the request
+   itself uses the URL as written (P-076).
 4. **Two scores: `Overall` is purely deterministic; `OverallEffective` carries one-way LLM
    escalation.** The one-way property is structural, not conventional:
    `OverallEffective = min(Overall, escalated)`. A successful prompt injection can therefore

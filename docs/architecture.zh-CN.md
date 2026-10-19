@@ -95,6 +95,8 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
    再截断** —— 否则跨越字节上限的 secret 会以残片形式漏出去。报告与 LLM judge 消费同一份已脱敏视图。
    实现只有一个叶子包 `internal/redact`:`detect.Redact` 委托它;`collect` 在 import 图里位于 `detect` 之下,
    它的笔记从文件正文或配置值抄来的那段(`@import` 行、插件键、hook 事件键)直接调它 —— 以前够不着 `detect`,就原样印了。
+   配置的判官端点也经同一个包展示(`redact.Endpoint`):userinfo、query 值和 fragment 换掉,再整段过 `Secrets`;
+   请求本身用写在配置里的原样 URL(P-076)。
 4. **两个分数:`Overall` 纯确定性,`OverallEffective` 含 LLM 单向升级。** 单向性**由公式结构保证**,
    不靠约定:`OverallEffective = min(Overall, 升级分)`。于是一次成功的注入只能让攻击者自己的
    artifact 更可疑 —— **攻击收益为负**。
