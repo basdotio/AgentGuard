@@ -43,27 +43,27 @@ shared by the k identical requests of one question is exactly as unguessable to 
 
 ## Done criteria
 
-- [ ] `TestRun_SamplesOfAQuestionShareOneRequest` (`internal/judge`, real `NewHTTP` over `httptest`, `samples: 3`): the
+- [x] `TestRun_SamplesOfAQuestionShareOneRequest` (`internal/judge`, real `NewHTTP` over `httptest`, `samples: 3`): the
   three request bodies of each question are byte-identical; each nonce is 32 lowercase hex digits; no two questions share a nonce
-- [ ] `TestHTTP_JudgeNonce`: `Judge` uses `Request.Nonce` when it is 32 lowercase hex digits, and draws its own when it is
+- [x] `TestHTTP_JudgeNonce`: `Judge` uses `Request.Nonce` when it is 32 lowercase hex digits, and draws its own when it is
   empty, malformed, or the request is a re-ask
-- [ ] `TestHTTP_ReaskCarriesTheRuleUnderAFreshNonce` additionally pins that, at `samples: 3`, every re-ask's nonce differs
+- [x] `TestHTTP_ReaskCarriesTheRuleUnderAFreshNonce` additionally pins that, at `samples: 3`, every re-ask's nonce differs
   from the nonce its question shares and from every other re-ask's
-- [ ] `TestSchedule_*` (table-driven, no clock, no goroutines): at one worker the dispatch order is the table order; a
+- [x] `TestSchedule_*` (table-driven, no clock, no goroutines): at one worker the dispatch order is the table order; a
   sample waits for its first while other work is ready, and goes to the front when its first finishes; with more free
   workers than ready work, a waiting sample is released at once (the earliest question first), so a run with
   `concurrency` ≥ its call count dispatches every call before any finishes; a first that failed releases its samples like
   one that answered; triage tasks and `samples: 1` questions never wait
-- [ ] `TestRun_FewQuestionsAreNotSerialized`: a stub that answers only once every planned call is in flight (bounded
+- [x] `TestRun_FewQuestionsAreNotSerialized`: a stub that answers only once every planned call is in flight (bounded
   wait) completes a `samples: 3` skill run with `concurrency` ≥ the call count
-- [ ] Reverse: `TestRun_ConcurrencyDoesNotChangeOutput`, `TestRun_DeadlineSkipsAreReported`,
+- [x] Reverse: `TestRun_ConcurrencyDoesNotChangeOutput`, `TestRun_DeadlineSkipsAreReported`,
   `TestRun_ProgressIsReportedAndSerialized` and every `Concurrency: 1` test that scripts replies in call order pass unchanged;
   `aguard llm preview --json` on a fixed fixture is byte-identical before and after, and `judge-prompt=` / `judge-excerpt=`
   in `aguard version` do not move
-- [ ] Measured on the pilot's 20 skills with the final build: `cached_prompt_tokens` share, skills with a hit, findings, and
+- [x] Measured on the pilot's 20 skills with the final build: `cached_prompt_tokens` share, skills with a hit, findings, and
   the median wall time of one `check` against the 11.7 s baseline
-- [ ] Docs: `docs/llm-judge.md` / `.zh-CN.md`, `docs/architecture.md` / `.zh-CN.md`, spec §5.2, `.claude/rules/judge.md`
-- [ ] `make verify` green with `go version` go1.23.5 and no toolchain switch; `head -3 go.mod` second line `go 1.23.5`
+- [x] Docs: `docs/llm-judge.md` / `.zh-CN.md`, `docs/architecture.md` / `.zh-CN.md`, spec §5.2, `.claude/rules/judge.md`
+- [x] `make verify` green with `go version` go1.23.5 and no toolchain switch; `head -3 go.mod` second line `go 1.23.5`
 
 ## Out of scope
 
@@ -131,5 +131,12 @@ shared by the k identical requests of one question is exactly as unguessable to 
 ```
 Merged: PR <number> (<date>; find the sha with git log --grep P-080 after the merge)
 Released: vX.Y.Z (fill in after stage 5)
-Evidence:
+Evidence: TestRun_SamplesOfAQuestionShareOneRequest (internal/judge/dispatch_test.go): samples 3, concurrency 4, 9 calls → 3 nonces, each on 3 byte-identical request bodies, all 32 lowercase hex
+Evidence: TestHTTP_JudgeNonce (internal/judge/nonce_test.go): a well-formed Request.Nonce fences both messages; empty, short, upper-case, non-hex, fence-character and re-ask cases each draw a fresh one
+Evidence: TestHTTP_ReaskCarriesTheRuleUnderAFreshNonce now at samples 3: 18 calls, 9 re-asks; each question's three first calls share its nonce, all 9 repeats carry nonces of their own
+Evidence: TestSchedule_DispatchQueue, 6 cases: one worker = table order; a sample waits while other work is ready; free workers never wait; the tail releases what waits; a failed first releases; triage and single questions never wait. TestRunTasks_NoncePerQuestion: one nonce per group, none on triage, the caller's table untouched
+Evidence: TestRun_FewQuestionsAreNotSerialized: the stub answers only once all 9 calls are in flight → 9 calls, 0 failed. Mutation (the idle-worker release removed): it fails after its 5 s bound, as do two TestSchedule cases
+Evidence: reverse — TestRun_ConcurrencyDoesNotChangeOutput, TestRun_DeadlineSkipsAreReported, TestRun_ProgressIsReportedAndSerialized and every Concurrency: 1 scripted test unchanged and green; llm preview --json on a corpus skill: 19,661 bytes, cmp identical between main and this branch; judge-prompt=b851dfd5412b, judge-excerpt=9 on both
+Evidence: measured, 20 random benign skills (seed 2026), gpt-4.1-mini-2025-04-14, samples 3, concurrency 8, run side by side with main: 197 calls each, 0 failed; cached_prompt_tokens 0 → 148,736 of 334,107 (44.5%); 18 of 20 skills with a hit; median wall time of one check 12.8 s (main) → 12.2 s. The experimental build that always waited and sent prompt_cache_key: 45.8%, 21.7 s
+Evidence: make verify: all gates passed; go version go1.23.5 darwin/arm64, no toolchain switch; go.mod line 3 "go 1.23.5"
 ```
