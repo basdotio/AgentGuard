@@ -36,10 +36,10 @@ func newNonce() (string, error) {
 // model, e.g. Ollama at http://localhost:11434/v1). The API key, when present, comes from
 // an env var (config.APIKey) — never from disk.
 type HTTPClient struct {
-	baseURL string
-	apiKey  string
-	model   string
-	http    *http.Client
+	url    string // where every request is sent: chatURL of the configured base_url (P-078)
+	apiKey string
+	model  string
+	http   *http.Client
 
 	// Token counters, reported by the endpoint. Atomic because a run is concurrent. They are
 	// telemetry only: nothing here can reach a finding or the score.
@@ -86,10 +86,10 @@ func NewHTTP(baseURL, apiKey, model string, httpClient *http.Client) *HTTPClient
 		httpClient = &http.Client{Transport: Transport, CheckRedirect: sameOriginOnly}
 	}
 	return &HTTPClient{
-		baseURL: strings.TrimRight(baseURL, "/"),
-		apiKey:  apiKey,
-		model:   RequestModel(model),
-		http:    httpClient,
+		url:    chatURL(baseURL),
+		apiKey: apiKey,
+		model:  RequestModel(model),
+		http:   httpClient,
 	}
 }
 
@@ -211,7 +211,7 @@ func (c *HTTPClient) chatOnce(ctx context.Context, system, user string, temperat
 	}); err != nil {
 		return "", sentTemperature, fmt.Errorf("marshal judge request: %w", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/chat/completions", bytes.NewReader(body.Bytes()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.url, bytes.NewReader(body.Bytes()))
 	if err != nil {
 		return "", sentTemperature, fmt.Errorf("build judge request: %w", shownURL(err))
 	}
