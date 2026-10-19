@@ -16,7 +16,7 @@ import (
 // payload is the same every time.
 type PlannedCall struct {
 	Artifact int    // index into the artifacts given to Plan
-	Pass     string // intent, injection, deobfuscation, collusion, capability, mcp-config, triage
+	Pass     string // task.pass(): intent, injection, result, deobfuscation, collusion, capability, mcp-config, server, triage
 	Rule     string // the rule its verdict would carry; "" for triage, which yields labels
 	// Instruction is the system message's task text. The barrier rule that follows it in the real
 	// message names the call's nonce, which is drawn per call and so cannot be shown in advance.
@@ -75,7 +75,7 @@ func sameQuestion(a, b task) bool {
 func plannedCall(t task, notSent int) PlannedCall {
 	if t.kind == taskTriage {
 		items, left := triageSent(t.items)
-		c := PlannedCall{Artifact: t.artifact, Pass: "triage", Instruction: triageTask,
+		c := PlannedCall{Artifact: t.artifact, Pass: t.pass(), Instruction: triageTask,
 			Calls: 1, NotSent: notSent, Payload: triagePayload(items)}
 		if left > 0 {
 			c.Shortened = fmt.Sprintf("%d static finding(s) past the first %d not sent", left, maxTriageItems)
@@ -83,7 +83,7 @@ func plannedCall(t task, notSent int) PlannedCall {
 		return c
 	}
 	info := modeInfo(t.req.Mode)
-	return PlannedCall{Artifact: t.artifact, Pass: info.pass, Rule: info.rule, Instruction: modeTask(t.req.Mode),
+	return PlannedCall{Artifact: t.artifact, Pass: t.pass(), Rule: info.rule, Instruction: modeTask(t.req.Mode),
 		Temperature: t.req.Temperature, Calls: 1, NotSent: notSent, Payload: judgePayload(t.req),
 		Sources: sources(t.units), Shortened: t.shortened}
 }

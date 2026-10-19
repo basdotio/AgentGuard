@@ -40,6 +40,19 @@ type JudgeUsage struct {
 	// cache (P-071). Written only beside a prompt total, and only when above 0.
 	CachedPromptTokens int `yaml:"cached_prompt_tokens,omitempty"`
 	TokensUnreported   int `yaml:"tokens_unreported_samples,omitempty"`
+	// UsageByPass sums each pass over the samples (P-072), and so adds up to the totals above. It is
+	// written only when every sample that made a call carried a breakdown, and its token counts only
+	// beside the run's token totals: a sum over part of the samples is not the run's.
+	UsageByPass map[string]PassUsage `yaml:"usage_by_pass,omitempty"`
+}
+
+// PassUsage is one pass's share of the run's judge usage.
+type PassUsage struct {
+	Calls              int `yaml:"calls"`
+	Reasked            int `yaml:"reasked,omitempty"`
+	PromptTokens       int `yaml:"prompt_tokens,omitempty"`
+	CompletionTokens   int `yaml:"completion_tokens,omitempty"`
+	CachedPromptTokens int `yaml:"cached_prompt_tokens,omitempty"`
 }
 
 // SumJudgeUsage totals the ledger's judge usage, or returns nil when no row carries any — every
@@ -92,8 +105,40 @@ func SumJudgeUsage(rows []ledger.Row) *JudgeUsage {
 		t.PromptTokens, t.CompletionTokens = &prompt, &completion
 		t.CachedPromptTokens = cached // a subset of the prompt total, so never without one
 	}
+	t.UsageByPass = sumUsageByPass(rows, t.TokensUnreported == 0)
 	t.Basis, t.BasisNote = usageBasis(t.ReportedSamples, t.DerivedSamples)
 	return &t
+}
+
+// sumUsageByPass adds up the rows' usage by pass, or returns nil when there is nothing to add or some
+// sample made calls without a breakdown. withTokens is false when the run has no token totals; the
+// per-pass sums then carry calls and re-asks only.
+func sumUsageByPass(rows []ledger.Row, withTokens bool) map[string]PassUsage {
+	out := map[string]PassUsage{}
+	for _, r := range rows {
+		u := r.JudgeUsage
+		if u == nil {
+			continue
+		}
+		if u.Calls > 0 && len(u.UsageByPass) == 0 {
+			return nil
+		}
+		for pass, p := range u.UsageByPass {
+			s := out[pass]
+			s.Calls += p.Calls
+			s.Reasked += p.Reasked
+			if withTokens {
+				s.PromptTokens += p.PromptTokens
+				s.CompletionTokens += p.CompletionTokens
+				s.CachedPromptTokens += p.CachedPromptTokens
+			}
+			out[pass] = s
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
 
 func usageBasis(reported, derived int) (string, string) {

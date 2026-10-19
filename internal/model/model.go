@@ -615,6 +615,11 @@ type JudgeSummary struct {
 	// (P-071). A subset of PromptTokens, never added to it; absent when the endpoint reported none
 	// or does not report the field — the two look the same.
 	CachedPromptTokens int `json:"cached_prompt_tokens,omitempty"`
+	// UsageByPass breaks Calls, Reasked and the three token totals down by the pass that made the
+	// calls, keyed by the name `aguard llm preview` gives it (intent, injection, result,
+	// deobfuscation, collusion, capability, mcp-config, server, triage). Its entries sum exactly to
+	// the totals beside it; absent when no call was made (P-072).
+	UsageByPass map[string]PassUsage `json:"usage_by_pass,omitempty"`
 	// Which judge produced the LLM findings (P-031). tool_version names a commit, which moves when
 	// the judge did not and stays one suffix apart when the excerpts changed. PromptVersion
 	// (judge.PromptVersion, computed) and ExcerptVersion (judge.ExcerptVersion, bumped by hand) name
@@ -626,6 +631,20 @@ type JudgeSummary struct {
 	ExcerptVersion int    `json:"excerpt_version,omitempty"`
 	Model          string `json:"model,omitempty"`
 	Samples        int    `json:"samples,omitempty"`
+}
+
+// PassUsage is what one pass of the judge used in a run (P-072): the calls it issued — a retry is the
+// same call, a re-ask (P-069) is counted in Reasked beside it — and the tokens the endpoint reported
+// for them, every reply counted under the pass that asked the question. The entries of a block's
+// usage_by_pass sum exactly to its calls, reasked and token totals. As in the block, the calls and
+// re-asks are the judge's own counts and always present; the tokens are the endpoint's, absent when
+// it reported none. Token counts, never a cost: their price depends on the vendor.
+type PassUsage struct {
+	Calls              int `json:"calls"`
+	Reasked            int `json:"reasked"`
+	PromptTokens       int `json:"prompt_tokens,omitempty"`
+	CompletionTokens   int `json:"completion_tokens,omitempty"`
+	CachedPromptTokens int `json:"cached_prompt_tokens,omitempty"`
 }
 
 // Connector is the tool list a remote MCP server advertised, as cached by Claude Desktop.

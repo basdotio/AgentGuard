@@ -405,7 +405,12 @@ to add`、`… and added K advisory leads`,或 `LLM judge did not run: <原因>`
 triage 只问一次,判官的题问 `samples` 次)、`retries`、`prompt_tokens` / `completion_tokens`——端点没报用量时
 后两个键不出现,而不是写一个看起来像测量值的 0——以及 `cached_prompt_tokens`:端点报告从它的提示词缓存里取的那部分
 `prompt_tokens`(是子集,永远不要加到 `prompt_tokens` 上;厂商按它自己的费率计)。端点一个都没报时这个键不出现,
-不报这个字段的端点也长这样:两者分不开。不开 `--llm` 这些一律不出现。以前"判官跑了没发现"和"判官
+不报这个字段的端点也长这样:两者分不开。`usage_by_pass` 把这些计数按发出调用的那道题拆开(P-072):每一趟被调用过的
+各一项,键是 `aguard llm preview` 给这一趟的名字 —— `intent`、`injection`、`result`、`deobfuscation`、`collusion`、
+`capability`、`mcp-config`、`server`、`triage` —— 每项有 `calls`、`reasked` 和三个 token 数(端点没报时同上不出现)。
+重试的调用和重问的调用都记在问这道题的那一趟里,端点报了用量的每一个回复都算进去,所以各项相加**恰好**等于块上的
+`calls`、`reasked` 和三个 token 总数;一次调用都没发的块没有这个键。它们是端点报的 token 数,不是费用:一趟的 token
+值多少取决于厂商,两个模型同一趟的数也不能比。stderr 那一行仍只印总数,分项在 JSON 里。不开 `--llm` 这些一律不出现。以前"判官跑了没发现"和"判官
 没跑"在报告上长得一样,而这正是读一份干净报告的人最需要分清的一件事。
 
 每个 `judge` 块还说明**是哪一个判官**。`prompt_version` 是算出来的:客户端可能发出的每一种请求的完整请求体
@@ -435,15 +440,17 @@ Downloads 候选项一行(`"section":"downloads"`,就是那个块对各项的合
 `time`(RFC 3339,UTC)、`command`、`tool_version`、`rules_version`、`prompt_version`、`excerpt_version`、`model`、
 `endpoint`、`samples`(`llm test` 没有),以及块里的计数 —— `calls`、`failed`、`skipped`、`retries`、`triage_calls`、
 `repaired`、`reasked`、为真时的 `temperature_omitted`、端点报了用量时的 `prompt_tokens` / `completion_tokens`、
-端点报了缓存命中时的 `cached_prompt_tokens`(P-071)。值就是
+端点报了缓存命中时的 `cached_prompt_tokens`(P-071),以及 `usage_by_pass`(P-072;`llm test` 那一行没有,它的一次调用
+是连通性检查,不属于判官的任何一趟)。值就是
 块里那份,所以一行等于同一次运行的 `judge` 块。`endpoint` 只写源(`scheme://host[:port]`):`base_url` 可能以
 `user:pass@` 或 query 里的 key 带着凭据,两样都不写。被扫内容一样都不写:没有 artifact 名、路径、发现、摘录或原因。
 
 不设或设为空,哪儿都不写,所有输出和以前一样。文件以 0600 创建(已存在的保留原权限,只追加)。路径是符号链接、
 目录或特殊文件,或者它的父路径不是目录,就拒写并在 stderr 印一行警告 —— `--quiet` 下也印,因为一条没人告诉你的缺失记录
 正是这个日志要防的事 —— 写失败永远不改退出码、不改报告。每行是 `O_APPEND` 描述符上的一次 `write`,所以并行的运行在
-本地文件系统上追加的都是整行;POSIX 只对不超过 `PIPE_BUF`(macOS 上 512 字节)的管道写入作这个保证,一行通常不到
-500 字节,模型名或主机名很长时会超过;网络文件系统可能不遵守 `O_APPEND`。它只写本地文件,不连任何地方(不变量 #1)。
+本地文件系统上追加的都是整行;POSIX 只对不超过 `PIPE_BUF`(macOS 上 512 字节,Linux 上 4096)的管道写入作这个保证,
+而一行通常超过 512 字节:不算 `usage_by_pass` 约 400 字节,每一趟再加约 100,四趟判过的一个 skill 约 800,九趟都在且
+计数很大时约 1600;网络文件系统可能不遵守 `O_APPEND`。它只写本地文件,不连任何地方(不变量 #1)。
 
 这不是费用记录。工具不算钱:一行只有判官自己记的计数和端点报告的 token,端点不报用量时 token 两个键不出现。
 

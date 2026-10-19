@@ -240,3 +240,41 @@ func TestJudgeUsage_RepairedIsCarriedWhenAny(t *testing.T) {
 		}
 	}
 }
+
+// TestJudgeUsage_ModelAndUsageByPassReachTheRow (P-072): the row names the model the binary printed
+// and carries the judge block's usage by pass as printed, so a row copied or folded out of its run
+// still says which model answered and which question spent what. A summary without either key
+// folds into a row without them, byte for byte what it was.
+func TestJudgeUsage_ModelAndUsageByPassReachTheRow(t *testing.T) {
+	const byPass = `"usage_by_pass":{"injection":{"calls":6,"reasked":1,"prompt_tokens":2400,"completion_tokens":150},` +
+		`"intent":{"calls":6,"reasked":0,"prompt_tokens":2600,"completion_tokens":140,"cached_prompt_tokens":512},` +
+		`"triage":{"calls":1,"reasked":0,"prompt_tokens":200,"completion_tokens":20}}`
+	doc := strings.Replace(budgetCut, `"completion_tokens":310}`, `"completion_tokens":310,"model":"gpt-4.1-mini",`+byPass+`}`, 1)
+	if doc == budgetCut {
+		t.Fatal("fixture: the replacement did not apply")
+	}
+	got := foldDoc(t, doc)
+	want := &ledger.JudgeUsage{
+		Basis: ledger.UsageReported, Model: "gpt-4.1-mini", Calls: 13, Failed: 0, Skipped: 1, TriageCalls: 1,
+		Retries: intp(2), PromptTokens: intp(5200), CompletionTokens: intp(310),
+		UsageByPass: map[string]ledger.PassUsage{
+			"injection": {Calls: 6, Reasked: 1, PromptTokens: 2400, CompletionTokens: 150},
+			"intent":    {Calls: 6, PromptTokens: 2600, CompletionTokens: 140, CachedPromptTokens: 512},
+			"triage":    {Calls: 1, PromptTokens: 200, CompletionTokens: 20},
+		},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("judge usage:\n got %s\nwant %s", show(got), show(want))
+	}
+	row := show(got)
+	for _, s := range []string{`"model":"gpt-4.1-mini"`, `"usage_by_pass":{"injection":{"calls":6,"reasked":1,"prompt_tokens":2400,"completion_tokens":150}`} {
+		if !strings.Contains(row, s) {
+			t.Errorf("ledger row %s does not carry %s", row, s)
+		}
+	}
+
+	// Reverse: a summary from a binary that printed neither key.
+	if old := show(foldDoc(t, budgetCut)); strings.Contains(old, "model") || strings.Contains(old, "usage_by_pass") {
+		t.Errorf("a summary without model or usage_by_pass folds into a row that carries them: %s", old)
+	}
+}

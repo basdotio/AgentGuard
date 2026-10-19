@@ -1080,6 +1080,11 @@ func TestScanInbox_JudgeCostAddsUp(t *testing.T) {
 	if j.TriageCalls != 2 {
 		t.Errorf("triage_calls = %d, want 2 (one per item, each with static findings)", j.TriageCalls)
 	}
+	// P-072: the items' usage by pass is added up pass by pass, and still sums to the block's totals.
+	assertUsageByPassAddsUp(t, j)
+	if tr := j.UsageByPass["triage"]; tr.Calls != 2 || tr.PromptTokens != 200 {
+		t.Errorf("triage entry %+v; want both items' triage calls, 2 and 200 prompt tokens", tr)
+	}
 }
 
 // TestCheckTarget_ZipIsCheckedAsItsFolder: `aguard check foo.zip` extracts under the archive caps
