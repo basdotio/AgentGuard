@@ -51,23 +51,23 @@ expression unchanged.
 
 ## Done criteria
 
-- [ ] `TestHTTP_QueryBaseURLKeepsPathAndQuery` (`internal/judge/chaturl_test.go`): for `base_url`
+- [x] `TestHTTP_QueryBaseURLKeepsPathAndQuery` (`internal/judge/chaturl_test.go`): for `base_url`
   `…/v1?api-version=2024-01-01&api-key=k123` the stub receives path `/v1/chat/completions` and query
   `api-version=2024-01-01&api-key=k123`, for both `Judge` and `Ping` (on `main`: path `/v1`); the same for a trailing
   slash before the query, a query on the root, a fragment, query plus fragment, and an escaped query value
-- [ ] `TestLLMTest_QueryBaseURLReachesChatCompletions` (`cmd/aguard`): `llm test` with that `base_url` reaches
+- [x] `TestLLMTest_QueryBaseURLReachesChatCompletions` (`cmd/aguard`): `llm test` with that `base_url` reaches
   `/v1/chat/completions` with the query as written (on `main`: path `/v1`)
-- [ ] Reverse assertion: `TestHTTP_PlainBaseURLRequestLineUnchanged` — for base_urls without query or fragment (root,
+- [x] Reverse assertion: `TestHTTP_PlainBaseURLRequestLineUnchanged` — for base_urls without query or fragment (root,
   `/`, `/v1`, `/v1/`, `/v1//`, a two-segment path, an escaped path) the request target received is byte-identical to
   the old expression's; `TestHTTP_PresetURLsUnchanged` — every preset and the default local endpoint are sent to exactly
   the old URL string. Both green before and after the fix
-- [ ] `FuzzChatURL`: for any input without `?` and `#`, and any input that does not parse, the URL is the old one byte for
+- [x] `FuzzChatURL`: for any input without `?` and `#`, and any input that does not parse, the URL is the old one byte for
   byte; for an http(s) `base_url` with either, scheme, userinfo, host and query are kept, the path is the trimmed base
   path plus `/chat/completions`, and there is no fragment
-- [ ] The redirect tests (`internal/judge/redirect_test.go`, `cmd/aguard/judge_redirect_test.go`) and the zero-dial tests
+- [x] The redirect tests (`internal/judge/redirect_test.go`, `cmd/aguard/judge_redirect_test.go`) and the zero-dial tests
   pass with their files unchanged
-- [ ] `docs/llm-judge.md` and `docs/llm-judge.zh-CN.md` say how a query and a fragment in `base_url` are used
-- [ ] `make verify` green under `go version go1.23.5` with no toolchain switch; `head -3 go.mod` line 2 `go 1.23.5`
+- [x] `docs/llm-judge.md` and `docs/llm-judge.zh-CN.md` say how a query and a fragment in `base_url` are used
+- [x] `make verify` green under `go version go1.23.5` with no toolchain switch; `head -3 go.mod` line 2 `go 1.23.5`
 
 ## Out of scope
 
@@ -109,3 +109,15 @@ expression unchanged.
    before any of the three outbound paths builds a request, and a caller that skips the check still gets the same
    `build judge request` error it got before.
    **Decided (2026-10-19)**: as recommended.
+
+## Done
+
+```
+Merged: PR pending (find the sha with git log --grep P-078 after the merge)
+Evidence: TestHTTP_QueryBaseURLKeepsPathAndQuery (internal/judge/chaturl_test.go): base_url …/v1?api-version=2024-01-01&api-key=k123 → Judge and Ping received path /v1, query "api-version=2024-01-01&api-key=k123/chat/completions" at the tests commit; path /v1/chat/completions, query "api-version=2024-01-01&api-key=k123" after the fix; all six rows red → green
+Evidence: TestLLMTest_QueryBaseURLReachesChatCompletions (cmd/aguard/endpoint_query_test.go): llm test reached path "/v1" at the tests commit, /v1/chat/completions with the query as written after
+Evidence: reverse — TestHTTP_PlainBaseURLRequestLineUnchanged (7 base_urls without query or fragment) and TestHTTP_PresetURLsUnchanged (default local endpoint + deepseek, openai, qwen) green at the tests commit and after; dropping the trailing-slash trim turns them and FuzzChatURL red (11 FAIL lines)
+Evidence: FuzzChatURL: 60 s, ~3.8M executions, no failure after one oracle fix (a path net/url re-encodes is compared as written; that input is a seed)
+Evidence: redirect_test.go, judge_redirect_test.go, zero_dial_test.go, zero_dial_source_test.go unchanged; TestNewHTTP_RefusesCrossOriginRedirects and the TestZeroDial_* tests pass
+Evidence: make verify: all gates passed (go version go1.23.5 darwin/arm64, no toolchain switch; go.mod line 2 go 1.23.5)
+```
