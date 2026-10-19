@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/basdotio/AgentGuard/internal/redact"
 	"github.com/basdotio/AgentGuard/internal/safeio"
 	"gopkg.in/yaml.v3"
 )
@@ -455,10 +456,14 @@ func WriteKey(path, key string) error {
 // unless the host is this machine (localhost / 127.0.0.1 / ::1), where a local model listens on
 // plain http and nothing crosses a wire. Setup, `llm test` and the judge all call it, so the
 // refusal happens before the first request, with the reason in hand.
+//
+// Each refusal quotes the base_url as redact.Endpoint shows it (P-076): the message reaches the
+// terminal and the report, and a URL that fails here can still carry a password or a query key.
 func (c LLMConfig) CheckEndpoint() error {
+	shown := redact.Endpoint(c.BaseURL)
 	u, err := url.Parse(c.BaseURL)
 	if err != nil || u.Host == "" {
-		return fmt.Errorf("llm.base_url %q is not a valid URL", c.BaseURL)
+		return fmt.Errorf("llm.base_url %q is not a valid URL", shown)
 	}
 	switch u.Scheme {
 	case "https":
@@ -471,8 +476,8 @@ func (c LLMConfig) CheckEndpoint() error {
 		if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
 			return nil
 		}
-		return fmt.Errorf("llm.base_url %s is plain http to a remote host: the API key and the scanned excerpts would cross the network unencrypted; use https", c.BaseURL)
+		return fmt.Errorf("llm.base_url %s is plain http to a remote host: the API key and the scanned excerpts would cross the network unencrypted; use https", shown)
 	default:
-		return fmt.Errorf("llm.base_url %q: scheme must be https (or http to this machine)", c.BaseURL)
+		return fmt.Errorf("llm.base_url %q: scheme must be https (or http to this machine)", shown)
 	}
 }

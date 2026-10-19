@@ -11,11 +11,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/basdotio/AgentGuard/internal/redact"
 )
 
 // newNonce returns an unpredictable barrier token (spec §5.2). crypto/rand failure is
@@ -210,7 +213,7 @@ func (c *HTTPClient) chatOnce(ctx context.Context, system, user string, temperat
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/chat/completions", bytes.NewReader(body.Bytes()))
 	if err != nil {
-		return "", sentTemperature, fmt.Errorf("build judge request: %w", err)
+		return "", sentTemperature, fmt.Errorf("build judge request: %w", shownURL(err))
 	}
 	req.Header.Set("Content-Type", "application/json")
 	if c.apiKey != "" {
@@ -218,6 +221,7 @@ func (c *HTTPClient) chatOnce(ctx context.Context, system, user string, temperat
 	}
 	resp, err := c.http.Do(req)
 	if err != nil {
+		err = shownURL(err)
 		// A redirect out of the configured origin is the endpoint's answer, and a final one:
 		// retrying only sends the same excerpts to it again, to be refused again (P-023).
 		var refused *redirectRefused
@@ -258,6 +262,22 @@ func (c *HTTPClient) chatOnce(ctx context.Context, system, user string, temperat
 		return "", sentTemperature, fmt.Errorf("judge returned no choices")
 	}
 	return cr.Choices[0].Message.Content, sentTemperature, nil
+}
+
+// shownURL is err with the URL net/http names in it (`Post "<url>": …`, `parse "<url>": …`) shown as
+// redact.Endpoint shows it (P-076). net/http hides the password there and nothing else — the user
+// name and the query stay — and this error is what an LLM-000 note and `llm test` print. The cause
+// stays wrapped, so errors.Is/As and the retry classification see what they saw before; the
+// request itself was sent with the URL as configured.
+//
+// Both callers get the *url.Error itself (http.Client.Do, url.Parse via http.NewRequest), so only
+// that shape is rewritten; anything else is returned as it is.
+func shownURL(err error) error {
+	ue, ok := err.(*url.Error)
+	if !ok {
+		return err
+	}
+	return &url.Error{Op: ue.Op, URL: redact.Endpoint(ue.URL), Err: ue.Err}
 }
 
 // retryAfter parses a Retry-After header (delta-seconds or HTTP-date). An unparsable or

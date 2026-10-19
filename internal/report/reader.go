@@ -3,12 +3,12 @@ package report
 
 import (
 	"fmt"
-	"net/url"
 	"path/filepath"
 	"strings"
 
 	"github.com/basdotio/AgentGuard/internal/cmdline"
 	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/redact"
 	"github.com/basdotio/AgentGuard/internal/score"
 )
 
@@ -359,8 +359,10 @@ func disclosureOf(r model.ScanResult) disclosure {
 	if r.Judge == nil {
 		return d
 	}
-	if u, err := url.Parse(r.Judge.Endpoint); err == nil && u.Host != "" {
-		d.Host = u.Host
+	// judge.endpoint is shown with its credentials replaced (redact.Endpoint, P-076), and
+	// `<REDACTED>@` is no userinfo url.Parse accepts: the host comes from the same split.
+	if h := redact.EndpointHost(r.Judge.Endpoint); h != "" {
+		d.Host = h
 	}
 	d.Calls, d.Sent = r.Judge.Calls, r.Judge.Ran && r.Judge.Calls > 0
 	return d

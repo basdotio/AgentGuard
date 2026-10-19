@@ -12,6 +12,7 @@ import (
 	"github.com/basdotio/AgentGuard/internal/config"
 	"github.com/basdotio/AgentGuard/internal/inbox"
 	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/redact"
 )
 
 // The Downloads scan: `aguard scan` also looks where downloads land for agent-shaped things
@@ -77,7 +78,7 @@ func scanInbox(dir string, explicit bool, o scanOpts) (*model.InboxReport, error
 			if !isLoopbackEndpoint(c.LLM.BaseURL) {
 				rep.Notes = append(rep.Notes, model.Finding{RuleID: "LLM-002", Dimension: 0, Severity: model.SevMedium, Source: model.SrcLLM,
 					Title: "LLM judge endpoint is not local",
-					Why:   fmt.Sprintf("base_url %q is not loopback: best-effort-redacted excerpts of the Downloads items above are sent off this machine.", c.LLM.BaseURL)})
+					Why:   fmt.Sprintf("base_url %q is not loopback: best-effort-redacted excerpts of the Downloads items above are sent off this machine.", redact.Endpoint(c.LLM.BaseURL))})
 			}
 		}
 	}

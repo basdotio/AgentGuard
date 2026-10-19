@@ -17,6 +17,7 @@ import (
 	"github.com/basdotio/AgentGuard/internal/detect"
 	"github.com/basdotio/AgentGuard/internal/judge"
 	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/AgentGuard/internal/redact"
 )
 
 // `aguard llm` — set up, test and inspect the optional LLM judge without editing YAML.
@@ -190,10 +191,11 @@ func runLLMSetup(w io.Writer, cfgPath string, o llmSetupOpts) error {
 		return err
 	}
 	fmt.Fprintf(w, "config written to %s\n", cfgPath)
-	fmt.Fprintf(w, "endpoint %s · model %s\n", llm.BaseURL, llm.Model)
+	shown := redact.Endpoint(llm.BaseURL)
+	fmt.Fprintf(w, "endpoint %s · model %s\n", shown, llm.Model)
 	fmt.Fprintf(w, "\nWith `aguard scan --llm`, redacted excerpts of your skills, hooks and config are sent to %s for analysis. "+
 		"Raw secrets are redacted first; the judge can only add findings or raise the risk — it never removes a finding or makes a result look safer.\n"+
-		"Next: `aguard llm test` to confirm the endpoint answers.\n", llm.BaseURL)
+		"Next: `aguard llm test` to confirm the endpoint answers.\n", shown)
 	return nil
 }
 
@@ -223,9 +225,9 @@ func runLLMTest(w io.Writer, cfgPath string) error {
 	took, err := client.Ping(ctx)
 	recordJudgeUsage(os.Stderr, "llm test", version, detect.RulesVersion(), []usageBlock{{judge: llmTestUsage(cfg.LLM, client, err)}})
 	if err != nil {
-		return fmt.Errorf("%s did not answer for model %s: %w", cfg.LLM.BaseURL, cfg.LLM.Model, err)
+		return fmt.Errorf("%s did not answer for model %s: %w", redact.Endpoint(cfg.LLM.BaseURL), cfg.LLM.Model, err)
 	}
-	fmt.Fprintf(w, "OK · %s answered in %s via %s (%s)\n", cfg.LLM.Model, took.Round(1e6), cfg.LLM.BaseURL, tokensInOut(client.Usage()))
+	fmt.Fprintf(w, "OK · %s answered in %s via %s (%s)\n", cfg.LLM.Model, took.Round(1e6), redact.Endpoint(cfg.LLM.BaseURL), tokensInOut(client.Usage()))
 	return nil
 }
 
@@ -263,7 +265,7 @@ func runLLMStatus(w io.Writer, cfgPath string) error {
 	fmt.Fprintf(w, "config:   %s\n", shown)
 	fmt.Fprintf(w, "enabled:  %t\n", cfg.LLM.Enabled)
 	fmt.Fprintf(w, "provider: %s\n", cfg.LLM.Provider)
-	fmt.Fprintf(w, "endpoint: %s\n", cfg.LLM.BaseURL)
+	fmt.Fprintf(w, "endpoint: %s\n", redact.Endpoint(cfg.LLM.BaseURL))
 	fmt.Fprintf(w, "model:    %s\n", cfg.LLM.Model)
 	fmt.Fprintf(w, "key:      %s\n", cfg.KeySource())
 	if !cfg.LLM.Enabled {

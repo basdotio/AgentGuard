@@ -26,6 +26,7 @@ import (
 	"github.com/basdotio/AgentGuard/internal/judge"
 	"github.com/basdotio/AgentGuard/internal/model"
 	"github.com/basdotio/AgentGuard/internal/permcheck"
+	"github.com/basdotio/AgentGuard/internal/redact"
 	"github.com/basdotio/AgentGuard/internal/report"
 	"github.com/basdotio/AgentGuard/internal/reputation"
 	"github.com/basdotio/AgentGuard/internal/score"
@@ -495,7 +496,7 @@ func analyze(root string, res collect.Result, o scanOpts) (model.ScanResult, err
 					RuleID: "LLM-002", Dimension: 0, Severity: model.SevMedium, Source: model.SrcLLM,
 					Title: "LLM judge endpoint is not local",
 					Why: fmt.Sprintf("base_url %q is not loopback: best-effort-redacted skill excerpts are sent off this machine.",
-						cfg.LLM.BaseURL),
+						redact.Endpoint(cfg.LLM.BaseURL)),
 				})
 			}
 			jn, js := runJudge(cfg, arts, o.home, o.quiet)
