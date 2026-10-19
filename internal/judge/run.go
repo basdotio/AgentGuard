@@ -86,6 +86,10 @@ type Stats struct {
 	// TriageCalls is the part of Calls that was triage. A judge question is asked `Samples`
 	// times and triage once, so without this split what one question costs can only be guessed.
 	TriageCalls int
+	// UsageByPass is the run's calls, re-asks and reported tokens by the pass that made them, keyed by
+	// the name `aguard llm preview` gives the pass (P-072). Its entries sum exactly to Calls, Reasked
+	// and the client's token totals; nil when no call was made.
+	UsageByPass map[string]model.PassUsage
 	Latencies   []time.Duration // one per issued call, retries included
 	// TemperatureOmitted says the endpoint refused the temperature member and the client sent the
 	// rest of the run without it (P-052): a consensus run then sampled at the model's default.
@@ -170,6 +174,7 @@ type result struct {
 	unquoted   string         // the quote that failed to ground, clipped — for the LLM-005 note
 	repaired   bool           // the reply was read only by the closed-early repair (P-034)
 	reasked    bool           // the first reply was unreadable and the question was asked once more (P-069)
+	usage      TokenUsage     // what the endpoint reported for this task's calls, retries and re-ask included (P-072)
 	// modelSeverity is the word the model wrote, clamped, and category the name it chose: both are
 	// shown in the vote list so a later run can audit the table, neither is weighed (P-041).
 	modelSeverity model.Severity
@@ -320,6 +325,7 @@ func Run(ctx context.Context, c Client, arts []model.ArtifactReport, opts Option
 		if r.reasked {
 			stats.Reasked++
 		}
+		stats.UsageByPass = addPassUsage(stats.UsageByPass, t.pass(), r)
 		stats.Latencies = append(stats.Latencies, r.latency)
 		if r.err != nil {
 			failed++
@@ -828,6 +834,7 @@ dispatch:
 func execute(ctx context.Context, c Client, t task, opts Options) result {
 	start := time.Now()
 	res := result{done: true}
+	ctx = withCallUsage(ctx, &res.usage)
 	try := func(req Request) error {
 		for attempt := 0; ; attempt++ {
 			cctx, cancel := context.WithTimeout(ctx, opts.CallTimeout)
@@ -863,6 +870,34 @@ func execute(ctx context.Context, c Client, t task, opts Options) result {
 	}
 	res.latency = time.Since(start)
 	return res
+}
+
+// pass is the name of the question a task asks: the preview's name for it (P-027), so a planned call
+// and the usage it spent are read under one name (P-072).
+func (t task) pass() string {
+	if t.kind == taskTriage {
+		return "triage"
+	}
+	return modeInfo(t.req.Mode).pass
+}
+
+// addPassUsage returns byPass with one finished task added under its pass: a call, a re-ask when
+// there was one, and what the endpoint reported for its replies. The map it is given is not changed.
+func addPassUsage(byPass map[string]model.PassUsage, pass string, r result) map[string]model.PassUsage {
+	out := make(map[string]model.PassUsage, len(byPass)+1)
+	for k, v := range byPass {
+		out[k] = v
+	}
+	u := out[pass]
+	u.Calls++
+	if r.reasked {
+		u.Reasked++
+	}
+	u.PromptTokens += r.usage.Prompt
+	u.CompletionTokens += r.usage.Completion
+	u.CachedPromptTokens += r.usage.CachedPrompt
+	out[pass] = u
+	return out
 }
 
 func isUnreadable(err error) bool {

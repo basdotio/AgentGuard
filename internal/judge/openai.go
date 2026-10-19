@@ -119,6 +119,30 @@ func (c *HTTPClient) Usage() TokenUsage {
 	}
 }
 
+// callUsageKey is the context key under which Run hands the client one call's usage counter.
+type callUsageKey struct{}
+
+// withCallUsage returns a context under which every reply the client counts is also added to u: one
+// task's calls (its retries and its re-ask included), so Run can say which pass spent what (P-072).
+// The totals above are untouched by it; u is a second copy of the same numbers, never a recount.
+// One task's calls are sequential, so u is written by one goroutine at a time.
+func withCallUsage(ctx context.Context, u *TokenUsage) context.Context {
+	return context.WithValue(ctx, callUsageKey{}, u)
+}
+
+// count adds one decoded reply's usage to the run's totals and, when the call carries a counter
+// (withCallUsage), to that call's.
+func (c *HTTPClient) count(ctx context.Context, prompt, completion, cached int64) {
+	c.promptTokens.Add(prompt)
+	c.completionTokens.Add(completion)
+	c.cachedPromptTokens.Add(cached)
+	if u, ok := ctx.Value(callUsageKey{}).(*TokenUsage); ok && u != nil {
+		u.Prompt += int(prompt)
+		u.Completion += int(completion)
+		u.CachedPrompt += int(cached)
+	}
+}
+
 type chatMessage struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
@@ -261,9 +285,7 @@ func (c *HTTPClient) chatOnce(ctx context.Context, system, user string, temperat
 	if err := json.Unmarshal(raw, &cr); err != nil {
 		return "", sentTemperature, fmt.Errorf("parse judge envelope: %w", err)
 	}
-	c.promptTokens.Add(cr.Usage.PromptTokens)
-	c.completionTokens.Add(cr.Usage.CompletionTokens)
-	c.cachedPromptTokens.Add(cr.Usage.PromptTokensDetails.CachedTokens)
+	c.count(ctx, cr.Usage.PromptTokens, cr.Usage.CompletionTokens, cr.Usage.PromptTokensDetails.CachedTokens)
 	if len(cr.Choices) == 0 {
 		return "", sentTemperature, fmt.Errorf("judge returned no choices")
 	}

@@ -628,6 +628,20 @@ type JudgeSummary struct {
 	Samples        int    `json:"samples,omitempty"`
 }
 
+// PassUsage is what one pass of the judge used in a run (P-072): the calls it issued — a retry is the
+// same call, a re-ask (P-069) is counted in Reasked beside it — and the tokens the endpoint reported
+// for them, every reply counted under the pass that asked the question. The entries of a block's
+// usage_by_pass sum exactly to its calls, reasked and token totals. As in the block, the calls and
+// re-asks are the judge's own counts and always present; the tokens are the endpoint's, absent when
+// it reported none. Token counts, never a cost: their price depends on the vendor.
+type PassUsage struct {
+	Calls              int `json:"calls"`
+	Reasked            int `json:"reasked"`
+	PromptTokens       int `json:"prompt_tokens,omitempty"`
+	CompletionTokens   int `json:"completion_tokens,omitempty"`
+	CachedPromptTokens int `json:"cached_prompt_tokens,omitempty"`
+}
+
 // Connector is the tool list a remote MCP server advertised, as cached by Claude Desktop.
 type Connector struct {
 	UUID  string
