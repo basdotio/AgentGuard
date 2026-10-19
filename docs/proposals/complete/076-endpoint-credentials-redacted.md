@@ -39,25 +39,25 @@ Every print site uses it; the request keeps the real URL.
 
 ## Done criteria
 
-- [ ] `TestEndpoint` (`internal/redact/endpoint_test.go`, new): userinfo (user and password, user only, a token as the
+- [x] `TestEndpoint` (`internal/redact/endpoint_test.go`, new): userinfo (user and password, user only, a token as the
   user), every query value, a fragment, a value-less query part, a secret-shaped path segment, a scheme-less and an
   unparseable string are redacted; scheme, host, port and path survive; idempotent. `TestEndpoint_PlainURLsUnchanged`:
   the default endpoint, the three presets and a set of credential-free self-hosted forms come back byte-identical.
   `TestEndpointHost`: the host is found in a raw and in a displayed endpoint
-- [ ] A test per print site, each with `base_url` carrying userinfo and a query secret (`alice:s3cret@`, `?api-key=k123`):
+- [x] A test per print site, each with `base_url` carrying userinfo and a query secret (`alice:s3cret@`, `?api-key=k123`):
   the output contains neither `s3cret`, `k123` nor `alice`, and does contain the host — JSON `judge.endpoint`, the
   `LLM-002` note in JSON, Markdown and terminal, the `LLM-000` note and `judge.reason` from a refused endpoint, each
   `CheckEndpoint` error (invalid, plain http, wrong scheme), the `LLM-000` note from a failed call, `llm status`,
   `llm setup`, `llm test` (success and failure), `llm preview` text and JSON
-- [ ] The Markdown and terminal disclosure still name the host (`Sent to llm.invalid: …`) from the redacted
+- [x] The Markdown and terminal disclosure still name the host (`Sent to llm.invalid: …`) from the redacted
   `judge.endpoint`
-- [ ] **Reverse assertion**: the request still goes to the configured URL with its credentials — a stub observes the
+- [x] **Reverse assertion**: the request still goes to the configured URL with its credentials — a stub observes the
   Basic auth header `alice:s3cret` (no key configured) and `k123` in the query; with a key the Bearer header as before
-- [ ] **Reverse assertion**: an endpoint without credentials prints exactly as before — the JSON `judge` block of a run
+- [x] **Reverse assertion**: an endpoint without credentials prints exactly as before — the JSON `judge` block of a run
   against a plain loopback endpoint is byte-identical to what `origin/main` writes, and `TestLLMCommands_SetupTestStatus`,
   `TestCheckEndpoint`, `TestE2E_JudgeRedirectIsRefusedAndReported`, `TestLLMTest_RedirectIsRefused` and the zero-dial
   tests are green without a character changed
-- [ ] `make verify` green with go1.23.5, no toolchain switch, `go.mod` second line `go 1.23.5`
+- [x] `make verify` green with go1.23.5, no toolchain switch, `go.mod` second line `go 1.23.5`
 
 ## Out of scope
 
@@ -70,6 +70,9 @@ Every print site uses it; the request keeps the real URL.
 - **A non-200 body the endpoint echoes is not touched**: `judge endpoint returned 401: <body>` quotes the endpoint's own
   answer; what a server chooses to echo is another question.
 - No new rule ID, no change to the report layout, no new dependency; `go.mod`/`go.sum` untouched.
+- **What the judge reads does not move**: `redact.Secrets` and `redact.Credentials` are not changed, only a function the
+  excerpt path never calls is added, so `ExcerptVersion` stays 9 and `PromptVersion` stays `b851dfd5412b`
+  (`excerpt_version_test.go` and `prompt_version_test.go` green without a character changed).
 
 ## Must not claim
 
@@ -122,3 +125,16 @@ Every print site uses it; the request keeps the real URL.
    **Recommendation**: the judge client replaces that URL with its display form before the error leaves `chatOnce`, keeping
    the wrapped cause, so `errors.Is`/`errors.As` and the retry classification see the same error as before.
    **Decided (2026-10-19)**: as recommended.
+
+## Done
+
+```
+Merged: PR <filled in by the commit that records the pull request> (2026-10-19; find the sha with git log --grep P-076 after the merge)
+Evidence: reproduced on origin/main with a binary built from it and base_url https://alice:s3cret@llm.invalid/v1?api-key=k123 — the ten rows of the problem table, each printing the user, the password or the query value; after W3 the same commands print https://<REDACTED>@llm.invalid/v1?api-key=<REDACTED> in every row, and "Sent to llm.invalid" still names the host
+Evidence: red at W2 (tests on origin/main code): TestCheckEndpoint_ErrorsDoNotEchoCredentials 4/4 subtests, TestHTTP_RequestErrorDoesNotEchoCredentials (`Post "https://alice:***@llm.example/v1?api-key=k123/chat/completions"`), TestHTTP_BuildErrorDoesNotEchoCredentials (`parse "https://alice:s3cret@…"`), TestDisclosure_HostFromARedactedEndpoint (url.Parse refuses `<REDACTED>@`), TestE2E_EndpointCredentialsAreNotPrinted 2/2 (judge answers / unreachable; JSON, text, text --verbose, Markdown, HTML, SARIF, the Downloads block), TestE2E_RefusedEndpointWithCredentialsIsNotPrinted 2/2 (plain http, unparseable; judge.reason and the LLM-000), TestLLMCommands_EndpointCredentialsAreNotPrinted (setup, status, test, test error, preview, preview --json, setup refusal), internal/redact did not build (Endpoint undefined); all green after W3
+Evidence: reverse — TestE2E_EndpointCredentialsAreNotPrinted asserts every request still reached llm.invalid with Basic auth uzer9:s3cret and api-key=k123 in its query; TestHTTP_RequestErrorDoesNotEchoCredentials the same at the client, with the *url.Error still in the chain and the failure still retryable; TestLLMCommands_EndpointCredentialsAreNotPrinted the Bearer key with the query; live against a loopback stub with no key: "basic=alice:s3cret", query "api-key=k123/chat/completions"
+Evidence: reverse — TestE2E_PlainEndpointPrintsAsBefore green on origin/main and after: judge.endpoint, the LLM-002 text and `llm status` for https://llm.invalid:8443/openai/v1 as written, judge.endpoint unchanged for the default and the three presets; TestEndpoint_PlainURLsUnchanged (ten credential-free forms byte-identical); Endpoint is the only field of the judge block that changed, so a credential-free block is byte-identical
+Evidence: mutation (reverted, git status empty) — shownURL returning its argument: the two judge tests, the e2e "judge unreachable" and the llm commands test red
+Evidence: TestZeroDial_OnlyTheJudgeConnects, TestZeroDial_NoClientOutsideTheJudge, TestZeroDial_ClaimsNameTheTest, TestZeroDial_SeamClientLiteralShapes, TestE2E_JudgeRedirectIsRefusedAndReported, TestLLMTest_RedirectIsRefused, TestLLMCommands_SetupTestStatus, TestCheckEndpoint, TestLLMPreview_* green, their files unchanged
+Evidence: make verify: all gates passed (go1.23.5, no toolchain switch; go.mod second line go 1.23.5)
+```
