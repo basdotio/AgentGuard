@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 	"testing"
@@ -112,13 +113,21 @@ func assertLineIsBlock(t *testing.T, line usageLine, j *model.JudgeSummary, out 
 		Calls: j.Calls, Failed: j.Failed, Skipped: j.Skipped, Retries: j.Retries, TriageCalls: j.TriageCalls,
 		Repaired: j.Repaired, Reasked: j.Reasked, TemperatureOmitted: j.TemperatureOmitted,
 		PromptTokens: j.PromptTokens, CompletionTokens: j.CompletionTokens,
-		CachedPromptTokens: j.CachedPromptTokens,
+		CachedPromptTokens: j.CachedPromptTokens, UsageByPass: j.UsageByPass,
 	}
-	if line != want {
+	if !reflect.DeepEqual(line, want) {
 		t.Errorf("the line is not the judge block:\n line  %+v\n block %+v", line, want)
 	}
 	if j.PromptTokens == 0 || j.CompletionTokens == 0 {
 		t.Errorf("the stub reports tokens, so the block must carry them: %+v", j)
+	}
+	// P-072: the breakdown by pass is in the line as in the block, and it adds up to the totals.
+	if len(line.UsageByPass) == 0 {
+		t.Errorf("a block that made calls has a usage_by_pass, and the line must carry it: %+v", line)
+	}
+	if sum := sumUsageByPass(line.UsageByPass); sum.Calls != j.Calls || sum.PromptTokens != j.PromptTokens ||
+		sum.CompletionTokens != j.CompletionTokens || sum.CachedPromptTokens != j.CachedPromptTokens || sum.Reasked != j.Reasked {
+		t.Errorf("the line's usage_by_pass sums to %+v, not the block's totals %+v", sum, j)
 	}
 	if ts, err := time.Parse(time.RFC3339, line.Time); err != nil || !strings.HasSuffix(line.Time, "Z") || time.Since(ts) > time.Hour {
 		t.Errorf("time %q is not a recent RFC 3339 UTC timestamp (%v)", line.Time, err)
@@ -360,6 +369,12 @@ func TestUsageLog_LLMTestRecordsItsOneCall(t *testing.T) {
 	}
 	if failed.Command != "llm test" || failed.Calls != 1 || failed.Failed != 1 || failed.PromptTokens != 0 || failed.Endpoint != down.URL {
 		t.Errorf("failed llm test line: %+v", failed)
+	}
+	// The connectivity check is no pass of the judge's (P-072): neither line breaks its call down.
+	for i, r := range raw {
+		if strings.Contains(r, "usage_by_pass") {
+			t.Errorf("llm test line %d carries usage_by_pass: %s", i+1, r)
+		}
 	}
 	assertNothingFromTheTarget(t, raw[0])
 }

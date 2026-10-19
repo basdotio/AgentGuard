@@ -8,11 +8,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/basdotio/AgentGuard/internal/judge"
+	"github.com/basdotio/AgentGuard/internal/model"
 )
 
 // TestJudgeUsageLine (P-071): the stderr usage line names the cached share of the prompt tokens only
@@ -104,7 +106,13 @@ func TestE2E_UncachedEndpointBlockUnchanged(t *testing.T) {
 	if j == nil || !j.Ran || j.Calls == 0 {
 		t.Fatalf("judge summary = %+v; want a run with calls", j)
 	}
-	raw, err := json.Marshal(j)
+	// P-072 adds usage_by_pass to a block that made calls; every other byte is what P-071 left.
+	if j.UsageByPass == nil {
+		t.Fatalf("a block that made calls has a usage_by_pass: %+v", j)
+	}
+	withoutByPass := *j
+	withoutByPass.UsageByPass = nil
+	raw, err := json.Marshal(withoutByPass)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,5 +161,104 @@ func TestE2E_UncachedEndpointBlockUnchanged(t *testing.T) {
 	}
 	if string(raw) != string(old) {
 		t.Errorf("judge block moved for an endpoint without the field:\n got %s\nwant %s", raw, old)
+	}
+}
+
+// sumUsageByPass adds up a usage_by_pass map (P-072).
+func sumUsageByPass(m map[string]model.PassUsage) model.PassUsage {
+	var s model.PassUsage
+	for _, u := range m {
+		s.Calls += u.Calls
+		s.Reasked += u.Reasked
+		s.PromptTokens += u.PromptTokens
+		s.CompletionTokens += u.CompletionTokens
+		s.CachedPromptTokens += u.CachedPromptTokens
+	}
+	return s
+}
+
+// knownPasses are the pass names a usage_by_pass key can take: the ones `aguard llm preview` prints.
+var knownPasses = map[string]bool{"intent": true, "injection": true, "result": true, "deobfuscation": true,
+	"collusion": true, "capability": true, "mcp-config": true, "server": true, "triage": true}
+
+// assertUsageByPassAddsUp holds a judge block's usage_by_pass to its totals: one entry per pass
+// called, named as the preview names it, and the entries summing exactly to calls, reasked and
+// the three token counts.
+func assertUsageByPassAddsUp(t *testing.T, j *model.JudgeSummary) {
+	t.Helper()
+	if len(j.UsageByPass) == 0 {
+		t.Fatalf("a block with %d call(s) has no usage_by_pass: %+v", j.Calls, j)
+	}
+	for pass, u := range j.UsageByPass {
+		if !knownPasses[pass] {
+			t.Errorf("usage_by_pass key %q is no pass the preview names", pass)
+		}
+		if u.Calls == 0 {
+			t.Errorf("%s: an entry for a pass that made no call: %+v", pass, u)
+		}
+	}
+	sum := sumUsageByPass(j.UsageByPass)
+	want := model.PassUsage{Calls: j.Calls, Reasked: j.Reasked, PromptTokens: j.PromptTokens,
+		CompletionTokens: j.CompletionTokens, CachedPromptTokens: j.CachedPromptTokens}
+	if sum != want {
+		t.Errorf("usage_by_pass sums to %+v, the block's totals are %+v", sum, want)
+	}
+}
+
+// TestE2E_JudgeBlockUsageByPass (P-072): at samples 3, with the first request answered 503 and
+// retried, the JSON judge block breaks its calls and tokens down by pass, and the breakdown adds
+// up to the totals, which are what they were before the breakdown existed.
+func TestE2E_JudgeBlockUsageByPass(t *testing.T) {
+	root := buildTestRunnerSkill(t, true)
+	srv := cachedUsageServer(t, 100, 7, 64)
+	cfg := writeJudgeConfigSamples(t, srv.URL, "advisory", 3)
+
+	out, err := scanEnv(root, scanOpts{cfgPath: cfg, llm: true, quiet: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	j := out.Judge
+	if j == nil || !j.Ran || j.Calls == 0 || j.Failed != 0 || j.Retries == 0 {
+		t.Fatalf("judge summary = %+v; want a clean run with calls and the 503's retry", j)
+	}
+	assertUsageByPassAddsUp(t, j)
+	for pass, u := range j.UsageByPass {
+		if u.PromptTokens != 100*u.Calls || u.CompletionTokens != 7*u.Calls || u.CachedPromptTokens != 64*u.Calls {
+			t.Errorf("%s: %+v; want 100 / 7 / 64 per call, the retried call counted once", pass, u)
+		}
+		if pass != "triage" && u.Calls%3 != 0 {
+			t.Errorf("%s: %d call(s); a question is asked 3 times at samples 3", pass, u.Calls)
+		}
+	}
+	if tr := j.UsageByPass["triage"]; tr.Calls != j.TriageCalls {
+		t.Errorf("triage entry %+v, triage_calls %d", tr, j.TriageCalls)
+	}
+	raw, err := json.Marshal(j)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), `"usage_by_pass":{`) {
+		t.Errorf("the JSON block has no usage_by_pass object: %s", raw)
+	}
+}
+
+// TestE2E_NoCallNoUsageByPass (P-072, reverse): a judge block that made no call has no
+// usage_by_pass key, as it has no token keys.
+func TestE2E_NoCallNoUsageByPass(t *testing.T) {
+	srv := usageServer(t, 100, 7)
+	cfg := writeJudgeConfigSamples(t, srv.URL, "advisory", 3)
+	out, err := scanEnv(t.TempDir(), scanOpts{cfgPath: cfg, llm: true, quiet: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.Judge == nil || out.Judge.Calls != 0 {
+		t.Fatalf("judge summary = %+v; want a block that made no call", out.Judge)
+	}
+	raw, err := json.Marshal(out.Judge)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(raw), "usage_by_pass") {
+		t.Errorf("a block with no call carries usage_by_pass: %s", raw)
 	}
 }

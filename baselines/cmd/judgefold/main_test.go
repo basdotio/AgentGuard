@@ -120,3 +120,44 @@ func TestJudgefold_RefusesARawFileNoSampleOwns(t *testing.T) {
 		t.Errorf("exit %d, stderr %q; want 2 naming the stray file", code, stderr.String())
 	}
 }
+
+// TestJudgefold_ReadsLedgersBeforeAndAfterUsageByPass (P-072): every committed aguard ledger — all
+// written before a row named its model or broke its usage down by pass — is still read, and a row
+// that carries both is read with them.
+func TestJudgefold_ReadsLedgersBeforeAndAfterUsageByPass(t *testing.T) {
+	dirs, err := filepath.Glob(filepath.Join("..", "..", "results", "aguard", "*"))
+	if err != nil || len(dirs) == 0 {
+		t.Fatalf("no committed aguard runs found: %v", err)
+	}
+	read, judged := 0, 0
+	for _, d := range dirs {
+		rows, err := readLedgers([]string{d})
+		if err != nil {
+			t.Errorf("%s: %v", d, err)
+			continue
+		}
+		read += len(rows)
+		for _, r := range rows {
+			if r.JudgeUsage != nil {
+				judged++
+			}
+		}
+	}
+	if read == 0 || judged == 0 {
+		t.Fatalf("read %d row(s), %d with judge usage; the committed runs carry both", read, judged)
+	}
+
+	run := t.TempDir()
+	put(t, filepath.Join(run, "ledger.jsonl"), `{"sample":"ben-a","outcome":"scored","attempted":true,"verdict":"benign",`+
+		`"judge_usage":{"basis":"reported","model":"gpt-4.1-mini","calls":2,"failed":0,"skipped":0,"triage_calls":0,"retries":0,`+
+		`"prompt_tokens":300,"completion_tokens":20,"usage_by_pass":{"injection":{"calls":1,"prompt_tokens":100,"completion_tokens":10},`+
+		`"result":{"calls":1,"prompt_tokens":200,"completion_tokens":10}}}}`+"\n")
+	rows, err := readLedgers([]string{run})
+	if err != nil {
+		t.Fatal(err)
+	}
+	u := rows["ben-a"].JudgeUsage
+	if u == nil || u.Model != "gpt-4.1-mini" || len(u.UsageByPass) != 2 || u.UsageByPass["result"].PromptTokens != 200 {
+		t.Errorf("a row with model and usage_by_pass read as %+v", u)
+	}
+}

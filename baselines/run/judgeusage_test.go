@@ -225,3 +225,75 @@ func TestSumJudgeUsage_CachedPromptTokensAreSummed(t *testing.T) {
 			gap.PromptTokens, gap.CachedPromptTokens, gap.TokensUnreported)
 	}
 }
+
+// TestSumJudgeUsage_UsageByPassIsSummed (P-072): run.yaml sums each pass over the samples, and the
+// per-pass sums add up to the run's totals. A run where some sample made calls without a breakdown
+// (a binary older than it) has no per-pass sums — a sum over part of the samples printed beside
+// the run's totals is the misreading the totals already refuse — and a run whose token totals are
+// absent has per-pass calls but no per-pass tokens.
+func TestSumJudgeUsage_UsageByPassIsSummed(t *testing.T) {
+	rows := []ledger.Row{
+		judged("a", ledger.JudgeUsage{Basis: ledger.UsageReported, Model: "m", Calls: 7, Reasked: 1, TriageCalls: 1, Retries: intp(0),
+			PromptTokens: intp(700), CompletionTokens: intp(40), CachedPromptTokens: 64,
+			UsageByPass: map[string]ledger.PassUsage{
+				"intent":    {Calls: 3, PromptTokens: 300, CompletionTokens: 15, CachedPromptTokens: 64},
+				"injection": {Calls: 3, Reasked: 1, PromptTokens: 300, CompletionTokens: 20},
+				"triage":    {Calls: 1, PromptTokens: 100, CompletionTokens: 5},
+			}}),
+		judged("b", ledger.JudgeUsage{Basis: ledger.UsageReported, Model: "m", Calls: 6, TriageCalls: 0, Retries: intp(0),
+			PromptTokens: intp(600), CompletionTokens: intp(30),
+			UsageByPass: map[string]ledger.PassUsage{
+				"injection": {Calls: 3, PromptTokens: 300, CompletionTokens: 15},
+				"result":    {Calls: 3, PromptTokens: 300, CompletionTokens: 15},
+			}}),
+		judged("c", ledger.JudgeUsage{Basis: ledger.UsageReported, Retries: intp(0)}), // made no call
+	}
+	got := SumJudgeUsage(rows)
+	want := map[string]PassUsage{
+		"intent":    {Calls: 3, PromptTokens: 300, CompletionTokens: 15, CachedPromptTokens: 64},
+		"injection": {Calls: 6, Reasked: 1, PromptTokens: 600, CompletionTokens: 35},
+		"result":    {Calls: 3, PromptTokens: 300, CompletionTokens: 15},
+		"triage":    {Calls: 1, PromptTokens: 100, CompletionTokens: 5},
+	}
+	if !reflect.DeepEqual(got.UsageByPass, want) {
+		t.Errorf("usage_by_pass:\n got %+v\nwant %+v", got.UsageByPass, want)
+	}
+	var sum PassUsage
+	for _, u := range got.UsageByPass {
+		sum.Calls += u.Calls
+		sum.Reasked += u.Reasked
+		sum.PromptTokens += u.PromptTokens
+		sum.CompletionTokens += u.CompletionTokens
+		sum.CachedPromptTokens += u.CachedPromptTokens
+	}
+	if sum.Calls != got.Calls || sum.Reasked != got.Reasked || sum.PromptTokens != *got.PromptTokens ||
+		sum.CompletionTokens != *got.CompletionTokens || sum.CachedPromptTokens != got.CachedPromptTokens {
+		t.Errorf("the per-pass sums add up to %+v; the run's totals are %+v", sum, *got)
+	}
+	out, err := yaml.Marshal(got)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(out), "usage_by_pass:\n    injection:\n        calls: 6\n        reasked: 1\n        prompt_tokens: 600") {
+		t.Errorf("run.yaml judge_usage has no usage_by_pass block:\n%s", out)
+	}
+
+	older := SumJudgeUsage(append(rows[:2:2],
+		judged("d", ledger.JudgeUsage{Basis: ledger.UsageReported, Calls: 4, TriageCalls: 1, Retries: intp(0),
+			PromptTokens: intp(400), CompletionTokens: intp(20)})))
+	if older.UsageByPass != nil {
+		t.Errorf("a sample with calls and no breakdown: usage_by_pass = %+v; want none", older.UsageByPass)
+	}
+
+	gap := SumJudgeUsage(append(rows[:1:1],
+		judged("e", ledger.JudgeUsage{Basis: ledger.UsageReported, Calls: 1, TriageCalls: 1, Retries: intp(0),
+			UsageByPass: map[string]ledger.PassUsage{"triage": {Calls: 1}}})))
+	if gap.PromptTokens != nil || gap.UsageByPass["intent"] != (PassUsage{Calls: 3}) || gap.UsageByPass["triage"] != (PassUsage{Calls: 2}) {
+		t.Errorf("tokens unreported on a sample: prompt %v, usage_by_pass %+v; want no token total and per-pass calls only",
+			gap.PromptTokens, gap.UsageByPass)
+	}
+
+	if static, _ := yaml.Marshal(SumJudgeUsage(rows[2:])); strings.Contains(string(static), "usage_by_pass") {
+		t.Errorf("a run that made no call carries usage_by_pass:\n%s", static)
+	}
+}
