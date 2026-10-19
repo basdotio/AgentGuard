@@ -51,6 +51,8 @@ func judgeUsage(out []byte, res model.ScanResult) *ledger.JudgeUsage {
 		Retries:          reported("retries", j.Retries),
 		PromptTokens:     reported("prompt_tokens", j.PromptTokens),
 		CompletionTokens: reported("completion_tokens", j.CompletionTokens),
+		// Not a "reported" pointer: absent and 0 are the same count here (P-071).
+		CachedPromptTokens: j.CachedPromptTokens,
 	}
 	if reported("triage_calls", j.TriageCalls) == nil {
 		u.Basis = ledger.UsageDerived

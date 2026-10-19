@@ -75,6 +75,31 @@ func TestJudgeUsage_ReportedCountsWinOverTheDerivation(t *testing.T) {
 	}
 }
 
+// TestJudgeUsage_CachedPromptTokensReachTheRow (P-071): the cached share the binary printed is copied
+// into the ledger row, and the row's bytes name it; a summary without the key folds as before, with
+// no key in the row either — the binary leaves a zero out, and an endpoint that does not report the
+// field means the same.
+func TestJudgeUsage_CachedPromptTokensReachTheRow(t *testing.T) {
+	cached := strings.Replace(budgetCut, `"completion_tokens":310}`, `"completion_tokens":310,"cached_prompt_tokens":4096}`, 1)
+	if cached == budgetCut {
+		t.Fatal("fixture: the replacement did not apply")
+	}
+	got := foldDoc(t, cached)
+	want := &ledger.JudgeUsage{
+		Basis: ledger.UsageReported, Calls: 13, Failed: 0, Skipped: 1, TriageCalls: 1,
+		Retries: intp(2), PromptTokens: intp(5200), CompletionTokens: intp(310), CachedPromptTokens: 4096,
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("judge usage:\n got %s\nwant %s", show(got), show(want))
+	}
+	if row := show(got); !strings.Contains(row, `"prompt_tokens":5200,"completion_tokens":310,"cached_prompt_tokens":4096}`) {
+		t.Errorf("ledger row does not carry the count after the other two: %s", row)
+	}
+	if row := show(foldDoc(t, budgetCut)); strings.Contains(row, "cached_prompt_tokens") {
+		t.Errorf("a summary without the key folds into a row that carries it: %s", row)
+	}
+}
+
 // TestJudgeUsage_WithoutTheFieldsFoldsAsBefore is the reverse assertion. A binary older than the
 // summary's cost fields reports neither triage_calls nor retries; the fold then falls back to
 // the documented derivation, says so in Basis, and leaves retries and tokens absent rather than

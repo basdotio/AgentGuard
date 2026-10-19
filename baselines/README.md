@@ -198,7 +198,7 @@ sets: benign high −49 across the corpus, the wild malicious held-out 68 → 65
 
 **What a judge run cost is folded by the driver, not by hand.** Each judged sample's ledger row
 carries `judge_usage` — `calls`, `failed`, `skipped`, `triage_calls`, `retries`, `prompt_tokens`,
-`completion_tokens` — read from the binary's own `--json` judge summary, and `run.yaml` sums them
+`completion_tokens`, `cached_prompt_tokens` — read from the binary's own `--json` judge summary, and `run.yaml` sums them
 under `judge_usage:` with the basis they rest on. `basis: reported` means the binary counted its
 triage calls and retries itself. `basis: derived` means its output carried no such count (a
 binary that predates them) and `triage_calls` was inferred as one per artifact with a
@@ -209,7 +209,12 @@ part; retries or tokens some sample did not report have no total, and `tokens_un
 counts the samples that made calls without reporting tokens. `repaired` is the part of `calls` whose
 reply the judge read only by dropping the stray `}` of an object closed one member early (P-034): an
 answered call, not a failed one. It appears in a row and in `run.yaml` only when above 0; a binary that
-does not print it predates the repair, so its count is 0. Questions asked are
+does not print it predates the repair, so its count is 0. `cached_prompt_tokens` (P-071) is the part of
+`prompt_tokens` the endpoint reported serving from its prompt cache, which the vendor bills at its own rate:
+a subset, never to be added to `prompt_tokens`. It too appears only when above 0, and a sample without it does
+not count towards `tokens_unreported_samples` — an endpoint that does not report the field is normal; the run
+total is written only beside a `prompt_tokens` total. Runs committed before it was read carry no such key.
+Questions asked are
 `(calls − triage_calls) / samples`, with `samples` from the judge config (the summary does not
 carry it), exact only when `skipped` is 0; a `judge.jsonl` folded from a new run takes
 `triage_calls` from the ledger rather than inferring it. `raw/` holds the bytes the binary

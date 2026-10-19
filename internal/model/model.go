@@ -610,6 +610,11 @@ type JudgeSummary struct {
 	Retries          int `json:"retries"`
 	PromptTokens     int `json:"prompt_tokens,omitempty"`
 	CompletionTokens int `json:"completion_tokens,omitempty"`
+	// CachedPromptTokens is the part of PromptTokens the endpoint reported serving from its prompt
+	// cache (usage.prompt_tokens_details.cached_tokens), which the vendor bills at its own rate
+	// (P-071). A subset of PromptTokens, never added to it; absent when the endpoint reported none
+	// or does not report the field — the two look the same.
+	CachedPromptTokens int `json:"cached_prompt_tokens,omitempty"`
 	// Which judge produced the LLM findings (P-031). tool_version names a commit, which moves when
 	// the judge did not and stays one suffix apart when the excerpts changed. PromptVersion
 	// (judge.PromptVersion, computed) and ExcerptVersion (judge.ExcerptVersion, bumped by hand) name

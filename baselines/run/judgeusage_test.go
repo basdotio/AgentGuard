@@ -180,3 +180,48 @@ func TestSumJudgeUsage_RepairedIsSummed(t *testing.T) {
 		t.Errorf("run.yaml judge_usage for a run with no repair carries the key:\n%s", out)
 	}
 }
+
+// TestSumJudgeUsage_CachedPromptTokensAreSummed (P-071): the run's cached_prompt_tokens is the sum
+// over its samples. A sample without the count is not "tokens unreported" — endpoints that do not
+// report the field are normal — so only prompt/completion decide that; with no prompt total there
+// is no cached total either, a subset of nothing; and a run where nothing was cached writes no key.
+func TestSumJudgeUsage_CachedPromptTokensAreSummed(t *testing.T) {
+	rows := []ledger.Row{
+		judged("a", ledger.JudgeUsage{Basis: ledger.UsageReported, Calls: 7, TriageCalls: 1, Retries: intp(0),
+			PromptTokens: intp(700), CompletionTokens: intp(40), CachedPromptTokens: 448}),
+		judged("b", ledger.JudgeUsage{Basis: ledger.UsageReported, Calls: 13, TriageCalls: 1, Retries: intp(0),
+			PromptTokens: intp(1300), CompletionTokens: intp(90), CachedPromptTokens: 832}),
+		judged("c", ledger.JudgeUsage{Basis: ledger.UsageReported, Calls: 4, TriageCalls: 1, Retries: intp(0),
+			PromptTokens: intp(400), CompletionTokens: intp(20)}),
+	}
+	got := SumJudgeUsage(rows)
+	if got.CachedPromptTokens != 1280 || got.TokensUnreported != 0 {
+		t.Errorf("cached_prompt_tokens = %d, tokens_unreported_samples = %d; want 1280 and 0",
+			got.CachedPromptTokens, got.TokensUnreported)
+	}
+	if got.PromptTokens == nil || *got.PromptTokens != 2400 || got.CompletionTokens == nil || *got.CompletionTokens != 150 {
+		t.Errorf("tokens = %v / %v; want 2400 / 150 — cached is a subset, never added", got.PromptTokens, got.CompletionTokens)
+	}
+	out, err := yaml.Marshal(got)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(out), "cached_prompt_tokens: 1280") {
+		t.Errorf("run.yaml judge_usage has no cached_prompt_tokens line:\n%s", out)
+	}
+
+	uncached, err := yaml.Marshal(SumJudgeUsage(rows[2:]))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(uncached), "cached_prompt_tokens") {
+		t.Errorf("run.yaml judge_usage for a run with nothing cached carries the key:\n%s", uncached)
+	}
+
+	gap := SumJudgeUsage(append(rows[:1:1],
+		judged("d", ledger.JudgeUsage{Basis: ledger.UsageReported, Calls: 4, TriageCalls: 1, Retries: intp(0)})))
+	if gap.PromptTokens != nil || gap.CachedPromptTokens != 0 || gap.TokensUnreported != 1 {
+		t.Errorf("prompt = %v, cached = %d, unreported = %d; want no prompt total, no cached total, 1 unreported",
+			gap.PromptTokens, gap.CachedPromptTokens, gap.TokensUnreported)
+	}
+}

@@ -338,7 +338,9 @@ func runJudge(cfg config.Config, arts []model.ArtifactReport, home string, quiet
 	// Downloads item is judged, and a driver that reads --json (the baseline adapter) never sees
 	// stderr at all — those are the runs a cost is read from afterwards.
 	summary.TriageCalls, summary.Retries = stats.TriageCalls, stats.Retries
-	summary.PromptTokens, summary.CompletionTokens = client.Usage()
+	usage := client.Usage()
+	summary.PromptTokens, summary.CompletionTokens = usage.Prompt, usage.Completion
+	summary.CachedPromptTokens = usage.CachedPrompt
 	for _, a := range arts {
 		for _, f := range a.Findings {
 			if f.Source == model.SrcLLM && f.Dimension > 0 {
@@ -347,14 +349,7 @@ func runJudge(cfg config.Config, arts []model.ArtifactReport, home string, quiet
 		}
 	}
 	if !quiet && stats.Calls > 0 {
-		// The same numbers as the JSON summary, for the operator at the terminal; the human
-		// report deliberately carries no cost line.
-		prompt, completion := summary.PromptTokens, summary.CompletionTokens
-		fmt.Fprintf(os.Stderr,
-			"LLM judge: %d call(s) in %s (p50 %s, p95 %s) · %d retry · %d failed · %d tokens in / %d out\n",
-			stats.Calls, time.Since(started).Round(time.Millisecond),
-			stats.Percentile(0.5).Round(time.Millisecond), stats.Percentile(0.95).Round(time.Millisecond),
-			stats.Retries, stats.Failed, prompt, completion)
+		fmt.Fprint(os.Stderr, judgeUsageLine(stats, time.Since(started), usage))
 	}
 	return notes, summary
 }
