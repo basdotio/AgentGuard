@@ -36,7 +36,11 @@ func newNonce() (string, error) {
 // model, e.g. Ollama at http://localhost:11434/v1). The API key, when present, comes from
 // an env var (config.APIKey) — never from disk.
 type HTTPClient struct {
-	url    string // where every request is sent: chatURL of the configured base_url (P-078)
+	url string // where every request is sent: chatURL of the configured base_url (P-078)
+	// shown is the configured base_url as redact.Endpoint shows it: what an error names, the same
+	// form every other place prints (P-076). Not the request URL: chatURL's
+	// `/v1/chat/completions` path reads as a token to the secret patterns Endpoint ends with.
+	shown  string
 	apiKey string
 	model  string
 	http   *http.Client
@@ -88,6 +92,7 @@ func NewHTTP(baseURL, apiKey, model string, httpClient *http.Client) *HTTPClient
 	}
 	return &HTTPClient{
 		url:    chatURL(baseURL),
+		shown:  redact.Endpoint(baseURL),
 		apiKey: apiKey,
 		model:  RequestModel(model),
 		http:   httpClient,
@@ -214,7 +219,7 @@ func (c *HTTPClient) chatOnce(ctx context.Context, system, user string, temperat
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.url, bytes.NewReader(body.Bytes()))
 	if err != nil {
-		return "", sentTemperature, fmt.Errorf("build judge request: %w", shownURL(err))
+		return "", sentTemperature, fmt.Errorf("build judge request: %w", c.shownURL(err))
 	}
 	req.Header.Set("Content-Type", "application/json")
 	if c.apiKey != "" {
@@ -222,7 +227,7 @@ func (c *HTTPClient) chatOnce(ctx context.Context, system, user string, temperat
 	}
 	resp, err := c.http.Do(req)
 	if err != nil {
-		err = shownURL(err)
+		err = c.shownURL(err)
 		// A redirect out of the configured origin is the endpoint's answer, and a final one:
 		// retrying only sends the same excerpts to it again, to be refused again (P-023).
 		var refused *redirectRefused
@@ -273,12 +278,15 @@ func (c *HTTPClient) chatOnce(ctx context.Context, system, user string, temperat
 //
 // Both callers get the *url.Error itself (http.Client.Do, url.Parse via http.NewRequest), so only
 // that shape is rewritten; anything else is returned as it is.
-func shownURL(err error) error {
+//
+// The URL named is the configured base_url (c.shown), not the request URL chatURL built from it
+// (P-078): the endpoint as the user wrote it, shown like everywhere else.
+func (c *HTTPClient) shownURL(err error) error {
 	ue, ok := err.(*url.Error)
 	if !ok {
 		return err
 	}
-	return &url.Error{Op: ue.Op, URL: redact.Endpoint(ue.URL), Err: ue.Err}
+	return &url.Error{Op: ue.Op, URL: c.shown, Err: ue.Err}
 }
 
 // retryAfter parses a Retry-After header (delta-seconds or HTTP-date). An unparsable or
