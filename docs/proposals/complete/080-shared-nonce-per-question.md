@@ -130,7 +130,7 @@ shared by the k identical requests of one question is exactly as unguessable to 
 
 ```
 Merged: PR #101 (2026-10-19; find the sha with git log --grep P-080 after the merge)
-Released: vX.Y.Z (fill in after stage 5)
+Released: v0.28.1
 Evidence: TestRun_SamplesOfAQuestionShareOneRequest (internal/judge/dispatch_test.go): samples 3, concurrency 4, 9 calls → 3 nonces, each on 3 byte-identical request bodies, all 32 lowercase hex
 Evidence: TestHTTP_JudgeNonce (internal/judge/nonce_test.go): a well-formed Request.Nonce fences both messages; empty, short, upper-case, non-hex, fence-character and re-ask cases each draw a fresh one
 Evidence: TestHTTP_ReaskCarriesTheRuleUnderAFreshNonce now at samples 3: 18 calls, 9 re-asks; each question's three first calls share its nonce, all 9 repeats carry nonces of their own
