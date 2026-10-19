@@ -31,14 +31,18 @@ lint:
 # people's skills runs its own through the same gate. Each line is its own shell; the first failure stops make. The order is
 # cheapest-first so a red vet does not wait for the race detector. Deliberately absent: the
 # real-machine scan (`aguard scan --root ~/.claude`) — that one is run by hand after collect/detect
-# changes, because its input is this machine, not the repository.
+# changes, because its input is this machine, not the repository. For the same reason the
+# self-scan runs with HOME and XDG_CONFIG_HOME at a path nothing creates, so no config is found:
+# the gate's answer must not depend on the config.yaml of whoever runs it (P-075; the Go tests get
+# the same through internal/testhome).
+VERIFY_HOME := $(CURDIR)/bin/verify-home-never-created
 verify:
 	go vet ./...
 	go test -race -cover ./...
 	@command -v golangci-lint >/dev/null || { echo "verify: golangci-lint is not installed — see CONTRIBUTING.md for the pinned version" >&2; exit 1; }
 	golangci-lint run ./...
 	go run ./hack/gen-rules && git diff --quiet -- docs/rules.md || { echo "verify: docs/rules.md drifted from the code — commit the regenerated file" >&2; exit 1; }
-	go build -ldflags "$(LDFLAGS)" -o $(BIN) $(PKG) && $(BIN) check plugin --fail-on low --quiet
+	go build -ldflags "$(LDFLAGS)" -o $(BIN) $(PKG) && HOME="$(VERIFY_HOME)" XDG_CONFIG_HOME="$(VERIFY_HOME)/.config" CLAUDE_CONFIG_DIR= $(BIN) check plugin --fail-on low --quiet
 	@grep -qx 'go 1.23.5' go.mod || { echo "verify: go.mod's go directive moved off 1.23.5 (see .claude/rules/conventions.md)" >&2; exit 1; }
 	@echo "verify: all gates passed"
 
