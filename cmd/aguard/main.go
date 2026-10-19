@@ -342,6 +342,7 @@ func runJudge(cfg config.Config, arts []model.ArtifactReport, home string, quiet
 	usage := client.Usage()
 	summary.PromptTokens, summary.CompletionTokens = usage.Prompt, usage.Completion
 	summary.CachedPromptTokens = usage.CachedPrompt
+	summary.UsageByPass = stats.UsageByPass
 	for _, a := range arts {
 		for _, f := range a.Findings {
 			if f.Source == model.SrcLLM && f.Dimension > 0 {

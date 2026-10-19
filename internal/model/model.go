@@ -615,6 +615,11 @@ type JudgeSummary struct {
 	// (P-071). A subset of PromptTokens, never added to it; absent when the endpoint reported none
 	// or does not report the field — the two look the same.
 	CachedPromptTokens int `json:"cached_prompt_tokens,omitempty"`
+	// UsageByPass breaks Calls, Reasked and the three token totals down by the pass that made the
+	// calls, keyed by the name `aguard llm preview` gives it (intent, injection, result,
+	// deobfuscation, collusion, capability, mcp-config, server, triage). Its entries sum exactly to
+	// the totals beside it; absent when no call was made (P-072).
+	UsageByPass map[string]PassUsage `json:"usage_by_pass,omitempty"`
 	// Which judge produced the LLM findings (P-031). tool_version names a commit, which moves when
 	// the judge did not and stays one suffix apart when the excerpts changed. PromptVersion
 	// (judge.PromptVersion, computed) and ExcerptVersion (judge.ExcerptVersion, bumped by hand) name

@@ -140,6 +140,7 @@ func checkCandidate(c inbox.Candidate, o scanOpts, judge *model.JudgeSummary) mo
 			judge.PromptTokens += res.Judge.PromptTokens
 			judge.CompletionTokens += res.Judge.CompletionTokens
 			judge.CachedPromptTokens += res.Judge.CachedPromptTokens
+			judge.UsageByPass = addUsageByPass(judge.UsageByPass, res.Judge.UsageByPass)
 			if res.Judge.Reason != "" && judge.Reason == "" {
 				judge.Reason = res.Judge.Reason
 			}
@@ -168,4 +169,27 @@ func checkCandidate(c inbox.Candidate, o scanOpts, judge *model.JudgeSummary) mo
 	}
 	sort.SliceStable(it.Findings, func(i, j int) bool { return it.Findings[i].Severity.Rank() > it.Findings[j].Severity.Rank() })
 	return it
+}
+
+// addUsageByPass returns the pass-by-pass sum of two judge blocks' usage_by_pass (P-072), so the
+// Downloads block's breakdown adds up to its totals as each item's does. Neither map is changed; the
+// result is nil when both are, so a Downloads pass that made no call has no key.
+func addUsageByPass(a, b map[string]model.PassUsage) map[string]model.PassUsage {
+	if a == nil && b == nil {
+		return nil
+	}
+	out := make(map[string]model.PassUsage, len(a)+len(b))
+	for k, v := range a {
+		out[k] = v
+	}
+	for k, v := range b {
+		u := out[k]
+		u.Calls += v.Calls
+		u.Reasked += v.Reasked
+		u.PromptTokens += v.PromptTokens
+		u.CompletionTokens += v.CompletionTokens
+		u.CachedPromptTokens += v.CachedPromptTokens
+		out[k] = u
+	}
+	return out
 }

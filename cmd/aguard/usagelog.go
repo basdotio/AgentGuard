@@ -73,6 +73,9 @@ type usageLine struct {
 	PromptTokens       int    `json:"prompt_tokens,omitempty"`
 	CompletionTokens   int    `json:"completion_tokens,omitempty"`
 	CachedPromptTokens int    `json:"cached_prompt_tokens,omitempty"` // P-071: part of PromptTokens
+	// UsageByPass is the block's breakdown by pass (P-072), copied as it is; absent on `llm test`,
+	// whose one call is a connectivity check and no pass of the judge's.
+	UsageByPass map[string]model.PassUsage `json:"usage_by_pass,omitempty"`
 }
 
 // usageBlock is one judge block of a run and the section it stands for ("" when a command has one).
@@ -124,6 +127,7 @@ func usageLineFor(command, section, toolVersion, rulesVersion, now string, j *mo
 		TemperatureOmitted: j.TemperatureOmitted,
 		PromptTokens:       j.PromptTokens, CompletionTokens: j.CompletionTokens,
 		CachedPromptTokens: j.CachedPromptTokens,
+		UsageByPass:        j.UsageByPass,
 	}
 }
 
