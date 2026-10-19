@@ -17,7 +17,21 @@ rate copied into prose goes stale on the next rule. `git tag` and the Releases p
 - Invariants: never executes scanned content, no cross-root symlink reads, secret redaction before storage (+ high-entropy fallback).
 - Single static binary (`CGO_ENABLED=0`), MIT + SPDX, CI, bilingual README.
 
-## v0.2.0 – v0.28.0
+## v0.2.0 – v0.28.1
+
+**v0.28.1 (2026-10-19) — the samples of a judge question are sent as one identical request, so an endpoint's prompt
+cache can serve the repeats.**
+
+No rule, score formula, flag, exit code or JSON field changed, and no request byte changed shape: `rules`
+(`8fc8772b2951`), `judge-prompt` (`b851dfd5412b`) and `judge-excerpt` (9) on the `aguard version` line are the same as in
+v0.28.0, and `aguard llm preview` prints exactly what it printed.
+
+- **One nonce per question.** At `samples: 3` the three requests of a judge question differed only in the nonce, which was
+  drawn per call and sits at the start of both messages, so an endpoint that caches prompts could never serve the second
+  and third from the first. The nonce is now drawn once per question when the run starts and shared by its samples; a
+  re-ask and triage still draw their own. A repeat sample waits for its question's first only while other calls are ready
+  to go, so a `check` of one skill still sends its calls at once. Whether the endpoint caches is its own business, and
+  `cached_prompt_tokens` in the judge block says when it did (P-080).
 
 **v0.28.0 (2026-10-19) — the judge asks one more question and re-asks a reply it could not read, and what a judge run
 used can be counted: cached tokens, tokens per question, and an opt-in log.**
