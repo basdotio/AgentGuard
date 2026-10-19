@@ -49,7 +49,8 @@
   清掉。以前 `--config` 为空的测试读的是真机的 `~/.config/aguard/config.yaml`,一个本构建不认的 `llm.provider` 就让
   cmd/aguard 四十来个测试全红。新包少了它,`TestEveryTestPackageIsolatesTheHome` 红;`TestIsolation_RealHomeConfigIsNotSeen`
   在"真" home 里放一份坏配置重跑测试二进制来证明它。**测试起的 `go build`、`git` 用 `testhome.OriginalEnviron()`**
-  (缓存、GOENV、git 配置在真 home 下);**跑 aguard 本身的子进程永远不用它**。
+  (缓存、GOENV、git 配置在真 home 下);**跑 aguard 本身的子进程永远不用它**。`make verify` 的插件自扫同理,
+  `HOME`/`XDG_CONFIG_HOME` 指向 `bin/` 下一个没人创建的路径。
 - 测试是 table-driven 的,fixture 用 `t.TempDir()` 现搭(没有 `testdata/` 目录);judge 的测试用
   `httptest`。真正值钱的是**不变量测试** —— 不执行、符号链接不越界、secret 已脱敏、LLM 发现不动分数、
   `--fail-on` 契约。上面编号的不变量只要有改动,就补一条对应的测试。

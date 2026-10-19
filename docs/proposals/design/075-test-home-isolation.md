@@ -20,6 +20,10 @@ each with `config llm.provider "not-a-provider": want openai_compatible, or one 
 red comes from the developer's home. A *valid* config is worse, because it is silent: `gate.fail_on`, `gate.action` or an
 enabled judge change what those tests exercise, and the result depends on whose machine ran them.
 
+`make verify` has the same leak one level up: after the tests it builds the binary and runs
+`bin/aguard check plugin --fail-on low` in the developer's shell, which loads the same config and exits 2 on it — so
+even with every test isolated, `make verify` stays red on that machine.
+
 The same three variables reach further than the config: `HOME` is the default scan root and the Downloads folder,
 `CLAUDE_CONFIG_DIR` overrides the default root, and `XDG_CONFIG_HOME` is where reports are written by default. The
 other packages under `internal/` pass today only because none of their tests happens to load the user config; `collect`,
@@ -30,7 +34,8 @@ other packages under `internal/` pass today only because none of their tests hap
 One test-only helper, `internal/testhome`, whose `Main` points `HOME` at a fresh temporary directory, `XDG_CONFIG_HOME`
 at its `.config` and unsets `CLAUDE_CONFIG_DIR` before any test runs; every test package under `cmd/` and `internal/`
 calls it from `TestMain`. A source test requires that `TestMain` in each package with tests, and a regression test plants
-an invalid config in a "real" home and reruns the test binary against it.
+an invalid config in a "real" home and reruns the test binary against it. `make verify`'s plugin self-scan runs with
+`HOME` and `XDG_CONFIG_HOME` at a path nothing creates.
 
 ## Done criteria
 
@@ -52,6 +57,9 @@ an invalid config in a "real" home and reruns the test binary against it.
   and `builtAguard` does not skip
 - [x] With the invalid config in the shell's `XDG_CONFIG_HOME`, and separately in `HOME` with `XDG_CONFIG_HOME` unset,
   `go test -count=1 ./...` passes
+- [x] `make verify`'s self-scan runs `bin/aguard check plugin` with `HOME` and `XDG_CONFIG_HOME` under
+  `bin/verify-home-never-created` and `CLAUDE_CONFIG_DIR` empty. Reverse assertion: the same environment on a skill with
+  `curl … | bash` still exits 1; the same command in the developer's shell with the invalid config exits 2 (the bug)
 - [x] `make verify` green under `go version go1.23.5` with no toolchain switch; `head -3 go.mod` line 2 `go 1.23.5`
 
 ## Out of scope
@@ -61,6 +69,7 @@ an invalid config in a "real" home and reruns the test binary against it.
 - Other environment variables that change behaviour: `AGUARD_LLM_KEY` (the default `api_key_env`; read only when a test
   enables the judge, and those tests point it at an `httptest` stub), and any future `AGUARD_*` variable. Each is its
   own case when it can change a test's result without the test setting it
+- The CI workflow's own plugin self-scan step: a CI runner has no user config, and the step is not `make verify`
 - Product code: no non-test file changes; the config lookup order, `LoadUser` and every default stay as they are
 - Windows `USERPROFILE`: not a release target (conventions)
 
@@ -79,6 +88,7 @@ an invalid config in a "real" home and reruns the test binary against it.
 | 1 | This proposal | `P-075: proposal — tests read the developer's own config, an invalid provider turns make verify red` |
 | 2 | `internal/testhome`, a `TestMain` in every test package, the regression and guard tests, toolchain calls on the original environment | `test: run every test package with a temporary HOME and XDG_CONFIG_HOME (P-075)` |
 | 3 | Architecture pair, CONTRIBUTING, the conventions rule | `docs: the testhome helper and the TestMain rule (P-075)` |
+| 3b | `make verify`'s plugin self-scan runs without the developer's config | `build: make verify's plugin self-scan runs without the developer's config (P-075)` |
 | 4 | This file to `complete/`, Done filled, the index row | `P-075: done — evidence and the index row` |
 
 ## Open questions
@@ -104,4 +114,12 @@ an invalid config in a "real" home and reruns the test binary against it.
    isolated one the cache is cold (slow) and, offline, the build fails into `builtAguard`'s `t.Skip`, so a dozen binary
    tests would silently stop running. `git ls-files --exclude-standard` reads the global excludes file under the home.
    Anything that runs aguard itself keeps the isolated environment.
+   **Decided (2026-10-19)**: as recommended.
+
+Found during stage 2:
+
+5. **`make verify`'s self-scan: a temporary directory or a path that never exists?** **Recommendation**: a fixed path
+   under the ignored `bin/` that nothing creates (`bin/verify-home-never-created`). The config lookup treats a missing
+   file as defaults, `check plugin` needs nothing under the home, and the recipe stays one command whose exit code is
+   the gate's — no `mktemp`, no clean-up removal, no saved exit status.
    **Decided (2026-10-19)**: as recommended.
