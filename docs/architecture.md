@@ -287,7 +287,9 @@ take; `clean` and the load-time gate never call it (the gate's scanners never se
 (decode only, never execute), cross-file collusion, hook capability, MCP configuration, and
 triage labelling. Scanned content is treated as **hostile**: every call fences it inside a
 `crypto/rand` nonce barrier as inert data, and a nonce generation failure fails the call rather
-than degrading to a guessable fence. One step before egress is outside `detect.Redact`'s reach
+than degrading to a guessable fence. The nonce is drawn once per question and shared by its
+samples, so an endpoint's prompt cache can serve the repeats; a re-ask and triage draw their own
+(`judge/dispatch.go`, P-080). One step before egress is outside `detect.Redact`'s reach
 (`judge/egress.go`): as each excerpt is built, two home directories become `~` — the OS user's,
 on every run, and the scanned environment's (`judge.Options.Home`, the absolute `--root`'s parent)
 — each made absolute, with symlinks resolved, and in Claude Code's encoded project-directory form

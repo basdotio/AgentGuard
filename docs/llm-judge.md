@@ -35,8 +35,8 @@ in by three non-negotiable rules:
    [The second number](#the-second-number).
 2. **It never removes, downgrades, or mutates a static finding.** Triage labels live in a
    *separate* advisory channel; the finding still renders at full severity and still gates.
-3. **The judge itself is treated as untrusted-input-facing.** A per-call **nonce barrier**
-   fences the skill content as inert data and instructs the model to ignore (and report) any
+3. **The judge itself is treated as untrusted-input-facing.** A **nonce barrier**, drawn at
+   random for each question, fences the skill content as inert data and instructs the model to ignore (and report) any
    directive inside it.
 
 In short: the LLM can only push risk **up**, never down. It can surface a risk; it can never hide one.
@@ -182,8 +182,8 @@ everything on your machine. That trade-off is yours.
   endpoint receives from `scan --llm` and `check --llm`. Nothing is sent, no key is read, and
   `llm.enabled` does not have to be on. `--json` carries the exact bytes and each pass's
   instruction; the terminal view clears control and bidi characters. Not shown: the
-  `Authorization` header, and the barrier rule naming the per-call nonce, which is drawn when a
-  call is made. On the same files and config, a real run sends no other text; it can send fewer
+  `Authorization` header, and the barrier rule naming the nonce, which is drawn when the run
+  starts (one per question; a re-ask draws its own). On the same files and config, a real run sends no other text; it can send fewer
   calls than the preview lists (the run deadline, a refused endpoint, a missing key).
 - **Only the files the static rules read.** A skill's files are opened through the same predicate
   the hash and the rules use (`collect.FileReach`, P-056): its `SKILL.md` when it resolves inside the
@@ -536,6 +536,16 @@ effective score.
   deterministic score comes out bit-identical either way.
 - **It costs what it says:** `samples: 3` means three times the calls, so it is opt-in. Triage
   is never sampled — it produces display labels, not findings, so there is nothing to vote on.
+- **The samples of a question are one request sent k times** (P-080). They share one nonce, drawn
+  when the run starts, so the k requests are byte-identical, and an endpoint with a prompt cache can
+  serve the repeats from the prefix the first one paid for; `cached_prompt_tokens` says when it did.
+  Whether it does is the endpoint's: OpenAI documents a 1,024-token minimum prefix, so short
+  questions (most hooks, the intent pass) are not cached, and an endpoint without a cache, every
+  local one included, sees no difference. A repeat waits for its question's first sample only while
+  other calls are ready to go; a worker that would otherwise sit idle takes it, so a `check` of one
+  skill still sends its calls at once. A re-ask draws a nonce of its own. Measured on 20 benign
+  skills at `samples: 3` against gpt-4.1-mini: 44.5% of the prompt tokens were served from the
+  cache, none before, with the same calls and no slower.
 
 The threshold is derived (`majority = n/2 + 1`), not configured, so there is no way to declare
 a "consensus" of 1-of-3.
@@ -570,7 +580,7 @@ reader of a clean report needs.
 Every `judge` block also says **which judge** it was. `prompt_version` is computed over the exact
 request body of every call the client can make — each pass's system prompt, the layout around the
 excerpt, the response format, the temperatures and the request fields — with the scanned content,
-the model and the per-call nonce stood in. `excerpt_version` is a number the maintainers bump
+the model and the nonce stood in. `excerpt_version` is a number the maintainers bump
 whenever what an artifact sends, or how a quote is grounded, changes; a golden test fails when the
 excerpt code changes and the number does not. With a configured judge the block also has `model`,
 the model every request named (`llama3.1` when the config names none), and `samples`, how many times

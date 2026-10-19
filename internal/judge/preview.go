@@ -19,7 +19,8 @@ type PlannedCall struct {
 	Pass     string // task.pass(): intent, injection, result, deobfuscation, collusion, capability, mcp-config, server, triage
 	Rule     string // the rule its verdict would carry; "" for triage, which yields labels
 	// Instruction is the system message's task text. The barrier rule that follows it in the real
-	// message names the call's nonce, which is drawn per call and so cannot be shown in advance.
+	// message names the question's nonce, which is drawn when the run starts and so cannot be
+	// shown in advance.
 	Instruction string
 	Temperature float64
 	Calls       int // how many times the question is sent

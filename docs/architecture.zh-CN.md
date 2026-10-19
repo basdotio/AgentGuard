@@ -228,6 +228,8 @@ hook、MCP server、permission 列表用的是**内容哈希**([`detect/contenth
 artifact 种类跑这些趟:隐藏注入、意图不符、去混淆(**只解码、绝不执行**)、跨文件串通、hook 能力、
 MCP 配置、triage 标签。被扫内容按**敌对**处理:每次调用用 `crypto/rand` 生成 **nonce barrier**
 把内容围成惰性数据块;nonce 生成失败时**让该次调用失败**,而不是退化成一个可被猜到的围栏。
+nonce 每个问题取一次、由它的几次采样共用,端点的提示词缓存才能接住重复的那几次;重问和 triage 另取
+(`judge/dispatch.go`,P-080)。
 出网之前还有一步 `detect.Redact` 管不到的(`judge/egress.go`):摘录**构造时**把两个家目录换成 `~`——OS 用户的(每次都换)
 和被扫环境的(`judge.Options.Home`,绝对 `--root` 的上一级),各自取绝对路径后、解析软链后、Claude Code 项目目录编码三种写法
 (编码那种对 `/root` 这样只有一段的家目录不换:`-root` 太像命令行选项,照原样发,`/root/…` 仍然换);这一步在脱敏

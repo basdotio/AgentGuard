@@ -62,8 +62,11 @@ hook capability(`LLM-008`,维度 2)、server source(`LLM-010`,维度 10,P-053:`c
 类别说明里"**只按文本本身、不按脚本名猜**"那句是第一次实测换来的:hook 只写 `bash x.sh`,模型按 `check-secrets.sh`/`cmux-notify.sh` 的名字猜成凭证/网络,随机良性升级从 1 跳到 4、hard negative 从 0 到 2;加了这句之后回到 1 和 0。**改表就是改规则**:`categoryPrompt` 把表原样印进系统提示,所以 `PromptVersion` 随之变,不用手动;
 别给表加 low 行(一行 low 等于让模型自己选"不计分"),别让 `Severity` 那个词重新进 `finding()`。投票文本是 `[k of n samples agreed] [severities: a, b] [categories: c, d] [tool: X]`(`samples: 1` 时只有 `[category: c]`):
 `severities` 仍是模型逐票的词(benchmark 的 judgefold 用正则读这一格,**别改它的格式**),`[tool: X]` 是工具定的严重度;前者是以后拿表去核对模型的唯一记录,别删。被扫内容按**敌对**处理:
-每次调用用 `crypto/rand` 生成 **nonce barrier** 把内容围成惰性数据块;nonce 生成失败时**让该次调用
-失败**,而不是退化成一个可被猜到的围栏。`base_url` 非 loopback 时追加 `LLM-002` 隐私警告。**`ScanResult.Judge`(2026-09-05)**:`--llm` 时必填,记录跑没跑、
+每个问题用 `crypto/rand` 生成一次 **nonce barrier** 把内容围成惰性数据块(P-080:`withQuestionNonces` 让同一问题的 k 次采样共用,
+k 个请求逐字节相同,端点的提示词缓存才接得住重复;重问和 triage 每次调用另取,客户端只认 `validNonce` 的形状);nonce 生成失败时**让该次调用
+失败**(那个问题的字段留空,客户端自己再取,取不到就失败),而不是退化成一个可被猜到的围栏。共用安全靠两条,**都别破**:nonce 不跨问题,
+模型回复不喂进同一问题别的采样的请求。`dispatchQueue` 只在还有别的活时让重复采样等第一次——**别改成无条件等**(单个 `check` 实测
+11.7 s → 21.7 s),也别为了缓存加 `prompt_cache_key`(逐字节相同的请求本来就路由到一处,实测不带它命中 44.5%,带它 45.8%)。`base_url` 非 loopback 时追加 `LLM-002` 隐私警告。**`ScanResult.Judge`(2026-09-05)**:`--llm` 时必填,记录跑没跑、
 判了几个、几次调用、补了几条、没跑的原因;两个渲染器在摘要里印一行,HTML 的判官区块在请求了就出现(空则放那一行),
 没开 `--llm` 一律不提 —— "跑了没发现"和"没跑"以前在报告上一模一样,这是不变量 #5 用在判官自己身上。
 **`aguard llm preview` 和真跑共用同一份计划和同一段载荷代码**(`judge.Plan`,P-027):`Run` 和 `Plan` 都走 `schedule`
