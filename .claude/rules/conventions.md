@@ -44,9 +44,13 @@
   于是"没有一个按键能一次回答多对"这条头号承诺一次都没被断言;fallback 那条路一行测试都没有。
   **只测"回答了正确的"等于没测。**
 - **`baselines/cmd/judgefold` 的金标测试自己 `go build` 一个 aguard 再跑**,所以 `go test` 的结果缓存看不见判官或流水线的源码改动:P-068 加了一趟之后 `make verify` 照样"全过",是复用了旧的通过结果,fresh worktree 里才红。改了 `planFor`、模式表或回复解析,**用 `go test -count=1 ./baselines/cmd/judgefold/` 再跑一次**;金标确实该变时 `JUDGEFOLD_WRITE_GOLDEN=1` 重生成并逐行看 diff。
-- **测试不许看见开发者的 home**(P-075):`cmd/`、`internal/` 下每个有测试的包都有
-  `func TestMain(m *testing.M) { os.Exit(testhome.Main(m)) }`,`HOME`/`XDG_CONFIG_HOME` 指向临时目录、`CLAUDE_CONFIG_DIR`
-  清掉。以前 `--config` 为空的测试读的是真机的 `~/.config/aguard/config.yaml`,一个本构建不认的 `llm.provider` 就让
+- **测试不许看见开发者的 home**(P-075、P-077):模块里每个有测试的包(`hack/` 也算;只有 `baselines/` 例外,理由写在
+  `excludedTrees` 里)都有 `func TestMain(m *testing.M) { os.Exit(testhome.Main(m)) }`,`HOME` 和四个 XDG 基础目录
+  (`CONFIG`/`CACHE`/`STATE`/`DATA`)指向临时目录、`CLAUDE_CONFIG_DIR` 和 `AGUARD_USAGE_LOG` 清掉 —— 后者以前没清,
+  开发者 shell 里设了它,一次 `go test ./...` 就往真用量日志里追加 42 行测试流量。**加一个默认位置**(没人指定时二进制
+  自己去读写的文件或目录),就在 `TestDefaultLocations_AreInsideTheTestHome`(`cmd/aguard`)里加一行:它调产品自己的
+  解析函数,要求每个答案都在 `testhome.Home()` 之下;只比环境变量的检查看不见用量日志那种缺口。
+  以前 `--config` 为空的测试读的是真机的 `~/.config/aguard/config.yaml`,一个本构建不认的 `llm.provider` 就让
   cmd/aguard 71 个测试全红。新包少了它,`TestEveryTestPackageIsolatesTheHome` 红;`TestIsolation_RealHomeConfigIsNotSeen`
   在"真" home 里放一份坏配置重跑测试二进制来证明它。**测试起的 `go build`、`git` 用 `testhome.OriginalEnviron()`**
   (缓存、GOENV、git 配置在真 home 下);**跑 aguard 本身的子进程永远不用它**。`make verify` 的插件自扫同理,
