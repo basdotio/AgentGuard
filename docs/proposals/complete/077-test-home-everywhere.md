@@ -194,7 +194,7 @@ configured path, `os.UserHomeDir`, `os.UserConfigDir`, `os.UserCacheDir`, the fo
 `AGUARD_USAGE_LOG` and `CLAUDE_CONFIG_DIR` unset.
 
 ```
-Merged: PR <number> (find the sha with git log --grep P-077 after the merge)
+Merged: PR #98 (find the sha with git log --grep P-077 after the merge)
 Evidence: go test -count=1 ./... under a poisoned home with AGUARD_USAGE_LOG set: origin/main appends 42 lines to the usage log; this branch leaves all six marker files byte-identical, exit 0
 Evidence: TestMain_MovesTheHomeAway, TestEveryTestPackageIsolatesTheHome (internal/testhome/testhome_test.go): the three XDG variables and the two unset ones pinned; the walk covers the module with baselines/ named, red naming hack/gen-rules without its TestMain
 Evidence: TestDefaultLocations_AreInsideTheTestHome (cmd/aguard/testhome_locations_test.go): 20 default locations inside testhome.Home(); red without cmd/aguard's TestMain, red with the usage log or the cache directory left to the shell
