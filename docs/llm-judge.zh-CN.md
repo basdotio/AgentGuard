@@ -107,7 +107,7 @@ llm:
 |------|------|
 | `enabled` | 总开关。必须 `true` **且** 传 `--llm`。 |
 | `provider` | 预设 —— `deepseek`、`openai`、`qwen` —— 或 `openai_compatible` 对接任意 OpenAI 风格端点(Ollama / vLLM / LM Studio / 代理…)。不认识的名字是加载错误,不会悄悄退回默认。 |
-| `base_url` | 端点根。工具 POST 到 `<base_url>/chat/completions`。预设会自动填;写了就覆盖。 |
+| `base_url` | 端点根。工具 POST 到 `<base_url>/chat/completions`,后缀加在路径上:`base_url` 里的 query(`https://gw.example/v1?api-version=2024-01-01`)原样跟在后面发出,结尾有没有 `/` 都一样,fragment 丢掉。预设会自动填;写了就覆盖。 |
 | `model` | **用哪个模型。** 预设给默认值;写端点实际提供的名字可覆盖。 |
 | `api_key_env` | 存密钥的**环境变量名**。先查它;给 CI 和喜欢这种方式的人。 |
 | `api_key_file` | 存密钥的文件路径(可用 `~`)。必须只有本人可读 —— 组或其他人可读就拒用,并给出要跑的 `chmod 600`。`aguard llm setup` 会写它。 |
