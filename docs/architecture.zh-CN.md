@@ -68,7 +68,7 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
 | [`safeio`](../internal/safeio/) | 打开一个不是自己写的文件的唯一途径:非常规文件在 Open 前拒绝,大小由读强制 | 101 |
 | [`redact`](../internal/redact/) | 唯一的脱敏器:已知 token 前缀、键名/旗标自证的凭据、URL userinfo、高熵串。是叶子包,`collect` 也用它;`detect.Redact` 委托它 | 209 |
 | [`cmdline`](../internal/cmdline/) | 把路径印进一条要复制粘贴的命令的唯一途径:完整路径、按 POSIX shell 加引号、绝不截短。`gate.CommandArg` 委托它;报告里 `aguard approve` 那一步也用它 | 97 |
-| [`testhome`](../internal/testhome/) | 只给测试用:`cmd/`、`internal/` 下每个测试二进制都在临时的 `HOME` 和 `XDG_CONFIG_HOME`、没有 `CLAUDE_CONFIG_DIR` 的环境里跑,没有哪个测试读得到开发者自己的配置;`TestEveryTestPackageIsolatesTheHome` 要求每个有测试的包都有调用它的 `TestMain` | 89 |
+| [`testhome`](../internal/testhome/) | 只给测试用:模块里每个测试二进制(`baselines/` 除外,理由写在守卫里)都在临时的 `HOME`、指向它里面的四个 XDG 基础目录、没有 `CLAUDE_CONFIG_DIR` 和 `AGUARD_USAGE_LOG` 的环境里跑,没有哪个测试读得到开发者自己的配置、往开发者的用量日志里追加;`TestEveryTestPackageIsolatesTheHome` 要求每个有测试的包都有调用它的 `TestMain`,`TestDefaultLocations_AreInsideTheTestHome`(`cmd/aguard`)要求二进制解析出的每个默认位置都在临时 home 里 | 125 |
 | [`cmd/aguard`](../cmd/aguard/) | CLI 接线、`analyze()`、下载目录那一趟、hook runner、`llm setup/test/status/preview` | — |
 
 有一处职责是被刻意切成两半的,值得先知道,因为两半都叫"permission":
