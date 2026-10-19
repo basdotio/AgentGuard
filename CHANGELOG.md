@@ -17,7 +17,37 @@ rate copied into prose goes stale on the next rule. `git tag` and the Releases p
 - Invariants: never executes scanned content, no cross-root symlink reads, secret redaction before storage (+ high-entropy fallback).
 - Single static binary (`CGO_ENABLED=0`), MIT + SPDX, CI, bilingual README.
 
-## v0.2.0 – v0.27.0
+## v0.2.0 – v0.28.0
+
+**v0.28.0 (2026-10-19) — the judge asks one more question and re-asks a reply it could not read, and what a judge run
+used can be counted: cached tokens, tokens per question, and an opt-in log.**
+
+No static rule was added or removed and no score formula, flag or exit code changed; `--fail-on` is untouched. On the
+`aguard version` line `rules` (`8fc8772b2951`) is the same as in v0.27.0, while `judge-prompt` (`cc2cab18585d` →
+`b851dfd5412b`) and `judge-excerpt` (8 → 9) change, so LLM findings are not comparable with earlier runs. **Two things a
+reader should know**: with `--llm`, a skill gets one more judge question (the result pass, `LLM-011`), so a skill costs
+more judge calls; and a `base_url` written with a query string now works — requests for such an endpoint change, every
+other endpoint sends exactly what it sent before.
+
+- **The result pass.** A required step that changes the result the user receives (forcing a value, silently replacing an
+  output) is its own judge question, `LLM-011`, over the `SKILL.md` body and the documents it names, instead of a clause
+  of the injection question (P-068).
+- **A reply the reader refuses is asked once more.** A judge reply that is not a readable verdict is asked again under a
+  fresh nonce with a fixed format rule, and counted as `reasked` in the judge block, instead of standing as a question
+  never asked (P-069).
+- **What a judge run used.** The judge block (and the baseline ledger) reports `cached_prompt_tokens`, the part of the
+  prompt tokens the endpoint served from its prompt cache (P-071), and `usage_by_pass`, the calls and tokens of each
+  question, which add up exactly to the totals; a ledger row names its model (P-072). `AGUARD_USAGE_LOG=<file>` appends
+  one JSON line per judge run — counts, versions, model and the endpoint's origin, nothing from the scanned content —
+  for runs without `--json` (P-073). Unset, nothing is written.
+- **Endpoint credentials are not printed.** A `base_url` written with `user:pass@` or a key in its query was printed
+  whole in the JSON `judge.endpoint`, the `LLM-002` note (in every format, including the Markdown report meant for PR
+  comments), the config errors and `aguard llm` output; every place now shows it with the userinfo and query values
+  redacted. Requests still carry them (P-076).
+- **A `base_url` with a query string.** `/chat/completions` was appended after the query, so the request went to the
+  base path and the query value swallowed the suffix; the path is now joined and the query kept (P-078).
+- **Tests stay off the developer's machine.** Every test package runs under a temporary home, so a developer's own config,
+  Claude Code settings and usage log are neither read nor written by `go test` (P-075, P-077).
 
 **v0.27.0 (2026-10-16) — the terminal report is written for a reader who does not write code, and the judge reads the
 documents a skill tells the agent to read, PDFs included.**

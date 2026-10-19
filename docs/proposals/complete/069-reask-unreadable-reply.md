@@ -75,6 +75,7 @@ if it is worth one.
 
 ```
 Merged: PR #90 (2026-10-16; find the sha with git log --grep P-069)
+Released: v0.28.0
 Evidence: results/aguard/2026-10-16-llm-gpt-4.1-mini-p069-benign-docs-s3: 4,790 calls, failed 58 → 4, trees short 48 → 4 of 384, re-asked 65, judge 65 → 62
 Evidence: results/aguard/2026-10-16-llm-gpt-4.1-mini-p069-skillharm-s3: failed 11 → 1 (a timeout), re-asked 10, judge 175 → 178; …-p069-heldout-asm-benign-s3: trees short 3 → 1 of 216, judge 9 → 9
 Evidence: raw aguard-judge-raw-2026-10-p068.tar.gz on v0.26.0 (sha256 ca450655…4313, 327,858 bytes); schema round-trip 61 files / 30,524 lines; PromptVersion b851dfd5412b; ExcerptVersion 9; make verify: all gates passed
