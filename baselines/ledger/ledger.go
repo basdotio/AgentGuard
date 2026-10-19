@@ -137,7 +137,10 @@ const (
 // same kind of reason (P-071): the binary leaves a zero out, and an endpoint that does not report
 // the field cannot be told from one that cached nothing, so absent and 0 mean the same.
 type JudgeUsage struct {
-	Basis            string `json:"basis"`
+	Basis string `json:"basis"`
+	// Model is the model the binary printed in its judge summary (P-031), so a row copied or folded
+	// out of its run still says which model answered (P-072). Absent when the binary printed none.
+	Model            string `json:"model,omitempty"`
 	Calls            int    `json:"calls"`
 	Failed           int    `json:"failed"`
 	Skipped          int    `json:"skipped"`
@@ -149,6 +152,20 @@ type JudgeUsage struct {
 	CompletionTokens *int   `json:"completion_tokens,omitempty"`
 	// CachedPromptTokens is the part of PromptTokens the endpoint reported serving from its prompt
 	// cache, which the vendor bills at its own rate (P-071): a subset, never added to it.
+	CachedPromptTokens int `json:"cached_prompt_tokens,omitempty"`
+	// UsageByPass is the judge summary's breakdown by pass, as the binary printed it (P-072): calls,
+	// re-asks and tokens per question, summing to the totals above. Absent when the binary printed
+	// none — one older than the breakdown, or a sample that made no call.
+	UsageByPass map[string]PassUsage `json:"usage_by_pass,omitempty"`
+}
+
+// PassUsage is one pass's share of a sample's judge usage, copied from the binary's judge summary.
+// The tokens are what the endpoint reported, absent when it reported none.
+type PassUsage struct {
+	Calls              int `json:"calls"`
+	Reasked            int `json:"reasked,omitempty"`
+	PromptTokens       int `json:"prompt_tokens,omitempty"`
+	CompletionTokens   int `json:"completion_tokens,omitempty"`
 	CachedPromptTokens int `json:"cached_prompt_tokens,omitempty"`
 }
 

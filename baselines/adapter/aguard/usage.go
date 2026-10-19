@@ -53,6 +53,8 @@ func judgeUsage(out []byte, res model.ScanResult) *ledger.JudgeUsage {
 		CompletionTokens: reported("completion_tokens", j.CompletionTokens),
 		// Not a "reported" pointer: absent and 0 are the same count here (P-071).
 		CachedPromptTokens: j.CachedPromptTokens,
+		Model:              j.Model,
+		UsageByPass:        rowUsageByPass(j.UsageByPass),
 	}
 	if reported("triage_calls", j.TriageCalls) == nil {
 		u.Basis = ledger.UsageDerived
@@ -77,4 +79,18 @@ func derivedTriage(arts []model.ArtifactReport, calls int) int {
 		}
 	}
 	return min(n, calls)
+}
+
+// rowUsageByPass copies the summary's breakdown by pass into the ledger's own type (P-072), or nil
+// when the binary printed none.
+func rowUsageByPass(byPass map[string]model.PassUsage) map[string]ledger.PassUsage {
+	if len(byPass) == 0 {
+		return nil
+	}
+	out := make(map[string]ledger.PassUsage, len(byPass))
+	for pass, u := range byPass {
+		out[pass] = ledger.PassUsage{Calls: u.Calls, Reasked: u.Reasked, PromptTokens: u.PromptTokens,
+			CompletionTokens: u.CompletionTokens, CachedPromptTokens: u.CachedPromptTokens}
+	}
+	return out
 }
