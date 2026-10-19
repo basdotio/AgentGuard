@@ -14,6 +14,7 @@ import (
 
 	"github.com/basdotio/AgentGuard/internal/model"
 	"github.com/basdotio/AgentGuard/internal/report"
+	"github.com/basdotio/AgentGuard/internal/testhome"
 )
 
 // evilSkill is the fixture TestWriteReport_DefaultStillShowsTheDangerousThing uses: flagrantly
@@ -72,7 +73,12 @@ func builtAguard(t *testing.T) string {
 			return
 		}
 		aguardBin = filepath.Join(dir, "aguard")
-		if out, err := exec.Command("go", "build", "-o", aguardBin, ".").CombinedOutput(); err != nil {
+		// The toolchain gets the developer's own environment: its build and module caches and
+		// GOENV live under the real home, and a cold cache in the isolated one would rebuild
+		// everything — or, offline, fail into the Skip below (P-075).
+		build := exec.Command("go", "build", "-o", aguardBin, ".")
+		build.Env = testhome.OriginalEnviron()
+		if out, err := build.CombinedOutput(); err != nil {
 			aguardBinErr = fmt.Errorf("go build: %v\n%s", err, out)
 		}
 	})

@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/basdotio/AgentGuard/internal/testhome"
 )
 
 // The documentation tree is one set of files that link to each other by relative path, and a
@@ -41,8 +43,11 @@ var skippedDirs = map[string]bool{
 // Falls back to walking when git is unavailable (an exported tarball, a vendored copy); the
 // fallback is the old behaviour, so such a tree is checked no worse than before.
 func markdownFiles(root string) ([]string, error) {
-	out, err := exec.Command("git", "-C", root, "ls-files", "-z",
-		"--cached", "--others", "--exclude-standard", "--", "*.md").Output()
+	git := exec.Command("git", "-C", root, "ls-files", "-z",
+		"--cached", "--others", "--exclude-standard", "--", "*.md")
+	// --exclude-standard reads the developer's global excludes file under the real home (P-075).
+	git.Env = testhome.OriginalEnviron()
+	out, err := git.Output()
 	if err != nil {
 		return walkMarkdownFiles(root)
 	}
@@ -196,6 +201,7 @@ func TestIgnoredFilesAreNotOurDocs(t *testing.T) {
 	run := func(args ...string) {
 		t.Helper()
 		cmd := exec.Command("git", append([]string{"-C", root}, args...)...)
+		cmd.Env = testhome.OriginalEnviron() // the developer's git identity and config (P-075)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			t.Skipf("git unavailable here (%v): %s", err, out)
 		}
