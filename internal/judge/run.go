@@ -782,14 +782,17 @@ func hasFinding(a model.ArtifactReport, ruleID string) bool {
 }
 
 // runTasks executes the plan with a bounded worker pool, writing each result to its own slot.
-// Workers share nothing mutable, so the merge above is race-free and order-stable.
+// Workers share nothing mutable, so the merge above is race-free and order-stable. Each question's
+// samples share one nonce, and dispatchQueue decides which call a free worker takes next (P-080).
 func runTasks(ctx context.Context, c Client, tasks []task, opts Options) []result {
+	tasks = withQuestionNonces(tasks)
 	results := make([]result, len(tasks))
 	workers := opts.Concurrency
 	if workers > len(tasks) {
 		workers = len(tasks)
 	}
 	idx := make(chan int)
+	finished := make(chan int, len(tasks)) // buffered: a worker never blocks on reporting
 	var wg sync.WaitGroup
 	var progressMu sync.Mutex
 	done := 0
@@ -807,20 +810,46 @@ func runTasks(ctx context.Context, c Client, tasks []task, opts Options) []resul
 					opts.Progress(done, len(tasks))
 					progressMu.Unlock()
 				}
+				finished <- i
 			}
 		}()
 	}
-dispatch:
-	for i := range tasks {
-		select {
-		case idx <- i:
-		case <-ctx.Done():
-			break dispatch // run deadline: stop queueing; unqueued slots stay done=false
-		}
-	}
+	dispatch(ctx, newDispatchQueue(tasks), workers, idx, finished)
 	close(idx)
 	wg.Wait()
 	return results
+}
+
+// dispatch hands tasks to free workers in the queue's order until every task was handed out or
+// the run deadline passed: then it stops queueing, and slots never handed out stay done=false.
+// inflight counts tasks handed out and not yet reported, so a send happens only while some worker
+// is free to receive it.
+func dispatch(ctx context.Context, q *dispatchQueue, workers int, idx chan<- int, finished <-chan int) {
+	inflight := 0
+	for {
+		for inflight < workers {
+			i, ok := q.next()
+			if !ok {
+				break
+			}
+			select {
+			case idx <- i:
+				inflight++
+			case <-ctx.Done():
+				return // run deadline: stop queueing
+			}
+		}
+		if inflight == 0 {
+			return
+		}
+		select {
+		case i := <-finished:
+			inflight--
+			q.finished(i)
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 // execute performs one task under its OWN timeout, retrying a retryable transport error with
