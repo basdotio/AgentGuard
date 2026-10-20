@@ -128,7 +128,9 @@ func TestLoadUser_DefaultLocation(t *testing.T) {
 		t.Fatalf("no file: cfg=%+v err=%v, want defaults", cfg.LLM, err)
 	}
 	def, _ := DefaultPath()
-	if def != filepath.Join(x, "aguard", "config.yaml") {
+	// A first setup gets the post-rename directory (P-082); TestConfigDirFallback covers an
+	// existing aguard one.
+	if def != filepath.Join(x, "bas-guard", "config.yaml") {
 		t.Fatalf("DefaultPath = %q", def)
 	}
 	if err := WriteLLM(def, LLMConfig{Enabled: true, Provider: "qwen", APIKeyFile: "~/k"}); err != nil {

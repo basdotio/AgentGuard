@@ -263,6 +263,12 @@ func runLLMStatus(w io.Writer, cfgPath string) error {
 		return err
 	}
 	fmt.Fprintf(w, "config:   %s\n", shown)
+	if cfgPath == "" {
+		if old, ok := config.IgnoredLegacyConfigDir(); ok {
+			// Both the pre-rename and the current directory exist (P-082): say which one is read.
+			fmt.Fprintf(w, "note:     %s is ignored; the directory above is the one in use (the tool was renamed to BAS Guard)\n", old)
+		}
+	}
 	fmt.Fprintf(w, "enabled:  %t\n", cfg.LLM.Enabled)
 	fmt.Fprintf(w, "provider: %s\n", cfg.LLM.Provider)
 	fmt.Fprintf(w, "endpoint: %s\n", redact.Endpoint(cfg.LLM.BaseURL))

@@ -239,7 +239,7 @@ func Load(path string) (Config, error) {
 // judge anyway would tell the user everything is fine. The message says the exact chmod to run.
 func (c Config) ResolveAPIKey() (string, error) {
 	if c.LLM.APIKeyEnv != "" {
-		if v := os.Getenv(c.LLM.APIKeyEnv); v != "" {
+		if v, _ := LookupEnv(c.LLM.APIKeyEnv); v != "" {
 			return v, nil
 		}
 	}
@@ -273,8 +273,10 @@ func (c Config) ResolveAPIKey() (string, error) {
 
 // KeySource says where the key would come from, for `aguard llm status` — never the key itself.
 func (c Config) KeySource() string {
-	if c.LLM.APIKeyEnv != "" && os.Getenv(c.LLM.APIKeyEnv) != "" {
-		return "env var " + c.LLM.APIKeyEnv
+	if c.LLM.APIKeyEnv != "" {
+		if v, from := LookupEnv(c.LLM.APIKeyEnv); v != "" {
+			return "env var " + from
+		}
 	}
 	if c.LLM.APIKeyFile != "" {
 		return "file " + c.LLM.APIKeyFile
@@ -343,18 +345,62 @@ func (c *LLMConfig) applyPreset() error {
 	return nil
 }
 
-// ConfigDir is where the user-level config and key live: $XDG_CONFIG_HOME/aguard, else
-// ~/.config/aguard. Deliberately OUTSIDE the scan root — a config file inside ~/.claude would
-// be something the scanner reads as an unowned loose file and disclose on every run.
-func ConfigDir() (string, error) {
+// Directory names under the config home: the one used since the rename to BAS Guard, and the one
+// before it (P-082). The old one is read where it is when it is the only one present; nothing is
+// ever moved without the operator.
+const (
+	configDirName       = "bas-guard"
+	legacyConfigDirName = "aguard"
+)
+
+// configHome is $XDG_CONFIG_HOME, else ~/.config.
+func configHome() (string, error) {
 	if x := os.Getenv("XDG_CONFIG_HOME"); x != "" {
-		return filepath.Join(x, "aguard"), nil
+		return x, nil
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".config", "aguard"), nil
+	return filepath.Join(home, ".config"), nil
+}
+
+func isDir(p string) bool {
+	fi, err := os.Stat(p)
+	return err == nil && fi.IsDir()
+}
+
+// ConfigDir is where the user-level config and key live: <config home>/bas-guard, or
+// <config home>/aguard when only that one exists (the name before the rename, P-082), else the new
+// name for a first setup. Deliberately OUTSIDE the scan root — a config file inside ~/.claude would
+// be something the scanner reads as an unowned loose file and disclose on every run.
+func ConfigDir() (string, error) {
+	base, err := configHome()
+	if err != nil {
+		return "", err
+	}
+	cur := filepath.Join(base, configDirName)
+	if !isDir(cur) {
+		if old := filepath.Join(base, legacyConfigDirName); isDir(old) {
+			return old, nil
+		}
+	}
+	return cur, nil
+}
+
+// IgnoredLegacyConfigDir returns the pre-rename directory when it exists beside the new one: the
+// new one is in use, and `llm status` says so, so a key left in the old one is not mistaken for the
+// key the judge uses.
+func IgnoredLegacyConfigDir() (string, bool) {
+	base, err := configHome()
+	if err != nil {
+		return "", false
+	}
+	cur, old := filepath.Join(base, configDirName), filepath.Join(base, legacyConfigDirName)
+	if isDir(cur) && isDir(old) {
+		return old, true
+	}
+	return "", false
 }
 
 // DefaultPath is the config file `--config` falls back to; DefaultKeyPath is where

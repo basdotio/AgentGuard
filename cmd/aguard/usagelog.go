@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/basdotio/AgentGuard/internal/config"
 	"github.com/basdotio/AgentGuard/internal/model"
 	"github.com/basdotio/AgentGuard/internal/redact"
 )
@@ -37,6 +38,7 @@ import (
 // It records what the endpoint reported; it computes no money.
 
 // usageLogEnv names the file the usage lines are appended to. Unset or empty: nothing is written.
+// BAS_GUARD_USAGE_LOG is read first (P-082, config.LookupEnv).
 const usageLogEnv = "AGUARD_USAGE_LOG"
 
 // usageLogMode is the mode a usage log is CREATED with. A file that already exists keeps its own.
@@ -98,7 +100,7 @@ func scanUsageBlocks(out model.ScanResult) []usageBlock {
 // is set. The first failure is warned about on stderr and ends the attempt; it is never an error
 // of the command.
 func recordJudgeUsage(stderr io.Writer, command, toolVersion, rulesVersion string, blocks []usageBlock) {
-	path := os.Getenv(usageLogEnv)
+	path, from := config.LookupEnv(usageLogEnv)
 	if path == "" {
 		return
 	}
@@ -109,7 +111,7 @@ func recordJudgeUsage(stderr io.Writer, command, toolVersion, rulesVersion strin
 		}
 		line := usageLineFor(command, b.section, toolVersion, rulesVersion, now, b.judge)
 		if err := appendUsageLine(path, line); err != nil {
-			fmt.Fprintf(stderr, "aguard: warning: judge usage not recorded in %s=%s: %v\n", usageLogEnv, path, err)
+			fmt.Fprintf(stderr, "aguard: warning: judge usage not recorded in %s=%s: %v\n", from, path, err)
 			return
 		}
 	}

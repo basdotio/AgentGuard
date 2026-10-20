@@ -7,8 +7,10 @@
 # Scans each staged directory that contains a SKILL.md (a skill being added/edited).
 set -euo pipefail
 
+# BAS_GUARD_FAIL_ON is the name since the rename to BAS Guard (P-082) and wins; AGUARD_FAIL_ON
+# still works.
 AGUARD="${AGUARD:-aguard}"
-FAIL_ON="${AGUARD_FAIL_ON:-high}"
+FAIL_ON="${BAS_GUARD_FAIL_ON:-${AGUARD_FAIL_ON:-high}}"
 
 # Staged skill dirs (dirs whose SKILL.md is staged). Bash 3 compatible: macOS ships 3.2, which
 # has no mapfile — the previous form died there with "mapfile: command not found".
