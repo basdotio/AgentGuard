@@ -78,7 +78,7 @@ func readTemplate(t *testing.T, name string) map[string]any {
 // the right package from the os/cpu fields. An install script appearing in either template is
 // this property being lost.
 func TestNpmPackagesHaveNoInstallScripts(t *testing.T) {
-	for _, name := range []string{"package.json.tmpl", "platform.package.json.tmpl"} {
+	for _, name := range []string{"package.json.tmpl", "platform.package.json.tmpl", "alias/package.json.tmpl"} {
 		if scripts, ok := readTemplate(t, name)["scripts"]; ok {
 			t.Errorf("%s declares scripts (%v); the npm packages must have none — "+
 				"a download-then-run postinstall is the shape this tool reports on others", name, scripts)
@@ -132,8 +132,10 @@ func TestNpmLauncherAndPlatformRolesStayApart(t *testing.T) {
 		t.Error("launcher template declares cpu; it must be installable on every platform")
 	}
 	bin, ok := launcher["bin"].(map[string]any)
-	if !ok || bin["aguard"] != "bin/aguard.js" {
-		t.Errorf("launcher must expose bin.aguard = bin/aguard.js, got %v", launcher["bin"])
+	// bas-guard is the command since the rename (P-082); aguard stays for the transition, so a
+	// settings.json hook or a CI script written before it keeps finding its command.
+	if !ok || bin["bas-guard"] != "bin/bas-guard.js" || bin["aguard"] != "bin/bas-guard.js" {
+		t.Errorf("launcher must expose bin.bas-guard and bin.aguard = bin/bas-guard.js, got %v", launcher["bin"])
 	}
 	// `files` is what decides whether the bin target reaches the tarball, so declaring the bin
 	// entry is only half of it. Omitting the file publishes a package whose `aguard` command
@@ -171,12 +173,12 @@ func TestNpmPackageNameHasOneSource(t *testing.T) {
 	if name == "" {
 		t.Fatal("NPM_NAME is empty")
 	}
-	b, err := os.ReadFile(filepath.Join(repoRoot(), "npm", "bin", "aguard.js"))
+	b, err := os.ReadFile(filepath.Join(repoRoot(), "npm", "bin", "bas-guard.js"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if strings.Contains(string(b), name) {
-		t.Errorf("npm/bin/aguard.js hardcodes the package name %q; it must read it from ../package.json", name)
+		t.Errorf("npm/bin/bas-guard.js hardcodes the package name %q; it must read it from ../package.json", name)
 	}
 }
 
@@ -237,7 +239,7 @@ func fakeLauncherTree(t *testing.T, script string) string {
 	if !ok {
 		t.Skipf("no platform package for %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
-	shim, err := os.ReadFile(filepath.Join(repoRoot(), "npm", "bin", "aguard.js"))
+	shim, err := os.ReadFile(filepath.Join(repoRoot(), "npm", "bin", "bas-guard.js"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -256,8 +258,8 @@ func fakeLauncherTree(t *testing.T, script string) string {
 	// for the binary.
 	mustWrite(filepath.Join(root, "package.json"), `{"name":"`+name+`","version":"0.0.0-test",`+
 		`"optionalDependencies":{"`+name+`-`+suffix+`":"0.0.0-test"}}`, 0o644)
-	mustWrite(filepath.Join(root, "bin", "aguard.js"), string(shim), 0o755)
-	mustWrite(filepath.Join(root, "node_modules", name+"-"+suffix, "aguard"), script, 0o755)
+	mustWrite(filepath.Join(root, "bin", "bas-guard.js"), string(shim), 0o755)
+	mustWrite(filepath.Join(root, "node_modules", name+"-"+suffix, "bas-guard"), script, 0o755)
 	return root
 }
 
@@ -318,7 +320,7 @@ func TestNpmLauncherReproducesTheBinarysExit(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			root := fakeLauncherTree(t, tc.script)
-			cmd := exec.Command(node, filepath.Join(root, "bin", "aguard.js"), "scan")
+			cmd := exec.Command(node, filepath.Join(root, "bin", "bas-guard.js"), "scan")
 			var stderr strings.Builder
 			cmd.Stderr = &stderr
 			_ = cmd.Run()
@@ -354,7 +356,7 @@ func TestNpmLauncherExitsTwoWhenThePlatformBinaryIsMissing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cmd := exec.Command(node, filepath.Join(root, "bin", "aguard.js"), "version")
+	cmd := exec.Command(node, filepath.Join(root, "bin", "bas-guard.js"), "version")
 	out, err := cmd.CombinedOutput()
 	code := cmd.ProcessState.ExitCode()
 	if code != 2 {
@@ -372,7 +374,7 @@ func TestNpmLauncherExitsTwoWhenThePlatformBinaryIsMissing(t *testing.T) {
 // platform that is built AND pinned would still be refused with "no prebuilt binary" on a
 // machine where npm had installed its binary.
 func TestNpmLauncherKeepsNoPlatformListOfItsOwn(t *testing.T) {
-	b, err := os.ReadFile(filepath.Join(repoRoot(), "npm", "bin", "aguard.js"))
+	b, err := os.ReadFile(filepath.Join(repoRoot(), "npm", "bin", "bas-guard.js"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -380,8 +382,76 @@ func TestNpmLauncherKeepsNoPlatformListOfItsOwn(t *testing.T) {
 	// signals and rule IDs, not platforms.
 	for _, literal := range []string{`"darwin"`, `"linux"`, `"x64"`, `"arm64"`} {
 		if strings.Contains(string(b), literal) {
-			t.Errorf("npm/bin/aguard.js contains the platform literal %s; it must derive the "+
+			t.Errorf("npm/bin/bas-guard.js contains the platform literal %s; it must derive the "+
 				"supported set from its own optionalDependencies instead", literal)
 		}
+	}
+}
+
+// TestNpmAliasPackage: the unscoped bas-guard package (P-082) exists so `npx bas-guard` runs this
+// tool and nobody else can publish under the name. It carries no binary and no platform list: it
+// depends on the scoped launcher at exactly its own version and forwards to it, so the launcher's
+// exit-code and stdio contract is the only one there is.
+func TestNpmAliasPackage(t *testing.T) {
+	if makeVar(t, "NPM_ALIAS_NAME") != "bas-guard" {
+		t.Fatalf("NPM_ALIAS_NAME = %q, want bas-guard", makeVar(t, "NPM_ALIAS_NAME"))
+	}
+	alias := readTemplate(t, "alias/package.json.tmpl")
+	if alias["name"] != "__ALIAS__" {
+		t.Errorf("alias name = %v, want the __ALIAS__ placeholder", alias["name"])
+	}
+	deps, _ := alias["dependencies"].(map[string]any)
+	if len(deps) != 1 || deps["__NAME__"] != "__VERSION__" {
+		t.Errorf("alias must depend on exactly the launcher at its own version, got %v", alias["dependencies"])
+	}
+	for _, f := range []string{"os", "cpu", "optionalDependencies"} {
+		if _, ok := alias[f]; ok {
+			t.Errorf("alias declares %s; it carries no binary, the launcher picks the platform", f)
+		}
+	}
+	bin, _ := alias["bin"].(map[string]any)
+	if len(bin) != 1 || bin["bas-guard"] != "bin/bas-guard.js" {
+		t.Errorf("alias must expose only bin.bas-guard (aguard is another project's unscoped name), got %v", alias["bin"])
+	}
+}
+
+// TestNpmAliasForwardsToTheLauncher: `node <alias>/bin/bas-guard.js` runs the launcher of the
+// package it depends on, which runs the platform binary — exit code 3 (clean: acted partially)
+// arrives unchanged, the code a forwarder that collapsed non-zero codes would lose.
+func TestNpmAliasForwardsToTheLauncher(t *testing.T) {
+	node, err := exec.LookPath("node")
+	if err != nil {
+		t.Skip("node not installed; the launcher is only reachable through it")
+	}
+	launcherRoot := fakeLauncherTree(t, "#!/bin/sh\nexit 3\n")
+	tmpl, err := os.ReadFile(filepath.Join(repoRoot(), "npm", "alias", "bin", "bas-guard.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	aliasRoot := t.TempDir()
+	scoped := filepath.Join(aliasRoot, "node_modules", "@example", "fake")
+	if err := os.MkdirAll(filepath.Dir(scoped), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(launcherRoot, scoped); err != nil {
+		t.Fatal(err)
+	}
+	shim := strings.ReplaceAll(string(tmpl), "__NAME__", "@example/fake")
+	if err := os.MkdirAll(filepath.Join(aliasRoot, "bin"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(aliasRoot, "bin", "bas-guard.js"), []byte(shim), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command(node, filepath.Join(aliasRoot, "bin", "bas-guard.js"), "clean")
+	out, err := cmd.CombinedOutput()
+	code := -1
+	if ee, ok := err.(*exec.ExitError); ok {
+		code = ee.ExitCode()
+	} else if err == nil {
+		code = 0
+	}
+	if code != 3 {
+		t.Fatalf("exit code = %d (err %v), want 3 passed through the alias and the launcher\n%s", code, err, out)
 	}
 }

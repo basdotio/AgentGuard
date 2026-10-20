@@ -7,7 +7,7 @@
 //
 // Two properties are load-bearing and neither is cosmetic:
 //
-//   stdio: "inherit" — `aguard hook` reads a Claude Code hook event as JSON on STDIN. A pipe
+//   stdio: "inherit" — `bas-guard hook` reads a Claude Code hook event as JSON on STDIN. A pipe
 //   that does not reach the child turns the load-time gate into a gate that never sees the
 //   event it was asked about.
 //
@@ -28,7 +28,7 @@ const { spawnSync } = require("child_process");
 const EXIT_RUNTIME_ERROR = 2;
 
 function die(message) {
-  process.stderr.write(`aguard: ${message}\n`);
+  process.stderr.write(`bas-guard: ${message}\n`);
   process.exit(EXIT_RUNTIME_ERROR);
 }
 
@@ -51,13 +51,13 @@ if (!suffixes.includes(`${platform}-${arch}`)) {
     `no prebuilt binary for ${platform}-${arch}. Supported: ` +
       (suffixes.join(", ") || "none declared") +
       ". Download a release binary or build from source: " +
-      "https://github.com/basdotio/AgentGuard/releases/latest",
+      "https://github.com/basdotio/bas-guard/releases/latest",
   );
 }
 
 let binary;
 try {
-  binary = require.resolve(`${platformPackage}/aguard`);
+  binary = require.resolve(`${platformPackage}/bas-guard`);
 } catch {
   // The optional dependency is missing: installed with --no-optional, restored from a lockfile
   // made on another platform, or a partial install. Say which package, because the fix is to
@@ -88,7 +88,7 @@ if (typeof result.status === "number") {
 //
 // Whether to SAY anything is a separate question from the exit code, and the dividing line is
 // not one signal but a category: these five are how a person or the OS asks a program to stop.
-// Ctrl-C, closing the terminal, `kill`, and `aguard scan | head` closing the pipe are all
+// Ctrl-C, closing the terminal, `kill`, and `bas-guard scan | head` closing the pipe are all
 // ordinary, and the binary alone prints nothing for any of them — so a launcher that announced
 // them would add a scary line, naming a file inside node_modules, to the most common way of
 // interrupting a long scan. What is left (SIGSEGV, SIGBUS, SIGABRT, SIGKILL from an OOM kill)
@@ -99,7 +99,7 @@ if (result.signal) {
   const signo = require("os").constants.signals[result.signal];
   if (!ROUTINE_SIGNALS.includes(result.signal)) {
     process.stderr.write(
-      `aguard: ${binary} was terminated by ${result.signal} before it produced a verdict\n`,
+      `bas-guard: ${binary} was terminated by ${result.signal} before it produced a verdict\n`,
     );
   }
   process.exit(typeof signo === "number" ? 128 + signo : EXIT_RUNTIME_ERROR);

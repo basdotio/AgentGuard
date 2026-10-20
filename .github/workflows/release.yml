@@ -139,11 +139,14 @@ jobs:
             echo "publishing $spec"
             (cd "$dir" && npm publish --access public --provenance)
           }
+          # Platform packages, then the launcher that pins them, then the unscoped alias that
+          # depends on the launcher (P-082): each is published only once what it needs is there.
           for d in dist/npm/*/; do
-            case "$d" in */launcher/) continue ;; esac
+            case "$d" in */launcher/|*/alias/) continue ;; esac
             publish "${d%/}"
           done
           publish dist/npm/launcher
+          publish dist/npm/alias
 
       - name: create release
         if: startsWith(github.ref, 'refs/tags/v')

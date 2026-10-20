@@ -136,6 +136,9 @@ dist:
 # per-platform package names from its own package.json at run time, and the templates take it
 # by substitution. Renaming the package is this one line plus the READMEs.
 NPM_NAME    := @bas.io/guard
+# The unscoped alias (P-082): `npx bas-guard` runs NPM_NAME, and nobody else can take the name. It
+# depends on NPM_NAME at exactly its own version and carries no binary.
+NPM_ALIAS_NAME := bas-guard
 # npm needs bare semver; the Go stamp is a git describe, so `v0.8.1` -> `0.8.1`.
 #
 # An untagged tree stamps `0.8.1-2-gabc` or `0.8.1-dirty`, and npm ACCEPTS both — they are legal
@@ -151,7 +154,7 @@ NPM_VERSION ?= $(patsubst v%,%,$(VERSION))
 NPM_VERSION_DERIVED := $(if $(filter file,$(origin NPM_VERSION)),1,)
 NPM_OUT     := dist/npm
 
-# Lay out the five packages under dist/npm: one launcher package plus one per platform, each
+# Lay out the six packages under dist/npm: one launcher package plus one per platform, each
 # carrying its own static binary. No package has an install script — the binary is IN the
 # tarball and npm picks the right one from the os/cpu fields. The widespread alternative (a
 # postinstall that downloads a binary) is the exact shape this scanner reports on other
@@ -170,14 +173,14 @@ npm-dist:
 	fi
 	@for t in $(DIST_TARGETS); do \
 	  os=$${t%/*}; arch=$${t#*/}; \
-	  [ -f dist/aguard-$$os-$$arch ] || { echo "dist/aguard-$$os-$$arch missing — run 'make dist' first" >&2; exit 1; }; \
+	  [ -f dist/bas-guard-$$os-$$arch ] || { echo "dist/bas-guard-$$os-$$arch missing — run 'make dist' first" >&2; exit 1; }; \
 	done
 	@rm -rf $(NPM_OUT)
 	@mkdir -p $(NPM_OUT)/launcher/bin
 	@sed -e 's|__NAME__|$(NPM_NAME)|g' -e 's|__VERSION__|$(NPM_VERSION)|g' \
 	  npm/package.json.tmpl > $(NPM_OUT)/launcher/package.json
 	@sed -e 's|__NAME__|$(NPM_NAME)|g' npm/README.md.tmpl > $(NPM_OUT)/launcher/README.md
-	@cp npm/bin/aguard.js $(NPM_OUT)/launcher/bin/aguard.js
+	@cp npm/bin/bas-guard.js $(NPM_OUT)/launcher/bin/bas-guard.js
 	@echo "  $(NPM_NAME)@$(NPM_VERSION)"
 	@for t in $(DIST_TARGETS); do \
 	  os=$${t%/*}; goarch=$${t#*/}; \
@@ -190,10 +193,17 @@ npm-dist:
 	      -e 's|__OS__|'"$$os"'|g' \
 	      -e 's|__CPU__|'"$$cpu"'|g' \
 	      npm/platform.package.json.tmpl > $$dir/package.json || exit 1; \
-	  cp dist/aguard-$$os-$$goarch $$dir/aguard || exit 1; \
-	  chmod 0755 $$dir/aguard || exit 1; \
+	  cp dist/bas-guard-$$os-$$goarch $$dir/bas-guard || exit 1; \
+	  chmod 0755 $$dir/bas-guard || exit 1; \
 	  echo "  $(NPM_NAME)-$$os-$$cpu"; \
 	done
+	@mkdir -p $(NPM_OUT)/alias/bin
+	@sed -e 's|__ALIAS__|$(NPM_ALIAS_NAME)|g' -e 's|__NAME__|$(NPM_NAME)|g' -e 's|__VERSION__|$(NPM_VERSION)|g' \
+	  npm/alias/package.json.tmpl > $(NPM_OUT)/alias/package.json
+	@sed -e 's|__NAME__|$(NPM_NAME)|g' npm/alias/README.md.tmpl > $(NPM_OUT)/alias/README.md
+	@sed -e 's|__NAME__|$(NPM_NAME)|g' npm/alias/bin/bas-guard.js > $(NPM_OUT)/alias/bin/bas-guard.js
+	@chmod 0755 $(NPM_OUT)/alias/bin/bas-guard.js
+	@echo "  $(NPM_ALIAS_NAME)@$(NPM_VERSION)"
 
 clean:
 	rm -rf bin dist

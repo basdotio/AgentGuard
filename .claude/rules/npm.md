@@ -8,8 +8,12 @@ paths:
 ## npm 分发(`npm/`,`make npm-dist`)
 
 面向用户的说明在 [README.md](../../README.md#install);这里只写不要怎么改。
-布局是**五个包**:一个 launcher(`bin/aguard.js` + 从自己 `package.json` 读名字)加四个平台包
-(带 `os`/`cpu`,各装一份静态二进制)。参照的是 biome,不是 esbuild。
+布局是**六个包**:一个 launcher(`bin/bas-guard.js` + 从自己 `package.json` 读名字,`bas-guard` 和过渡期的
+`aguard` 两个命令都指向它)加四个平台包(带 `os`/`cpu`,各装一份静态二进制,文件名 `bas-guard`),再加一个不带 scope 的
+别名包 `bas-guard`(P-082,`NPM_ALIAS_NAME`):它不带二进制、不带平台清单,只按**同一版本**依赖 launcher 并 `require` 它,
+所以 launcher 的退出码和 stdio 约定是唯一的一份(`TestNpmAliasPackage`、`TestNpmAliasForwardsToTheLauncher`)。
+别名包只暴露 `bas-guard`:不带 scope 的 `aguard` 是别人的包名。发布顺序是平台包 → launcher → 别名包。
+参照的是 biome,不是 esbuild。
 
 - **任何一个包都不许有 install 脚本。** 把编译产物放上 npm 最常见的做法是 postinstall
   下载二进制 —— 那正是本引擎在别人仓库里会报的形状(取回来再执行)。自己用这种方式分发,
@@ -38,7 +42,7 @@ paths:
   `optionalDependencies` → launcher **运行时从自己的 `package.json` 读出**支持的平台。
   `TestNpmLauncherPinsEveryDistTarget` 管前半段(多一个是发布悬空依赖,少一个是那台机器上
   装完直接退 2),`TestNpmLauncherKeepsNoPlatformListOfItsOwn` 管后半段 —— 它断言
-  `npm/bin/aguard.js` 里**没有** `"darwin"`/`"linux"`/`"x64"`/`"arm64"` 这些字面量。第一版
+  `npm/bin/bas-guard.js` 里**没有** `"darwin"`/`"linux"`/`"x64"`/`"arm64"` 这些字面量。第一版
   在 shim 里写死了一份 `SUPPORTED`,那种漂移别的测试都看不见:一个已构建、已 pin 的平台
   照样会被 launcher 以"no prebuilt binary"拒掉,而 npm 明明把二进制装好了。
 - **平台包不写 `engines`。** 它里面只有一个二进制、一行 JS 都没有,约束不了任何东西;而作为
