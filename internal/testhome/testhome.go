@@ -115,7 +115,7 @@ func Home() string { return home }
 
 // OriginalEnviron is the environment the test binary started with, for the toolchain
 // processes a test starts — `go build`, `git` — whose own configuration (build and module
-// caches, GOENV, core.excludesFile) lives under the developer's home. Never for aguard itself,
+// caches, GOENV, core.excludesFile) lives under the developer's home. Never for bas-guard itself,
 // in-process or built: that is what Main exists to keep away from the developer's home.
 // Before Main has run it is os.Environ().
 func OriginalEnviron() []string {

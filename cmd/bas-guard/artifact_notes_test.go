@@ -85,7 +85,7 @@ func TestBrokenSettingsIsNotReportedSafe(t *testing.T) {
 	}
 }
 
-// TestCheckBrokenSettingsCLI is the reviewer's reproduction, through the binary: `aguard check`
+// TestCheckBrokenSettingsCLI is the reviewer's reproduction, through the binary: `bas-guard check`
 // on the broken root. The note is now on stdout; the exit code is still 0, because a dimension-0
 // note never gates (score.Deterministic) — making a broken config fail `check` is a different
 // contract, and this test pins that it was not changed on the way.
@@ -96,7 +96,7 @@ func TestCheckBrokenSettingsCLI(t *testing.T) {
 		t.Errorf("exit %d, want 0 (dim-0 notes never gate); stderr:\n%s", code, stderr)
 	}
 	if !strings.Contains(stdout, "PARSE-000") || strings.Contains(stdout, "looks safe") {
-		t.Errorf("aguard check on a settings.json that does not parse:\n%s", stdout)
+		t.Errorf("bas-guard check on a settings.json that does not parse:\n%s", stdout)
 	}
 }
 
@@ -229,12 +229,12 @@ func TestCleanSettingsReportIsUnchanged(t *testing.T) {
 	}
 }
 
-const cleanTerminalGolden = `AgentGuard · <TMP>/.claude
+const cleanTerminalGolden = `BAS Guard · <TMP>/.claude
 ✅ Risk score 100/100 (Low) — nothing to fix
   Checked 1 hook.
 `
 
-const cleanVerboseGolden = `AgentGuard · <TMP>/.claude
+const cleanVerboseGolden = `BAS Guard · <TMP>/.claude
 ✅ Risk score 100/100 (Low) — nothing to fix
   Your Claude Code setup looks safe.
   Checked 1 hook.
@@ -253,7 +253,7 @@ Scan details
 `
 
 const cleanMarkdownGolden = "" +
-	"# AgentGuard scan · `<TMP>/.claude`\n" +
+	"# BAS Guard scan · `<TMP>/.claude`\n" +
 	"\n" +
 	"**Risk score 100/100 (Low)** — deterministic and reproducible; this is the number `--fail-on` reads.\n" +
 	"\n" +
@@ -281,7 +281,7 @@ const cleanMarkdownGolden = "" +
 	"- OWASP Agentic (2026): 7/10 categories have rules; silent on ASI-08, ASI-09, ASI-10 (runtime behaviour a static scan cannot witness)\n" +
 	"- Static analysis only: it cannot prove malice or see runtime behaviour. `--json` and `--sarif` carry every path in full; rule ids are explained in docs/rules.md: https://github.com/basdotio/bas-guard/blob/main/docs/rules.md\n" +
 	"\n" +
-	"<sub>AgentGuard test · scanned 2026-01-01 00:00 UTC</sub>\n"
+	"<sub>BAS Guard test · scanned 2026-01-01 00:00 UTC</sub>\n"
 
 // TestBrokenSettingsMachineOutputUnchanged is the other reverse assertion: the data was always
 // there, and this change is about who renders it, not where it lives. JSON keeps PARSE-000 on the

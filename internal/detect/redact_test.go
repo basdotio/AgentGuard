@@ -129,7 +129,7 @@ func TestRedact_Table(t *testing.T) {
 			want: `{"author": "Alice Smith"}`,
 		},
 		{
-			// aguard's own config key. A tool that redacts its own documentation is telling
+			// bas-guard's own config key. A tool that redacts its own documentation is telling
 			// the operator its output cannot be trusted to be readable.
 			name: "authority is not auth",
 			in:   "  authority: escalate",

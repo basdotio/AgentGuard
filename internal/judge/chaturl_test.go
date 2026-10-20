@@ -50,7 +50,7 @@ func lineStub(t *testing.T) (*httptest.Server, func() []receivedLine) {
 	}
 }
 
-// callBoth makes one Judge call and one Ping (the call behind `aguard llm test`) through the
+// callBoth makes one Judge call and one Ping (the call behind `bas-guard llm test`) through the
 // client the commands build, NewHTTP(…, nil).
 func callBoth(t *testing.T, baseURL string) {
 	t.Helper()

@@ -222,7 +222,7 @@ func TestContentHash_SameConfigTwoMachines(t *testing.T) {
 	if h := hashOf(r1+string(filepath.Separator), a1); h != h1 {
 		t.Errorf("a trailing slash on the root changed the hook's identity: %q vs %q", h, h1)
 	}
-	// `cd ~/.claude && aguard hash .` must name the same hook `aguard hash ~/.claude` does.
+	// `cd ~/.claude && bas-guard hash .` must name the same hook `bas-guard hash ~/.claude` does.
 	wd, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)

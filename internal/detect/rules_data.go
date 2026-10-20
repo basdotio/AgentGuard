@@ -8,7 +8,7 @@ import (
 	"github.com/basdotio/bas-guard/internal/model"
 )
 
-// builtinRules returns AgentGuard's rule set, derived from OWASP Agentic Top 10 and MITRE
+// builtinRules returns BAS Guard's rule set, derived from OWASP Agentic Top 10 and MITRE
 // ATLAS (Ref cites each basis) rather than ported from other tools. Line-oriented regex plus a
 // separate structural exfil check (dim 3, see credentialLine/networkActionRE). There is no AST:
 // these are high-precision patterns over logical lines, and logical.go says what a parser would

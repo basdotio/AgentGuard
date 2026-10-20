@@ -330,7 +330,7 @@ func TestEpochRuleLoadsWhereCoveredCodeIsEdited(t *testing.T) {
 		"internal/collect/imports.go",     // EXFIL-005
 		"internal/permcheck/permcheck.go", // PERM-*
 		"internal/gate/status.go",         // GATE-001, raised by scan
-		"cmd/bas-guard/main.go",              // analyze(): which stages run
+		"cmd/bas-guard/main.go",           // analyze(): which stages run
 	} {
 		if _, err := os.Stat(filepath.Join(repoRoot(), covered)); err != nil {
 			t.Fatalf("%s is gone; point this test at the file that now holds that check: %v", covered, err)

@@ -40,7 +40,7 @@ func judgeNotConfigured(artifacts int, reason string) *model.JudgeSummary {
 	}
 }
 
-// judgeVersionFields is what `aguard version` appends after rules=: the two versions of this build's
+// judgeVersionFields is what `bas-guard version` appends after rules=: the two versions of this build's
 // judge. After every existing field, so $2 is still the version (release.yml) and the baselines
 // adapter, which keeps the whole line as tool_version, records the judge build with no change.
 func judgeVersionFields() string {

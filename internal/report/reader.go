@@ -50,9 +50,9 @@ func kindWord(k model.ArtifactKind) string {
 // title is the report's first line: what it is about, in words.
 func title(r model.ScanResult) string {
 	if a, ok := target(r); ok {
-		return "AgentGuard · " + a.Name + " (" + kindWord(a.Kind) + ")"
+		return "BAS Guard · " + a.Name + " (" + kindWord(a.Kind) + ")"
 	}
-	return "AgentGuard · " + r.Root
+	return "BAS Guard · " + r.Root
 }
 
 // nothingToFix is the score line's clause when there is nothing to look at and nothing went unread.
@@ -165,7 +165,7 @@ func stepText(s step, file func(string) string) string {
 // command records a decision for the load-time gate and changes no score.
 const approveLead = "If you decide to keep it, tell the load-time gate: "
 
-// approveCommand is the `aguard approve` command for g's artifact, or "" when the gate could not use one.
+// approveCommand is the `bas-guard approve` command for g's artifact, or "" when the gate could not use one.
 //
 // Offered only for a static finding at medium or above (a low finding never stops a load, and a clean or
 // low-only skill is remembered on its own, P-005) on an artifact that:
@@ -190,12 +190,12 @@ func approveCommand(r model.ScanResult, g Group) string {
 		}
 	}
 	if a.Path == r.Root && a.Plugin == "" {
-		return "aguard approve " + cmdline.Arg(a.Path)
+		return "bas-guard approve " + cmdline.Arg(a.Path)
 	}
 	if !filepath.IsAbs(r.Root) || !within(r.Root, a.Path) {
 		return ""
 	}
-	return "aguard approve --root " + cmdline.Arg(r.Root) + " " + cmdline.Arg(a.Path)
+	return "bas-guard approve --root " + cmdline.Arg(r.Root) + " " + cmdline.Arg(a.Path)
 }
 
 // within reports whether p lies strictly inside dir, lexically (both are the paths the scan recorded).

@@ -127,7 +127,7 @@ func checkChildren(t *testing.T, res Result, parent, bundle, suffix string, want
 			hash = TreeHash(w.path, w.path)
 		}
 		if a.Hash != hash || a.Hash == "" {
-			t.Errorf("%s: hash %q, want %q (the hash `aguard hash %s` prints)", name, a.Hash, hash, w.path)
+			t.Errorf("%s: hash %q, want %q (the hash `bas-guard hash %s` prints)", name, a.Hash, hash, w.path)
 		}
 	}
 	for _, n := range names {
@@ -146,7 +146,7 @@ func envCount(t *testing.T, env model.EnvSummary, key string) int {
 
 // TestPluginContents_FollowClaudeCodesLoader: a plugin's skills, commands and agents are artifacts
 // of their own — exactly the ones Claude Code 2.1.107 loads, named as it and the load-time gate name
-// them, hashed as `aguard hash` hashes them — for every channel a plugin is installed through and for
+// them, hashed as `bas-guard hash` hashes them — for every channel a plugin is installed through and for
 // `check <plugin>`. The copies that never load (docs/ja, .agents, a symlinked command or agent, a file
 // next to a SKILL.md, a manifest path outside the plugin) are not.
 func TestPluginContents_FollowClaudeCodesLoader(t *testing.T) {

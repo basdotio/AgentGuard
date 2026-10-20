@@ -17,7 +17,7 @@ import (
 	"github.com/basdotio/bas-guard/internal/report"
 )
 
-// `aguard llm preview` — what `--llm` would send, shown before anything is sent (P-027).
+// `bas-guard llm preview` — what `--llm` would send, shown before anything is sent (P-027).
 //
 // A user choosing a hosted endpoint accepts that redacted excerpts of their files go to that
 // vendor; until now the only way to see those excerpts was a capture server. The preview runs the
@@ -266,7 +266,7 @@ func previewCallLine(q previewRequest, clean func(string) string) string {
 	return line
 }
 
-// newLLMPreviewCommand is `aguard llm preview [path]`. root, the config, the baseline and the
+// newLLMPreviewCommand is `bas-guard llm preview [path]`. root, the config, the baseline and the
 // reputation switch are the persistent flags `scan` and `check` read, so the preview reads them too.
 func newLLMPreviewCommand(root, cfgPath, ignorePath *string, noRep *bool) *cobra.Command {
 	var asJSON bool
@@ -275,7 +275,7 @@ func newLLMPreviewCommand(root, cfgPath, ignorePath *string, noRep *bool) *cobra
 		Use:   "preview [path]",
 		Short: "Print exactly what --llm would send — for check <path>, or with no path for scan — without sending anything",
 		Long: "Print exactly what --llm would send, without sending anything and without needing a key.\n\n" +
-			"With a path: the calls `aguard check <path> --llm` would make. Without one: the calls `aguard scan --llm`\n" +
+			"With a path: the calls `bas-guard check <path> --llm` would make. Without one: the calls `bas-guard scan --llm`\n" +
 			"would make for --root and, as scan does, for the Downloads items under --inbox. Per artifact: its kind,\n" +
 			"name and content hash; per call: the pass, how often it is sent, the text that goes inside the call's\n" +
 			"nonce fence, the file lines it came from, and what was shortened. The nonce itself is drawn per call\n" +

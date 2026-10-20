@@ -198,7 +198,7 @@ type chatResponse struct {
 
 // Judge sends one redacted comparison and parses the model's JSON verdict.
 // Ping makes one minimal chat call and reports how long it took. It is the health check behind
-// `aguard llm test`: the same endpoint, model, key and request shape a real judge run uses, so a
+// `bas-guard llm test`: the same endpoint, model, key and request shape a real judge run uses, so a
 // wrong URL, a bad key, a renamed model or a blocked network fails HERE, with the server's own
 // error in hand, rather than as N failed calls at the end of a scan. Nothing scanned is sent.
 func (c *HTTPClient) Ping(ctx context.Context) (time.Duration, error) {

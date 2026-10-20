@@ -15,7 +15,7 @@ import (
 	"github.com/basdotio/bas-guard/internal/redact"
 )
 
-// The Downloads scan: `aguard scan` also looks where downloads land for agent-shaped things
+// The Downloads scan: `bas-guard scan` also looks where downloads land for agent-shaped things
 // that are not installed yet, and checks each with the same static pipeline `check` uses.
 //
 // Kept apart from the environment scan on purpose. Overall means "risk in what your agent

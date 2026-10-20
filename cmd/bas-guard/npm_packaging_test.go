@@ -138,7 +138,7 @@ func TestNpmLauncherAndPlatformRolesStayApart(t *testing.T) {
 		t.Errorf("launcher must expose bin.bas-guard and bin.aguard = bin/bas-guard.js, got %v", launcher["bin"])
 	}
 	// `files` is what decides whether the bin target reaches the tarball, so declaring the bin
-	// entry is only half of it. Omitting the file publishes a package whose `aguard` command
+	// entry is only half of it. Omitting the file publishes a package whose `bas-guard` command
 	// points at something that is not there — broken for every user, and both fields would
 	// still look individually well-formed.
 	shipped := map[string]bool{}
@@ -271,7 +271,7 @@ func fakeLauncherTree(t *testing.T, script string) string {
 //   - a signal must NOT become 0. `process.exitCode = null` (what assigning result.status
 //     directly does) exits 0, which in this tool reads as "below threshold" — a killed scan
 //     rendered as a clean one. 128+signal is what a shell reports for the binary itself;
-//   - SIGPIPE is the one signal that is routine rather than alarming: `aguard scan | head`
+//   - SIGPIPE is the one signal that is routine rather than alarming: `bas-guard scan | head`
 //     closes the pipe deliberately. It still must not exit 0, but it must stay quiet, or every
 //     piped invocation grows a warning nobody needs.
 func TestNpmLauncherReproducesTheBinarysExit(t *testing.T) {
@@ -298,7 +298,7 @@ func TestNpmLauncherReproducesTheBinarysExit(t *testing.T) {
 			wantCode: 128 + 2,
 		},
 		{
-			// `aguard scan | head` — the downstream closed the pipe on purpose.
+			// `bas-guard scan | head` — the downstream closed the pipe on purpose.
 			name:     "sigpipe is non-zero but silent",
 			script:   "#!/bin/sh\nkill -PIPE $$\n",
 			wantCode: 128 + 13,

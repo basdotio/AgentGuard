@@ -29,7 +29,7 @@ const hookSubcommand = "hook"
 //
 // Two slots, because one was a bug: install wrote the original to .aguard-bak, uninstall then
 // wrote the post-install file over it, and the operator's ORIGINAL settings were gone after the
-// second command. Now .aguard-bak holds the file as it was before aguard ever touched it and is
+// second command. Now .aguard-bak holds the file as it was before bas-guard ever touched it and is
 // never overwritten; .aguard-bak.prev holds the state before the most recent change and is
 // overwritten each time. Restoring "what I had before this tool" is always the first one.
 const (
@@ -227,7 +227,7 @@ func (p *InstallPlan) Apply() error {
 	if b, err := safeio.ReadFile(p.SettingsPath, safeio.MaxConfigBytes); err == nil {
 		orig := p.SettingsPath + backupSuffix
 		if _, serr := os.Stat(orig); errors.Is(serr, fs.ErrNotExist) {
-			// First time aguard changes this file: this IS the original. Keep it forever.
+			// First time bas-guard changes this file: this IS the original. Keep it forever.
 			if err := os.WriteFile(orig, b, 0o600); err != nil {
 				return fmt.Errorf("backing up %s: %w", p.SettingsPath, err)
 			}
@@ -270,7 +270,7 @@ func (p InstallPlan) Describe(w io.Writer, applied bool) {
 		return
 	}
 	if applied && p.Original != "" {
-		fmt.Fprintf(w, "original settings (before aguard ever changed them) saved to %s\n", p.Original)
+		fmt.Fprintf(w, "original settings (before bas-guard ever changed them) saved to %s\n", p.Original)
 	}
 	if applied && p.Backup != "" {
 		fmt.Fprintf(w, "settings as they were before this change saved to %s\n", p.Backup)
@@ -308,7 +308,7 @@ func readSettings(path string) (map[string]any, error) {
 // hook subcommand, quoted only if it has to be.
 //
 // Resolving the running binary matters because the gate is invoked by the editor, whose PATH
-// is not the shell's: "aguard hook" works when typed and fails silently as a hook, and a hook
+// is not the shell's: "bas-guard hook" works when typed and fails silently as a hook, and a hook
 // that fails silently is a gate that is not there.
 func HookCommand(exe string) string {
 	if strings.ContainsAny(exe, " \t\"'") {

@@ -12,7 +12,7 @@ import (
 )
 
 // One environment, every way a person types its root. `--root ~/.claude/` is what shell completion
-// produces and `cd ~/.claude && aguard scan --root .` is the natural way to point at where you are;
+// produces and `cd ~/.claude && bas-guard scan --root .` is the natural way to point at where you are;
 // both used to leave the scripts a hook names under `~/` unread, so a hook piping curl into a shell
 // scored a clean 100. The report a reader gets must not depend on the spelling.
 

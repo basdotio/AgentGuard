@@ -27,7 +27,7 @@ const storeVersion = 1
 //
 // The map key is the canonical hash and the record repeats it, so a hand-edited file that
 // disagrees with itself can be detected rather than silently trusted (Load drops such rows).
-// Name and Path are for the human reading `aguard approvals`; they are never matched on —
+// Name and Path are for the human reading `bas-guard approvals`; they are never matched on —
 // approving "pdf-export" would survive that skill being replaced wholesale, which is the one
 // thing this store exists to prevent.
 type Approval struct {

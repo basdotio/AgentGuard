@@ -20,7 +20,7 @@ import (
 	"github.com/basdotio/bas-guard/internal/redact"
 )
 
-// `aguard llm` — set up, test and inspect the optional LLM judge without editing YAML.
+// `bas-guard llm` — set up, test and inspect the optional LLM judge without editing YAML.
 //
 // The judge used to be configured by hand: write a file, know an endpoint URL and a model
 // name, export an environment variable, pass --config and --llm every run. Each of those is a
@@ -45,7 +45,7 @@ func newLLMCommand(cfgPath *string) *cobra.Command {
 	var keyStdin, list bool
 	setup := &cobra.Command{
 		Use:   "setup",
-		Short: "Write the judge config and store the API key (0600); then `aguard scan --llm` just works",
+		Short: "Write the judge config and store the API key (0600); then `bas-guard scan --llm` just works",
 		RunE: func(_ *cobra.Command, _ []string) error {
 			if list {
 				return printProviders(os.Stdout)
@@ -115,7 +115,7 @@ func printProviders(w io.Writer) error {
 // content will be sent. It never prints the key and never sends anything.
 func runLLMSetup(w io.Writer, cfgPath string, o llmSetupOpts) error {
 	if o.Provider == "" {
-		return errors.New("--provider is required; `aguard llm setup --list` shows the presets")
+		return errors.New("--provider is required; `bas-guard llm setup --list` shows the presets")
 	}
 	llm := config.Default().LLM
 	llm.Enabled = true
@@ -193,9 +193,9 @@ func runLLMSetup(w io.Writer, cfgPath string, o llmSetupOpts) error {
 	fmt.Fprintf(w, "config written to %s\n", cfgPath)
 	shown := redact.Endpoint(llm.BaseURL)
 	fmt.Fprintf(w, "endpoint %s · model %s\n", shown, llm.Model)
-	fmt.Fprintf(w, "\nWith `aguard scan --llm`, redacted excerpts of your skills, hooks and config are sent to %s for analysis. "+
+	fmt.Fprintf(w, "\nWith `bas-guard scan --llm`, redacted excerpts of your skills, hooks and config are sent to %s for analysis. "+
 		"Raw secrets are redacted first; the judge can only add findings or raise the risk — it never removes a finding or makes a result look safer.\n"+
-		"Next: `aguard llm test` to confirm the endpoint answers.\n", shown)
+		"Next: `bas-guard llm test` to confirm the endpoint answers.\n", shown)
 	return nil
 }
 
@@ -206,7 +206,7 @@ func runLLMTest(w io.Writer, cfgPath string) error {
 		return err
 	}
 	if !cfg.LLM.Enabled {
-		return errors.New("the judge is not configured (llm.enabled is false) — run `aguard llm setup`")
+		return errors.New("the judge is not configured (llm.enabled is false) — run `bas-guard llm setup`")
 	}
 	if err := cfg.LLM.CheckEndpoint(); err != nil {
 		return err
@@ -275,7 +275,7 @@ func runLLMStatus(w io.Writer, cfgPath string) error {
 	fmt.Fprintf(w, "model:    %s\n", cfg.LLM.Model)
 	fmt.Fprintf(w, "key:      %s\n", cfg.KeySource())
 	if !cfg.LLM.Enabled {
-		fmt.Fprintln(w, "\nNot set up. `aguard llm setup --provider <name> --key-stdin` configures it in one step.")
+		fmt.Fprintln(w, "\nNot set up. `bas-guard llm setup --provider <name> --key-stdin` configures it in one step.")
 	}
 	return nil
 }

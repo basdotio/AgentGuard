@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-// TestLLMTest_QueryBaseURLReachesChatCompletions (P-078): `aguard llm test` with a base_url that
+// TestLLMTest_QueryBaseURLReachesChatCompletions (P-078): `bas-guard llm test` with a base_url that
 // carries a query sends its call to <path>/chat/completions with the query as written. Before
 // P-078 the suffix was appended after the query, so the call arrived at /v1 with the query value
 // "k123/chat/completions".

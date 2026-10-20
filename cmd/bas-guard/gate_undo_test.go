@@ -56,8 +56,8 @@ func TestUndoHintPastesAsIs(t *testing.T) {
 		t.Fatalf("no undo hint in %q", msg)
 	}
 	args := strings.Fields(cmd)
-	if len(args) != 4 || args[0] != "aguard" || args[1] != "approvals" || args[2] != "forget" {
-		t.Fatalf("undo hint %q is not `aguard approvals forget <hash>`", cmd)
+	if len(args) != 4 || args[0] != "bas-guard" || args[1] != "approvals" || args[2] != "forget" {
+		t.Fatalf("undo hint %q is not `bas-guard approvals forget <hash>`", cmd)
 	}
 	var out bytes.Buffer
 	if err := forgetApproval(&out, root, args[3]); err != nil {

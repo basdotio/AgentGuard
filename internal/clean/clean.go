@@ -281,7 +281,7 @@ func quarantine(w io.Writer, root string, res model.ScanResult, targets []moveTa
 	}
 
 	if len(out.Actions) > 0 {
-		fmt.Fprintf(w, "\nBatch %s. Undo with:  aguard clean --undo %s\n", out.Batch, out.Batch)
+		fmt.Fprintf(w, "\nBatch %s. Undo with:  bas-guard clean --undo %s\n", out.Batch, out.Batch)
 		fmt.Fprintln(w, "Quarantined content is still inside the config root, so it still scores;"+
 			" delete "+trash+" yourself once you are sure.")
 	}
@@ -302,7 +302,7 @@ func undoHandle(w io.Writer, out Result, trash string, err error) error {
 	if len(out.Actions) == 0 {
 		return err
 	}
-	fmt.Fprintf(w, "\n%d item(s) WERE moved before this failed. Batch %s — undo with:  aguard clean --undo %s\n",
+	fmt.Fprintf(w, "\n%d item(s) WERE moved before this failed. Batch %s — undo with:  bas-guard clean --undo %s\n",
 		len(out.Actions), out.Batch, out.Batch)
 	fmt.Fprintln(w, "They are in "+trash+".")
 	return err
@@ -469,13 +469,13 @@ func reportChain(w io.Writer, st ChainStatus) {
 	}
 	if st.Unchained > 0 {
 		fmt.Fprintf(w, "note: %d quarantine record row(s) predate the hash chain and cannot be verified "+
-			"(written by an older aguard). Newer rows are chained.\n", st.Unchained)
+			"(written by an older bas-guard). Newer rows are chained.\n", st.Unchained)
 	}
 }
 
 // reportSessionHazard states the one concurrency risk the lock does NOT cover.
 //
-// lock() makes two aguard runs mutually exclusive. It says nothing about Claude Code, which was
+// lock() makes two bas-guard runs mutually exclusive. It says nothing about Claude Code, which was
 // MEASURED to watch skills/, commands/ and agents/ live (docs/internals/measurement-startup-loading.md) — so a
 // session open right now sees this run's moves at once. The dangerous direction is undo: apply takes
 // a capability away from a running agent, undo hands one back, and the operator believes they only
@@ -494,7 +494,7 @@ func reportChain(w io.Writer, st ChainStatus) {
 // zero removed from it for exactly that reason.
 func reportSessionHazard(w io.Writer) {
 	fmt.Fprintln(w, "note: Claude Code watches skills/, commands/ and agents/ live, so a session open "+
-		"right now sees this\n      immediately. The lock here only keeps two aguard runs apart — it "+
+		"right now sees this\n      immediately. The lock here only keeps two bas-guard runs apart — it "+
 		"cannot see a session.")
 }
 

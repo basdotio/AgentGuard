@@ -154,7 +154,7 @@ func TestMarkdownFlag_DashIsStdout(t *testing.T) {
 	if !strings.Contains(stdout, "Risk score") || !strings.HasPrefix(stdout, "# ") {
 		t.Errorf("stdout should be the markdown document:\n%s", stdout)
 	}
-	if strings.Contains(stdout, "AgentGuard scan · root=") {
+	if strings.Contains(stdout, "BAS Guard scan · root=") {
 		t.Error("the terminal report must not be printed alongside the markdown")
 	}
 }

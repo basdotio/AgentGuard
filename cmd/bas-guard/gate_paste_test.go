@@ -129,8 +129,8 @@ func printedCommands(t *testing.T, f pasteFixture, cfg string) []pastedCommand {
 	if decision != string(gate.DecisionAsk) {
 		t.Fatalf("fixture: expected ask under default, got %s:\n%s", decision, reason)
 	}
-	line := after(t, reason, "Full report: aguard check ", "")
-	check, approve, ok := strings.Cut(line, " · trust these exact bytes: aguard approve ")
+	line := after(t, reason, "Full report: bas-guard check ", "")
+	check, approve, ok := strings.Cut(line, " · trust these exact bytes: bas-guard approve ")
 	if !ok {
 		t.Fatalf("the reason's command line changed shape: %q", line)
 	}
@@ -143,21 +143,21 @@ func printedCommands(t *testing.T, f pasteFixture, cfg string) []pastedCommand {
 		t.Fatalf("fixture: expected deny under auto, got %s:\n%s", decision, reason)
 	}
 	cmds = append(cmds, pastedCommand{"deny under auto", "approve",
-		after(t, reason, "decide outside the session: aguard approve ", "")})
+		after(t, reason, "decide outside the session: bas-guard approve ", "")})
 
 	medium := model.Finding{RuleID: "SUP-004", Dimension: 5, Severity: model.SevMedium, Source: model.SrcStatic, Title: "t"}
 	v, _ := gate.Summarize(model.ScanResult{Artifacts: []model.ArtifactReport{{
 		Kind: model.KindSkill, Name: f.name, Path: f.dir, Hash: "h", Score: 88, Findings: []model.Finding{medium},
 	}}}, model.SevHigh)
 	cmds = append(cmds, pastedCommand{"UnrememberedLine", "approve",
-		after(t, v.UnrememberedLine(), "or you accept it with: aguard approve ", "")})
+		after(t, v.UnrememberedLine(), "or you accept it with: bas-guard approve ", "")})
 
 	var note bytes.Buffer
 	if err := approvePath(&note, filepath.Join(t.TempDir(), ".claude"), cfg, f.dir); err != nil {
 		t.Fatalf("fixture: approve on the full path failed: %v", err)
 	}
 	cmds = append(cmds, pastedCommand{"approve's note", "check",
-		after(t, note.String(), "Run `aguard check ", "` to see what they are.")})
+		after(t, note.String(), "Run `bas-guard check ", "` to see what they are.")})
 	return cmds
 }
 
@@ -173,16 +173,16 @@ func TestGateCommandsPasteAsPrinted(t *testing.T) {
 			for _, c := range printedCommands(t, f, cfg) {
 				args, created := shellWords(t, c.words)
 				if len(created) > 0 {
-					t.Errorf("%s: pasting `aguard %s %s` executed part of the path: it created %q",
+					t.Errorf("%s: pasting `bas-guard %s %s` executed part of the path: it created %q",
 						c.source, c.verb, c.words, created)
 				}
 				if len(args) != 1 {
-					t.Errorf("%s: `aguard %s` as printed expands to %d words %q", c.source, c.verb, len(args), args)
+					t.Errorf("%s: `bas-guard %s` as printed expands to %d words %q", c.source, c.verb, len(args), args)
 					continue
 				}
 				if args[0] != f.dir {
 					// Still run the command below: what the operator meets is its failure.
-					t.Errorf("%s: `aguard %s` as printed expands to %q, not the skill directory %q",
+					t.Errorf("%s: `bas-guard %s` as printed expands to %q, not the skill directory %q",
 						c.source, c.verb, args[0], f.dir)
 				}
 				switch c.verb {
@@ -245,13 +245,13 @@ func TestApproveNoHashHintPastesAsPrinted(t *testing.T) {
 	if err == nil {
 		t.Fatal("fixture: approve accepted a root whose settings.json does not parse")
 	}
-	words := after(t, err.Error(), "nothing was approved (aguard check ", " --json lists the notes")
+	words := after(t, err.Error(), "nothing was approved (bas-guard check ", " --json lists the notes")
 	args, created := shellWords(t, words)
 	if len(created) > 0 {
-		t.Errorf("pasting `aguard check %s --json` executed part of the path: it created %q", words, created)
+		t.Errorf("pasting `bas-guard check %s --json` executed part of the path: it created %q", words, created)
 	}
 	if len(args) != 1 || args[0] != root {
-		t.Fatalf("`aguard check` as printed expands to %q, not the target %q", args, root)
+		t.Fatalf("`bas-guard check` as printed expands to %q, not the target %q", args, root)
 	}
 	if _, err := checkTarget(args[0], scanOpts{cfgPath: cfg, quiet: true}); err != nil {
 		t.Errorf("the pasted check failed: %v", err)

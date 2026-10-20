@@ -118,19 +118,19 @@ type zeroDialFixture struct {
 	root, skill, downloads string
 	on, off                string // judge config: enabled / disabled, same endpoint
 	scratch                string
-	// Roots for the `version` rows that root (aguard installed) cannot reach: no plugin; a
+	// Roots for the `version` rows that root (bas-guard installed) cannot reach: no plugin; a
 	// plugin.json without a version; the plugin under its old name only; under both names.
 	bare, unversioned, legacy, both string
 }
 
-// zeroDialPluginVersion is the aguard plugin the fixture installs under root; zeroDialLegacyVersion
+// zeroDialPluginVersion is the bas-guard plugin the fixture installs under root; zeroDialLegacyVersion
 // is the one installed under the old name.
 const (
 	zeroDialPluginVersion = "9.9.9"
 	zeroDialLegacyVersion = "0.16.0"
 )
 
-// installAguardPlugin installs the aguard plugin under root from this project's marketplace, the
+// installAguardPlugin installs the bas-guard plugin under root from this project's marketplace, the
 // way the CLI does, its plugin.json carrying pluginVersion — "" leaves the field out, which
 // writePluginInstalls cannot.
 func installAguardPlugin(t *testing.T, root, pluginVersion string) {
@@ -149,7 +149,7 @@ func installAguardPlugin(t *testing.T, root, pluginVersion string) {
 // newZeroDialFixture builds an environment the judge would have plenty to say about: the
 // three-file test-runner skill (static findings, so a triage call is planned too), a skill with
 // a credential-exfiltration chain the gate stops (so PostToolUse has a decision to re-scan and
-// record), one agent-shaped download, an installed aguard plugin for `version` to compare with
+// record), one agent-shaped download, an installed bas-guard plugin for `version` to compare with
 // (and four more roots for its other returns), and a gate registration whose binary is gone for
 // the liveness probe to report.
 func newZeroDialFixture(t *testing.T) zeroDialFixture {
@@ -172,7 +172,7 @@ func newZeroDialFixture(t *testing.T) zeroDialFixture {
 	fx.legacy = writePluginInstalls(t, map[string]string{legacy: zeroDialLegacyVersion})
 	fx.both = writePluginInstalls(t, map[string]string{
 		pluginBundleName + "@" + homeMarketplace: zeroDialPluginVersion, legacy: zeroDialLegacyVersion})
-	// The gate as `aguard hook install` registers it, from a binary since deleted — the state the
+	// The gate as `bas-guard hook install` registers it, from a binary since deleted — the state the
 	// gate-liveness probe `scan` appends exists to report, so that row has something to find.
 	reg, err := gate.PlanInstall(fx.root, gate.HookCommand(filepath.Join(filepath.Dir(fx.root), "gone", "aguard")))
 	if err != nil {
@@ -537,7 +537,7 @@ type versionStamp func() (buildLine string)
 func stampLdflags(v string) versionStamp {
 	return func() string {
 		version = v
-		return "aguard " + v + " "
+		return "bas-guard " + v + " "
 	}
 }
 
@@ -553,7 +553,7 @@ func stampBuildInfo(moduleVersion, revision, when string) versionStamp {
 				{Key: "vcs.time", Value: when},
 			},
 		})
-		return fmt.Sprintf("aguard %s (commit %s, built %s)", moduleVersion, revision[:7], when)
+		return fmt.Sprintf("bas-guard %s (commit %s, built %s)", moduleVersion, revision[:7], when)
 	}
 }
 
@@ -609,7 +609,7 @@ func TestZeroDial_ClaimsNameTheTest(t *testing.T) {
 		}
 	}
 	if !strings.Contains(basis, name) {
-		t.Errorf("baselines/tools.yaml says aguard's no-upload claim is enforced by tests, but does not name %s:\n%s", name, basis)
+		t.Errorf("baselines/tools.yaml says bas-guard's no-upload claim is enforced by tests, but does not name %s:\n%s", name, basis)
 	}
 
 	rules, err := os.ReadFile(filepath.Join(repoRoot(), ".claude", "rules", "invariants.md"))

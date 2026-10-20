@@ -252,14 +252,14 @@ func TestText_NextStep(t *testing.T) {
 	if !strings.Contains(out, "Next: read SKILL.md around line 822. Ask whether this tool has a reason to read credentials AND talk to the network.") {
 		t.Errorf("no next step:\n%s", out)
 	}
-	approve := `If you decide to keep it, tell the load-time gate: aguard approve "` + targetRoot + `"`
+	approve := `If you decide to keep it, tell the load-time gate: bas-guard approve "` + targetRoot + `"`
 	if !strings.Contains(out, approve) {
 		t.Errorf("no approve command for an approvable skill:\n%s", out)
 	}
 
 	odd := targetResult()
 	odd.Root, odd.Artifacts[0].Path = "/h/sk$x", "/h/sk$x"
-	if out := termOut(odd, false); !strings.Contains(out, `aguard approve '/h/sk$x'`) {
+	if out := termOut(odd, false); !strings.Contains(out, `bas-guard approve '/h/sk$x'`) {
 		t.Errorf("the path must be quoted for a shell:\n%s", out)
 	}
 
@@ -274,7 +274,7 @@ func TestText_NextStep(t *testing.T) {
 		Source: model.SrcStatic, Title: "Known-malicious artifact (reputation list)", Why: "w", Evidence: []model.Evidence{{File: "deploy"}}})
 	noApprove["low only"] = targetResult(exfil(model.SevLow))
 	for name, r := range noApprove {
-		if out := termOut(r, false); strings.Contains(out, "aguard approve") {
+		if out := termOut(r, false); strings.Contains(out, "bas-guard approve") {
 			t.Errorf("%s: approve offered where the gate cannot use it:\n%s", name, out)
 		}
 	}
@@ -298,10 +298,10 @@ func TestText_NextStep(t *testing.T) {
 	}}
 	score.Apply(&env)
 	out = termOut(env, false)
-	if n := strings.Count(out, "aguard approve"); n != 1 {
+	if n := strings.Count(out, "bas-guard approve"); n != 1 {
 		t.Errorf("approve must be offered once, for the skill inside the root (got %d):\n%s", n, out)
 	}
-	if !strings.Contains(out, `aguard approve --root "/h/.claude" "/h/.claude/skills/in"`) {
+	if !strings.Contains(out, `bas-guard approve --root "/h/.claude" "/h/.claude/skills/in"`) {
 		t.Errorf("a scan's approve names the store's root:\n%s", out)
 	}
 }
@@ -312,12 +312,12 @@ func TestText_CleanIsShort(t *testing.T) {
 	clean.Artifacts[0].Findings = nil
 	clean.Artifacts[0].Name, clean.Root, clean.Artifacts[0].Path = "careful", "/h/.claude/skills/careful", "/h/.claude/skills/careful"
 	score.Apply(&clean)
-	want := "AgentGuard · careful (skill)\n✅ Risk score 100/100 (Low) — nothing to fix\nJudge: checked 1 skill, nothing to add\n"
+	want := "BAS Guard · careful (skill)\n✅ Risk score 100/100 (Low) — nothing to fix\nJudge: checked 1 skill, nothing to add\n"
 	if got := termOut(clean, false); got != want {
 		t.Errorf("clean target:\n%s\nwant:\n%s", got, want)
 	}
 	clean.Judge = nil
-	if got := termOut(clean, false); got != "AgentGuard · careful (skill)\n✅ Risk score 100/100 (Low) — nothing to fix\n" {
+	if got := termOut(clean, false); got != "BAS Guard · careful (skill)\n✅ Risk score 100/100 (Low) — nothing to fix\n" {
 		t.Errorf("clean target without the judge:\n%s", got)
 	}
 	if !strings.Contains(termOut(clean, true), "Scan details") {
@@ -327,7 +327,7 @@ func TestText_CleanIsShort(t *testing.T) {
 	env := model.ScanResult{Root: "/x/.claude", Env: model.EnvSummary{Hooks: 1},
 		Artifacts: []model.ArtifactReport{{Kind: model.KindHook, Name: "PreToolUse[Bash]#1", Path: "/x/.claude/settings.json", Hash: "h"}}}
 	score.Apply(&env)
-	if got := termOut(env, false); got != "AgentGuard · /x/.claude\n✅ Risk score 100/100 (Low) — nothing to fix\n  Checked 1 hook.\n" {
+	if got := termOut(env, false); got != "BAS Guard · /x/.claude\n✅ Risk score 100/100 (Low) — nothing to fix\n  Checked 1 hook.\n" {
 		t.Errorf("clean environment:\n%s", got)
 	}
 
@@ -355,7 +355,7 @@ func TestMarkdown_ReadingOrder(t *testing.T) {
 	}
 	md := b.String()
 	for _, want := range []string{"Why 69: a high finding caps the score at 69", "likely a false alarm", "Next: read", "Sent to api.example.com",
-		"best-effort-redacted skill excerpts", "prompt\\_version", "aguard approve"} {
+		"best-effort-redacted skill excerpts", "prompt\\_version", "bas-guard approve"} {
 		if !strings.Contains(md, want) {
 			t.Errorf("markdown lacks %q:\n%s", want, md)
 		}

@@ -13,7 +13,7 @@ import (
 // TestMarketplaceEntryVersionMatchesPlugin: the marketplace entry carries the plugin version
 // because that is the field the Claude Desktop update check reads (its account-level roster
 // exposes it as availableVersion; without it the desktop reports "No changes since the last
-// release" forever). plugin.json is what the CLI reads and what `aguard version` compares the
+// release" forever). plugin.json is what the CLI reads and what `bas-guard version` compares the
 // binary against. The two must never drift: Claude Code uses plugin.json silently when they
 // differ, so a stale marketplace value would mislead one channel without breaking the other.
 func TestMarketplaceEntryVersionMatchesPlugin(t *testing.T) {
@@ -42,7 +42,7 @@ func TestMarketplaceEntryVersionMatchesPlugin(t *testing.T) {
 	if err := json.Unmarshal(b, &mk); err != nil {
 		t.Fatal(err)
 	}
-	// Against the constant, not a literal: `aguard version` tells stale installs to switch to
+	// Against the constant, not a literal: `bas-guard version` tells stale installs to switch to
 	// homeMarketplace, so the file and that hint must name the same marketplace.
 	if mk.Name != homeMarketplace || !strings.HasSuffix(homeMarketplaceRepo, "/"+homeMarketplace) {
 		t.Errorf("marketplace name = %q, want %q, the public repo name in %q (the desktop looks it up by repo name)", mk.Name, homeMarketplace, homeMarketplaceRepo)

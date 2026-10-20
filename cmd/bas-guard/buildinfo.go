@@ -6,7 +6,7 @@ import "runtime/debug"
 // applyBuildInfo fills the -ldflags stamps from the toolchain's own build info when the Makefile
 // did not set them. `go install github.com/basdotio/bas-guard/cmd/bas-guard@latest` — the line
 // hack/github-action.yml runs — stamps nothing, so that binary reported
-// "aguard dev (commit none, built unknown)", wrote "dev" as the ToolVersion into every approval
+// "bas-guard dev (commit none, built unknown)", wrote "dev" as the ToolVersion into every approval
 // and report, and could not compare itself with the installed plugin. The module version and the
 // vcs.* settings are recorded by the go tool from the module proxy or the checkout, so they are as
 // trustworthy as what -ldflags would have said; a stamp that IS set always wins. "(devel)" is what

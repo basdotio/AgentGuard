@@ -8,7 +8,7 @@ import (
 	"github.com/basdotio/bas-guard/internal/judge"
 )
 
-// The two places a person reads what the judge used — the stderr line after a run and `aguard llm
+// The two places a person reads what the judge used — the stderr line after a run and `bas-guard llm
 // test` — print the endpoint's token counts with tokensInOut, so both say the same thing.
 //
 // The cached share (P-071) is the part of the prompt tokens the endpoint reported serving from its

@@ -44,7 +44,7 @@ func TestSessionStart_DoesNotListAPluginsChildren(t *testing.T) {
 	}
 }
 
-// TestSummarize_NeverPicksAPluginsChild: `aguard approve <plugin>` and the gate's verdict describe the
+// TestSummarize_NeverPicksAPluginsChild: `bas-guard approve <plugin>` and the gate's verdict describe the
 // plugin; a child scoring lower must not become "the worst artifact", or approving the plugin would
 // store the child's hash.
 func TestSummarize_NeverPicksAPluginsChild(t *testing.T) {

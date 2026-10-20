@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Command aguard is AgentGuard's CLI: static, local, read-only audit of a Claude Code
+// Command bas-guard is BAS Guard's CLI: static, local, read-only audit of a Claude Code
 // agent environment (skills/MCP/hooks/permissions) + junk cleanup. M2 wires the static
 // detection engine, deterministic scoring, and the terminal report.
 package main
@@ -82,7 +82,7 @@ type scanOpts struct {
 	// nothing in particular.
 	home string
 	// preview, when set, receives the judge's plan at the point analyze() would run the judge, and
-	// nothing is sent: `aguard llm preview` (P-027). It is independent of llm, which stays false there.
+	// nothing is sent: `bas-guard llm preview` (P-027). It is independent of llm, which stays false there.
 	preview *previewSink
 }
 
@@ -435,7 +435,7 @@ func analyze(root string, res collect.Result, o scanOpts) (model.ScanResult, err
 	arts, covNotes := detect.New().Run(root, res.Artifacts)
 	// Hooks, MCP servers and permission lists get their content hash HERE, before anything below
 	// reads Hash: reputation in this function, and — through scanEnv / checkTarget — the gate's
-	// SessionStart, `aguard approve` and the Downloads pass. Collect leaves them "", which every one
+	// SessionStart, `bas-guard approve` and the Downloads pass. Collect leaves them "", which every one
 	// of those reads as "never seen".
 	arts = contentHashes(root, arts)
 	// Managed policy loads before everything and cannot be excluded, but it lives at an absolute OS
@@ -504,7 +504,7 @@ func analyze(root string, res collect.Result, o scanOpts) (model.ScanResult, err
 			covNotes = append(covNotes, jn...)
 			judgeSummary = js
 		} else {
-			why := "--llm was passed but config llm.enabled is false (or endpoint unset); ran static-only. `aguard llm setup` configures it."
+			why := "--llm was passed but config llm.enabled is false (or endpoint unset); ran static-only. `bas-guard llm setup` configures it."
 			covNotes = append(covNotes, model.Finding{
 				RuleID: "LLM-000", Dimension: 0, Severity: model.SevLow, Source: model.SrcLLM,
 				Title: "LLM intent judge requested but not enabled",
@@ -625,7 +625,7 @@ func main() {
 
 	rootCmd := &cobra.Command{
 		Use:           "aguard",
-		Short:         "AgentGuard — local, read-only security scan + junk cleanup for AI agent environments",
+		Short:         "BAS Guard — local, read-only security scan + junk cleanup for AI agent environments",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
@@ -727,7 +727,7 @@ func main() {
 	scanCmd.Flags().BoolVar(&autoReport, "report", false, "also write a self-contained HTML report to "+reportsDirHint+" (timestamped; the path is printed)")
 	scanCmd.Flags().StringVar(&sarifOut, "sarif", "", "also write a SARIF 2.1.0 log to this path (for GitHub Code Scanning / any SARIF viewer)")
 	scanCmd.Flags().StringVar(&mdOut, "md", "", mdFlagHelp)
-	scanCmd.Flags().BoolVar(&useLLM, "llm", false, "enable the LLM intent judge — advisory only; set it up once with `aguard llm setup` (redacted excerpts are sent to the configured endpoint; never moves the deterministic score)")
+	scanCmd.Flags().BoolVar(&useLLM, "llm", false, "enable the LLM intent judge — advisory only; set it up once with `bas-guard llm setup` (redacted excerpts are sent to the configured endpoint; never moves the deterministic score)")
 	scanCmd.Flags().BoolVar(&zombie, "zombie", false, "also flag never-used skills via the usage log (weak signal, opt-in)")
 	scanCmd.Flags().StringVar(&scanFailOn, "fail-on", "", "exit 1 when a DETERMINISTIC finding is at/above this level (low|medium|high|critical) — for CI/gates")
 	scanCmd.Flags().StringVar(&scanFailOnLLM, "fail-on-llm", "", failOnLLMFlagHelp)
@@ -805,7 +805,7 @@ func main() {
 			"    refused (exit 2) rather than producing a false 'quarantined'.\n" +
 			"  · --undo re-derives every safety decision; the manifest is data, not authority.\n\n" +
 			"Run it when no Claude Code session is active: Claude Code watches skills/, commands/ and\n" +
-			"agents/ live, and this tool's lock only protects two aguard runs from each other.\n\n" +
+			"agents/ live, and this tool's lock only protects two bas-guard runs from each other.\n\n" +
 			"Exit codes: 0 done · 2 refused, nothing changed · 3 acted partially, reasons printed.\n" +
 			"Full guide: docs/clean-guide.zh-CN.md",
 		RunE: func(_ *cobra.Command, _ []string) error {
@@ -943,7 +943,7 @@ func main() {
 
 // partialGate turns "some of what you asked for did not happen" into a distinct exit code. Every
 // skip is printed with its reason, but a script cannot read those: returning 0 after moving nothing
-// let `aguard clean --apply && deploy` proceed believing the cleanup ran.
+// let `bas-guard clean --apply && deploy` proceed believing the cleanup ran.
 func partialGate(res clean.Result) error {
 	if res.Skipped > 0 {
 		return &failExit{code: 3}

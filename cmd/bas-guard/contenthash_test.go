@@ -79,14 +79,14 @@ func TestReputation_RecognisesAHook(t *testing.T) {
 	t.Error("a blocklisted hook hash did not produce REP-BAD on the hook")
 }
 
-// TestHashCommand_PrintsConfigHashes: `aguard hash <root>` is how a maintainer gets the key for a
+// TestHashCommand_PrintsConfigHashes: `bas-guard hash <root>` is how a maintainer gets the key for a
 // reputation entry, and it must print the same key a scan computes. It used to print an empty
 // hash for every hook, MCP server and permission list.
 func TestHashCommand_PrintsConfigHashes(t *testing.T) {
 	root := configRoot(t)
 	stdout, stderr, code := runAguard(t, "hash", root)
 	if code != 0 {
-		t.Fatalf("aguard hash exited %d: %s", code, stderr)
+		t.Fatalf("bas-guard hash exited %d: %s", code, stderr)
 	}
 	out, err := scanEnv(root, scanOpts{noReputation: true})
 	if err != nil {
@@ -111,7 +111,7 @@ func TestHashCommand_PrintsConfigHashes(t *testing.T) {
 			t.Errorf("%s: printed hash %q is not a sha256", label, hash)
 		}
 		if hash != want[label] {
-			t.Errorf("%s: aguard hash printed %q, scan computed %q", label, hash, want[label])
+			t.Errorf("%s: bas-guard hash printed %q, scan computed %q", label, hash, want[label])
 		}
 	}
 	if seen < 5 {

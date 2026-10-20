@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Package gate is AgentGuard's load-time gate: the half of the tool that speaks BEFORE an
+// Package gate is BAS Guard's load-time gate: the half of the tool that speaks BEFORE an
 // artifact is trusted, rather than after an operator remembers to scan.
 //
 // # Why load time and not install time
@@ -28,7 +28,7 @@
 //     are written by whoever wrote the artifact, so anything injected into the agent's
 //     context is wrapped in a per-call nonce barrier (the same device internal/judge uses),
 //     and evidence SNIPPETS are omitted entirely — the operator gets them from
-//     `aguard check`, where a human reads them rather than a model.
+//     `bas-guard check`, where a human reads them rather than a model.
 //  5. Only DETERMINISTIC findings decide. The gate runs the same static path `check` does:
 //     no judge, no network, nothing executed. A load-time prompt has to mean the same thing
 //     every time it appears, or people learn to dismiss it.
@@ -68,7 +68,7 @@ type Verdict struct {
 	Kind string
 	// Path is the DISPLAY form, clipped to maxPathLen: it is what a person reads, and what an
 	// approval records. FullPath is the path as scanned, and the only one a command may carry —
-	// a clipped path pasted into `aguard check` names a directory that does not exist.
+	// a clipped path pasted into `bas-guard check` names a directory that does not exist.
 	Path     string
 	FullPath string
 	Hash     string
@@ -101,7 +101,7 @@ func Summarize(res model.ScanResult, threshold model.Severity) (Verdict, bool) {
 		return Verdict{}, false
 	}
 	// A plugin's skills, commands and agents (P-044) are never "the artifact an operator would act on":
-	// the plugin row carries their findings, and picking a lower-scoring child would make `aguard
+	// the plugin row carries their findings, and picking a lower-scoring child would make `bas-guard
 	// approve <plugin>` store the child's hash for an approval of the plugin.
 	worst := -1
 	for i := range res.Artifacts {
@@ -184,7 +184,7 @@ func unhashedReason(a model.ArtifactReport) string {
 // high threshold on one medium finding each and were then recorded as trusted for good
 // — the pass was the configured behaviour, the permanent silence was not. A medium
 // finding therefore keeps the content on the re-audit path: announced on every load until it
-// is clean or a human accepts it explicitly with `aguard approve`. Low stays remembered — it
+// is clean or a human accepts it explicitly with `bas-guard approve`. Low stays remembered — it
 // does not move the level anywhere else in the tool, and re-announcing most real skills on
 // every load is the cost that gets gates uninstalled. Findings here are already the
 // deterministic ones (Summarize filters), so an LLM finding cannot decide this either.
@@ -209,7 +209,7 @@ func (v Verdict) UnrememberedLine() string {
 			ids = append(ids, fmt.Sprintf("%s (%s)", f.RuleID, f.Severity))
 		}
 	}
-	return fmt.Sprintf("AgentGuard: %s %q %d/100 (%s) · below the threshold, but %s found · not recorded as trusted: it is re-audited on every load until the content is clean, or you accept it with: aguard approve %s",
+	return fmt.Sprintf("BAS Guard: %s %q %d/100 (%s) · below the threshold, but %s found · not recorded as trusted: it is re-audited on every load until the content is clean, or you accept it with: bas-guard approve %s",
 		v.Kind, v.Name, v.Score, v.Level, strings.Join(ids, ", "), CommandArg(v.FullPath))
 }
 
@@ -217,7 +217,7 @@ func (v Verdict) UnrememberedLine() string {
 // approval is keyed by the hash, so there is nothing to remember it by: saying "trusted" would
 // be false (the store drops an empty key), and the next load audits these bytes again.
 func (v Verdict) UnhashedLine() string {
-	return fmt.Sprintf("AgentGuard: %s %q %d/100 (%s) · no finding at or above the threshold · not remembered, it has no content hash: %s · it is audited again on every load",
+	return fmt.Sprintf("BAS Guard: %s %q %d/100 (%s) · no finding at or above the threshold · not remembered, it has no content hash: %s · it is audited again on every load",
 		v.Kind, v.Name, v.Score, v.Level, v.Unhashed)
 }
 
@@ -225,7 +225,7 @@ func (v Verdict) UnhashedLine() string {
 // what an operator sees the first time a given piece of content is loaded, and never again
 // for those bytes.
 func (v Verdict) Line() string {
-	return fmt.Sprintf("AgentGuard: %s %q %d/100 (%s) · no finding at or above the threshold · trusted from now on for content %s",
+	return fmt.Sprintf("BAS Guard: %s %q %d/100 (%s) · no finding at or above the threshold · trusted from now on for content %s",
 		v.Kind, v.Name, v.Score, v.Level, shortHash(v.Hash))
 }
 
@@ -233,10 +233,10 @@ func (v Verdict) Line() string {
 // prompt and the agent's context, which is why it carries rule IDs and locations but no
 // evidence snippets: a snippet is a line of the audited file, and handing those to a model
 // as part of a security message is the exact shape this tool refuses to take (invariant #4
-// above). `aguard check` prints them for a human instead.
+// above). `bas-guard check` prints them for a human instead.
 func (v Verdict) Reason() string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "AgentGuard has not audited this %s before, and it carries findings.\n\n", v.Kind)
+	fmt.Fprintf(&b, "BAS Guard has not audited this %s before, and it carries findings.\n\n", v.Kind)
 	fmt.Fprintf(&b, "  %s  %d/100 (%s)\n  %s\n  content hash %s\n\n", v.Name, v.Score, v.Level, v.Path, shortHash(v.Hash))
 	for _, f := range v.Findings {
 		fmt.Fprintf(&b, "  %-8s %-10s %s%s\n", f.Severity, f.RuleID, sanitizeTitle(f), locationOf(f))
@@ -246,7 +246,7 @@ func (v Verdict) Reason() string {
 	}
 	b.WriteString("\nStatic rules only: no model was consulted, nothing was executed, nothing left the machine.\n")
 	cmd := CommandArg(v.FullPath)
-	fmt.Fprintf(&b, "Full report: aguard check %s · trust these exact bytes: aguard approve %s\n", cmd, cmd)
+	fmt.Fprintf(&b, "Full report: bas-guard check %s · trust these exact bytes: bas-guard approve %s\n", cmd, cmd)
 	return b.String()
 }
 

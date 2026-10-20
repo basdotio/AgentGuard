@@ -246,7 +246,7 @@ func TestCheck_RelativeRootShapedTargetIsTheAbsoluteReport(t *testing.T) {
 }
 
 // TestScan_CITemplateShapeBlocksUnderEverySpelling: hack/github-action.yml ships
-// `aguard scan --root . --fail-on high`, with the repository itself as the root. A curl-into-shell
+// `bas-guard scan --root . --fail-on high`, with the repository itself as the root. A curl-into-shell
 // server in the repository's own .mcp.json must fail that gate whether the root is typed `.` or
 // "$PWD". `.` blocked before anchoring only because home was the root itself; "$PWD" never read the
 // file, and said nothing about it.

@@ -177,7 +177,7 @@ func sumUsageByPass(m map[string]model.PassUsage) model.PassUsage {
 	return s
 }
 
-// knownPasses are the pass names a usage_by_pass key can take: the ones `aguard llm preview` prints.
+// knownPasses are the pass names a usage_by_pass key can take: the ones `bas-guard llm preview` prints.
 var knownPasses = map[string]bool{"intent": true, "injection": true, "result": true, "deobfuscation": true,
 	"collusion": true, "capability": true, "mcp-config": true, "server": true, "triage": true}
 

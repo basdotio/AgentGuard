@@ -6,7 +6,7 @@ package main
 // crosses neither, and would dial while both counters read zero. The positive control does not
 // close that inside internal/judge either: it watches the client its own paths go through, so a
 // second client the judge package builds, called from an entry point in the zero table, dials
-// unseen. So this reads every non-test file of every package of this module the aguard binary is
+// unseen. So this reads every non-test file of every package of this module the bas-guard binary is
 // built from, internal/judge included: outside it, no client or transport at all; inside it,
 // exactly one client — NewHTTP's, whose transport is the seam.
 //

@@ -111,7 +111,7 @@ func recordJudgeUsage(stderr io.Writer, command, toolVersion, rulesVersion strin
 		}
 		line := usageLineFor(command, b.section, toolVersion, rulesVersion, now, b.judge)
 		if err := appendUsageLine(path, line); err != nil {
-			fmt.Fprintf(stderr, "aguard: warning: judge usage not recorded in %s=%s: %v\n", from, path, err)
+			fmt.Fprintf(stderr, "bas-guard: warning: judge usage not recorded in %s=%s: %v\n", from, path, err)
 			return
 		}
 	}

@@ -208,7 +208,7 @@ func TestPluginPaths_IncludesDesktopBundles(t *testing.T) {
 	}
 }
 
-// TestPluginInstalls_RecordMarketplaceAndChannel: `aguard version` tells a user how to update
+// TestPluginInstalls_RecordMarketplaceAndChannel: `bas-guard version` tells a user how to update
 // the plugin, and the right command depends on which marketplace installed it and through which
 // channel — so the lookup carries both, taken from each channel's own record (the "@marketplace"
 // half of the installed_plugins.json key; the desktop manifest's marketplaceName), and the entry

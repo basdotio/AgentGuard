@@ -15,7 +15,7 @@ import (
 
 // hookRun drives the real runner the way Claude Code drives it: one JSON event in, one JSON
 // reply out. Everything between is the production path — the same collector, the same rules,
-// the same scoring `aguard check` uses.
+// the same scoring `bas-guard check` uses.
 func hookRun(t *testing.T, root string, ev map[string]any) gate.Output {
 	t.Helper()
 	in, err := json.Marshal(ev)
@@ -146,7 +146,7 @@ func TestHookRunnerNeverFails(t *testing.T) {
 	}
 }
 
-// TestGateAgreesWithCheck: the gate and `aguard check` must return the same verdict for the
+// TestGateAgreesWithCheck: the gate and `bas-guard check` must return the same verdict for the
 // same bytes. Two numbers that disagree about one skill make both of them useless.
 func TestGateAgreesWithCheck(t *testing.T) {
 	home := t.TempDir()
@@ -174,7 +174,7 @@ func TestGateAgreesWithCheck(t *testing.T) {
 
 // TestGate_ApprovedHookLeavesSessionStart: hooks are live from the first turn and SessionStart can
 // only tell, so the one thing an approval can do for a hook is stop the telling — and only for the
-// bytes that were approved. `aguard approve <root>` whose worst artifact was a hook used to print
+// bytes that were approved. `bas-guard approve <root>` whose worst artifact was a hook used to print
 // "approved" and store nothing (the hook's hash was empty, and Store.Approve drops an empty key),
 // so the alert came back every session. Editing the script the hook runs must bring it back.
 func TestGate_ApprovedHookLeavesSessionStart(t *testing.T) {

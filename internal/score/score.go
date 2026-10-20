@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Package score computes AgentGuard's risk score (spec §5.3). It produces TWO numbers from
+// Package score computes BAS Guard's risk score (spec §5.3). It produces TWO numbers from
 // one formula, run over two different sets of findings:
 //
 //   - Overall          — deterministic sources only (static / permission / hygiene). The same

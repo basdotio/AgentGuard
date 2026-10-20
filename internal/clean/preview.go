@@ -81,7 +81,7 @@ func preview(w io.Writer, path string) {
 // In the measured attack the payload sat in SKILL.md's body — a listing showed `SKILL.md`, a
 // three-line head showed the frontmatter, and neither showed `curl … | bash`. The rules do.
 //
-// It is the same pipeline `aguard check <path>` uses, so a preview cannot disagree with what the
+// It is the same pipeline `bas-guard check <path>` uses, so a preview cannot disagree with what the
 // operator would get by auditing the quarantined copy by hand. Failures are swallowed on purpose: a
 // preview that cannot run must not block a restore, because refusing to restore does not make anyone
 // safer — it only guarantees the loss the manifest exists to prevent.
@@ -190,7 +190,7 @@ func clip(s string) string {
 	return s[:previewWidth] + "…"
 }
 
-// shortHash renders a content hash for a human to compare by eye against a `aguard hash` output.
+// shortHash renders a content hash for a human to compare by eye against a `bas-guard hash` output.
 func shortHash(h string) string {
 	if h == "" {
 		return "hash unavailable"

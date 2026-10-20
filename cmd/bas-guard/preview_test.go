@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 package main
 
-// `aguard llm preview` prints what `scan --llm` / `check --llm` would send, and sends nothing
+// `bas-guard llm preview` prints what `scan --llm` / `check --llm` would send, and sends nothing
 // (P-027). The proof is the one a user would want: run the real command against a judge that
 // records what reached it, run the preview on the same input, and compare the bytes.
 

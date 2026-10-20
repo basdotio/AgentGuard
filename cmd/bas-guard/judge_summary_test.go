@@ -177,7 +177,7 @@ func TestScanInbox_JudgeSummaryNamesItsJudge(t *testing.T) {
 	}
 }
 
-// TestRunVersion_JudgeVersionsComeAfterRules: `aguard version` names the judge build after the rule
+// TestRunVersion_JudgeVersionsComeAfterRules: `bas-guard version` names the judge build after the rule
 // table, and the line before it is binaryVersionLine's, byte for byte — release.yml reads $2 as the
 // version and the baselines adapter stores the whole line as tool_version.
 func TestRunVersion_JudgeVersionsComeAfterRules(t *testing.T) {

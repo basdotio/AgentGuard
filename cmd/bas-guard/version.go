@@ -22,7 +22,7 @@ import (
 // release exists. The plugin can be updated for it, though: Claude Code refreshes marketplace
 // plugins on its own, and every release bumps plugin.json to the binary version it ships with.
 // So a plugin whose version is ahead of this binary is a machine that got the new skill text
-// and not the new rules — and nothing in a scan's output would say so. `aguard version` says so,
+// and not the new rules — and nothing in a scan's output would say so. `bas-guard version` says so,
 // reading the installed plugin through the same collectors a scan uses (both install channels),
 // and the skills relay the line when they check the binary.
 
@@ -59,17 +59,17 @@ const (
 // the skills to the model — so a backtick, newline or shell metacharacter is never echoed.
 var plainMarketplaceName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`)
 
-// binaryVersionLine is the first line `aguard version` prints. New fields go at the END: the release
+// binaryVersionLine is the first line `bas-guard version` prints. New fields go at the END: the release
 // workflow reads `awk '{print $2}'` as the version and refuses a release that does not match its
 // tag, and the baselines adapter records the whole line as tool_version. version, commit and date
 // are the -ldflags stamps, or what applyBuildInfo filled in when there were none; neither source
 // puts a space in them, so $2 is the version either way. (versionLine, below, is the plugin's line.)
 func binaryVersionLine(version, commit, date string, reputationEntries int, rulesVersion string) string {
-	return fmt.Sprintf("aguard %s (commit %s, built %s) · reputation entries=%d · rules=%s",
+	return fmt.Sprintf("bas-guard %s (commit %s, built %s) · reputation entries=%d · rules=%s",
 		version, commit, date, reputationEntries, rulesVersion)
 }
 
-// runVersion is the whole body of `aguard version`, a function so the zero-dial test runs what
+// runVersion is the whole body of `bas-guard version`, a function so the zero-dial test runs what
 // the command runs rather than one helper of it: the build line (binaryVersionLine, then the two
 // versions of this build's judge, P-031), then — when the plugin is installed, under its current
 // name or the old one — one line comparing it with this binary.

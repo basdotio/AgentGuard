@@ -258,7 +258,7 @@ func SARIF(w io.Writer, res model.ScanResult, version, infoURI string) error {
 				Level:               lvl,
 				Message:             sarifText{Text: msg},
 				Locations:           []sarifLocation{loc},
-				PartialFingerprints: map[string]string{"aguard/v1": fingerprint(f.RuleID, e.File, e.Snippet)},
+				PartialFingerprints: map[string]string{"bas-guard/v1": fingerprint(f.RuleID, e.File, e.Snippet)},
 				Properties:          rp,
 			})
 		}
@@ -325,8 +325,8 @@ func SARIF(w io.Writer, res model.ScanResult, version, infoURI string) error {
 				// to know whether the environment as a whole passed. `overall` only: the effective
 				// score folds in judge findings and gates nothing, so publishing it here would invite
 				// exactly the confusion the two numbers exist to prevent.
-				"aguard/overall": res.Overall,
-				"aguard/root":    sarifURI(res.Root),
+				"bas-guard/overall": res.Overall,
+				"bas-guard/root":    sarifURI(res.Root),
 			},
 		}},
 	}

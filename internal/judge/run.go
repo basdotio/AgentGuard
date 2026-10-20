@@ -87,7 +87,7 @@ type Stats struct {
 	// times and triage once, so without this split what one question costs can only be guessed.
 	TriageCalls int
 	// UsageByPass is the run's calls, re-asks and reported tokens by the pass that made them, keyed by
-	// the name `aguard llm preview` gives the pass (P-072). Its entries sum exactly to Calls, Reasked
+	// the name `bas-guard llm preview` gives the pass (P-072). Its entries sum exactly to Calls, Reasked
 	// and the client's token totals; nil when no call was made.
 	UsageByPass map[string]model.PassUsage
 	Latencies   []time.Duration // one per issued call, retries included

@@ -636,7 +636,7 @@ func TestDefaultRoot_HonoursClaudeConfigDir(t *testing.T) {
 	}
 }
 
-// TestLLMCommands_SetupTestStatus: the three `aguard llm` primitives the plugin drives. Setup
+// TestLLMCommands_SetupTestStatus: the three `bas-guard llm` primitives the plugin drives. Setup
 // stores the key 0600 and writes a config the default location picks up, test makes one call with
 // that key, status never prints the key.
 func TestLLMCommands_SetupTestStatus(t *testing.T) {
@@ -933,7 +933,7 @@ func TestUpdateHint(t *testing.T) {
 	}
 }
 
-// TestBinaryVersionLine_RulesComeAfterTheExistingFields: `aguard version` names the rule table, and
+// TestBinaryVersionLine_RulesComeAfterTheExistingFields: `bas-guard version` names the rule table, and
 // does it at the END. Two readers parse this line: the release workflow takes `awk '{print $2}'`
 // as the version and fails the release if it is not the tag, and the baselines adapter stores the
 // whole first line as tool_version. So the old line must survive as an exact prefix.
@@ -942,7 +942,7 @@ func TestBinaryVersionLine_RulesComeAfterTheExistingFields(t *testing.T) {
 	if f := strings.Fields(got); len(f) < 2 || f[1] != "v1.2.3" {
 		t.Errorf("$2 of %q is not the version — release.yml's tag check reads it", got)
 	}
-	const before = "aguard v1.2.3 (commit abc1234, built 2026-10-08T00:00:00Z) · reputation entries=18"
+	const before = "bas-guard v1.2.3 (commit abc1234, built 2026-10-08T00:00:00Z) · reputation entries=18"
 	if !strings.HasPrefix(got, before) {
 		t.Errorf("version line = %q, want the existing fields unchanged as its prefix %q", got, before)
 	}
@@ -1098,7 +1098,7 @@ func TestScanInbox_JudgeCostAddsUp(t *testing.T) {
 	}
 }
 
-// TestCheckTarget_ZipIsCheckedAsItsFolder: `aguard check foo.zip` extracts under the archive caps
+// TestCheckTarget_ZipIsCheckedAsItsFolder: `bas-guard check foo.zip` extracts under the archive caps
 // and checks the folder; the result names the archive, and nothing is left on disk.
 func TestCheckTarget_ZipIsCheckedAsItsFolder(t *testing.T) {
 	dir := t.TempDir()
@@ -1177,7 +1177,7 @@ func TestSettingsEnvArtifactIsNotAuditedTwice(t *testing.T) {
 	}
 }
 
-// TestCheckTarget_SingleCommandFileRunsAllRules: `aguard check ~/.claude/commands/deploy.md`
+// TestCheckTarget_SingleCommandFileRunsAllRules: `bas-guard check ~/.claude/commands/deploy.md`
 // must give the same verdict a scan of the root gives that command. The single-file path used
 // to label every file an instruction and the reader then classified it by name — a .md that
 // is not SKILL.md was prose, so a slash command carrying curl|bash vetted clean at 100/100.

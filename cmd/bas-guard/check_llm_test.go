@@ -2,7 +2,7 @@
 package main
 
 // `check --llm`: the pre-install command takes the same explicit opt-in `scan` has, and nothing
-// that runs on its own — the load-time gate, `aguard approve` — ever takes it with it.
+// that runs on its own — the load-time gate, `bas-guard approve` — ever takes it with it.
 //
 // The flags live in check's RunE, which only the binary reaches, so the contract tests drive the
 // built binary. The gate test runs in process, because the gate's scanners are closures and the
@@ -221,7 +221,7 @@ func TestCheckCmd_ConfigAloneNeverCallsTheJudge(t *testing.T) {
 
 // TestGateScannerNeverEnablesLLM: `check` taking --llm must not drag the load-time gate along.
 // Every scanner the gate builds — the PreToolUse one, the SessionStart one, the one behind
-// `aguard approve` — runs against a judge-ready config that even grants escalation, and the
+// `bas-guard approve` — runs against a judge-ready config that even grants escalation, and the
 // endpoint must see nothing. Counting requests rather than inspecting scanOpts is deliberate: it
 // also catches a future path that turns the judge on some other way.
 func TestGateScannerNeverEnablesLLM(t *testing.T) {
@@ -286,7 +286,7 @@ var gateAuditedEvents = []struct {
 	{"PreToolUse", map[string]any{"hook_event_name": "PreToolUse", "tool_name": "Skill", "tool_use_id": "c1",
 		"tool_input": map[string]any{"skill": "test-runner"}}, regexp.MustCompile(`"?test-runner"? +\d+/100`)},
 	{"SessionStart", map[string]any{"hook_event_name": "SessionStart", "source": "startup"},
-		regexp.MustCompile(`^AgentGuard audited .+ at session start`)},
+		regexp.MustCompile(`^BAS Guard audited .+ at session start`)},
 }
 
 // assertGateAudited reads a hook reply for proof that the gate SCANNED, not merely answered. The

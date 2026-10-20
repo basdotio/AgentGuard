@@ -24,7 +24,7 @@ func checkExtracted(dir, archive string, o scanOpts) (model.ScanResult, error) {
 // its parent has a random name, so a path into it is both useless and different on every run.
 //
 //   - Root and artifact paths become the archive's path: it is where the artifact can be found
-//     again, and what `aguard check` / `aguard approve` accept. A made-up "x.zip/skills/foo" would
+//     again, and what `bas-guard check` / `bas-guard approve` accept. A made-up "x.zip/skills/foo" would
 //     look like a path and fail as one; where inside the archive is said by name and evidence.
 //   - Evidence is already relative to the archive's root; the rare absolute one is made so too.
 //   - Scan locations: the root becomes the archive. The rest are derived from the directory above

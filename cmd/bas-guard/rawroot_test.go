@@ -103,13 +103,13 @@ func runAguardIn(t *testing.T, dir string, args ...string) (stdout, stderr strin
 	return so.String(), se.String(), code
 }
 
-// TestHashCommand_RootSpellingPrintsTheAbsoluteHashes: `aguard hash` shares check's router, so the
+// TestHashCommand_RootSpellingPrintsTheAbsoluteHashes: `bas-guard hash` shares check's router, so the
 // identity it prints for a config root must not depend on the spelling either.
 func TestHashCommand_RootSpellingPrintsTheAbsoluteHashes(t *testing.T) {
 	base, home, root := anchoredInstallShape(t)
 	want, stderr, code := runAguardIn(t, "", "hash", root)
 	if code != 0 {
-		t.Fatalf("aguard hash %s exited %d: %s", root, code, stderr)
+		t.Fatalf("bas-guard hash %s exited %d: %s", root, code, stderr)
 	}
 	if !strings.Contains(want, "  skill:linked\n") || strings.Contains(want, "directory:") {
 		t.Fatalf("absolute hash: want the root layout's hashes, got:\n%s", want)
@@ -118,10 +118,10 @@ func TestHashCommand_RootSpellingPrintsTheAbsoluteHashes(t *testing.T) {
 		t.Run(sp.name, func(t *testing.T) {
 			got, stderr, code := runAguardIn(t, sp.dir, "hash", sp.root)
 			if code != 0 {
-				t.Fatalf("aguard hash %s exited %d: %s", sp.root, code, stderr)
+				t.Fatalf("bas-guard hash %s exited %d: %s", sp.root, code, stderr)
 			}
 			if got != want {
-				t.Errorf("aguard hash %q:\n%s\nthe absolute spelling prints:\n%s", sp.root, got, want)
+				t.Errorf("bas-guard hash %q:\n%s\nthe absolute spelling prints:\n%s", sp.root, got, want)
 			}
 		})
 	}
@@ -253,7 +253,7 @@ func TestGate_RootSpellingResolvesTheSamePlugins(t *testing.T) {
 	}
 }
 
-// TestPluginVersionLine_RootSpelling: `aguard version --root <spelling>` compares the binary with the
+// TestPluginVersionLine_RootSpelling: `bas-guard version --root <spelling>` compares the binary with the
 // plugin installed under that root, whichever way the root is typed.
 func TestPluginVersionLine_RootSpelling(t *testing.T) {
 	const want = "plugin " + pluginBundleName + " 0.18.0 matches this binary"

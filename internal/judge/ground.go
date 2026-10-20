@@ -14,7 +14,7 @@ import (
 // condensing, comment stripping, the head/tail caps and their line maps, the declared-purpose, hook,
 // MCP and connector renderings, the decode limits, padding folds, the home scrub and redaction order
 // — and grounding: whether a quote lands, which file and line it cites and what its snippet shows.
-// A --llm report carries it as judge.excerpt_version; `aguard version` prints it as judge-excerpt=.
+// A --llm report carries it as judge.excerpt_version; `bas-guard version` prints it as judge-excerpt=.
 // The prompts wrapped around the excerpt are PromptVersion's, which is computed.
 //
 // BUMP IT, in the same commit, whenever a change alters — for some artifact — what any pass sends

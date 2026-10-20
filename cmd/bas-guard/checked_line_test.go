@@ -37,7 +37,7 @@ func summaryPart(name, body string) string {
 }
 
 // namesItsTarget reports whether a default terminal summary is about a single target and names it in its
-// title — `AgentGuard · <name> (<kind>)`. That view prints the Checked line only when part of the target
+// title — `BAS Guard · <name> (<kind>)`. That view prints the Checked line only when part of the target
 // was not fully checked (P-058); --verbose, markdown and HTML always print it.
 func namesItsTarget(surface, summary string, out model.ScanResult) bool {
 	if surface != "terminal" {
@@ -45,7 +45,7 @@ func namesItsTarget(surface, summary string, out model.ScanResult) bool {
 	}
 	for _, a := range out.Artifacts {
 		if a.Path == out.Root && a.Plugin == "" {
-			return strings.HasPrefix(summary, "AgentGuard · "+a.Name+" (")
+			return strings.HasPrefix(summary, "BAS Guard · "+a.Name+" (")
 		}
 	}
 	return false

@@ -211,7 +211,7 @@ func writeText(w io.Writer, r model.ScanResult, verbose bool) {
 				fmt.Fprintf(w, "  · %s: %s\n", Sanitize(h.Kind), Sanitize(h.Detail))
 			}
 		} else {
-			fmt.Fprintf(w, "\nJunk / hygiene: %d item(s) — `aguard clean` lists them; --verbose prints them here.\n", len(r.Hygiene))
+			fmt.Fprintf(w, "\nJunk / hygiene: %d item(s) — `bas-guard clean` lists them; --verbose prints them here.\n", len(r.Hygiene))
 		}
 	}
 

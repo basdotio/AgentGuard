@@ -47,7 +47,7 @@ var rulesVersionOnce = sync.OnceValue(func() string { return rulesVersion(builti
 
 // RulesVersion names the rule table this build detects with: the first 12 hex digits of a sha256
 // over everything in builtinRules() that decides whether a finding fires and how heavily, plus
-// rulesEpoch. It is what `scan --json` reports as rules_version, what `aguard version` prints,
+// rulesEpoch. It is what `scan --json` reports as rules_version, what `bas-guard version` prints,
 // and what the docs/rules.md header carries.
 //
 // Two values that differ mean the rules changed. Two values that agree mean the rule table is the

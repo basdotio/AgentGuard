@@ -88,7 +88,7 @@ func mustCheck(t *testing.T, path string) model.ScanResult {
 	return res
 }
 
-// renderAll renders a check the four ways `aguard check` can: SARIF, terminal text, markdown and
+// renderAll renders a check the four ways `bas-guard check` can: SARIF, terminal text, markdown and
 // JSON. The scan time is zeroed first: it is the one thing allowed to differ between two runs, and
 // it appears in JSON (scanned_at) and in markdown (to the minute — two checks either side of a
 // minute boundary would otherwise differ). SARIF and text do not print it.
@@ -179,7 +179,7 @@ func resultURI(r map[string]any) string {
 
 func resultFingerprint(r map[string]any) string {
 	fp, _ := r["partialFingerprints"].(map[string]any)
-	s, _ := fp["aguard/v1"].(string)
+	s, _ := fp["bas-guard/v1"].(string)
 	return s
 }
 
@@ -287,8 +287,8 @@ func TestCheckDir_SARIFUnchanged(t *testing.T) {
 	if got := resultFingerprint(exec); got != dirSkillFingerprint {
 		t.Errorf("fingerprint = %q, want %q — a directory target's fingerprint moved, which reopens every alert", got, dirSkillFingerprint)
 	}
-	if got := doc.Runs[0].Properties["aguard/root"]; got != filepath.ToSlash(skill) {
-		t.Errorf("aguard/root = %v, want %q", got, skill)
+	if got := doc.Runs[0].Properties["bas-guard/root"]; got != filepath.ToSlash(skill) {
+		t.Errorf("bas-guard/root = %v, want %q", got, skill)
 	}
 	if res.Root != skill || len(res.Artifacts) != 1 || res.Artifacts[0].Path != skill {
 		t.Errorf("root=%q artifacts=%+v — want both to name the directory", res.Root, res.Artifacts)
@@ -370,7 +370,7 @@ func TestCheckZip_DotClaudeNameIsNotARoot(t *testing.T) {
 // TestApprove_ZipRecordsTheArchive: approving a zip records the archive's name and path — what the
 // operator can find again and re-check — and the same content hash a check of the unpacked tree
 // gives. It used to record a temporary directory that was deleted before the command returned,
-// and told the operator to `aguard check` it.
+// and told the operator to `bas-guard check` it.
 func TestApprove_ZipRecordsTheArchive(t *testing.T) {
 	dir := resolvedTempDir(t)
 	root := filepath.Join(dir, ".claude")

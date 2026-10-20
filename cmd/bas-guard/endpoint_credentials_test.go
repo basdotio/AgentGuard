@@ -3,7 +3,7 @@ package main
 
 // A judge endpoint written with credentials in it (P-076): `https://user:pass@host/v1` (Go's client
 // sends the userinfo as Basic auth when no key is set) or a gateway key in the query. Every place
-// aguard shows the endpoint — the report in all its formats, the notes, the config errors and the
+// bas-guard shows the endpoint — the report in all its formats, the notes, the config errors and the
 // four `llm` commands — shows it with those parts redacted; the request still carries them.
 
 import (

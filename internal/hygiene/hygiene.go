@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Package hygiene finds "junk" — the cleanup half of AgentGuard (spec §6). All checks
+// Package hygiene finds "junk" — the cleanup half of BAS Guard (spec §6). All checks
 // are deterministic (no LLM): oversized descriptions (context bloat), duplicate/near-
 // duplicate skills, dangling file references, and — best-effort — never-used skills.
 // This is the differentiated "360 cleanup" value; it quantifies recoverable context.

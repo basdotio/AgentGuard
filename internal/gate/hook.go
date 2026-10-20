@@ -293,7 +293,7 @@ func handlePre(ev Event, o Options) (Output, bool) {
 		reason += fmt.Sprintf(
 			"\nThis session runs in permission mode %q, which answers prompts automatically. "+
 				"An \"ask\" would have been accepted without you ever seeing it, so this was REFUSED instead.\n"+
-				"To load it anyway, decide outside the session: aguard approve %s\n", ev.PermissionMode, CommandArg(v.FullPath))
+				"To load it anyway, decide outside the session: bas-guard approve %s\n", ev.PermissionMode, CommandArg(v.FullPath))
 	}
 	// Park the verdict against this tool call ONLY when a yes is actually reachable, so that
 	// PostToolUse can record an approval for the bytes that were shown — and only for those
@@ -348,7 +348,7 @@ func handlePost(ev Event, o Options) (Output, bool) {
 		Verdict: VerdictAccepted, ApprovedAt: o.now(), ToolVersion: o.ToolVersion,
 	})
 	return Output{SystemMessage: fmt.Sprintf(
-		"AgentGuard: risk accepted for %s %q (%d/100) · content %s · undo with: aguard approvals forget %s",
+		"BAS Guard: risk accepted for %s %q (%d/100) · content %s · undo with: bas-guard approvals forget %s",
 		v.Kind, v.Name, v.Score, shortHash(v.Hash), hashPrefix(v.Hash))}, true
 }
 
@@ -431,7 +431,7 @@ func handleSessionStart(ev Event, o Options) (Output, bool) {
 		rows = rows[:maxArtifacts]
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "AgentGuard audited %s at session start. %d artifact(s) carry a finding at or above %s and have not been approved:\n",
+	fmt.Fprintf(&b, "BAS Guard audited %s at session start. %d artifact(s) carry a finding at or above %s and have not been approved:\n",
 		o.Root, len(rows)+omitted, o.Threshold)
 	for _, r := range rows {
 		fmt.Fprintf(&b, "  %-11s %-40s %3d/100  %s\n", r.kind, r.name, r.score, strings.Join(r.rules, ", "))
@@ -439,7 +439,7 @@ func handleSessionStart(ev Event, o Options) (Output, bool) {
 	if omitted > 0 {
 		fmt.Fprintf(&b, "  … and %d more, not listed.\n", omitted)
 	}
-	b.WriteString("Details: aguard scan. These were NOT blocked — a session-start audit can only inform.\n")
+	b.WriteString("Details: bas-guard scan. These were NOT blocked — a session-start audit can only inform.\n")
 	b.WriteString("Hooks, MCP servers and instruction files are live from the first turn; only skills pass through the load-time gate.")
 
 	out := Output{SystemMessage: b.String()}
@@ -467,14 +467,14 @@ func appendUnique(xs []string, s string) []string {
 // audit stands behind it.
 func unaudited(name string, err error) Output {
 	return Output{SystemMessage: gateNote(fmt.Sprintf(
-		"skill %q was loaded WITHOUT an audit: %v. Audit it yourself with: aguard check <path>",
+		"skill %q was loaded WITHOUT an audit: %v. Audit it yourself with: bas-guard check <path>",
 		clip(report.Sanitize(name), maxNameLen), err))}
 }
 
 // gateNote prefixes the GATE-000 identifier so that every "this went unchecked" message is
 // greppable and documented in docs/rules.md, the same as any dimension-0 note.
 func gateNote(msg string) string {
-	return "AgentGuard [GATE-000] " + report.Sanitize(msg)
+	return "BAS Guard [GATE-000] " + report.Sanitize(msg)
 }
 
 // quietCoverageMessage is the session-start message when the audit raised nothing.
@@ -488,7 +488,7 @@ func gateNote(msg string) string {
 // here (there are none to name), so unlike the alert path there is no attacker-written text
 // and nothing to fence.
 func quietCoverageMessage(root string, threshold model.Severity) string {
-	return fmt.Sprintf("AgentGuard audited %s at session start: no unapproved artifact carries a finding at or "+
+	return fmt.Sprintf("BAS Guard audited %s at session start: no unapproved artifact carries a finding at or "+
 		"above %s. Only skills pass through the load-time gate — hooks, MCP servers and instruction files are live "+
-		"from the first turn and are NOT gated. Full picture: aguard scan.", root, threshold)
+		"from the first turn and are NOT gated. Full picture: bas-guard scan.", root, threshold)
 }

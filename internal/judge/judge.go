@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Package judge is AgentGuard's M5 LLM intent judge (spec §5.2/§16.4): it catches
+// Package judge is BAS Guard's M5 LLM intent judge (spec §5.2/§16.4): it catches
 // "the description says A but the code does B" mismatches that static rules miss.
 //
 // Hard constraints (must never be relaxed):

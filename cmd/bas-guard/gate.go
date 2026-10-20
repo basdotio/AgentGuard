@@ -21,7 +21,7 @@ import (
 // gateOptions assembles a gate run from the CLI's own wiring.
 //
 // The two scanners are the SAME functions `check` and `scan` call — not a lighter variant.
-// A gate whose verdict differs from what `aguard check` prints for the same path would make
+// A gate whose verdict differs from what `bas-guard check` prints for the same path would make
 // both numbers useless, so there is deliberately no fast path here and nothing is trimmed.
 //
 // The judge is the one thing left out, and it stays out even though `check --llm` exists: the
@@ -59,7 +59,7 @@ func gateOptions(root, cfgPath string, store *gate.Store, now func() int64) (gat
 
 // gateLivenessNote reports a load-time gate that is registered but cannot run.
 //
-// It is attached to `scan` — not left to `aguard hook status` — because nobody runs a status
+// It is attached to `scan` — not left to `bas-guard hook status` — because nobody runs a status
 // command on a schedule, while `scan` is the command people already run. The state it catches
 // looks installed and protects nothing, so leaving it to a command you have to think of asking
 // would recreate the exact silence the gate exists to prevent (invariant #5).
@@ -96,7 +96,7 @@ func runHook(stdin io.Reader, stdout io.Writer, root, cfgPath string) error {
 	var ev gate.Event
 	if err := json.NewDecoder(stdin).Decode(&ev); err != nil {
 		return writeHookOutput(stdout, gate.Output{
-			SystemMessage: "AgentGuard [GATE-000] hook payload could not be read; this call was NOT audited.",
+			SystemMessage: "BAS Guard [GATE-000] hook payload could not be read; this call was NOT audited.",
 		})
 	}
 	// The approvals store and the config are read BEFORE gate.Handle, so they sat outside
@@ -121,13 +121,13 @@ func runHook(stdin io.Reader, stdout io.Writer, root, cfgPath string) error {
 	case l := <-ch:
 		if l.err != nil {
 			return writeHookOutput(stdout, gate.Output{
-				SystemMessage: "AgentGuard [GATE-000] config error, this call was NOT audited: " + l.err.Error(),
+				SystemMessage: "BAS Guard [GATE-000] config error, this call was NOT audited: " + l.err.Error(),
 			})
 		}
 		store, o = l.store, l.o
 	case <-time.After(preScanDeadline):
 		return writeHookOutput(stdout, gate.Output{
-			SystemMessage: fmt.Sprintf("AgentGuard [GATE-000] reading the approvals store or config did not finish within %s; this call was NOT audited.", preScanDeadline),
+			SystemMessage: fmt.Sprintf("BAS Guard [GATE-000] reading the approvals store or config did not finish within %s; this call was NOT audited.", preScanDeadline),
 		})
 	}
 
@@ -138,11 +138,11 @@ func runHook(stdin io.Reader, stdout io.Writer, root, cfgPath string) error {
 			// prompt returns next time, and an operator who cannot tell why will conclude
 			// the gate is broken and switch it off.
 			out.SystemMessage = appendLine(out.SystemMessage,
-				"AgentGuard [GATE-000] the decision could not be saved ("+serr.Error()+"); it will be asked again.")
+				"BAS Guard [GATE-000] the decision could not be saved ("+serr.Error()+"); it will be asked again.")
 		}
 	}
 	if store.Corrupt != "" {
-		out.SystemMessage = appendLine(out.SystemMessage, "AgentGuard [GATE-000] "+store.Corrupt)
+		out.SystemMessage = appendLine(out.SystemMessage, "BAS Guard [GATE-000] "+store.Corrupt)
 	}
 	return writeHookOutput(stdout, out)
 }
@@ -170,7 +170,7 @@ func newGateCommands(root, cfgPath *string, quiet *bool) []*cobra.Command {
 		Short: "Hook runner: audit a skill before it loads (reads a Claude Code hook event on stdin)",
 		Long: "Reads one hook event on stdin and writes the decision on stdout.\n\n" +
 			"One command serves every event the gate uses — it dispatches on hook_event_name — so\n" +
-			"registering it needs no shell pipeline in settings.json. Run `aguard hook install` to\n" +
+			"registering it needs no shell pipeline in settings.json. Run `bas-guard hook install` to\n" +
 			"register it, or see docs/install-gate.md for the settings block to add by hand.",
 		Args:         cobra.NoArgs,
 		SilenceUsage: true,
@@ -379,7 +379,7 @@ func approvePath(w io.Writer, root, cfgPath, target string) error {
 		// The hint names --json on purpose: the terminal and markdown reports do not show an
 		// artifact's own coverage notes, so a plain `check` of a config that did not parse
 		// reads as clean. The JSON carries the note (PARSE-000 on the artifact, or COV-000/IO-000).
-		return fmt.Errorf("%s %q has no content hash: %s; nothing was approved (aguard check %s --json lists the notes that say what was not read)",
+		return fmt.Errorf("%s %q has no content hash: %s; nothing was approved (bas-guard check %s --json lists the notes that say what was not read)",
 			v.Kind, v.Name, v.Unhashed, gate.CommandArg(target))
 	}
 	store := gate.LoadStore(gate.ApprovalsPath(root))
@@ -401,7 +401,7 @@ func approvePath(w io.Writer, root, cfgPath, target string) error {
 		v.Kind, v.Name, v.Score, verdict, v.Hash, gate.ApprovalsPath(root))
 	if v.Blocking {
 		fmt.Fprintf(w, "\nNote: this target has findings at or above %s — you accepted a risk rather than cleared one.\n"+
-			"Run `aguard check %s` to see what they are.\n", cfg.Gate.FailOn, gate.CommandArg(v.FullPath))
+			"Run `bas-guard check %s` to see what they are.\n", cfg.Gate.FailOn, gate.CommandArg(v.FullPath))
 	}
 	return nil
 }

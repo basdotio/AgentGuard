@@ -113,7 +113,7 @@ func TestE2E_JudgeRedirectIsRefusedAndReported(t *testing.T) {
 	}
 }
 
-// TestLLMTest_RedirectIsRefused: `aguard llm test` is where a redirecting endpoint should be found
+// TestLLMTest_RedirectIsRefused: `bas-guard llm test` is where a redirecting endpoint should be found
 // out — before any scan sends excerpts — so it fails, naming the redirect, and sends nothing on.
 // TestLLMCommands_SetupTestStatus is the reverse half: an endpoint that answers still reports OK.
 func TestLLMTest_RedirectIsRefused(t *testing.T) {
