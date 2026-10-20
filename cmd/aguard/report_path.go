@@ -18,7 +18,7 @@ import (
 // scan discloses), timestamped so consecutive scans can be compared rather than overwritten.
 // The reports hold redacted snippets and the user's own paths: local by design, never uploaded.
 
-const reportsDirHint = "$XDG_CONFIG_HOME/aguard/reports or ~/.config/aguard/reports"
+const reportsDirHint = "$XDG_CONFIG_HOME/bas-guard/reports or ~/.config/bas-guard/reports (aguard/ when only that one exists)"
 
 // defaultReportPath returns <config dir>/reports/scan-<timestamp>.html, creating the directory
 // (0700, like the config dir: the report describes the user's environment in some detail).

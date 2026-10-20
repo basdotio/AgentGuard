@@ -272,10 +272,10 @@ skills(SKILL.md + 脚本 + 资源)· MCP 配置(静态只查注入文本和 `NOD
 ```bash
 aguard llm setup --provider deepseek    # 提示输入密钥,隐藏输入;脚本里用 --key-stdin 管道
 aguard llm test          # 发一次调用:这个端点、这个模型能不能答
-aguard scan --llm        # 配置从此在 ~/.config/aguard/config.yaml 自动找到
+aguard scan --llm        # 配置从此在 ~/.config/bas-guard/config.yaml 自动找到
 ```
 
-密钥存到 `~/.config/aguard/llm.key`(0600,别人能读就拒用);`api_key_env` 环境变量仍然可用且优先,给 CI。
+密钥存到 `~/.config/bas-guard/llm.key`(0600,别人能读就拒用);`api_key_env` 环境变量仍然可用且优先,给 CI。改名为 BAS Guard 之前的配置在 `~/.config/aguard/`,只有它在时照旧从那里读,不会被挪动。
 在 Claude Code 里,`/aguard-llm` 用对话走同样三步。
 
 想在决定之前看清会发出去什么:`aguard llm preview ./some-skill` 列出 `check --llm` 对它会发的每一次调用,
@@ -295,7 +295,7 @@ llm:
   enabled: true
   provider: openai_compatible
   base_url: http://localhost:11434/v1   # 默认本地模型(如 Ollama)
-  api_key_env: AGUARD_LLM_KEY           # 密钥只从该环境变量读,绝不落盘
+  api_key_env: AGUARD_LLM_KEY           # 密钥只从该环境变量读,绝不落盘(设了 BAS_GUARD_LLM_KEY 时以它为准)
   model: llama3.1
 
 aguard scan --llm --config config.yaml
@@ -400,7 +400,7 @@ cp hack/github-action.yml .github/workflows/agentguard.yml
 
 `aguard scan --html report.html` 写出自包含(离线、无脚本)HTML 报告:风险分仪表盘、
 环境瓦片、按 artifact+规则聚合的行级取证发现、垃圾/卫生区。对你自己的 `~/.claude` 跑一次即可查看。
-`aguard scan --report` 写同一份报告但不用你想文件名:落到 `~/.config/aguard/reports/scan-<时间戳>.html`
+`aguard scan --report` 写同一份报告但不用你想文件名:落到 `~/.config/bas-guard/reports/scan-<时间戳>.html`
 (或 `$XDG_CONFIG_HOME` 下),在扫描 root 之外,并打印路径。插件每次扫描都带它,`/aguard-setup` 结束时会
 打开报告。报告只留在本机,里面有你自己的路径和脱敏后的片段。
 

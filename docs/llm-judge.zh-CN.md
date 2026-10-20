@@ -90,7 +90,7 @@ aguard 展示端点的每一处——报告里的 `judge.endpoint`、`LLM-002` n
 `llm preview`——端点里的用户名和密码(`https://user:pass@host`)、每个 query 值和 fragment 都显示成 `<REDACTED>`;
 scheme、主机、端口、路径和 query 的键名保留。请求用的仍是写在配置里的原样 URL。
 
-`setup` 写 `~/.config/aguard/config.yaml`(或 `$XDG_CONFIG_HOME/aguard/…`),不传 `--config` 时所有命令都读它;
+`setup` 写 `~/.config/bas-guard/config.yaml`(或 `$XDG_CONFIG_HOME/bas-guard/…`;改名为 BAS Guard 之前的配置只在 `~/.config/aguard/` 时照旧从那里读),不传 `--config` 时所有命令都读它;
 密钥存在旁边的 `llm.key`,权限 0600。在 Claude Code 里,`/aguard-llm` 用对话走同样几步。
 
 **长路径**是手写同一个文件(见 [`config.example.yaml`](../config.example.yaml)):
@@ -100,7 +100,7 @@ llm:
   enabled: true                        # 还必须加 --llm
   provider: deepseek                   # 预设(自动填 base_url 和默认模型),或 openai_compatible
   model: deepseek-chat                 # 可选:覆盖预设的默认模型
-  api_key_file: ~/.config/aguard/llm.key   # 0600;或 api_key_env: 环境变量名(优先)
+  api_key_file: ~/.config/bas-guard/llm.key   # 0600;或 api_key_env: 环境变量名(优先)
 ```
 
 | 字段 | 含义 |
@@ -431,13 +431,13 @@ triage 只问一次,判官的题问 `samples` 次)、`retries`、`prompt_tokens`
 名字就换掉背后的模型。共识、严重度钳制和只提示规则不在任何一个版本里,它们仍然只有 `tool_version` 能标。密钥、
 请求头和 `authority` 一律不记。
 
-### 每次判官运行留一条记录(`AGUARD_USAGE_LOG`)
+### 每次判官运行留一条记录(`BAS_GUARD_USAGE_LOG` / `AGUARD_USAGE_LOG`)
 
 `judge` 块只有加 `--json` 才拿得到;不加时一次运行做了什么只是 stderr 上的一行,`--quiet` 会把它压掉,Downloads 那一趟
 从来不印,`llm test` 则把 token 印在 stdout。要把手动或脚本里跑了好几天的判官运行加总起来,设一个只追加的日志:
 
 ```bash
-export AGUARD_USAGE_LOG=~/.local/state/aguard/usage.jsonl
+export BAS_GUARD_USAGE_LOG=~/.local/state/bas-guard/usage.jsonl   # AGUARD_USAGE_LOG 仍可用;两个都设时以此为准
 aguard check ./some-skill --llm
 ```
 

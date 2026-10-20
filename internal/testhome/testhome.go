@@ -51,9 +51,10 @@ var xdgDirs = []struct{ name, rel string }{
 
 // unsetVars are removed rather than redirected: CLAUDE_CONFIG_DIR because unset is what CI runs
 // with (the default root then falls under the isolated HOME), AGUARD_USAGE_LOG because it names
-// a file of the developer's that every judge run appends to (P-077). A test that exercises
-// either sets it itself with t.Setenv.
-var unsetVars = []string{"CLAUDE_CONFIG_DIR", "AGUARD_USAGE_LOG"}
+// a file of the developer's that every judge run appends to (P-077), and the BAS_GUARD_ names that
+// win over AGUARD_ ones since the rename (P-082): a developer's own key or log must not change what
+// a test reads. A test that exercises one sets it itself with t.Setenv.
+var unsetVars = []string{"CLAUDE_CONFIG_DIR", "AGUARD_USAGE_LOG", "BAS_GUARD_USAGE_LOG", "BAS_GUARD_LLM_KEY"}
 
 // Main is the body of a package's TestMain:
 //

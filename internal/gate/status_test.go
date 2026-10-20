@@ -109,7 +109,7 @@ func TestSplitCommandHandlesQuoting(t *testing.T) {
 		}
 	}
 	// A registration for something else entirely must not be claimed as ours.
-	if looksLikeAguard("/usr/bin/notify-send hi") {
+	if looksLikeOurs("/usr/bin/notify-send hi") {
 		t.Error("an unrelated hook was claimed as the gate")
 	}
 }

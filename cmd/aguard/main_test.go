@@ -953,7 +953,8 @@ func TestDefaultReportPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := filepath.Join(x, "aguard", "reports", "scan-20260905-140307.html"); p != want {
+	// A first setup gets the post-rename directory (P-082; the fallback is TestConfigDirFallback).
+	if want := filepath.Join(x, "bas-guard", "reports", "scan-20260905-140307.html"); p != want {
 		t.Errorf("path = %q, want %q", p, want)
 	}
 	fi, err := os.Stat(filepath.Dir(p))

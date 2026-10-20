@@ -630,7 +630,7 @@ func main() {
 		SilenceErrors: true,
 	}
 	rootCmd.PersistentFlags().StringVar(&root, "root", defaultRoot(), "Claude Code config root directory ($CLAUDE_CONFIG_DIR when set, else ~/.claude)")
-	rootCmd.PersistentFlags().StringVar(&cfgPath, "config", "", "config file path (default: $XDG_CONFIG_HOME/aguard/config.yaml or ~/.config/aguard/config.yaml; for the LLM judge and the gate)")
+	rootCmd.PersistentFlags().StringVar(&cfgPath, "config", "", "config file path (default: $XDG_CONFIG_HOME/bas-guard/config.yaml or ~/.config/bas-guard/config.yaml, the aguard directory when only that one exists; for the LLM judge and the gate)")
 	rootCmd.PersistentFlags().BoolVar(&quiet, "quiet", false, "quiet: errors only")
 	// The pair to --quiet, and persistent for the same reason: "how much do you want to read"
 	// is a property of the reader, not of the subcommand. It widens the terminal report only —
