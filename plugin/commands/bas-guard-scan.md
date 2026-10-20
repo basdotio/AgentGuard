@@ -3,7 +3,7 @@ description: Scan an agent config root for security risk with AgentGuard, then t
 argument-hint: "[config root, default ~/.claude]"
 ---
 
-Use the `agentguard-audit` skill to scan $ARGUMENTS (default: the current user's `~/.claude`).
+Use the `bas-guard-audit` skill to scan $ARGUMENTS (default: the current user's `~/.claude`).
 Run the scan with `--report` so the HTML report is written too; end with its path and a one-line
 offer to open it (do not open it unasked — see the skill's "The HTML report" section).
 

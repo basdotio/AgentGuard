@@ -83,13 +83,17 @@ func TestPluginNameCannotCollideInTheInstallCache(t *testing.T) {
 	// The staging dir is cache/<plugin.json name>; it must not be any marketplace's cache dir on a
 	// case-insensitive volume: not this one, and not the retired `guard` (basdotio/guard), whose
 	// cache dir still exists on machines that never removed it — the staging step rm -rf's it.
-	for _, mkName := range []string{homeMarketplace, "guard"} {
+	// legacyMarketplace (`AgentGuard`, before the rename, P-082) is in the list for the same reason as
+	// `guard`: its cache dir is still on every machine that installed from it.
+	for _, mkName := range []string{homeMarketplace, legacyMarketplace, "guard"} {
 		if strings.EqualFold(plugin.Name, mkName) {
 			t.Errorf("plugin name %q equals marketplace name %q up to case: `claude plugin install` fails on macOS (issues/022)", plugin.Name, mkName)
 		}
 	}
-	if strings.EqualFold(pluginBundleName, legacyBundleName) {
-		t.Errorf("pluginBundleName %q and legacyBundleName %q must differ up to case, or a legacy install is read as current", pluginBundleName, legacyBundleName)
+	for _, lb := range legacyBundles {
+		if strings.EqualFold(pluginBundleName, lb.name) {
+			t.Errorf("pluginBundleName %q and the old name %q must differ up to case, or a legacy install is read as current", pluginBundleName, lb.name)
+		}
 	}
 }
 

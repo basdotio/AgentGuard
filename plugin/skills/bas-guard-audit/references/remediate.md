@@ -143,7 +143,7 @@ Rules for writing one, in order of importance:
 - `*  *` is not a configuration. If that is where the conversation is heading, the honest move
   is to say the tool is not being used.
 
-`check` deliberately does **not** auto-discover a baseline — see `agentguard-vet` for why.
+`check` deliberately does **not** auto-discover a baseline — see `bas-guard-vet` for why.
 
 ## Baseline vs. approve — different mechanisms, don't mix them
 
@@ -154,7 +154,7 @@ Rules for writing one, in order of importance:
   moment the artifact is edited.
 
 "I've reviewed this skill and I'm keeping it" is an `approve`. "I've reviewed this rule firing
-in this location and I accept it" is a baseline. See `agentguard-gate` for approvals.
+in this location and I accept it" is a baseline. See `bas-guard-gate` for approvals.
 
 ## Finish by rescanning
 

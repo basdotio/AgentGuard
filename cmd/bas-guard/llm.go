@@ -26,7 +26,7 @@ import (
 // name, export an environment variable, pass --config and --llm every run. Each of those is a
 // step a non-developer cannot take, and the plugin never mentioned the judge at all, so from
 // inside Claude Code there was no path to it. These three subcommands are the primitives the
-// plugin's `/aguard-llm` flow drives: `setup` writes the config and the key file, `test` makes
+// plugin's `/bas-guard-llm` flow drives: `setup` writes the config and the key file, `test` makes
 // one call so a wrong key or a renamed model fails now and not at the end of a scan, `status`
 // says what is configured without ever printing the key.
 //

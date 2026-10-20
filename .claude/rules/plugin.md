@@ -27,7 +27,7 @@ paths:
   marketplace.json 里声明的名字注册的。两个名字不一样,CLI 回 "not found. available marketplaces",桌面版翻译成
   `MARKETPLACE_ERROR:NOT_REGISTERED`,界面只显示 "Couldn't check for updates",插件永远停在装机时那个版本
   (2026-09-04 真机日志确认,marketplace 原来叫 `agentguard`)。所以 marketplace 名是 `AgentGuard`,改仓库名就要
-  同时改这里。插件 ID 是 `aguard@AgentGuard` —— 为什么不是 `agentguard`,见下一条。
+  同时改这里。插件 ID 是 `basguard@bas-guard` —— 为什么不是 `agentguard`,见下一条。
 - **插件名不能和任何 marketplace 名只差大小写**(2026-10-01,[issues/022](../../issues/022-plugin-install-case-collision-macos.md))。
   Claude Code 先把插件暂存到 `cache/<plugin.json 的 name>`,再挪进 `cache/<marketplace>/<插件>/<版本>`,而"目标在暂存目录里"
   的判断是区分大小写的字符串比较。插件原来叫 `agentguard`,在默认的 macOS(不区分大小写)上和 `cache/AgentGuard` 是同一个
@@ -42,12 +42,12 @@ paths:
   `collect.CollectTarget` 认的是 `.claude-plugin/plugin.json`,把它加回根上就会把整个仓库重新
   路由成一个 plugin artifact,也就是上一条那个坑。条目里的 `"source": "./plugin"` 是这两条约束
   唯一的交点,别改成 `"./"`。
-- **skill 正文里描述注入要转述,不要引原文。** `agentguard-audit/SKILL.md` 起初引了一句字面的
+- **skill 正文里描述注入要转述,不要引原文。** `bas-guard-audit/SKILL.md` 起初引了一句字面的
   "ignore previous instructions" 当例子,当场吃到一条 `INJ-001` high —— 于是这个 skill 会拦住
   用户自己的 pre-commit、CI 和加载时闸门。**一个把自己判成恶意的安全工具没有任何说服力**,
   所以在这几份文件里写攻击形状一律用转述。
 - **skill 的 `description` 是唯一的触发面,而它是 always-on 成本**(`claude plugin details` 实测
-  ~981 token/会话,几乎全在三条 description 上)。`agentguard-audit` 的描述里那串规则 ID
+  ~981 token/会话,几乎全在三条 description 上)。`bas-guard-audit` 的描述里那串规则 ID
   (`INJ-001`、`EXEC-001`、`COV-000`……)**是有意留的**:用户问"`INJ-001` 是什么意思"要能命中,
   删掉省下的几十个 token 换不回那次命中。
 - **description 不得超过 1024 个字符,name 不得超过 64 个**——这是桌面版的硬限制,不是建议。app 里的限制表
@@ -55,7 +55,7 @@ paths:
   插件卡片上就少一条。audit skill 从 v0.4.0 到 v0.5.0 一直是 1159 字符,桌面版从来只列出另外两个,直到 2026-09-08 才
   有人注意到 "2 skills";CLI 没有这个限制,所以 `claude plugin validate` 和自扫都绿。`TestSkillFrontmatterFitsDesktopLimits`
   钉住三个数。往描述里加触发词之前先减,别只加。
-- **跨目录引用只有两种合法形态**:同级 skill 的相对路径(`../agentguard-audit/references/install.md`
+- **跨目录引用只有两种合法形态**:同级 skill 的相对路径(`../bas-guard-audit/references/install.md`
   ——三个 skill 共用那份安装说明),和指向仓库的**绝对 URL**。**不要写 `../../docs/rules.md` 这类
   指出 `plugin/` 之外的相对链接** —— 装出去之后 cache 里没有那半棵树,链接必断。
 - **插件不带 MCP server,也不注册任何自己的 hook。** 一个"帮你审 hook"的插件顺手给你装一个 hook,

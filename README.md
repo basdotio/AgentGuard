@@ -24,7 +24,7 @@ AI coding agents **auto-load** a lot of external things — skills, MCP servers,
 - **Junk cleanup that never deletes**: duplicates, context bloat (quantifies reclaimable tokens), stale references, zombie skills. `clean` only ever MOVES things into a trash directory inside your config root, records every step, and `--undo` replays it. Deleting stays your call.
 - **Permission audit**: inline secrets, wildcard arbitrary-command execution, over-broad paths, missing deny fallback.
 - **Load-time gate**: registered as a Claude Code hook, it audits a skill **before an agent loads it** and asks you about anything that carries a finding — see [`docs/install-gate.md`](docs/install-gate.md).
-- **Runs inside Claude Code**: a bundled plugin (three skills + `/aguard-setup`, `/aguard-scan`, `/aguard-vet`, `/aguard-gate`, `/aguard-help`, `/aguard-llm`) so you can ask for an audit in plain language and get the findings triaged, not just printed.
+- **Runs inside Claude Code**: a bundled plugin (three skills + `/bas-guard-setup`, `/bas-guard-scan`, `/bas-guard-vet`, `/bas-guard-gate`, `/bas-guard-help`, `/bas-guard-llm`) so you can ask for an audit in plain language and get the findings triaged, not just printed.
 - **Privacy**: secret values are `<REDACTED>` before the report is built — raw credentials never reach the output.
 
 ## Install
@@ -93,16 +93,16 @@ it") instead of memorising flags:
 In the **terminal** Claude Code, as slash commands:
 
 ```
-/plugin marketplace add basdotio/AgentGuard
-/plugin install aguard@AgentGuard
+/plugin marketplace add basdotio/bas-guard
+/plugin install basguard@bas-guard
 ```
 
 In the **VS Code / JetBrains extension**, `/plugin` is not available — run the same two
 steps from a shell with the `claude` CLI instead:
 
 ```bash
-claude plugin marketplace add basdotio/AgentGuard
-claude plugin install aguard@AgentGuard
+claude plugin marketplace add basdotio/bas-guard
+claude plugin install basguard@bas-guard
 ```
 Third-party marketplaces do not auto-update by default in the terminal. Turn it on once so skill
 and command updates arrive on their own — `/plugin` → **Marketplaces** → `AgentGuard` → **Enable
@@ -116,7 +116,7 @@ it fails with `EINVAL` ([issues/022](issues/022-plugin-install-case-collision-ma
 once; `aguard version` prints the exact command for your install:
 
 ```bash
-claude plugin install aguard@AgentGuard
+claude plugin install basguard@bas-guard
 claude plugin uninstall agentguard@AgentGuard
 ```
 
@@ -124,7 +124,7 @@ claude plugin uninstall agentguard@AgentGuard
 The repository is public and the plugin ships from `main`, so the plain form above is the one to
 use — no `#…` suffix, no repo access, no git credentials.
 
-Then restart Claude Code (the extension: reload the window) and run `/aguard-setup`. It
+Then restart Claude Code (the extension: reload the window) and run `/bas-guard-setup`. It
 brings up the `aguard` binary if it is missing, runs the first scan, triages the findings
 with you, and offers the load-time gate. The `curl` download needs no token: the releases it
 reads are public. Building from source (`make build`, Go 1.23+) stays available. See
@@ -132,14 +132,14 @@ reads are public. Building from source (`make build`, Go 1.23+) stays available.
 
 | | |
 |---|---|
-| `/aguard-setup` | zero to protected: binary, first scan, fix plan, gate |
-| `/aguard-scan [root]` | audit a config root and triage the findings |
-| `/aguard-vet <path\|url>` | vet one skill/plugin/file before installing or committing it |
-| `/aguard-gate [action]` | install / inspect / repair the load-time gate, manage approvals |
-| `/aguard-help` | how to use it, in plain language: what you can ask, nothing to memorise |
-| `/aguard-llm [status\|test\|setup]` | set up or check the optional AI deep check (a hosted model you provide) |
+| `/bas-guard-setup` | zero to protected: binary, first scan, fix plan, gate |
+| `/bas-guard-scan [root]` | audit a config root and triage the findings |
+| `/bas-guard-vet <path\|url>` | vet one skill/plugin/file before installing or committing it |
+| `/bas-guard-gate [action]` | install / inspect / repair the load-time gate, manage approvals |
+| `/bas-guard-help` | how to use it, in plain language: what you can ask, nothing to memorise |
+| `/bas-guard-llm [status\|test\|setup]` | set up or check the optional AI deep check (a hosted model you provide) |
 
-The three skills (`agentguard-audit`, `agentguard-vet`, `agentguard-gate`) also fire on their
+The three skills (`bas-guard-audit`, `bas-guard-vet`, `bas-guard-gate`) also fire on their
 own when a request matches, and they carry the part a `--help` cannot: how to read the two
 scores, which findings are shapes rather than verdicts, why a dimension-0 note is not a risk,
 and what a clean report still does not prove.
@@ -317,7 +317,7 @@ aguard scan --llm        # the config is found at ~/.config/bas-guard/config.yam
 
 The key goes to `~/.config/bas-guard/llm.key` (mode 0600, refused if anyone else can read it); an
 `api_key_env` variable still works and takes precedence, for CI. A setup made before the rename to BAS Guard
-lives in `~/.config/aguard/` and is still read there when it is the only one; nothing is moved. Inside Claude Code, `/aguard-llm`
+lives in `~/.config/aguard/` and is still read there when it is the only one; nothing is moved. Inside Claude Code, `/bas-guard-llm`
 walks through the same three steps in conversation.
 
 To see what would leave the machine before you decide, `aguard llm preview ./some-skill` prints every
@@ -465,7 +465,7 @@ score gauge, environment tiles, findings grouped by artifact+rule with line-leve
 and the junk/hygiene section. `aguard scan --report` writes the same report without a path to
 invent — to `~/.config/bas-guard/reports/scan-<timestamp>.html` (or under `$XDG_CONFIG_HOME`),
 outside the scan root, and prints where. The plugin does this on every scan and opens the
-report at the end of `/aguard-setup`. Reports stay on the machine; they hold your own paths
+report at the end of `/bas-guard-setup`. Reports stay on the machine; they hold your own paths
 and redacted snippets.
 
 `--md <path>` writes the same report as GitHub-flavoured markdown, for the place a scan result

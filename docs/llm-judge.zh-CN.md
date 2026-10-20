@@ -91,7 +91,7 @@ aguard 展示端点的每一处——报告里的 `judge.endpoint`、`LLM-002` n
 scheme、主机、端口、路径和 query 的键名保留。请求用的仍是写在配置里的原样 URL。
 
 `setup` 写 `~/.config/bas-guard/config.yaml`(或 `$XDG_CONFIG_HOME/bas-guard/…`;改名为 BAS Guard 之前的配置只在 `~/.config/aguard/` 时照旧从那里读),不传 `--config` 时所有命令都读它;
-密钥存在旁边的 `llm.key`,权限 0600。在 Claude Code 里,`/aguard-llm` 用对话走同样几步。
+密钥存在旁边的 `llm.key`,权限 0600。在 Claude Code 里,`/bas-guard-llm` 用对话走同样几步。
 
 **长路径**是手写同一个文件(见 [`config.example.yaml`](../config.example.yaml)):
 

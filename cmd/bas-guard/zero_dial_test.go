@@ -168,7 +168,7 @@ func newZeroDialFixture(t *testing.T) zeroDialFixture {
 	}
 	fx.unversioned = filepath.Join(fx.scratch, "unversioned", ".claude")
 	installAguardPlugin(t, fx.unversioned, "")
-	legacy := legacyBundleName + "@" + homeMarketplace
+	legacy := legacyBundles[0].name + "@" + legacyMarketplace
 	fx.legacy = writePluginInstalls(t, map[string]string{legacy: zeroDialLegacyVersion})
 	fx.both = writePluginInstalls(t, map[string]string{
 		pluginBundleName + "@" + homeMarketplace: zeroDialPluginVersion, legacy: zeroDialLegacyVersion})
@@ -517,8 +517,8 @@ func zeroDialVersionRows(fx zeroDialFixture) []dialCase {
 		{"no plugin installed", fx.bare, stampLdflags("v1.0.0"), ""},
 		{"plugin.json without a version", fx.unversioned, stampLdflags("v1.0.0"), ""},
 		{"plugin under its old name only", fx.legacy, stampLdflags("v1.0.0"),
-			"plugin " + legacyBundleName + " " + zeroDialLegacyVersion + " is installed under the plugin's old name"},
-		{"plugin under both names", fx.both, stampLdflags("v1.0.0"), "; the old " + legacyBundleName + " plugin is still installed too"},
+			"plugin " + legacyBundles[0].name + " " + zeroDialLegacyVersion + " is installed under the plugin's old name"},
+		{"plugin under both names", fx.both, stampLdflags("v1.0.0"), "; the old " + legacyBundles[0].name + " plugin is still installed too"},
 		{"stamped from build info, plugin newer", fx.root, stampBuildInfo("v1.0.0", "abcdef1234567", "2026-10-09T00:00:00Z"),
 			plugin + "is newer than this binary (1.0.0)"},
 	}

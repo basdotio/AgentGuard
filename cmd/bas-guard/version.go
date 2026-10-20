@@ -28,22 +28,30 @@ import (
 
 // pluginBundleName is what the marketplace calls the bundle; PluginInstalls keys by it. It must
 // equal plugin.json's name, which is the skill namespace the gate resolves, and must differ up to
-// case from every marketplace name (TestPluginNameCannotCollideInTheInstallCache, issues/022).
-const pluginBundleName = "aguard"
+// case from every marketplace name (TestPluginNameCannotCollideInTheInstallCache, issues/022) —
+// which is why it is `basguard` and not `bas-guard`, the marketplace's name (P-082).
+const pluginBundleName = "basguard"
 
-// legacyBundleName is what the plugin was called through v0.16.0. `agentguard` in marketplace
-// `AgentGuard` is one directory on a case-insensitive volume, and Claude Code's install moved the
-// plugin into itself (issues/022). The marketplace no longer lists the old name, so an install
-// under it never updates again — pluginVersionLine tells it to switch.
-const legacyBundleName = "agentguard"
+// legacyBundle is a name the plugin had before, and the release that retired it. The marketplace
+// no longer lists an old name, so an install under it never updates again — pluginVersionLine tells
+// it to switch.
+type legacyBundle struct{ name, since string }
+
+// legacyBundles, newest first: `aguard` through v0.29 (the rename to BAS Guard, P-082), and
+// `agentguard` through v0.16.0 (`agentguard` in marketplace `AgentGuard` is one directory on a
+// case-insensitive volume, and Claude Code's install moved the plugin into itself, issues/022).
+var legacyBundles = []legacyBundle{{"aguard", "0.30.0"}, {"agentguard", "0.17.0"}}
 
 // The marketplace this repository publishes: the name .claude-plugin/marketplace.json declares
 // (TestMarketplaceEntryVersionMatchesPlugin pins it) and the repo that serves it. Any other
 // marketplace name on an install — above all `guard`, the old basdotio/guard distribution repo,
 // which stopped at 0.9.0 — is one an in-place update may never bring level with this binary.
 const (
-	homeMarketplace     = "AgentGuard"
-	homeMarketplaceRepo = "basdotio/AgentGuard"
+	homeMarketplace     = "bas-guard"
+	homeMarketplaceRepo = "basdotio/bas-guard"
+	// legacyMarketplace is this repository's marketplace name before the rename (P-082). It points
+	// at the same repository, so a switch removes it before adding homeMarketplace.
+	legacyMarketplace = "AgentGuard"
 )
 
 // plainMarketplaceName is what a marketplace name must look like before it is repeated back.
@@ -88,16 +96,22 @@ func pluginVersionLine(root, binaryVersion string) string {
 	home := filepath.Dir(root)
 	installs := collect.PluginInstalls(root, home)
 	cur, hasCur := installs[pluginBundleName]
-	old, hasOld := installs[legacyBundleName]
 	if !hasCur {
-		if hasOld {
-			return renamedLine(old)
+		for _, lb := range legacyBundles {
+			if old, ok := installs[lb.name]; ok {
+				return renamedLine(old, lb)
+			}
 		}
 		return ""
 	}
 	line := versionLine(cur, binaryVersion)
-	if line != "" && hasOld {
-		line += "; " + leftoverHint(old)
+	if line == "" {
+		return line
+	}
+	for _, lb := range legacyBundles {
+		if old, ok := installs[lb.name]; ok {
+			line += "; " + leftoverHint(old, lb)
+		}
 	}
 	return line
 }
@@ -115,7 +129,7 @@ func versionLine(in collect.PluginInstall, binaryVersion string) string {
 	}
 	switch compareSemver(bv, pv) {
 	case -1:
-		return fmt.Sprintf("plugin %s %s is newer than this binary (%s): new rules and allowlist entries are missing here — run /aguard-setup (or reinstall the binary) to upgrade", pluginBundleName, pv, bv)
+		return fmt.Sprintf("plugin %s %s is newer than this binary (%s): new rules and allowlist entries are missing here — run /bas-guard-setup (or reinstall the binary) to upgrade", pluginBundleName, pv, bv)
 	case 1:
 		return fmt.Sprintf("plugin %s %s is older than this binary (%s) — %s", pluginBundleName, pv, bv, updateHint(in, bv))
 	default:
@@ -147,34 +161,34 @@ func updateHint(in collect.PluginInstall, binaryVersion string) string {
 		from, binaryVersion, switchCommand(in.Marketplace, pluginBundleName))
 }
 
-// renamedLine reports an install under legacyBundleName, with no current install next to it.
-func renamedLine(old collect.PluginInstall) string {
+// renamedLine reports an install under an old name, with no current install next to it.
+func renamedLine(old collect.PluginInstall, lb legacyBundle) string {
 	pv := bundleVersionOf(old.Dir)
 	if pv != "" {
 		pv = " " + pv
 	}
-	return fmt.Sprintf("plugin %s%s is installed under the plugin's old name: since 0.17.0 it is %s, and the old name gets no further updates — %s",
-		legacyBundleName, pv, pluginBundleName, renameHint(old))
+	return fmt.Sprintf("plugin %s%s is installed under the plugin's old name: since %s it is %s, and the old name gets no further updates — %s",
+		lb.name, pv, lb.since, pluginBundleName, renameHint(old, lb.name))
 }
 
-// renameHint says how to move an install under legacyBundleName to pluginBundleName.
-func renameHint(old collect.PluginInstall) string {
+// renameHint says how to move an install under oldBundle to pluginBundleName.
+func renameHint(old collect.PluginInstall, oldBundle string) string {
 	if old.Desktop {
 		return fmt.Sprintf("in Claude Desktop's Customize panel, install %s from the %s marketplace (add %s first if it is not listed) and remove %s",
-			pluginBundleName, homeMarketplace, homeMarketplaceRepo, legacyBundleName)
+			pluginBundleName, homeMarketplace, homeMarketplaceRepo, oldBundle)
 	}
-	return fmt.Sprintf("switch: `%s`", switchCommand(old.Marketplace, legacyBundleName))
+	return fmt.Sprintf("switch: `%s`", switchCommand(old.Marketplace, oldBundle))
 }
 
-// leftoverHint is appended when an install under legacyBundleName sits next to the current one.
+// leftoverHint is appended when an install under an old name sits next to the current one.
 // It duplicates every skill, and a bare skill name two plugins provide is ambiguous to the gate.
-func leftoverHint(old collect.PluginInstall) string {
-	const lead = "the old " + legacyBundleName + " plugin is still installed too and duplicates every skill — remove it"
+func leftoverHint(old collect.PluginInstall, lb legacyBundle) string {
+	lead := "the old " + lb.name + " plugin is still installed too and duplicates every skill — remove it"
 	switch {
 	case old.Desktop:
 		return lead + " in Claude Desktop's Customize panel"
 	case plainMarketplaceName.MatchString(old.Marketplace):
-		return fmt.Sprintf("%s: `claude plugin uninstall %s@%s`", lead, legacyBundleName, old.Marketplace)
+		return fmt.Sprintf("%s: `claude plugin uninstall %s@%s`", lead, lb.name, old.Marketplace)
 	default:
 		return lead
 	}
@@ -185,6 +199,17 @@ func leftoverHint(old collect.PluginInstall) string {
 // old install already came from it, and names the old install only when its marketplace is a
 // plain name (an unrecognizable one is not repeated back).
 func switchCommand(marketplace, oldBundle string) string {
+	if marketplace == legacyMarketplace {
+		// The pre-rename marketplace serves this same repository (P-082): uninstall from it, drop
+		// it, then add the repository under its current name — two marketplaces naming one source
+		// would only confuse which one updates.
+		return strings.Join([]string{
+			"claude plugin uninstall " + oldBundle + "@" + legacyMarketplace,
+			"claude plugin marketplace remove " + legacyMarketplace,
+			"claude plugin marketplace add " + homeMarketplaceRepo,
+			"claude plugin install " + pluginBundleName + "@" + homeMarketplace,
+		}, " && ")
+	}
 	var parts []string
 	if marketplace != homeMarketplace {
 		parts = append(parts, "claude plugin marketplace add "+homeMarketplaceRepo)

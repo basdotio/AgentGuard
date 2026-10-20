@@ -1,5 +1,5 @@
 ---
-name: agentguard-audit
+name: bas-guard-audit
 description: "Checks whether what you already have installed in Claude is safe. Say: 'Scan my Claude setup', 'What does EXFIL-001 mean?', 'Clean up my duplicate skills', 'Set up AgentGuard'. Audits an agent environment with AgentGuard (`aguard scan`): ~/.claude or a project's .claude, for prompt injection, credential exfiltration, arbitrary-execution grants, silent hooks and malicious skills/MCP servers/subagents/CLAUDE.md, then triages findings into a fix plan; also junk cleanup (`aguard clean`). Trigger when the user asks to scan, audit or check their agent setup or whether installed skills are safe, asks what a rule ID means (INJ-001, EXEC-001, EXFIL-002, PERM-006, HOOK-001, SUP-004, COV-000, GATE-001, ...) or why their score is what it is, wants config cleaned up, asks how to use AgentGuard (references/usage.md, no scan), wants the deeper AI check or to set up/test the LLM judge (references/llm.md), or asks in any wording to set up, install or get started with AgentGuard (references/setup.md)."
 allowed-tools: Bash, Read, Glob, Grep, Write, Edit
 ---
@@ -12,7 +12,7 @@ tool descriptions of remote MCP connectors Claude Desktop has cached — and rep
 risk. It never executes scanned content and never opens a network connection.
 
 **Asked to set up, install or get started with AgentGuard?** Follow
-[references/setup.md](references/setup.md) from the top — it is the same flow `/aguard-setup` runs,
+[references/setup.md](references/setup.md) from the top — it is the same flow `/bas-guard-setup` runs,
 so a user who says "set this up for me" gets exactly what the command gives. **The binary is
 missing when the user asks for a scan?** That is a first run too: follow setup.md instead of
 installing and scanning by hand, so they also get the gate offer and the usage card.
@@ -40,7 +40,7 @@ verifying is a security tool you have no reason to trust.
 `aguard version` also prints one line about the installed AgentGuard plugin. If it says the
 plugin is **newer than this binary**, tell the user in one sentence — the plugin updates itself
 through Claude Code, the binary does not, and an old binary silently lacks the newer rules and
-allowlist — and recommend `/aguard-setup` to upgrade. If it says an old `agentguard` install is
+allowlist — and recommend `/bas-guard-setup` to upgrade. If it says an old `agentguard` install is
 still there, pass on the command it prints: two copies duplicate every skill. Then continue; do
 not block the scan on it.
 
@@ -161,7 +161,7 @@ Everything else in the folder was counted, never read, never named — say so if
 
 - A low-scoring download is not an incident: nothing has run. The advice is "do not install",
   and, if they want it anyway, to go through the flagged lines with the user.
-- `aguard check <path-or-zip>` re-checks one item with full detail; the plugin's `/aguard-vet`
+- `aguard check <path-or-zip>` re-checks one item with full detail; the plugin's `/bas-guard-vet`
   does the same in conversation.
 - `--inbox <dir>` checks another folder; `--inbox off` skips it (a user who does not want their
   Downloads looked at is entitled to that — respect it without argument).
@@ -181,7 +181,7 @@ the form a non-technical user can actually read, keep and compare with last mont
 
 - **A binary older than 0.4.4 does not know `--report`** and rejects the flag. If that happens,
   run with `--html ~/.config/aguard/reports/scan-<timestamp>.html` instead (create the
-  directory first) and tell the user the binary is behind the plugin — `/aguard-setup` upgrades it.
+  directory first) and tell the user the binary is behind the plugin — `/bas-guard-setup` upgrades it.
 - **On a routine scan, do not open it unasked.** End with one line — where it is, and "say
   'open the report' to view it". A browser window on every scan is noise.
 - **When asked, open it**: `open <path>` on macOS, `xdg-open <path>` on Linux.
@@ -191,7 +191,7 @@ the form a non-technical user can actually read, keep and compare with last mont
   the change: findings fixed or artifacts removed move the number honestly; artifacts merely
   added or dropped move it by dilution, because the score is a mean (see triage.md). No
   previous report — nothing to say.
-- **`/aguard-setup` is the exception**: the first run opens it, because that is the one moment a
+- **`/bas-guard-setup` is the exception**: the first run opens it, because that is the one moment a
   visual report earns a window.
 - The report contains the user's own paths and redacted snippets from their configuration. It
   is local by design; do not suggest sending it anywhere, and if the user wants to share it,
@@ -207,6 +207,6 @@ the form a non-technical user can actually read, keep and compare with last mont
   connectors seen in a desktop session — not one used only in the browser. Say so when you hand
   over a clean result.
 - **Not the pre-install check, and not the gate.** Vetting one skill before installing it is
-  `agentguard-vet`; making the check run automatically at load time is `agentguard-gate`. A
+  `bas-guard-vet`; making the check run automatically at load time is `bas-guard-gate`. A
   scan tells the user what is already in their environment — which is the wrong time to find
   out. If the scan turns up anything real, recommend the gate.

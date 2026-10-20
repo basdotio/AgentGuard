@@ -166,7 +166,7 @@ func TestEveryTestPackageIsolatesTheHome(t *testing.T) {
 	// Positive control: the walk saw this package, cmd/bas-guard and the hack/ tools, or it proves
 	// nothing; and every excluded tree exists, so a rename cannot leave a stale exclusion behind.
 	for _, dir := range []string{
-		filepath.Join("internal", "testhome"), filepath.Join("cmd", "aguard"),
+		filepath.Join("internal", "testhome"), filepath.Join("cmd", "bas-guard"),
 		filepath.Join("hack", "gen-rules"), filepath.Join("hack", "reputation-refresh"),
 	} {
 		if !withTests[dir] {

@@ -19,7 +19,7 @@
 
 - **HOME 边界是安全不变量**，不是限制：跨边界读文件会把扫描器本身变成一个
   任意文件读取原语。对抗测试对此有硬断言
-  （`TestAdversarial_NoBoundaryEscape`，[cmd/aguard/adversarial_test.go:403](../cmd/aguard/adversarial_test.go)）。
+  （`TestAdversarial_NoBoundaryEscape`，[cmd/aguard/adversarial_test.go:403](../cmd/bas-guard/adversarial_test.go)）。
   **这一半永远不应该"修"。**
 - **深度为 1** 才是可讨论的：无限跟读会引入环、爆炸式读取与性能问题，
   且离"实际执行整条链"越近，越容易被诱导读到不该读的地方。

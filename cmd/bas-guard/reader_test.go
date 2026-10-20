@@ -157,7 +157,7 @@ func TestLLMSetupStatesTheJudgesDirection(t *testing.T) {
 	if !strings.Contains(out.String(), want) {
 		t.Errorf("llm setup must state the judge's direction as %q:\n%s", want, out.String())
 	}
-	ref, err := os.ReadFile(filepath.Join("..", "..", "plugin", "skills", "agentguard-audit", "references", "llm.md"))
+	ref, err := os.ReadFile(filepath.Join("..", "..", "plugin", "skills", "bas-guard-audit", "references", "llm.md"))
 	if err != nil {
 		t.Fatal(err)
 	}

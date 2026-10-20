@@ -16,7 +16,7 @@
 
 ## 出处
 
-- 对抗语料反向断言：[cmd/aguard/adversarial_test.go:239](../cmd/aguard/adversarial_test.go)
+- 对抗语料反向断言：[cmd/aguard/adversarial_test.go:239](../cmd/bas-guard/adversarial_test.go)
   （`knownGap: "rules are literal regexes over the raw bytes; no unicode normalization / confusable folding runs first"`）
 - ROADMAP "Known limitations" 明确列出。
 

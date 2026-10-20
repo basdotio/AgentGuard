@@ -1,6 +1,6 @@
 # Getting the `aguard` binary
 
-Shared by `agentguard-audit`, `agentguard-vet` and `agentguard-gate`.
+Shared by `bas-guard-audit`, `bas-guard-vet` and `bas-guard-gate`.
 
 ## First, look before you fetch
 
@@ -124,7 +124,7 @@ hook pointing at a file that no longer exists — the `GATE-001` failure mode.
 Update the plugin (skills and commands) separately — it moves on its own clock:
 
 ```
-/plugin update aguard@AgentGuard            # VS Code / JetBrains: `claude plugin update aguard@AgentGuard` in a shell
+/plugin update basguard@bas-guard            # VS Code / JetBrains: `claude plugin update basguard@bas-guard` in a shell
 ```
 
 then restart Claude Code (the extension: reload the window).

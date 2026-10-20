@@ -110,7 +110,7 @@ URL as written.
 `setup` writes `~/.config/bas-guard/config.yaml` (or `$XDG_CONFIG_HOME/bas-guard/…`; a setup made before the
 rename to BAS Guard is still read from `~/.config/aguard/` when that is the only one), which every
 command reads when `--config` is not given, and stores the key in `llm.key` next to it with
-mode 0600. Inside Claude Code the `/aguard-llm` command walks through the same steps.
+mode 0600. Inside Claude Code the `/bas-guard-llm` command walks through the same steps.
 
 **The long way** is the same file by hand (see [`config.example.yaml`](../config.example.yaml)):
 

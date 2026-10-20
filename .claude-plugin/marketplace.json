@@ -1,19 +1,19 @@
 {
-  "name": "AgentGuard",
+  "name": "bas-guard",
   "owner": {
-    "name": "AgentGuard authors"
+    "name": "BAS Guard authors"
   },
-  "description": "AgentGuard: a local, read-only security check-up for Claude Code and Claude Desktop setups. One plugin (aguard) that audits what an agent auto-loads, vets a skill before you install it, and gates skill loads on a content hash.",
+  "description": "BAS Guard: a local, read-only security check-up for Claude Code and Claude Desktop setups. One plugin (basguard) that audits what an agent auto-loads, vets a skill before you install it, and gates skill loads on a content hash.",
   "plugins": [
     {
-      "name": "aguard",
+      "name": "basguard",
       "source": "./plugin",
       "version": "0.29.0",
       "category": "security",
-      "description": "A security check-up for your Claude setup. Say 'set up AgentGuard' to begin; after that, just ask: 'Is my Claude setup safe?', 'Is this skill safe to install?', 'Clean up my unused skills.' Everything runs on your machine; nothing is uploaded. Local, read-only security scan for AI agent environments: audit ~/.claude for prompt injection / credential exfiltration / over-broad permission grants, vet a skill before installing it, and gate skill loads on a canonical content hash.",
-      "homepage": "https://github.com/basdotio/AgentGuard",
+      "description": "A security check-up for your Claude setup. Say 'set up BAS Guard' to begin; after that, just ask: 'Is my Claude setup safe?', 'Is this skill safe to install?', 'Clean up my unused skills.' Everything runs on your machine; nothing is uploaded. Local, read-only security scan for AI agent environments: audit ~/.claude for prompt injection / credential exfiltration / over-broad permission grants, vet a skill before installing it, and gate skill loads on a canonical content hash.",
+      "homepage": "https://github.com/basdotio/bas-guard",
       "author": {
-        "name": "AgentGuard authors"
+        "name": "BAS Guard authors"
       }
     }
   ]

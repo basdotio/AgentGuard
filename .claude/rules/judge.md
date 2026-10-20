@@ -14,7 +14,7 @@ base_url 和默认模型,用户写的一律优先;不认识的名字是加载错
 `api_key_file`:spec §16.3 原文是"只读环境变量,不落盘",**放宽的理由**是在线端点全都要 key,而"设环境
 变量"是非技术用户做不到的那一步——他们能做到的是把 key 粘进 `~/.zshrc`,同样是明文落盘,还没有权限检查。
 所以文件必须 0600,组/他人可读一律拒用并给出 chmod(`ResolveAPIKey`),env 仍然优先给 CI。`aguard llm
-setup/test/status` 是插件 `/aguard-llm` 驱动的三个原语:setup 在终端里用 x/term 隐藏输入读 key,管道时用 `--key-stdin`(两种都不进参数列表,
+setup/test/status` 是插件 `/bas-guard-llm` 驱动的三个原语:setup 在终端里用 x/term 隐藏输入读 key,管道时用 `--key-stdin`(两种都不进参数列表,
 终端那条也不进 shell 历史和聊天记录,所以插件流程**先推终端**,贴进对话是知情的退路);只写
 用户做了决定的字段、结束前必须印"内容会发到 X";`CheckEndpoint` 拒绝非 https 的远程地址(key 是
 Bearer 头,明文 http 等于把它送上网),setup/test/judge 三处都过它,judge 侧是一条 `LLM-000`;test 用真实的 client 打一次(`HTTPClient.Ping`),

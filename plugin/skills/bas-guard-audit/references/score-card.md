@@ -1,7 +1,7 @@
 # The score card
 
 Print this the first time a user sees an AgentGuard score in a conversation — right after the
-first scan of `/aguard-setup`, and whenever they ask what the score means or why it is what it
+first scan of `/bas-guard-setup`, and whenever they ask what the score means or why it is what it
 is. On routine scans it is optional, and never re-print it for a user who has already seen it
 in this session. Like the usage card, it lives in one place — edit it here, nowhere else.
 

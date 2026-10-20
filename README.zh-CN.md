@@ -24,7 +24,7 @@ AI 编码 agent 会**自动加载**一堆外部东西——skills、MCP 服务�
 - **永不删除的垃圾清理**:重复、上下文膨胀(量化可回收 token)、失效引用、僵尸 skill。`clean` 只会把东西**移进**你配置根目录下的回收目录,每一步都记录在案,`--undo` 能原路放回。删除永远是你自己动手。
 - **权限体检**:内联密钥、通配任意命令执行、过宽路径、缺 deny 兜底。
 - **加载时闸门**:注册成 Claude Code 的 hook,在 **agent 加载一个 skill 之前**审它,带发现的会先问你一句 —— 见 [`docs/install-gate.zh-CN.md`](docs/install-gate.zh-CN.md)。
-- **能在 Claude Code 里直接跑**:自带插件(三个 skill + `/aguard-setup`、`/aguard-scan`、`/aguard-vet`、`/aguard-gate`、`/aguard-help`、`/aguard-llm`),用大白话要一次体检,拿回来的是分好级的结论,不只是一屏输出。
+- **能在 Claude Code 里直接跑**:自带插件(三个 skill + `/bas-guard-setup`、`/bas-guard-scan`、`/bas-guard-vet`、`/bas-guard-gate`、`/bas-guard-help`、`/bas-guard-llm`),用大白话要一次体检,拿回来的是分好级的结论,不只是一屏输出。
 - **隐私**:密钥值在生成报告前即 `<REDACTED>`,原始凭证绝不落入报告。
 
 ## 安装
@@ -85,15 +85,15 @@ CGO_ENABLED=0 go build -o bin/aguard ./cmd/bas-guard
 **终端版** Claude Code,用斜杠命令:
 
 ```
-/plugin marketplace add basdotio/AgentGuard
-/plugin install aguard@AgentGuard
+/plugin marketplace add basdotio/bas-guard
+/plugin install basguard@bas-guard
 ```
 
 **VS Code / JetBrains 扩展**里没有 `/plugin` —— 到 shell 里用 `claude` 命令跑同样两步:
 
 ```bash
-claude plugin marketplace add basdotio/AgentGuard
-claude plugin install aguard@AgentGuard
+claude plugin marketplace add basdotio/bas-guard
+claude plugin install basguard@bas-guard
 ```
 终端里第三方 marketplace 默认**不**自动更新。打开一次,skill 和命令的更新就会自己到:`/plugin` →
 **Marketplaces** → `AgentGuard` → **Enable auto-update**(桌面版添加 marketplace 时的 "Sync automatically"
@@ -104,7 +104,7 @@ claude plugin install aguard@AgentGuard
 ([issues/022](issues/022-plugin-install-case-collision-macos.md))。换一次就好;`aguard version` 会按你的安装给出确切命令:
 
 ```bash
-claude plugin install aguard@AgentGuard
+claude plugin install basguard@bas-guard
 claude plugin uninstall agentguard@AgentGuard
 ```
 
@@ -112,20 +112,20 @@ claude plugin uninstall agentguard@AgentGuard
 仓库是公开的,插件就在 `main` 上,所以直接用上面那条命令即可 —— 不需要 `#…` 后缀,
 不需要仓库访问权,也不需要配 git 凭证。
 
-然后重启 Claude Code(扩展里是 reload window),再跑 `/aguard-setup`。它会在二进制缺失时装好、
+然后重启 Claude Code(扩展里是 reload window),再跑 `/bas-guard-setup`。它会在二进制缺失时装好、
 跑第一次扫描、陪你把发现过一遍、最后问你要不要装加载时闸门。`curl` 下载不需要 token —— 它读的
 release 是公开的。从源码构建(`make build`,Go 1.23+)这条路仍然可用。
 
 | | |
 |---|---|
-| `/aguard-setup` | 从零到被守住:二进制、首次扫描、修复计划、闸门 |
-| `/aguard-scan [root]` | 体检一个配置根,并把发现分级成可执行的清单 |
-| `/aguard-vet <路径\|URL>` | 装之前/提交之前审一个 skill、插件或文件 |
-| `/aguard-gate [动作]` | 装/查/修加载时闸门,管理 approvals |
-| `/aguard-help` | 白话版使用说明:你可以怎么问它,不用记任何命令 |
-| `/aguard-llm [status\|test\|setup]` | 配置或检查可选的 AI 深度检查(用你自己的在线模型账号) |
+| `/bas-guard-setup` | 从零到被守住:二进制、首次扫描、修复计划、闸门 |
+| `/bas-guard-scan [root]` | 体检一个配置根,并把发现分级成可执行的清单 |
+| `/bas-guard-vet <路径\|URL>` | 装之前/提交之前审一个 skill、插件或文件 |
+| `/bas-guard-gate [动作]` | 装/查/修加载时闸门,管理 approvals |
+| `/bas-guard-help` | 白话版使用说明:你可以怎么问它,不用记任何命令 |
+| `/bas-guard-llm [status\|test\|setup]` | 配置或检查可选的 AI 深度检查(用你自己的在线模型账号) |
 
-三个 skill(`agentguard-audit`、`agentguard-vet`、`agentguard-gate`)在请求对得上时也会自己
+三个 skill(`bas-guard-audit`、`bas-guard-vet`、`bas-guard-gate`)在请求对得上时也会自己
 触发。它们带的是 `--help` 给不了的那部分:两个分数怎么读、哪些发现是"形状"而不是"判决"、
 维度 0 的 note 为什么不是风险、以及一份干净的报告仍然**没有**证明什么。
 
@@ -276,7 +276,7 @@ aguard scan --llm        # 配置从此在 ~/.config/bas-guard/config.yaml 自�
 ```
 
 密钥存到 `~/.config/bas-guard/llm.key`(0600,别人能读就拒用);`api_key_env` 环境变量仍然可用且优先,给 CI。改名为 BAS Guard 之前的配置在 `~/.config/aguard/`,只有它在时照旧从那里读,不会被挪动。
-在 Claude Code 里,`/aguard-llm` 用对话走同样三步。
+在 Claude Code 里,`/bas-guard-llm` 用对话走同样三步。
 
 想在决定之前看清会发出去什么:`aguard llm preview ./some-skill` 列出 `check --llm` 对它会发的每一次调用,
 以及每次调用原样携带的文本(不带路径:`scan --llm` 会发的每一次调用)。它什么都不发,也不需要密钥;见
@@ -401,7 +401,7 @@ cp hack/github-action.yml .github/workflows/agentguard.yml
 `aguard scan --html report.html` 写出自包含(离线、无脚本)HTML 报告:风险分仪表盘、
 环境瓦片、按 artifact+规则聚合的行级取证发现、垃圾/卫生区。对你自己的 `~/.claude` 跑一次即可查看。
 `aguard scan --report` 写同一份报告但不用你想文件名:落到 `~/.config/bas-guard/reports/scan-<时间戳>.html`
-(或 `$XDG_CONFIG_HOME` 下),在扫描 root 之外,并打印路径。插件每次扫描都带它,`/aguard-setup` 结束时会
+(或 `$XDG_CONFIG_HOME` 下),在扫描 root 之外,并打印路径。插件每次扫描都带它,`/bas-guard-setup` 结束时会
 打开报告。报告只留在本机,里面有你自己的路径和脱敏后的片段。
 
 `--md <路径>` 把同一份报告写成 GitHub 风味的 markdown,给扫描结果下一步通常要去的地方:PR 评论或 issue。

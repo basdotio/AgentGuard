@@ -3,7 +3,7 @@ description: Vet one skill, plugin or file with AgentGuard before installing, co
 argument-hint: "<path or repo URL>"
 ---
 
-Use the `agentguard-vet` skill on: $ARGUMENTS
+Use the `bas-guard-vet` skill on: $ARGUMENTS
 
 If the target is a URL, clone or download it to a temp directory that no agent loads from
 (`/tmp/vet-*`) — never into `~/.claude/skills/` — then gate it there with `aguard check`.
