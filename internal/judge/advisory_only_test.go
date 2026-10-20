@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/score"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/score"
 )
 
 // TestMCPConfig_NeverCarriesWeight: LLM-009 is a hygiene question — unpinned package,

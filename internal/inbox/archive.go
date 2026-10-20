@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // Archive limits. A downloaded zip is attacker-authored bytes: the index can lie about sizes,

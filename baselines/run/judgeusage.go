@@ -5,7 +5,7 @@ package run
 import (
 	"fmt"
 
-	"github.com/basdotio/AgentGuard/baselines/ledger"
+	"github.com/basdotio/bas-guard/baselines/ledger"
 )
 
 // UsageMixed is a run whose judged samples do not all rest on the same basis. One run measures one

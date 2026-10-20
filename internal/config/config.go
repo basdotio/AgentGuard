@@ -20,8 +20,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/basdotio/AgentGuard/internal/redact"
-	"github.com/basdotio/AgentGuard/internal/safeio"
+	"github.com/basdotio/bas-guard/internal/redact"
+	"github.com/basdotio/bas-guard/internal/safeio"
 	"gopkg.in/yaml.v3"
 )
 

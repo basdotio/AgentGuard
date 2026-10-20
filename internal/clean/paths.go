@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/collect"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/collect"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // Everything in this file exists because an audit turned each of these into a working attack against

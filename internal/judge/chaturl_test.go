@@ -17,7 +17,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/config"
+	"github.com/basdotio/bas-guard/internal/config"
 )
 
 // chatSuffix is what every base_url is extended by; the tests spell it out instead of reading it

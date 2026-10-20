@@ -18,8 +18,8 @@ package adapter
 import (
 	"context"
 
-	"github.com/basdotio/AgentGuard/baselines/corpus"
-	"github.com/basdotio/AgentGuard/baselines/ledger"
+	"github.com/basdotio/bas-guard/baselines/corpus"
+	"github.com/basdotio/bas-guard/baselines/ledger"
 )
 
 // Adapter measures one scanner.

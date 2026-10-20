@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/gate"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/gate"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // pasteFixture is one risky skill on disk, planted where its path is the thing under test.

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // mcpView lists a collection's MCP artifacts as "Name|MCPServer|unwrapped", sorted.

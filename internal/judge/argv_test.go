@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/detect"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/detect"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // mcpPayload is the text the mcp-config pass would send for the one server in entry.

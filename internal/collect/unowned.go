@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/safeio"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/safeio"
 )
 
 // The root collectors are an ALLOWLIST of known layouts: skills/, agents/, commands/,

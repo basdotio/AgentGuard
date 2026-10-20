@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/detect"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/detect"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // TestPlan_QuotedSecretValuesAreRedacted (P-043): a hook command or a skill line that quotes the value

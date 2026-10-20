@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // One environment, every way a person types its root. `--root ~/.claude/` is what shell completion

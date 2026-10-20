@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/detect"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/detect"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // maxEvidenceBytes bounds one static finding's evidence as the judge sends it: a triage item's

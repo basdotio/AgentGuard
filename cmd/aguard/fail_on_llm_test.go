@@ -15,7 +15,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // gateCode reads failGate's answer as the exit code main would produce: 0 for nil, the

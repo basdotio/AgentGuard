@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // The four samples in this file are the shapes of a published set of malicious skills built to

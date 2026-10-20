@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 func skill(t *testing.T, root, name, skillMD string, extra map[string]string) model.ArtifactReport {

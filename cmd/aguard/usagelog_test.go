@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // usageMarker names the fixture skill's directory and its frontmatter name. A line that carried

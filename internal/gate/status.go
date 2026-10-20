@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/detect"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/detect"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // EventStatus is one registered (or missing) hook entry.

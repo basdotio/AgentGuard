@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/score"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/score"
 )
 
 // riskyServers is one MCP config with four servers. Three carry a shape the MCP rules catch in a

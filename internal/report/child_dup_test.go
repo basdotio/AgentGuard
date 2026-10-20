@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/score"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/score"
 )
 
 // childDupResult is a plugin whose tree carries a high at skills/s1/SKILL.md:6 (and a mirror copy of

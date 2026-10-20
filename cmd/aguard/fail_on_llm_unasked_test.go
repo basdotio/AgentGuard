@@ -19,7 +19,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // unaskedSentence is a directive no static rule matches: the kind of text only the judge reads.

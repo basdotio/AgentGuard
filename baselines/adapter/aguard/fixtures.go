@@ -9,8 +9,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/baselines/adapter"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/baselines/adapter"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // The six injected-fault fixtures, judged here rather than by `corpus score`. The corpus is

@@ -10,9 +10,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/collect"
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/safeio"
+	"github.com/basdotio/bas-guard/internal/collect"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/safeio"
 )
 
 // The content hash of the three config kinds — hooks, MCP servers, permission lists (with the

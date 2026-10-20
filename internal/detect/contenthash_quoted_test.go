@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // TestContentHash_QuotedValuesAreNotDigestInputs (P-043): a hook command or a permission entry that quotes

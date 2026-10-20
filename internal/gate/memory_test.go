@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // Four malicious samples cleared the gate on a medium finding each, and the gate then

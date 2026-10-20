@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/baselines/corpus"
+	"github.com/basdotio/bas-guard/baselines/corpus"
 )
 
 // judgedDoc is a scan result shaped like a judged sample: a deterministic high, a judge vote,

@@ -16,20 +16,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/basdotio/AgentGuard/internal/clean"
-	"github.com/basdotio/AgentGuard/internal/collect"
-	"github.com/basdotio/AgentGuard/internal/config"
-	"github.com/basdotio/AgentGuard/internal/detect"
-	"github.com/basdotio/AgentGuard/internal/hygiene"
-	"github.com/basdotio/AgentGuard/internal/ignore"
-	"github.com/basdotio/AgentGuard/internal/inbox"
-	"github.com/basdotio/AgentGuard/internal/judge"
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/permcheck"
-	"github.com/basdotio/AgentGuard/internal/redact"
-	"github.com/basdotio/AgentGuard/internal/report"
-	"github.com/basdotio/AgentGuard/internal/reputation"
-	"github.com/basdotio/AgentGuard/internal/score"
+	"github.com/basdotio/bas-guard/internal/clean"
+	"github.com/basdotio/bas-guard/internal/collect"
+	"github.com/basdotio/bas-guard/internal/config"
+	"github.com/basdotio/bas-guard/internal/detect"
+	"github.com/basdotio/bas-guard/internal/hygiene"
+	"github.com/basdotio/bas-guard/internal/ignore"
+	"github.com/basdotio/bas-guard/internal/inbox"
+	"github.com/basdotio/bas-guard/internal/judge"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/permcheck"
+	"github.com/basdotio/bas-guard/internal/redact"
+	"github.com/basdotio/bas-guard/internal/report"
+	"github.com/basdotio/bas-guard/internal/reputation"
+	"github.com/basdotio/bas-guard/internal/score"
 	"github.com/spf13/cobra"
 )
 
@@ -557,7 +557,7 @@ func writeSARIF(path string, out model.ScanResult) error {
 		return err
 	}
 	defer func() { _ = f.Close() }()
-	return report.SARIF(f, out, version, "https://github.com/basdotio/AgentGuard")
+	return report.SARIF(f, out, version, "https://github.com/basdotio/bas-guard")
 }
 
 // writeMarkdown renders the scan as GitHub-flavoured markdown, to a file or — for "-" — to

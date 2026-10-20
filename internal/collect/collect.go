@@ -25,8 +25,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/safeio"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/safeio"
 )
 
 // Result bundles the collected artifacts, environment summary, and scan-level notes

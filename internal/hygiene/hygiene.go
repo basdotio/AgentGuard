@@ -10,11 +10,11 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/clean"
-	"github.com/basdotio/AgentGuard/internal/collect"
-	"github.com/basdotio/AgentGuard/internal/detect"
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/parse"
+	"github.com/basdotio/bas-guard/internal/clean"
+	"github.com/basdotio/bas-guard/internal/collect"
+	"github.com/basdotio/bas-guard/internal/detect"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/parse"
 )
 
 // bloatThresholdTokens: a skill description above this is flagged as context bloat.

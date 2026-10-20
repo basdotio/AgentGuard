@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/collect"
-	"github.com/basdotio/AgentGuard/internal/detect"
+	"github.com/basdotio/bas-guard/internal/collect"
+	"github.com/basdotio/bas-guard/internal/detect"
 )
 
 // A skill's instruction text is not only SKILL.md. "Read PREFLIGHT.md in full before starting" makes

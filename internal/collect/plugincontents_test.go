@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // The tests in this file assert the new fields through the JSON the report carries (`plugin`,

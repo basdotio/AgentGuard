@@ -18,7 +18,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/basdotio/AgentGuard/internal/redact"
+	"github.com/basdotio/bas-guard/internal/redact"
 )
 
 // newNonce returns an unpredictable barrier token (spec §5.2). crypto/rand failure is

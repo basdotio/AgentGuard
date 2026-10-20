@@ -13,9 +13,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/redact"
-	"github.com/basdotio/AgentGuard/internal/safeio"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/redact"
+	"github.com/basdotio/bas-guard/internal/safeio"
 )
 
 // manifestSchema is the installed_plugins.json layout this build understands.

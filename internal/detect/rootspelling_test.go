@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/collect"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/collect"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // The scan's home is filepath.Dir(root), and Dir answers about the STRING it is given: for

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // parseFailedHook is the scan a Skill event gets when its name resolves to a directory shaped

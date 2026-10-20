@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/gate"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/gate"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // acceptRisk walks one risky skill through the prompt and the load, the way an operator who

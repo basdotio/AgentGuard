@@ -4,7 +4,7 @@ package detect
 import (
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // TestDetect_ReverseShellGatesAtHigh: a shell whose standard streams land on a

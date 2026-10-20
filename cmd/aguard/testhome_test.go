@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/config"
-	"github.com/basdotio/AgentGuard/internal/testhome"
+	"github.com/basdotio/bas-guard/internal/config"
+	"github.com/basdotio/bas-guard/internal/testhome"
 )
 
 // TestMain runs this package's tests with a home of their own, never the developer's (P-075).

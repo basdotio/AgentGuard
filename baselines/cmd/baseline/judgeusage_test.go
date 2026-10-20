@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/basdotio/AgentGuard/baselines/ledger"
-	"github.com/basdotio/AgentGuard/baselines/run"
+	"github.com/basdotio/bas-guard/baselines/ledger"
+	"github.com/basdotio/bas-guard/baselines/run"
 )
 
 func meta(rows []ledger.Row) run.Run {

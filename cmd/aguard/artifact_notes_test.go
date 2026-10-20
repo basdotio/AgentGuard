@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/report"
-	"github.com/basdotio/AgentGuard/internal/score"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/report"
+	"github.com/basdotio/bas-guard/internal/score"
 )
 
 // brokenSettings and goodSettings are the same .claude/settings.json, cut short and written out.
@@ -279,7 +279,7 @@ const cleanMarkdownGolden = "" +
 	"\n" +
 	"- Inventory: skills=0 mcp=0 hooks=1 permissions=0 subagents=0 commands=0 plugins=0 connectors=0\n" +
 	"- OWASP Agentic (2026): 7/10 categories have rules; silent on ASI-08, ASI-09, ASI-10 (runtime behaviour a static scan cannot witness)\n" +
-	"- Static analysis only: it cannot prove malice or see runtime behaviour. `--json` and `--sarif` carry every path in full; rule ids are explained in docs/rules.md: https://github.com/basdotio/AgentGuard/blob/main/docs/rules.md\n" +
+	"- Static analysis only: it cannot prove malice or see runtime behaviour. `--json` and `--sarif` carry every path in full; rule ids are explained in docs/rules.md: https://github.com/basdotio/bas-guard/blob/main/docs/rules.md\n" +
 	"\n" +
 	"<sub>AgentGuard test · scanned 2026-01-01 00:00 UTC</sub>\n"
 

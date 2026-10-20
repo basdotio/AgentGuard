@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/baselines/corpus"
-	"github.com/basdotio/AgentGuard/baselines/ledger"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/baselines/corpus"
+	"github.com/basdotio/bas-guard/baselines/ledger"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // build compiles the binary under measurement. Skipping rather than failing when the toolchain

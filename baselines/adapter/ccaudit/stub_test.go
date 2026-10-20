@@ -12,8 +12,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/baselines/corpus"
-	"github.com/basdotio/AgentGuard/baselines/ledger"
+	"github.com/basdotio/bas-guard/baselines/corpus"
+	"github.com/basdotio/bas-guard/baselines/ledger"
 )
 
 // The tests below run the adapter end to end against a STUB that emits canned documents. They

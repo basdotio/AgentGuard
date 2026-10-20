@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // PlannedCall is one question a run would ask, as `aguard llm preview` shows it (P-027): which

@@ -4,7 +4,7 @@ package detect
 import (
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // TestConnector_ToolDescriptionSecrets: MCP-001 asked "does a description send the model after

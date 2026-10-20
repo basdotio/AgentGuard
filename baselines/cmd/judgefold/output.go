@@ -9,11 +9,11 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/basdotio/AgentGuard/baselines/corpus"
-	"github.com/basdotio/AgentGuard/baselines/judgefold"
-	"github.com/basdotio/AgentGuard/baselines/ledger"
-	"github.com/basdotio/AgentGuard/baselines/run"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/baselines/corpus"
+	"github.com/basdotio/bas-guard/baselines/judgefold"
+	"github.com/basdotio/bas-guard/baselines/ledger"
+	"github.com/basdotio/bas-guard/baselines/run"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // writeIncomplete writes the work-list lines of every sample without a complete answer — the

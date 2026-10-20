@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // Redaction has one exit point (invariant #3), and a finding that shows the same bytes twice

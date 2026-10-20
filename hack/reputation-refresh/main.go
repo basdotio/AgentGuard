@@ -63,8 +63,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/reputation"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/reputation"
 )
 
 const (

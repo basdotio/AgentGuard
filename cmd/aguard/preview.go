@@ -10,11 +10,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/basdotio/AgentGuard/internal/config"
-	"github.com/basdotio/AgentGuard/internal/judge"
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/redact"
-	"github.com/basdotio/AgentGuard/internal/report"
+	"github.com/basdotio/bas-guard/internal/config"
+	"github.com/basdotio/bas-guard/internal/judge"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/redact"
+	"github.com/basdotio/bas-guard/internal/report"
 )
 
 // `aguard llm preview` — what `--llm` would send, shown before anything is sent (P-027).

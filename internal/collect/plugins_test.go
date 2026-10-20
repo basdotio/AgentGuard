@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // installedPlugins writes an installed_plugins.json listing one plugin at installPath.

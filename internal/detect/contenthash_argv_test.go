@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // argvServer writes one MCP server running `srv` with args into its own .mcp.json.

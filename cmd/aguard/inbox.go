@@ -8,11 +8,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/collect"
-	"github.com/basdotio/AgentGuard/internal/config"
-	"github.com/basdotio/AgentGuard/internal/inbox"
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/redact"
+	"github.com/basdotio/bas-guard/internal/collect"
+	"github.com/basdotio/bas-guard/internal/config"
+	"github.com/basdotio/bas-guard/internal/inbox"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/redact"
 )
 
 // The Downloads scan: `aguard scan` also looks where downloads land for agent-shaped things

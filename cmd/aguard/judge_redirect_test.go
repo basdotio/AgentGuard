@@ -18,8 +18,8 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/config"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/config"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // redirectingEndpoint returns an endpoint that answers every call with 307 to a second server,

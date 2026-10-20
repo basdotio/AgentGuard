@@ -25,8 +25,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/collect"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/collect"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // Discovery limits. Generous for a Downloads folder, tight enough that a pathological one

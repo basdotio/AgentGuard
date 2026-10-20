@@ -19,7 +19,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // capturedCall is one request body as the endpoint received it, the fence taken off.

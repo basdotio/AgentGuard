@@ -12,9 +12,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/gate"
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/report"
+	"github.com/basdotio/bas-guard/internal/gate"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/report"
 )
 
 // A zip is checked as the folder it would unpack to, so everything a report says about it must

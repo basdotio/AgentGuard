@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 func TestHTML_RendersAndEscapes(t *testing.T) {

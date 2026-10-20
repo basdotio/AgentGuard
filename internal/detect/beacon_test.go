@@ -4,7 +4,7 @@ package detect
 import (
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // TestDetect_BeaconAndRemoteInstructions: two remote-control shapes passed the gate with no

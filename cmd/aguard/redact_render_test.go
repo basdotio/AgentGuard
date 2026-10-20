@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/report"
+	"github.com/basdotio/bas-guard/internal/report"
 )
 
 // renderToken is an obviously fake GitHub token, the shape the redactor's known-prefix table removes.

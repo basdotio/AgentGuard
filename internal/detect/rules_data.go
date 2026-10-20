@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // builtinRules returns AgentGuard's rule set, derived from OWASP Agentic Top 10 and MITRE

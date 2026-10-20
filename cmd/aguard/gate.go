@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/basdotio/AgentGuard/internal/collect"
-	"github.com/basdotio/AgentGuard/internal/config"
-	"github.com/basdotio/AgentGuard/internal/gate"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/collect"
+	"github.com/basdotio/bas-guard/internal/config"
+	"github.com/basdotio/bas-guard/internal/gate"
+	"github.com/basdotio/bas-guard/internal/model"
 	"github.com/spf13/cobra"
 )
 

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/score"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/score"
 )
 
 // summaryPart cuts the Summary block out of a human report — the terminal's "Summary" lines, the

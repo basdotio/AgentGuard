@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/testhome"
+	"github.com/basdotio/bas-guard/internal/testhome"
 )
 
 // The documentation tree is one set of files that link to each other by relative path, and a

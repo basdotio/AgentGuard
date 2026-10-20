@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // One config root, every way a person types it. clean used to judge containment against the root AS

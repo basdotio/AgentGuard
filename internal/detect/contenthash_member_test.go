@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/collect"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/collect"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // memberContexts are the four places a content hash reads a value under an object key: an MCP server's env, an

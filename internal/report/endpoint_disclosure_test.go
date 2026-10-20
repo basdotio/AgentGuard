@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // TestDisclosure_HostFromARedactedEndpoint (P-076): judge.endpoint arrives with its credentials

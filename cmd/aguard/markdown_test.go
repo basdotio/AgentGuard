@@ -12,9 +12,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/report"
-	"github.com/basdotio/AgentGuard/internal/testhome"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/report"
+	"github.com/basdotio/bas-guard/internal/testhome"
 )
 
 // evilSkill is the fixture TestWriteReport_DefaultStillShowsTheDangerousThing uses: flagrantly

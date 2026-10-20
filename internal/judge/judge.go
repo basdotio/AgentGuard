@@ -19,8 +19,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/detect"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/detect"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // Threat dimensions (spec §3) an LLM verdict can map to. The dimension is fixed PER MODE and

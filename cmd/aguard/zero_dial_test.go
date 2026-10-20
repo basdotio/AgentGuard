@@ -59,11 +59,11 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/basdotio/AgentGuard/internal/collect"
-	"github.com/basdotio/AgentGuard/internal/config"
-	"github.com/basdotio/AgentGuard/internal/gate"
-	"github.com/basdotio/AgentGuard/internal/judge"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/collect"
+	"github.com/basdotio/bas-guard/internal/config"
+	"github.com/basdotio/bas-guard/internal/gate"
+	"github.com/basdotio/bas-guard/internal/judge"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // unroutableJudge is the endpoint every config here names: loopback, port 9 (discard). Should a

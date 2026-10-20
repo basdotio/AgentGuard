@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/safeio"
+	"github.com/basdotio/bas-guard/internal/safeio"
 )
 
 // hookSubcommand is the argument that turns the binary into a hook runner. ONE command

@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // Resolving a duplicate pair is the first cleanup action whose subject is a CHOICE rather than a

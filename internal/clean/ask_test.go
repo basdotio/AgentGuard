@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // pair builds one duplicate item. Unlike the withdrawn helper, a MULTI-PAIR fixture is

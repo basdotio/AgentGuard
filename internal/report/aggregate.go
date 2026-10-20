@@ -4,8 +4,8 @@ package report
 import (
 	"sort"
 
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/score"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/score"
 )
 
 // Group is one aggregated risk row: findings sharing (artifact, rule) folded into a

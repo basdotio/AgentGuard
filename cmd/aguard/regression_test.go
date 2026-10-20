@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // TestRegression_MarketplacePluginsStayLowRisk is the false-positive guardrail.

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/gate"
+	"github.com/basdotio/bas-guard/internal/gate"
 )
 
 // Claude Code runs the hook command once PER EVENT, so PreToolUse and PostToolUse for the same

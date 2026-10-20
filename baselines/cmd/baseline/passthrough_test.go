@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	aguardadapter "github.com/basdotio/AgentGuard/baselines/adapter/aguard"
+	aguardadapter "github.com/basdotio/bas-guard/baselines/adapter/aguard"
 )
 
 // TestPickPassesJudgeFlagsThroughOnlyWhenAsked: the three measurement-only flags reach

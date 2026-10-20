@@ -15,7 +15,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/basdotio/AgentGuard/internal/detect"
+	"github.com/basdotio/bas-guard/internal/detect"
 )
 
 // MaxArgLen bounds one quoted argument of a command printed for copying. A command carries the FULL

@@ -6,7 +6,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/basdotio/AgentGuard/internal/detect"
+	"github.com/basdotio/bas-guard/internal/detect"
 )
 
 // ExcerptVersion names how an artifact becomes what the judge is shown, and how an answer's quote is

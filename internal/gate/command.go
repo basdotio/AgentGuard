@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 package gate
 
-import "github.com/basdotio/AgentGuard/internal/cmdline"
+import "github.com/basdotio/bas-guard/internal/cmdline"
 
 // maxCommandArgLen bounds one quoted argument of a command printed for copying (cmdline.MaxArgLen).
 const maxCommandArgLen = cmdline.MaxArgLen

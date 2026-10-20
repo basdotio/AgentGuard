@@ -4,7 +4,7 @@ package detect
 import (
 	"path/filepath"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // A permission grant naming a local script is the same shape of problem as a hook naming

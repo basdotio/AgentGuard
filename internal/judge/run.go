@@ -12,11 +12,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/basdotio/AgentGuard/internal/collect"
-	"github.com/basdotio/AgentGuard/internal/detect"
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/parse"
-	"github.com/basdotio/AgentGuard/internal/score"
+	"github.com/basdotio/bas-guard/internal/collect"
+	"github.com/basdotio/bas-guard/internal/detect"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/parse"
+	"github.com/basdotio/bas-guard/internal/score"
 )
 
 // Options tunes how a judge run talks to the endpoint. The zero value is usable — defaults()

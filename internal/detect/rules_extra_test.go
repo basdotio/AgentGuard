@@ -4,7 +4,7 @@ package detect
 import (
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // TestEXEC009_IexContext: PowerShell IEX invocations match; the Elixir `iex` REPL

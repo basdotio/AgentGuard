@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/basdotio/AgentGuard/internal/config"
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/redact"
+	"github.com/basdotio/bas-guard/internal/config"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/redact"
 )
 
 // The judge usage log (P-073). A judge run's usage — calls, failures, retries, tokens, which model

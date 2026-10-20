@@ -4,7 +4,7 @@ package report
 import (
 	"fmt"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // judgeIdentityLine names the judge a report's LLM findings came from (P-031): the model and

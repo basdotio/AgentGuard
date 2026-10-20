@@ -4,7 +4,7 @@ package score
 import (
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 func art(findings ...model.Finding) model.ArtifactReport {

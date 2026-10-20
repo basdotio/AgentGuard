@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/collect"
-	"github.com/basdotio/AgentGuard/internal/gate"
+	"github.com/basdotio/bas-guard/internal/collect"
+	"github.com/basdotio/bas-guard/internal/gate"
 )
 
 // noConfig is a config path that does not exist, so approve runs on the defaults and never on

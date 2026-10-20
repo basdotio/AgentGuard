@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // dupSetup builds a real pair on disk plus the item hygiene would emit for it.

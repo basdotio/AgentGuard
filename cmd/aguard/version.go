@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/collect"
-	"github.com/basdotio/AgentGuard/internal/detect"
-	"github.com/basdotio/AgentGuard/internal/reputation"
-	"github.com/basdotio/AgentGuard/internal/safeio"
+	"github.com/basdotio/bas-guard/internal/collect"
+	"github.com/basdotio/bas-guard/internal/detect"
+	"github.com/basdotio/bas-guard/internal/reputation"
+	"github.com/basdotio/bas-guard/internal/safeio"
 )
 
 // Binary-behind-plugin detection, without a network call.

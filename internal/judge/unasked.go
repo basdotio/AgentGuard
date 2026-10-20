@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/score"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/score"
 )
 
 // noPassKinds are the artifact kinds planFor has no pass for, in the order the note names them.

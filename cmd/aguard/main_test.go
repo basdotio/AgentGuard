@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/basdotio/AgentGuard/internal/collect"
-	"github.com/basdotio/AgentGuard/internal/config"
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/reputation"
+	"github.com/basdotio/bas-guard/internal/collect"
+	"github.com/basdotio/bas-guard/internal/config"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/reputation"
 )
 
 // TestCheckTarget_MaliciousSingleSkill is the B1 regression: `check <skill dir>` must

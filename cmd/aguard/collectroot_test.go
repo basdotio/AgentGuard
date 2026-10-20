@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // The report of one environment must not depend on how its root was typed. Collect anchors the root

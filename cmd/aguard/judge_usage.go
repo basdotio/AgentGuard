@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/basdotio/AgentGuard/internal/judge"
+	"github.com/basdotio/bas-guard/internal/judge"
 )
 
 // The two places a person reads what the judge used — the stderr line after a run and `aguard llm

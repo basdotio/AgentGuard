@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/gate"
+	"github.com/basdotio/bas-guard/internal/gate"
 )
 
 // P-056: skills installed as a directory holding only a SKILL.md symlink into a pack.

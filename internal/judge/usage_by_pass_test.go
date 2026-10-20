@@ -13,7 +13,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // passRates are the tokens the stub reports for one answered call of each pass, all different, so

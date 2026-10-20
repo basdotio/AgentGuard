@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/basdotio/AgentGuard/internal/judge"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/judge"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // TestJudgeUsageLine (P-071): the stderr usage line names the cached share of the prompt tokens only

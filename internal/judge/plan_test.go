@@ -10,7 +10,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // modesFor returns the judge modes planned for one artifact, plus whether triage was planned.

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/detect"
+	"github.com/basdotio/bas-guard/internal/detect"
 )
 
 // statusToken is an obviously fake GitHub token, the shape the redactor's known-prefix table removes.
