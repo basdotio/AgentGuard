@@ -107,7 +107,8 @@ Wherever aguard shows the endpoint — the report's `judge.endpoint`, the `LLM-0
 and a fragment are shown as `<REDACTED>`; scheme, host, port, path and the query keys are kept. The requests use the
 URL as written.
 
-`setup` writes `~/.config/aguard/config.yaml` (or `$XDG_CONFIG_HOME/aguard/…`), which every
+`setup` writes `~/.config/bas-guard/config.yaml` (or `$XDG_CONFIG_HOME/bas-guard/…`; a setup made before the
+rename to BAS Guard is still read from `~/.config/aguard/` when that is the only one), which every
 command reads when `--config` is not given, and stores the key in `llm.key` next to it with
 mode 0600. Inside Claude Code the `/aguard-llm` command walks through the same steps.
 
@@ -118,7 +119,7 @@ llm:
   enabled: true                        # + you must also pass --llm
   provider: deepseek                   # a preset (fills base_url + default model), or openai_compatible
   model: deepseek-chat                 # optional: overrides the preset's default
-  api_key_file: ~/.config/aguard/llm.key   # 0600; or api_key_env: NAME_OF_ENV_VAR (takes precedence)
+  api_key_file: ~/.config/bas-guard/llm.key   # 0600; or api_key_env: NAME_OF_ENV_VAR (takes precedence)
 ```
 
 | Field | Meaning |
@@ -595,14 +596,14 @@ sampled, and a vendor can change what serves a model name. Consensus, severity c
 advisory-only rule are in neither version; `tool_version` is still the only stamp for those. The
 key, the headers and `authority` are never recorded.
 
-### A record of every judge run (`AGUARD_USAGE_LOG`)
+### A record of every judge run (`BAS_GUARD_USAGE_LOG` / `AGUARD_USAGE_LOG`)
 
 The `judge` block reaches you only with `--json`; otherwise what a run did is one stderr line, which `--quiet`
 suppresses and the Downloads pass never prints, and `llm test` prints its tokens to stdout. To add up judge runs made
 by hand or from scripts over days, set an append-only log:
 
 ```bash
-export AGUARD_USAGE_LOG=~/.local/state/aguard/usage.jsonl
+export BAS_GUARD_USAGE_LOG=~/.local/state/bas-guard/usage.jsonl   # AGUARD_USAGE_LOG still works; this name wins
 aguard check ./some-skill --llm
 ```
 

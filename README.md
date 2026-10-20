@@ -312,11 +312,12 @@ account with (`deepseek`, `openai`, `qwen`, or any endpoint with `--base-url`/`-
 ```bash
 aguard llm setup --provider deepseek    # prompts for the key with hidden input; --key-stdin for pipes
 aguard llm test          # one call: does the endpoint answer for that model?
-aguard scan --llm        # the config is found at ~/.config/aguard/config.yaml from now on
+aguard scan --llm        # the config is found at ~/.config/bas-guard/config.yaml from now on
 ```
 
-The key goes to `~/.config/aguard/llm.key` (mode 0600, refused if anyone else can read it); an
-`api_key_env` variable still works and takes precedence, for CI. Inside Claude Code, `/aguard-llm`
+The key goes to `~/.config/bas-guard/llm.key` (mode 0600, refused if anyone else can read it); an
+`api_key_env` variable still works and takes precedence, for CI. A setup made before the rename to BAS Guard
+lives in `~/.config/aguard/` and is still read there when it is the only one; nothing is moved. Inside Claude Code, `/aguard-llm`
 walks through the same three steps in conversation.
 
 To see what would leave the machine before you decide, `aguard llm preview ./some-skill` prints every
@@ -340,7 +341,7 @@ llm:
   enabled: true
   provider: openai_compatible
   base_url: http://localhost:11434/v1   # default: a local model (e.g. Ollama)
-  api_key_env: AGUARD_LLM_KEY           # key read from this env var only, never disk
+  api_key_env: AGUARD_LLM_KEY           # key read from this env var only, never disk (BAS_GUARD_LLM_KEY wins when set)
   model: llama3.1
 
 aguard scan --llm --config config.yaml
@@ -462,7 +463,7 @@ See [`hack/`](hack/) for both. A single skill: `aguard check ./some-skill` (defa
 `aguard scan --html report.html` writes a self-contained (offline, no-script) HTML report:
 score gauge, environment tiles, findings grouped by artifact+rule with line-level evidence,
 and the junk/hygiene section. `aguard scan --report` writes the same report without a path to
-invent — to `~/.config/aguard/reports/scan-<timestamp>.html` (or under `$XDG_CONFIG_HOME`),
+invent — to `~/.config/bas-guard/reports/scan-<timestamp>.html` (or under `$XDG_CONFIG_HOME`),
 outside the scan root, and prints where. The plugin does this on every scan and opens the
 report at the end of `/aguard-setup`. Reports stay on the machine; they hold your own paths
 and redacted snippets.
