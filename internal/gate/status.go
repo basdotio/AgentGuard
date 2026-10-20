@@ -71,7 +71,7 @@ func CheckStatus(root, exe string) (Status, error) {
 		}
 		es := EventStatus{Event: label}
 		for _, cmd := range commandsFor(hooks[ge.event], ge.matcher) {
-			if !looksLikeAguard(cmd) {
+			if !looksLikeOurs(cmd) {
 				continue
 			}
 			es.Command = cmd
@@ -114,13 +114,27 @@ func commandsFor(entries any, matcher string) []string {
 	return out
 }
 
-// looksLikeAguard recognises a registration as ours by the binary's NAME plus the
-// subcommand. Matching the full command line would report a gate installed from a different
-// path as "not installed", which is the more confusing of the two wrong answers: the entry
-// is right there in the file the operator is about to open.
-func looksLikeAguard(cmd string) bool {
+// commandNames are the names the binary has gone by: its name since the rename to BAS Guard,
+// then the one before it (P-082). A downloaded release asset keeps its platform suffix
+// (bas-guard-darwin-arm64), so a name matches as a prefix.
+var commandNames = []string{"bas-guard", "aguard"}
+
+// looksLikeOurs recognises a registration as ours by the binary's NAME, under either name it has
+// had, plus the subcommand. Matching the full command line would report a gate installed from a
+// different path as "not installed", which is the more confusing of the two wrong answers: the
+// entry is right there in the file the operator is about to open.
+func looksLikeOurs(cmd string) bool {
 	exe, rest := splitCommand(cmd)
-	return strings.HasPrefix(filepath.Base(exe), "aguard") && strings.Contains(rest, hookSubcommand)
+	if !strings.Contains(rest, hookSubcommand) {
+		return false
+	}
+	base := filepath.Base(exe)
+	for _, n := range commandNames {
+		if strings.HasPrefix(base, n) {
+			return true
+		}
+	}
+	return false
 }
 
 // binaryExists reports whether the command's executable is still on disk.
