@@ -127,8 +127,8 @@ Quoted from the debug log:
   therefore miss skills that session will load from an ancestor directory. Not yet handled.
 - `Watching for changes in skill/command directories: <cfg>/skills, <cfg>/commands, <cfg>/agents` —
   Claude Code **watches these directories live**. `clean --apply` during an active session is
-  observable by that session mid-conversation. Our lock protects two `aguard` runs from each other,
-  not `aguard` from a running agent.
+  observable by that session mid-conversation. Our lock protects two `bas-guard` runs from each other,
+  not `bas-guard` from a running agent.
 - `Extracted ZIP to <cfg>/skills/synced/.staging/…` — `skills/synced/` is sync-owned and repopulated
   automatically (`[skills] skipping reserved dir name 'synced' … 'synced' is the sync-owned root`).
   Quarantining anything under it will be undone by the next sync; cleanup there should be refused,

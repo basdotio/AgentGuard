@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: MIT -->
 # Notices
 
-AgentGuard is MIT licensed (see LICENSE).
+BAS Guard is MIT licensed (see LICENSE).
 
 **Benchmark results** under `baselines/results/` were produced by running scanners over
 [agent-artifact-corpus](https://github.com/basdotio/agent-artifact-corpus). The ledgers and

@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: MIT -->
-# aguard
+# bas-guard
 
 Local, offline security scan for AI agent setups — an "antivirus for your Claude Code
 configuration". It audits everything an agent **auto-loads** (skills, MCP servers, hooks,
@@ -32,21 +32,21 @@ Keep it around for repeated use, and for the load-time gate:
 ```bash
 npm i -g __NAME__
 
-aguard check ./some-skill     # vet one skill/plugin/zip before installing it
-aguard scan --report          # audit this machine's ~/.claude + write an HTML report
-aguard clean                  # list duplicate, bloated and stale skills (report-only)
-aguard version
+bas-guard check ./some-skill     # vet one skill/plugin/zip before installing it
+bas-guard scan --report          # audit this machine's ~/.claude + write an HTML report
+bas-guard clean                  # list duplicate, bloated and stale skills (report-only)
+bas-guard version
 ```
 
 Exit codes: `0` below threshold · `1` a finding at or above `--fail-on` · `2` runtime error
 (the scan did not happen — never read a `2` as a pass) · `3` `clean` acted partially. A run cut
 short by a signal ends as `128 + signal`, like any Unix program: `130` for Ctrl-C, `141` when
-the output pipe is closed (`aguard scan | head`). Anything non-zero that is not 1 or 3 means
+the output pipe is closed (`bas-guard scan | head`). Anything non-zero that is not 1 or 3 means
 you did not get a verdict.
 
 ## The load-time gate needs a stable path
 
-`aguard hook install` registers the absolute path of the binary it was run from, so Claude Code
+`bas-guard hook install` registers the absolute path of the binary it was run from, so Claude Code
 can call it before each skill loads. **Do not install the gate from an `npx` invocation**: that
 path lives in npm's temporary cache and is garbage-collected, after which the hook points at a
 file that no longer exists — every skill then loads unaudited while the setup still looks
@@ -64,6 +64,6 @@ is worth reading as exactly that.
 
 Full documentation, the rule reference (every finding ID it can print), the Claude Code plugin,
 and the platform binaries with checksums:
-<https://github.com/basdotio/AgentGuard>
+<https://github.com/basdotio/bas-guard>
 
 MIT.

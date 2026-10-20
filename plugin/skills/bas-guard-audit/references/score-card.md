@@ -1,6 +1,6 @@
 # The score card
 
-Print this the first time a user sees an AgentGuard score in a conversation — right after the
+Print this the first time a user sees an BAS Guard score in a conversation — right after the
 first scan of `/bas-guard-setup`, and whenever they ask what the score means or why it is what it
 is. On routine scans it is optional, and never re-print it for a user who has already seen it
 in this session. Like the usage card, it lives in one place — edit it here, nowhere else.
@@ -9,7 +9,7 @@ Print it as written — it explains the number the report already shows, so noth
 
 ---
 
-How to read an AgentGuard score:
+How to read an BAS Guard score:
 
 - **The bands** — 85–100 Low · 70–84 Watch · 50–69 Elevated · below 50 High. One critical
   finding caps the score at 49; one high caps it at 69.

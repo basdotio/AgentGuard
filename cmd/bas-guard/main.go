@@ -624,7 +624,7 @@ func main() {
 	var sarifOut, mdOut string
 
 	rootCmd := &cobra.Command{
-		Use:           "aguard",
+		Use:           "bas-guard",
 		Short:         "BAS Guard — local, read-only security scan + junk cleanup for AI agent environments",
 		SilenceUsage:  true,
 		SilenceErrors: true,

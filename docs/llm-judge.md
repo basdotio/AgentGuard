@@ -3,7 +3,7 @@
 
 [English](llm-judge.md) | [中文](llm-judge.zh-CN.md)
 
-AgentGuard's core is a **static** scanner. The LLM judge is an **optional, adversarial
+BAS Guard's core is a **static** scanner. The LLM judge is an **optional, adversarial
 advisory layer** that catches things static rules can't — but it is designed so it can never
 weaken the deterministic result. This page is the complete reference for enabling, configuring,
 and understanding it.
@@ -12,12 +12,12 @@ and understanding it.
 
 ```bash
 cp config.example.yaml config.yaml     # edit base_url / model to taste
-aguard scan --llm --config config.yaml
+bas-guard scan --llm --config config.yaml
 ```
 
 Off by default. Needs **both** `llm.enabled: true` in config **and** `--llm` on the CLI, on
-`scan` or on `check` for a single target (`aguard check ./some-skill --llm`). `clean` never uses
-it, and neither does the load-time gate: `aguard hook` and `aguard approve` run `check`'s static
+`scan` or on `check` for a single target (`bas-guard check ./some-skill --llm`). `clean` never uses
+it, and neither does the load-time gate: `bas-guard hook` and `bas-guard approve` run `check`'s static
 path only.
 
 ## The iron law (why you can trust it)
@@ -75,7 +75,7 @@ its scripts outside the skill directories, its docs, its output styles and inlin
 rules only. A finding a child repeats from the plugin tree is triaged once, on the plugin.
 
 **What it asks nothing about.** Three kinds have no pass: a **plugin** holding no loadable skill, command or agent, a
-**directory** whose layout matched nothing known (`aguard check <dir>`, or a folder under `skills/` without a `SKILL.md`), and
+**directory** whose layout matched nothing known (`bas-guard check <dir>`, or a folder under `skills/` without a `SKILL.md`), and
 **quarantined** content under `.aguard-trash`, which no longer loads. No question about their content is put to the model —
 at most their static findings are triaged — and every `--llm` run says so in one `LLM-000` note, counting them per kind.
 Permission blocks get triage only, by design: an allow list is configuration the static rules decide, and the note does not
@@ -90,19 +90,19 @@ the prompt says so — a verdict here is never a statement about the server's be
 **The short way** — one command, no file to edit:
 
 ```bash
-aguard llm setup --list                 # deepseek · openai · qwen · openai_compatible
-aguard llm setup --provider deepseek    # prompts for the key with hidden input (no history, no screen)
-aguard llm test                         # one call; fails HERE if the key/model/URL is wrong
-aguard llm status                       # what would be used (never the key)
-aguard llm preview ./some-skill         # what --llm would send for it; nothing is sent, no key needed
+bas-guard llm setup --list                 # deepseek · openai · qwen · openai_compatible
+bas-guard llm setup --provider deepseek    # prompts for the key with hidden input (no history, no screen)
+bas-guard llm test                         # one call; fails HERE if the key/model/URL is wrong
+bas-guard llm status                       # what would be used (never the key)
+bas-guard llm preview ./some-skill         # what --llm would send for it; nothing is sent, no key needed
 ```
 
-For scripts, pipe the key instead: `printf '%s\n' "$KEY" | aguard llm setup --provider deepseek --key-stdin`.
+For scripts, pipe the key instead: `printf '%s\n' "$KEY" | bas-guard llm setup --provider deepseek --key-stdin`.
 A remote endpoint must be https; plain http is accepted only for a model on this machine.
 The judge follows a redirect only within the configured origin (same scheme, host and port). A
-redirect anywhere else is not followed and nothing is sent there: the call fails, `aguard llm test`
+redirect anywhere else is not followed and nothing is sent there: the call fails, `bas-guard llm test`
 says where the endpoint tried to send it, and a scan reports it as an `LLM-000` note.
-Wherever aguard shows the endpoint — the report's `judge.endpoint`, the `LLM-002` note, an error, `llm status`,
+Wherever bas-guard shows the endpoint — the report's `judge.endpoint`, the `LLM-002` note, an error, `llm status`,
 `llm setup`, `llm test`, `llm preview` — a user name and password in it (`https://user:pass@host`), every query value
 and a fragment are shown as `<REDACTED>`; scheme, host, port, path and the query keys are kept. The requests use the
 URL as written.
@@ -129,7 +129,7 @@ llm:
 | `base_url` | Endpoint root. The tool POSTs to `<base_url>/chat/completions`, the suffix going on the path: a query in `base_url` (`https://gw.example/v1?api-version=2024-01-01`) is sent as written after it, a trailing `/` makes no difference, and a fragment is dropped. A preset fills it in; set it to override. |
 | `model` | **Which model to use.** A preset supplies a default; write the exact name your endpoint serves to override. |
 | `api_key_env` | The **name** of an env var holding the key. Checked first; for CI and for people who prefer it. |
-| `api_key_file` | Path of a file holding the key (`~` allowed). Must be readable by its owner only — a group- or world-readable file is refused with the `chmod 600` to run. `aguard llm setup` writes it. |
+| `api_key_file` | Path of a file holding the key (`~` allowed). Must be readable by its owner only — a group- or world-readable file is refused with the `chmod 600` to run. `bas-guard llm setup` writes it. |
 | `concurrency` | Calls in flight at once (default `4`). Results merge in a fixed order, so this changes only how fast a scan runs. |
 | `timeout` | Timeout for **one call** (default `60s`). Without it, a few slow answers starve every remaining check. |
 | `total_timeout` | Backstop for the whole judge phase (default `10m`) — for an endpoint that neither answers nor fails. |
@@ -166,7 +166,7 @@ llm: { enabled: true, provider: openai_compatible, base_url: https://api.openai.
 ```
 ```bash
 export OPENAI_API_KEY=sk-...
-aguard scan --llm --config config.yaml
+bas-guard scan --llm --config config.yaml
 ```
 
 Bigger models (gpt-4o, Qwen2.5-72B) judge semantic tasks more accurately; local keeps
@@ -174,7 +174,7 @@ everything on your machine. That trade-off is yours.
 
 ## Privacy
 
-- **See it before it is sent: `aguard llm preview`.** With a path it prints the calls
+- **See it before it is sent: `bas-guard llm preview`.** With a path it prints the calls
   `check <path> --llm` would make; without one, the calls `scan --llm` would make for `--root` and
   the Downloads items under `--inbox`. For each artifact its kind, name and content hash; for each
   call the pass, how often it is sent (`samples`, and how many `max_calls` refuses), the text that
@@ -491,14 +491,14 @@ A shortened excerpt or a discarded (ungrounded) verdict is still an answer and d
 0 under `--fail-on-llm` means the judge was asked every question it planned and answered each one,
 not that it read every byte.
 
-**A target the judge has no question for is not a pass either.** `aguard check <target> --llm --fail-on-llm high` on a plain
+**A target the judge has no question for is not a pass either.** `bas-guard check <target> --llm --fail-on-llm high` on a plain
 folder, or on a plugin holding no skill, command or agent (also as a `.zip`), exits **4**: the judge plans no question about it
 (a triage label is not one — it never reaches this gate), so exit 0 would read as an answer the run never had. A plugin that
 holds one is answered through its children, and the usual rules apply to those calls. A `scan`, or a `check` of a directory
 laid out as a config root, keeps its exit code: an environment is not a target. There the `LLM-000` note is the disclosure. A quote that lands only in the declared purpose — a skill's description, a server's tool docstrings — is not evidence of a behaviour: on the intent and server-source passes such a verdict is dropped like an unquotable one and the `LLM-005` note says it quoted the declared purpose (P-054). An MCP server's source is not a plain folder: a directory holding a Python file that imports `mcp` or `fastmcp` and declares a tool is kind `server`, gets the server-source pass (`LLM-010`), and the gate answers for it (P-053).
 
 Both flags mean the same thing on `scan` and on `check`, apart from that target rule. A pull-request job that wants the
-judge's say runs `aguard check ./skill --llm --fail-on-llm high`: a deterministic high still
+judge's say runs `bas-guard check ./skill --llm --fail-on-llm high`: a deterministic high still
 fails it through `--fail-on` (`high` by default on `check`), and a qualified LLM high fails it
 through `--fail-on-llm`. The load-time gate takes neither — it never consults a model.
 
@@ -567,7 +567,7 @@ the endpoint reported serving from its prompt cache (a subset, never to be added
 it at its own rate). It is absent when the endpoint reported none, which is also how an endpoint that does
 not report the field looks: the two cannot be told apart. `usage_by_pass` breaks those counts down by
 the question that made the calls (P-072): one entry per pass that was called, keyed by the name
-`aguard llm preview` gives the pass — `intent`, `injection`, `result`, `deobfuscation`, `collusion`,
+`bas-guard llm preview` gives the pass — `intent`, `injection`, `result`, `deobfuscation`, `collusion`,
 `capability`, `mcp-config`, `server`, `triage` — each with `calls`, `reasked` and the three token counts
 (absent when the endpoint reported none, as above). A retried call and a re-asked one count under the
 pass that asked the question, every reply the endpoint reported usage for included, so the entries add
@@ -585,7 +585,7 @@ the model and the nonce stood in. `excerpt_version` is a number the maintainers 
 whenever what an artifact sends, or how a quote is grounded, changes; a golden test fails when the
 excerpt code changes and the number does not. With a configured judge the block also has `model`,
 the model every request named (`llama3.1` when the config names none), and `samples`, how many times
-each question was asked (1 when the config says 0). `aguard version` prints the two versions after
+each question was asked (1 when the config says 0). `bas-guard version` prints the two versions after
 `rules=` as `judge-prompt=` and `judge-excerpt=`, and when the judge ran the human reports add one
 line, `LLM judge: model … · samples … · prompt_version … · excerpt_version …` — in the terminal with
 `--verbose` only, where the default view prints one short line instead (`Judge: checked 1 skill,
@@ -604,7 +604,7 @@ by hand or from scripts over days, set an append-only log:
 
 ```bash
 export BAS_GUARD_USAGE_LOG=~/.local/state/bas-guard/usage.jsonl   # AGUARD_USAGE_LOG still works; this name wins
-aguard check ./some-skill --llm
+bas-guard check ./some-skill --llm
 ```
 
 Every judge run that issued at least one call then appends one JSON line per judge block: `scan` one for the

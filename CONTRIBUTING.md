@@ -4,12 +4,12 @@
 ## Build and check
 
 ```bash
-make build      # -> bin/aguard (CGO_ENABLED=0; version/commit/date via -ldflags)
+make build      # -> bin/bas-guard (CGO_ENABLED=0; version/commit/date via -ldflags)
 make test       # go test -race -cover ./...
 make lint       # golangci-lint (version pinned in .github/workflows/ci.yml)
 make docs       # regenerate docs/rules.md from the rule set — required after adding or changing a rule
 make verify     # everything CI runs, in one command; green before you ask for review
-make hooks      # optional: a pre-commit hook that scans staged skills with aguard itself
+make hooks      # optional: a pre-commit hook that scans staged skills with bas-guard itself
 ```
 
 Go 1.23.x. Do not let `go mod tidy` raise the `go` directive in `go.mod` (CI pins 1.23); the

@@ -1,5 +1,5 @@
 ---
-description: Scan an agent config root for security risk with AgentGuard, then triage the findings into a fix plan.
+description: Scan an agent config root for security risk with BAS Guard, then triage the findings into a fix plan.
 argument-hint: "[config root, default ~/.claude]"
 ---
 

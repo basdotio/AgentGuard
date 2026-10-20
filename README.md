@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: MIT -->
-# AgentGuard (`aguard`)
+# BAS Guard (`bas-guard`)
 
 **English** | [中文](README.zh-CN.md)
 
@@ -10,9 +10,29 @@
 >
 > `scan` and `check` are strictly read-only. `clean` is the only command that writes, and it only ever MOVES things inside your config root — it never deletes.
 
+## Renamed from AgentGuard
+
+This tool was called **AgentGuard** (command `aguard`, plugin `aguard@AgentGuard`, repository `basdotio/AgentGuard`)
+through v0.29. Other projects use those names, including an unscoped npm package `aguard` that installs a different
+program, so it is now **BAS Guard**. Nothing you set up stops working:
+
+- The `aguard` command still works: the npm package installs it next to `bas-guard`, and an `aguard` binary you
+  installed by hand keeps working. A gate registered as `aguard hook` keeps firing; `bas-guard hook status` says how to
+  switch it.
+- `~/.config/aguard/` is still read when it is the only config directory, and every `AGUARD_*` variable still works
+  (`BAS_GUARD_*` wins when both are set).
+- Approvals (`.aguard-approvals.json`), baselines (`.aguardignore`) and quarantined skills (`.aguard-trash`) keep their
+  names.
+- The plugin is now `basguard@bas-guard`; `bas-guard version` prints the exact commands to switch an `aguard@AgentGuard`
+  install.
+- `go install github.com/basdotio/AgentGuard/cmd/aguard@latest` stops at v0.29.0; use
+  `go install github.com/basdotio/bas-guard/cmd/bas-guard@latest`.
+- `npx bas-guard` runs the same package as `npx @bas.io/guard`. Install one of the two globally, not both: they
+  provide the same `bas-guard` command.
+
 ## What it is
 
-AI coding agents **auto-load** a lot of external things — skills, MCP servers, hooks, subagents, instruction files (CLAUDE.md) — each handed your real tools and permissions, and any of them can hide a malicious directive. AgentGuard statically scans those artifacts on your machine and produces a risk report + cleanup suggestions.
+AI coding agents **auto-load** a lot of external things — skills, MCP servers, hooks, subagents, instruction files (CLAUDE.md) — each handed your real tools and permissions, and any of them can hide a malicious directive. BAS Guard statically scans those artifacts on your machine and produces a risk report + cleanup suggestions.
 
 **Positioning: a body-check + alerting + cleanup tool, not "guaranteed removal."** The score is a relative risk signal, not a safety certification. See "Capability boundary" below.
 
@@ -35,13 +55,13 @@ there is no install script and nothing is fetched at install time:
 ```bash
 npx --yes @bas.io/guard@latest check ./some-skill   # vet one thing before installing it
 npx --yes @bas.io/guard@latest scan --report        # audit this machine's whole setup
-npm i -g @bas.io/guard                              # or install it: `aguard` on your PATH
+npm i -g @bas.io/guard                              # or install it: `bas-guard` on your PATH
 ```
 
 `check` is the one to start with: it judges the artifact you point at, so its answer does not
 depend on which machine is running it. `scan` is a statement about the machine it runs on.
 
-> **Do not install the load-time gate from an `npx` run.** `aguard hook install` registers the
+> **Do not install the load-time gate from an `npx` run.** `bas-guard hook install` registers the
 > absolute path of the binary it ran from, and npx's path is a cache npm later reclaims — after
 > which every skill loads unaudited while the setup still looks protected (`GATE-001`). The
 > command warns you when it notices. Use `npm i -g`, or a release binary, for the gate.
@@ -50,14 +70,14 @@ depend on which machine is running it. `scan` is a statement about the machine i
 `darwin-arm64` · `darwin-amd64` · `linux-amd64` · `linux-arm64`:
 
 ```bash
-REPO=basdotio/AgentGuard
+REPO=basdotio/bas-guard
 PLAT=darwin-arm64                                   # <- yours
-curl -fsSLO "https://github.com/$REPO/releases/latest/download/aguard-$PLAT"
+curl -fsSLO "https://github.com/$REPO/releases/latest/download/bas-guard-$PLAT"
 curl -fsSLO "https://github.com/$REPO/releases/latest/download/SHA256SUMS.txt"
 
 # Verify before running it — this tool has no business asking for trust it won't demonstrate.
 shasum -a 256 --ignore-missing -c SHA256SUMS.txt     # Linux: sha256sum
-chmod +x "aguard-$PLAT" && sudo mv "aguard-$PLAT" /usr/local/bin/aguard
+chmod +x "bas-guard-$PLAT" && sudo mv "bas-guard-$PLAT" /usr/local/bin/bas-guard
 ```
 
 > **There is deliberately no `curl … | sh` installer.** This tool reports `curl` piped to a shell
@@ -69,7 +89,7 @@ chmod +x "aguard-$PLAT" && sudo mv "aguard-$PLAT" /usr/local/bin/aguard
 **From source** (Go 1.23+):
 
 ```bash
-git clone https://github.com/basdotio/AgentGuard && cd AgentGuard
+git clone https://github.com/basdotio/bas-guard && cd bas-guard
 make build          # produces bin/aguard
 # or directly:
 CGO_ENABLED=0 go build -o bin/aguard ./cmd/bas-guard
@@ -105,15 +125,15 @@ claude plugin marketplace add basdotio/bas-guard
 claude plugin install basguard@bas-guard
 ```
 Third-party marketplaces do not auto-update by default in the terminal. Turn it on once so skill
-and command updates arrive on their own — `/plugin` → **Marketplaces** → `AgentGuard` → **Enable
+and command updates arrive on their own — `/plugin` → **Marketplaces** → `bas-guard` → **Enable
 auto-update** (the desktop app's "Sync automatically" toggle is the same thing). The binary is
-separate and never updates itself; `aguard version` says when it has fallen behind the plugin.
+separate and never updates itself; `bas-guard version` says when it has fallen behind the plugin.
 
 **Installed the plugin before v0.17.0?** It was called `agentguard` then, and that name receives no
 further updates. It was renamed because it collides with the marketplace name `AgentGuard` in
 Claude Code's install cache on a case-insensitive filesystem — macOS by default — where installing
 it fails with `EINVAL` ([issues/022](issues/022-plugin-install-case-collision-macos.md)). Switch
-once; `aguard version` prints the exact command for your install:
+once; `bas-guard version` prints the exact command for your install:
 
 ```bash
 claude plugin install basguard@bas-guard
@@ -125,7 +145,7 @@ The repository is public and the plugin ships from `main`, so the plain form abo
 use — no `#…` suffix, no repo access, no git credentials.
 
 Then restart Claude Code (the extension: reload the window) and run `/bas-guard-setup`. It
-brings up the `aguard` binary if it is missing, runs the first scan, triages the findings
+brings up the `bas-guard` binary if it is missing, runs the first scan, triages the findings
 with you, and offers the load-time gate. The `curl` download needs no token: the releases it
 reads are public. Building from source (`make build`, Go 1.23+) stays available. See
 [`docs/rules.md`](docs/rules.md) for what a finding means once a scan runs.
@@ -146,45 +166,45 @@ and what a clean report still does not prove.
 
 The plugin is the [`plugin/`](plugin/) subtree — skills and commands only, deliberately
 excluding this repo's own docs. Those docs quote every attack pattern the engine detects, so
-shipping them would make `aguard scan` report its own plugin as high-risk in every user's
+shipping them would make `bas-guard scan` report its own plugin as high-risk in every user's
 environment. The subtree scans `100/100` at `--fail-on low`, and a change that breaks that is
 a bug in the change.
 
-Needs the `aguard` binary on `PATH` (the skills install it for you). The plugin adds no MCP
-server and registers no hooks of its own — `aguard hook install` stays an explicit,
+Needs the `bas-guard` binary on `PATH` (the skills install it for you). The plugin adds no MCP
+server and registers no hooks of its own — `bas-guard hook install` stays an explicit,
 `--dry-run`-previewed step.
 
 ## Usage
 
 ```bash
-aguard scan                      # full scan of the current user's ~/.claude
-aguard scan --root ~/.claude     # specify the root
-aguard scan --verbose            # also print every coverage note in full, where the scan looked, the inventory
-aguard scan --html report.html   # also write a self-contained HTML report
-aguard scan --md report.md       # also write the report as markdown, for a PR comment or an issue ("-" = stdout)
-aguard scan --json               # machine-readable output
-aguard scan --fail-on high       # CI/gate: exit 1 when a finding is ≥ high
+bas-guard scan                      # full scan of the current user's ~/.claude
+bas-guard scan --root ~/.claude     # specify the root
+bas-guard scan --verbose            # also print every coverage note in full, where the scan looked, the inventory
+bas-guard scan --html report.html   # also write a self-contained HTML report
+bas-guard scan --md report.md       # also write the report as markdown, for a PR comment or an issue ("-" = stdout)
+bas-guard scan --json               # machine-readable output
+bas-guard scan --fail-on high       # CI/gate: exit 1 when a finding is ≥ high
 
-aguard clean                     # cleanup: list junk + reclaimable tokens (read-only)
-aguard clean --zombie            # also look for never-used skills (weak signal, opt-in)
-aguard clean --zombie --apply    # MOVE them to <root>/.aguard-trash (never deletes)
-aguard clean --undo last         # put a batch back, re-deriving every safety check
-aguard clean --ask               # answer duplicate pairs one at a time (↑/↓ or 1/2)
+bas-guard clean                     # cleanup: list junk + reclaimable tokens (read-only)
+bas-guard clean --zombie            # also look for never-used skills (weak signal, opt-in)
+bas-guard clean --zombie --apply    # MOVE them to <root>/.aguard-trash (never deletes)
+bas-guard clean --undo last         # put a batch back, re-deriving every safety check
+bas-guard clean --ask               # answer duplicate pairs one at a time (↑/↓ or 1/2)
 
-aguard check ./some-skill        # pre-install gate: statically scan one skill/dir/file (defaults to --fail-on high)
+bas-guard check ./some-skill        # pre-install gate: statically scan one skill/dir/file (defaults to --fail-on high)
 
-aguard hook install              # load-time gate: audit each skill before an agent loads it
-aguard approve ./some-skill      # trust those exact bytes, so the gate stops asking
-aguard approvals                 # list what has been trusted
+bas-guard hook install              # load-time gate: audit each skill before an agent loads it
+bas-guard approve ./some-skill      # trust those exact bytes, so the gate stops asking
+bas-guard approvals                 # list what has been trusted
 
-aguard version
+bas-guard version
 ```
 
 The terminal report shows every finding by default and folds the coverage notes into one
 line that still carries their count, their highest severity and their rule IDs. `--verbose`
 prints those notes in full — reach for it when the question is what the scan did *not* read.
 The default view is ordered for a reader who does not write code: each finding comes with a next step
-(which file and line to read, and for a skill the load-time gate can stop, the exact `aguard approve`
+(which file and line to read, and for a skill the load-time gate can stop, the exact `bas-guard approve`
 command), the judge's view of it in plain words, and one line says why the score is what it is; a
 result with nothing to look at prints its title and its score. `--verbose` adds where the scan looked,
 the inventory, the judge's versions and the hygiene list.
@@ -195,7 +215,7 @@ an item carrying its own coverage note, a skill folder the scan could not open, 
 cap, a hook script it could not follow — the summary says coverage is incomplete instead of calling
 the setup safe. Notes about things the scan skips by design (your own session history at the top of
 the config directory, a plugin's `node_modules/`) are listed but do not change that sentence. When
-the inventory has nothing to count — `aguard check` on a single file or a plain folder — the summary
+the inventory has nothing to count — `bas-guard check` on a single file or a plain folder — the summary
 says what it checked ("Checked 1 file.") rather than that nothing was found. Coverage notes never change the score, and change the exit code in one case only: with `--fail-on-llm`, a judge that could not answer for every artifact exits `4` (below). Findings are never folded in either mode, and `--json` / `--html` / `--md` always carry everything, so
 what a CI job sees never depends on which flag a human passed.
 
@@ -212,7 +232,7 @@ npm launcher exactly as for the bare binary.
 rule ID the tool can print — dimension, severity, and why it fires. It is generated from the
 engine's own rule set and CI fails if it drifts, so the severity you read there is the severity
 that will gate your build. Its header names the **rules version**, the same value a report carries
-as `rules_version` (`--json`) and `aguard version` prints: when two reports differ and their rules
+as `rules_version` (`--json`) and `bas-guard version` prints: when two reports differ and their rules
 versions differ too, the rules changed between them.
 
 ## Cleanup (`clean`)
@@ -239,13 +259,13 @@ Full guide, including the safety boundary and what it deliberately does not do:
 [`docs/clean-guide.zh-CN.md`](docs/clean-guide.zh-CN.md). Implementation and the invariant/test table:
 [`docs/internals/clean-internals.md`](docs/internals/clean-internals.md).
 
-## Load-time gate (`aguard hook`)
+## Load-time gate (`bas-guard hook`)
 
 `check` answers when you remember to ask. The gate answers at the moment a skill is about to
 be loaded, whether or not anyone remembered:
 
 ```bash
-aguard hook install    # merges into ~/.claude/settings.json (backs it up), then restart Claude Code
+bas-guard hook install    # merges into ~/.claude/settings.json (backs it up), then restart Claude Code
 ```
 
 Claude Code has no hook for INSTALLATION, and one would not be complete anyway — a skill also
@@ -257,7 +277,7 @@ the question by itself. Full contract, including what it deliberately does *not*
 
 ## What it scans
 
-skills (SKILL.md + scripts + resources) · MCP config (statically: injection text and interpreter-preload `env` such as `NODE_OPTIONS`; an unpinned package or a credential written into `env` is reported only by the optional LLM judge, `LLM-009`) · **hooks** (settings.json — can silently run shell, a focus area) · **permission allowlists** · subagents · slash commands · installed **plugins** · CLAUDE.md · **Claude Desktop's own store** (plugins added in Customize → Plugins and the skills in Customize → Skills live under `~/Library/Application Support/Claude/`, not `~/.claude`, and are handed to the CLI as `--plugin-dir`; they are collected and marked "via Claude Desktop"). The default root honours `$CLAUDE_CONFIG_DIR`. **Downloads** are checked too: agent-shaped items under `~/Downloads` (a skill folder, a plugin, an MCP config, an instructions file, or a `.zip` holding one) are each checked on their own and listed in a separate Downloads section — they are not installed, so they never enter the score; everything else in the folder is counted, never read, never named. `--inbox <dir>` points elsewhere, `--inbox off` disables. `aguard check foo.zip` checks a downloaded archive directly. Install-symlink skills (e.g. `~/.agents/skills/*`) are resolved to their real target and audited; a symlink escaping to a system path is skipped with a warning.
+skills (SKILL.md + scripts + resources) · MCP config (statically: injection text and interpreter-preload `env` such as `NODE_OPTIONS`; an unpinned package or a credential written into `env` is reported only by the optional LLM judge, `LLM-009`) · **hooks** (settings.json — can silently run shell, a focus area) · **permission allowlists** · subagents · slash commands · installed **plugins** · CLAUDE.md · **Claude Desktop's own store** (plugins added in Customize → Plugins and the skills in Customize → Skills live under `~/Library/Application Support/Claude/`, not `~/.claude`, and are handed to the CLI as `--plugin-dir`; they are collected and marked "via Claude Desktop"). The default root honours `$CLAUDE_CONFIG_DIR`. **Downloads** are checked too: agent-shaped items under `~/Downloads` (a skill folder, a plugin, an MCP config, an instructions file, or a `.zip` holding one) are each checked on their own and listed in a separate Downloads section — they are not installed, so they never enter the score; everything else in the folder is counted, never read, never named. `--inbox <dir>` points elsewhere, `--inbox off` disables. `bas-guard check foo.zip` checks a downloaded archive directly. Install-symlink skills (e.g. `~/.agents/skills/*`) are resolved to their real target and audited; a symlink escaping to a system path is skipped with a warning.
 
 Two surfaces get extra treatment, because both hand over execution while looking narrow:
 
@@ -310,9 +330,9 @@ annotates; it never deletes.
 account with (`deepseek`, `openai`, `qwen`, or any endpoint with `--base-url`/`--model`):
 
 ```bash
-aguard llm setup --provider deepseek    # prompts for the key with hidden input; --key-stdin for pipes
-aguard llm test          # one call: does the endpoint answer for that model?
-aguard scan --llm        # the config is found at ~/.config/bas-guard/config.yaml from now on
+bas-guard llm setup --provider deepseek    # prompts for the key with hidden input; --key-stdin for pipes
+bas-guard llm test          # one call: does the endpoint answer for that model?
+bas-guard scan --llm        # the config is found at ~/.config/bas-guard/config.yaml from now on
 ```
 
 The key goes to `~/.config/bas-guard/llm.key` (mode 0600, refused if anyone else can read it); an
@@ -320,7 +340,7 @@ The key goes to `~/.config/bas-guard/llm.key` (mode 0600, refused if anyone else
 lives in `~/.config/aguard/` and is still read there when it is the only one; nothing is moved. Inside Claude Code, `/bas-guard-llm`
 walks through the same three steps in conversation.
 
-To see what would leave the machine before you decide, `aguard llm preview ./some-skill` prints every
+To see what would leave the machine before you decide, `bas-guard llm preview ./some-skill` prints every
 call `check --llm` would make for it, with the exact text each would carry (with no path: every call
 `scan --llm` would make). It sends nothing and needs no key; see [the judge's privacy notes](docs/llm-judge.md#privacy).
 
@@ -344,7 +364,7 @@ llm:
   api_key_env: AGUARD_LLM_KEY           # key read from this env var only, never disk (BAS_GUARD_LLM_KEY wins when set)
   model: llama3.1
 
-aguard scan --llm --config config.yaml
+bas-guard scan --llm --config config.yaml
 ```
 
 A judge outage never fails silently: unreachable/unconfigured runs surface an `LLM-000`
@@ -414,7 +434,7 @@ skill shipping one that names its own rule IDs would otherwise score itself 100/
 
 ## Reputation (embedded allowlist / blocklist)
 
-AgentGuard ships a small, **versioned, offline** reputation list keyed by an artifact's
+BAS Guard ships a small, **versioned, offline** reputation list keyed by an artifact's
 canonical hash — no network, on by default:
 
 - **known-good** (e.g. an official-marketplace plugin such as superpowers, reviewed and recorded with its reason) → its findings are suppressed, so
@@ -425,7 +445,7 @@ canonical hash — no network, on by default:
 **What is actually in it today: the allowlist half.** The blocklist is *mechanically* wired
 (hash-exact, `REP-BAD` is critical, it gates) and *empty* — curating known-bad hashes is
 ongoing work, and the file ships no example entry standing in for one, because this list feeds
-the score and a demonstration record would be a false record. `aguard version` prints the real
+the score and a demonstration record would be a false record. `bas-guard version` prints the real
 entry count. Treat the value of reputation today as noise suppression on trusted toolkits, not
 as malware coverage; detection comes from the static rules.
 
@@ -433,7 +453,7 @@ Because the list is embedded and versioned, it is deterministic and **feeds the 
 Disable with `--no-reputation`. A maintainer adds an entry by computing its hash:
 
 ```bash
-aguard hash ./some-skill     # prints the canonical hash to add to the reputation list
+bas-guard hash ./some-skill     # prints the canonical hash to add to the reputation list
 ```
 
 A cloud reputation service (fresh allowlist + community blocklist, hash-only, opt-in) is
@@ -456,13 +476,13 @@ cp hack/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
 cp hack/github-action.yml .github/workflows/agentguard.yml
 ```
 
-See [`hack/`](hack/) for both. A single skill: `aguard check ./some-skill` (defaults to `--fail-on high`).
+See [`hack/`](hack/) for both. A single skill: `bas-guard check ./some-skill` (defaults to `--fail-on high`).
 
 ## Reports
 
-`aguard scan --html report.html` writes a self-contained (offline, no-script) HTML report:
+`bas-guard scan --html report.html` writes a self-contained (offline, no-script) HTML report:
 score gauge, environment tiles, findings grouped by artifact+rule with line-level evidence,
-and the junk/hygiene section. `aguard scan --report` writes the same report without a path to
+and the junk/hygiene section. `bas-guard scan --report` writes the same report without a path to
 invent — to `~/.config/bas-guard/reports/scan-<timestamp>.html` (or under `$XDG_CONFIG_HOME`),
 outside the scan root, and prints where. The plugin does this on every scan and opens the
 report at the end of `/bas-guard-setup`. Reports stay on the machine; they hold your own paths
@@ -473,8 +493,8 @@ usually needs to go next: a pull request comment or an issue. `-` writes it to s
 the terminal report, so a reviewer can post the result of vetting a new skill without retyping it:
 
 ```bash
-aguard check ./new-skill --md - | gh pr comment 42 --body-file -
-aguard check ./new-skill --md review.md      # or write a file and paste it
+bas-guard check ./new-skill --md - | gh pr comment 42 --body-file -
+bas-guard check ./new-skill --md review.md      # or write a file and paste it
 ```
 
 Every name, path and snippet from the scanned tree is emitted inside a code span, so a file
@@ -504,4 +524,4 @@ each is enforced, and an honest account of what is not implemented yet.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md): one branch per change, a pull request against `main`,
 and `make verify` green before you ask for review. `make hooks` installs the pre-commit gate that
-scans any skill you stage with aguard itself.
+scans any skill you stage with bas-guard itself.

@@ -20,7 +20,7 @@ type EventStatus struct {
 	// the failure this whole command exists for: settings.json still says the gate is on,
 	// nothing runs, and the resulting silence is indistinguishable from "all clear".
 	Broken bool
-	// Foreign marks an bas-guard registration at a DIFFERENT path than the running binary —
+	// Foreign marks a bas-guard registration at a DIFFERENT path than the running binary —
 	// usually a stale entry from a build directory or an older install.
 	Foreign bool
 }
@@ -178,6 +178,11 @@ func (s Status) Describe(w io.Writer) {
 			fmt.Fprintf(w, "  ✓ %-22s %s\n", e.Event, e.Command)
 		}
 	}
+	if exe, ok := s.legacyRegistration(); ok {
+		// P-082 Q4: the old name keeps working, and moving it is the operator's call.
+		fmt.Fprintf(w, "\n  Registered under the old command name aguard (renamed to bas-guard in v0.30.0). It keeps\n"+
+			"  working; to switch: bas-guard hook install, then %s hook uninstall\n", exe)
+	}
 	fmt.Fprintln(w)
 	switch {
 	case s.Active():
@@ -198,6 +203,21 @@ func (s Status) Describe(w io.Writer) {
 	if s.Approvals > 0 {
 		fmt.Fprintln(w, "           list them with: bas-guard approvals")
 	}
+}
+
+// legacyRegistration returns the binary of a live registration made under the pre-rename name
+// aguard (P-082), so Describe can say how to move it; ok is false when there is none.
+func (s Status) legacyRegistration() (exe string, ok bool) {
+	for _, e := range s.Events {
+		if e.Command == "" || e.Broken {
+			continue
+		}
+		x, _ := splitCommand(e.Command)
+		if strings.HasPrefix(filepath.Base(x), "aguard") {
+			return x, true
+		}
+	}
+	return "", false
 }
 
 func (s Status) anyBroken() bool {

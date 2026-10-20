@@ -1,6 +1,6 @@
 # The usage card
 
-Print this when the user asks how to use AgentGuard or what it can do, when `/bas-guard-help` is
+Print this when the user asks how to use BAS Guard or what it can do, when `/bas-guard-help` is
 run, and as the last thing `/bas-guard-setup` shows. It is the one piece of onboarding a
 non-technical user will actually see, so it lives in one place — edit it here, nowhere else.
 
@@ -9,7 +9,7 @@ nothing on it needs a flag.
 
 ---
 
-AgentGuard is in place. From here on, just say what you want:
+BAS Guard is in place. From here on, just say what you want:
 
 - **Check-up** — "Is my Claude setup safe? Scan it." → audits every installed skill, MCP server, hook and permission grant; an HTML report is saved each time ("Open the report")
 - **Vet before installing** — "I downloaded this skill, is it safe to install?" → hand me the folder, the zip or the link; every scan also lists what is sitting in your Downloads

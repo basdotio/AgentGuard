@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# AgentGuard build. Pure Go, single static binary (CGO disabled).
+# BAS Guard build. Pure Go, single static binary (CGO disabled).
 BIN     := bin/bas-guard
 PKG     := ./cmd/bas-guard
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
@@ -30,7 +30,7 @@ lint:
 # handed over for review. The self-scan covers the shipped plugin — a repository that gates other
 # people's skills runs its own through the same gate. Each line is its own shell; the first failure stops make. The order is
 # cheapest-first so a red vet does not wait for the race detector. Deliberately absent: the
-# real-machine scan (`aguard scan --root ~/.claude`) — that one is run by hand after collect/detect
+# real-machine scan (`bas-guard scan --root ~/.claude`) — that one is run by hand after collect/detect
 # changes, because its input is this machine, not the repository. For the same reason the
 # self-scan runs with HOME and XDG_CONFIG_HOME at a path nothing creates, so no config is found:
 # the gate's answer must not depend on the config.yaml of whoever runs it (P-075; the Go tests get
@@ -58,15 +58,15 @@ hooks:
 docs:
 	go run ./hack/gen-rules
 
-# Run aguard over the agent-artifact-corpus and grade the verdicts (P-010, P-015). Three steps,
+# Run bas-guard over the agent-artifact-corpus and grade the verdicts (P-010, P-015). Three steps,
 # two of them the corpus's own: `corpus samples` (work list) → baselines/cmd/baseline (ours:
-# stage each sample where aguard looks, exec the freshly built binary, fold to one word, and
+# stage each sample where bas-guard looks, exec the freshly built binary, fold to one word, and
 # account for EVERY test point in a ledger) → `corpus score`.
 #
 # The driver replaced hack/corpus-runner in P-015 W5. That runner returned before the binary was
 # executed for any sample it could not place, so 127 test points were never handed to the scanner
-# at all — and the reason recorded against them was the runner's belief about aguard rather than
-# aguard's behaviour. Measured after the change: 3539 of 3539 scored, 0 uncovered; recall over
+# at all — and the reason recorded against them was the runner's belief about bas-guard rather than
+# bas-guard's behaviour. Measured after the change: 3539 of 3539 scored, 0 uncovered; recall over
 # the full malicious set is 85/300 (28%) where the partial denominator read 71/173 (41%).
 # The corpus is a sibling checkout, never vendored (licence isolation) and never a CI dependency;
 # this target is for a maintainer's machine. Verdicts and per-sample JSON land under bin/bench/
@@ -78,7 +78,7 @@ docs:
 #
 # `corpus score` takes the verdicts file alone: the harness dropped its -tool flag on 2026-09-23
 # (corpus commit 5c2ac85). Two callers here had to follow, and the first fix caught only one: the
-# last line below, and the driver's `-score-tool aguard`, which makes the driver's OWN scorecard
+# last line below, and the driver's `-score-tool bas-guard`, which makes the driver's OWN scorecard
 # step pass the same dead flag — so the run still died after the ten-minute driver pass, with the
 # verdicts on disk and neither scorecard printed. The driver keeps the flag for a corpus whose
 # scorer has it; this target does not pass it until the harness grows it back.

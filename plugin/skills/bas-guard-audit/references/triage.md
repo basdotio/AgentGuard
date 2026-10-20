@@ -1,4 +1,4 @@
-# Reading an AgentGuard report
+# Reading an BAS Guard report
 
 A score and a finding count are the least useful part of the output. This is how to turn a
 report into something the user can act on, and the specific ways a report gets misread.
@@ -89,7 +89,7 @@ them — which is the one outcome that breaks the invariant's whole purpose.
 | `IGN-000` | A `.aguardignore` suppressed findings **before scoring**. Carries the highest severity it silenced. |
 | `REP-GOOD` | The artifact's hash is on the embedded allowlist, so its scoring findings were dropped. Also carries the highest suppressed severity. |
 | `LLM-000` / `LLM-002` / `LLM-005` | Judge unavailable/incomplete · endpoint is not loopback so redacted excerpts left the machine · verdicts discarded because their quoted evidence could not be located. |
-| `GATE-001` (medium, dim 0) | **Read this one out loud.** `settings.json` registers the load-time gate but the command it names is gone. Every skill is loading unaudited, and it looks identical to being protected. Fix: `aguard hook status`, then reinstall against a stable path. |
+| `GATE-001` (medium, dim 0) | **Read this one out loud.** `settings.json` registers the load-time gate but the command it names is gone. Every skill is loading unaudited, and it looks identical to being protected. Fix: `bas-guard hook status`, then reinstall against a stable path. |
 
 Three of these change how you present the result:
 

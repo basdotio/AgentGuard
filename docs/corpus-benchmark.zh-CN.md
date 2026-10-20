@@ -168,7 +168,7 @@ review 时看这个字段）；**样本永不因为失败而删除**——只能
 | **按来源不加权** | **7 个来源** | | **10.7%** |
 
 **两个来源占 87%。来源间极差 0.0% … 30.8%，比这个数字本身还宽。** 所以 12.9% 的真实含义
-是"gstack 和 everything-claude-code 两位作者写作习惯的加权平均"，它测的不是 aguard。
+是"gstack 和 everything-claude-code 两位作者写作习惯的加权平均"，它测的不是 bas-guard。
 
 **这正是本文档 W-022 那条纪律（source-disjoint 划分，Cisco 实测召回率 31.43% → 7.75%）。
 我们给恶意语料写下了它，然后在自己的良性分母上原样犯了一遍。**
@@ -190,7 +190,7 @@ review 时看这个字段）；**样本永不因为失败而删除**——只能
 - **回归**：同一台机器、同一批 952 个，修改前后跑两次，**差值**是有意义的（同一分母抵消了来源偏差）
 - **定位**：分组差异本身是信息 —— 手装的 41 个 **0 条 high**，第三方分发的 911 个 **13.5%**，
   说明误报几乎全部落在**别人写给别人看**的教学型 skill 上
-- **不能做**：任何形如"aguard 的误报率是 X%"的对外陈述
+- **不能做**：任何形如"bas-guard 的误报率是 X%"的对外陈述
 
 ### 3.0.1 缺陷本身（证据，不是比率）
 
@@ -395,7 +395,7 @@ ClawHub 尤其危险：它按 **OWASP Agentic Top 10** 评级，而那正是我�
 
 #### 这个决定不是推理出来的，是当场测出来的
 
-写下这一节的当天，把 `aguard` 指向 `DataDog/malicious-software-packages-dataset`
+写下这一节的当天，把 `bas-guard` 指向 `DataDog/malicious-software-packages-dataset`
 的 `samples/ai-skills/`(204 个在野恶意 skill)，**第一个样本**就暴露了一个我们自己的
 30 个对抗场景从来没有的形状：一个教科书级反弹 shell 得 **88/100**，`--fail-on high` 放行。
 
@@ -433,7 +433,7 @@ ClawHub 尤其危险：它按 **OWASP Agentic Top 10** 评级，而那正是我�
 > 定义了 8 个测量类别，`docs/design.md` 是这一节的英文实施版，`docs/label-schema.md` 是下面 §4.2 的最终形态。
 > **打分器也搬过去了**（`corpus score`，工具中立的算术，见那边 `docs/using-the-corpus.md`），和 §4.3 当初的设想不同；
 > 留在本仓库的只有**驱动与结果**：`baselines/`（P-015）。`baselines/adapter/aguard` 负责把样本铺成
-> aguard 认的布局、exec 二进制、按闸门谓词折叠成一个词；`baselines/cmd/baseline` 串起来，
+> bas-guard 认的布局、exec 二进制、按闸门谓词折叠成一个词；`baselines/cmd/baseline` 串起来，
 > `make bench` 仍是入口。**它替代并删除了 P-011 的 `hack/corpus-runner`** —— 那个 runner 在摆放失败时
 > 在执行二进制之前就返回，于是 127 个测试点从未被交给扫描器；现在每个点都被调用，落进
 > `ledger.jsonl` 的 `scored` / `no-verdict` / `error` 三者之一，**没有 `skipped`**。
@@ -644,7 +644,7 @@ rules_version: <sha256 前 12 位>     tool_version: v0.8.1     语料层: vendo
 
 ## 6. 与其他项的依赖关系
 
-- **E.2（`rules_version` / `aguard verify`）应该先做或同期做**——benchmark 头部要钉规则集哈希，
+- **E.2（`rules_version` / `bas-guard verify`）应该先做或同期做**——benchmark 头部要钉规则集哈希，
   否则数字无法归因；
 - **A.1（AST 检测）必须排在 E.1 之后**。正则精度是不是真问题，只有**逐规则在良性样本上响了几次**
   那一列能回答 —— 它现在由 `make bench` 直接打印，并随基线提交（2026-09-22 实测：

@@ -30,7 +30,7 @@ paths:
   `--json` / `--html` 两档内容完全一致,所以一个 CI 任务的输出不会取决于某个人加没加它。
 - **报告有两个读者,阅读顺序为不写代码的那个而定**([plain.go](../../internal/report/plain.go) 和
   [reader.go](../../internal/report/reader.go) 是渲染器共用的白话层,P-058):标题说这份报告是关于什么的(`check` 的目标
-  `AgentGuard · <name> (<kind>)`,或 root)→ 分数行带要看几条 → 一句人话结论 → 每条发现一个编号块(`#k`:维度短语、
+  `BAS Guard · <name> (<kind>)`,或 root)→ 分数行带要看几条 → 一句人话结论 → 每条发现一个编号块(`#k`:维度短语、
   "谁 · 什么 [规则]"、Why、判官的看法、下一步、证据;多于 3 条时前面有 `→ … start with` 和前三条索引)→ "Why N" →
   Judge 行和外发告知 → 判官自己的发现 → Downloads → 白名单压制 → 没检查到的 → `--verbose` 多给什么。
   以前清单和 OWASP 行排在最前面,普通用户读到第五行还没见到一句结论;再后来同一条发现在一份 28 行的 `check` 报告里说了三遍。
@@ -66,7 +66,7 @@ paths:
     **不要编一个 "3 of 3"**。不要出现 cleared / dismissed / lowered / removed 这类词(不变量 #4,
     `TestText_JudgeViewInPlainWords` 盯着)。
   - **下一步只用固定措辞**(`nextOf`/`stepText`):读哪个文件哪一行 + 维度那句 `actionHint`;`REP-BAD` 是 "remove it"。
-    `aguard approve` 那行**只**给闸门拦得住的东西:skill、有内容哈希(P-011)、没有 critical、是 `check` 的目标或在
+    `bas-guard approve` 那行**只**给闸门拦得住的东西:skill、有内容哈希(P-011)、没有 critical、是 `check` 的目标或在
     扫描的 root 里(桌面版的 skill 不走闸门),medium 及以上的静态发现,每个 artifact 一次;scan 的命令带 `--root`。
     路径一律走 `cmdline.Arg`(闸门自己的引号,P-030,从 `internal/gate` 挪出来以免 report 反向 import gate),
     **不要在 report 里再写一份引号**。`TestText_NextStep` 钉住每个不给的情形。

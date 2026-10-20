@@ -1,12 +1,12 @@
 ---
 name: bas-guard-gate
-description: "Turns on automatic protection: every skill is checked before it loads, and anything with a finding asks you first. Say: 'Turn on the gate', 'I trust this skill, stop asking'. Install, inspect, repair or remove AgentGuard's load-time gate (`aguard hook`) — a Claude Code hook that audits a skill before an agent loads it and asks the user about anything carrying a finding, and manage the hash-keyed approvals it remembers (`aguard approve` / `approvals` / `forget`). Trigger when the user wants automatic protection rather than remembering to scan, asks to install/uninstall the aguard hook or set up hook-based scanning of skills, asks why the gate is prompting (or has stopped prompting), asks to trust or untrust a skill so it stops asking, or hits a GATE-000 / GATE-001 finding."
+description: "Turns on automatic protection: every skill is checked before it loads, and anything with a finding asks you first. Say: 'Turn on the gate', 'I trust this skill, stop asking'. Install, inspect, repair or remove BAS Guard's load-time gate (`bas-guard hook`) — a Claude Code hook that audits a skill before an agent loads it and asks the user about anything carrying a finding, and manage the hash-keyed approvals it remembers (`bas-guard approve` / `approvals` / `forget`). Trigger when the user wants automatic protection rather than remembering to scan, asks to install/uninstall the bas-guard hook or set up hook-based scanning of skills, asks why the gate is prompting (or has stopped prompting), asks to trust or untrust a skill so it stops asking, or hits a GATE-000 / GATE-001 finding."
 allowed-tools: Bash, Read, Glob, Grep, Write, Edit
 ---
 
-# AgentGuard: the load-time gate
+# BAS Guard: the load-time gate
 
-`aguard check` answers when someone remembers to ask. The gate answers at the moment a skill
+`bas-guard check` answers when someone remembers to ask. The gate answers at the moment a skill
 is about to be loaded, whether or not anyone remembered.
 
 It registers as a Claude Code hook and, on `PreToolUse[Skill]`, runs the same static path as
@@ -28,9 +28,9 @@ user's terms, before any command output:
 Check first, then install, then say the quiet part about restarting:
 
 ```bash
-aguard hook status                 # exit 1 if not wired, or if it points at a missing binary
-aguard hook install --dry-run      # exactly what would change in settings.json
-aguard hook install                # merges into <root>/settings.json, backing it up first
+bas-guard hook status                 # exit 1 if not wired, or if it points at a missing binary
+bas-guard hook install --dry-run      # exactly what would change in settings.json
+bas-guard hook install                # merges into <root>/settings.json, backing it up first
 ```
 
 Three events get registered, all running the same command (the runner dispatches on
@@ -63,7 +63,7 @@ next, so the gate's first appearances are expected rather than alarming:
 >
 > After restarting, say **"check the gate"** and I'll verify it is running.
 
-"Check the gate" afterwards means `aguard hook status` plus `aguard approvals` — report what is
+"Check the gate" afterwards means `bas-guard hook status` plus `bas-guard approvals` — report what is
 wired up and what is trusted, and flag a registered command that no longer resolves (`GATE-001`).
 
 ### Before you write to `settings.json`
@@ -79,12 +79,12 @@ this tool.
   If it errors, fix the JSON by hand; do not work around it.
 - **The command it registers is the absolute path of the binary you ran.** So install from a
   stable location — `/usr/local/bin/aguard` or `~/.local/bin/aguard`, never `./bin/aguard` in
-  a build tree or a temp directory. `aguard hook status` prints when the registered command is
-  a *different* `aguard` than the one you just ran; that is worth reading, not skipping.
+  a build tree or a temp directory. `bas-guard hook status` prints when the registered command is
+  a *different* `bas-guard` than the one you just ran; that is worth reading, not skipping.
 
 ```bash
-aguard hook uninstall --dry-run
-aguard hook uninstall             # removes only entries matching this gate's command
+bas-guard hook uninstall --dry-run
+bas-guard hook uninstall             # removes only entries matching this gate's command
 ```
 
 ## What it covers, and what it cannot
@@ -101,7 +101,7 @@ Say both halves. Half of this message is a false sense of security.
   hand. Loading is the boundary that can be held, and it is the one that matters — a skill
   sitting on disk is inert until an agent reads it.
 
-For the surfaces the gate cannot reach, the answer is a periodic `aguard scan`
+For the surfaces the gate cannot reach, the answer is a periodic `bas-guard scan`
 (`bas-guard-audit`), not a stronger gate.
 
 ## Approvals are keyed by content hash, never by name
@@ -109,14 +109,14 @@ For the surfaces the gate cannot reach, the answer is a periodic `aguard scan`
 This is the design decision the whole thing rests on:
 
 ```bash
-aguard approve ./some-skill        # trust these exact bytes
-aguard approvals                   # list what is trusted
-aguard approvals forget <hash>     # withdraw one (the short 16-char hash the listing prints)
-aguard approvals forget all        # withdraw everything
+bas-guard approve ./some-skill        # trust these exact bytes
+bas-guard approvals                   # list what is trusted
+bas-guard approvals forget <hash>     # withdraw one (the short 16-char hash the listing prints)
+bas-guard approvals forget all        # withdraw everything
 ```
 
 Note the shape: `forget` is a **subcommand of `approvals`**, not a top-level command. Bare
-`aguard forget` exits 2 with `unknown command`.
+`bas-guard forget` exits 2 with `unknown command`.
 
 An approval records the artifact's **canonical hash**. Edit one byte and the hash changes, so
 the gate asks again by itself — no expiry to tune, no cache to invalidate. It also means:
@@ -126,8 +126,8 @@ the gate asks again by itself — no expiry to tune, no cache to invalidate. It 
 - An approval is promoted only after `PostToolUse` re-reads the target and confirms the hash is
   still the one the user was shown. A skill swapped between the prompt and the load does not
   inherit the consent.
-- `aguard approve` on a skill with findings is a real decision. Show the findings first
-  (`aguard check <path>`), then approve — never approve to make a prompt go away.
+- `bas-guard approve` on a skill with findings is a real decision. Show the findings first
+  (`bas-guard check <path>`), then approve — never approve to make a prompt go away.
 
 Approvals live in `<root>/.aguard-approvals.json`. A corrupt approvals file reads as **empty**
 (everything gets asked again) rather than being trusted — losing approvals costs a few prompts;
@@ -158,16 +158,16 @@ Two different silences, and they mean opposite things.
   the artifact either way. This package fails **open** on purpose, opposite to the rest of the
   tool: a gate that blocks whenever its own scanner has a bug is a gate that gets uninstalled
   the same day, and protection after that is zero.
-- **`GATE-001`** (medium, dimension 0, raised by `aguard scan`): `settings.json` registers the
+- **`GATE-001`** (medium, dimension 0, raised by `bas-guard scan`): `settings.json` registers the
   gate but the command it names is **gone** — the binary moved, a build directory was cleaned,
   a dotfile repo landed on a machine that never had it. Claude Code then runs nothing at those
   interception points: every skill loads unaudited, and it looks exactly like a clean result.
   Fix:
 
   ```bash
-  aguard hook status              # confirms it, exit 1
-  which aguard                    # is there a binary at a stable path?
-  aguard hook install             # re-register against that path
+  bas-guard hook status              # confirms it, exit 1
+  which bas-guard                    # is there a binary at a stable path?
+  bas-guard hook install             # re-register against that path
   ```
 
   Then restart Claude Code.
@@ -175,8 +175,8 @@ Two different silences, and they mean opposite things.
 Also worth knowing when a user says "it didn't tell me anything": the gate's clean-path
 `systemMessage` **does not render in the VSCode extension**. Silence on a clean *load* is
 expected, and it is deliberately not "fixed" by exiting non-zero — that would paint every
-normal load as an error. The way to ask the gate what it has been doing is `aguard hook status`
-and `aguard approvals`.
+normal load as an error. The way to ask the gate what it has been doing is `bas-guard hook status`
+and `bas-guard approvals`.
 
 A clean **session start** is different: it always says something. It reports the artifacts
 carrying a finding at or above the threshold, or — when there are none — states that nothing

@@ -110,7 +110,7 @@ jobs:
       # first package with "cannot publish over the previously published versions".
       #
       # Auth is npm trusted publishing (OIDC), not a stored token: each of the five packages has a
-      # trusted-publisher entry on npmjs.com naming basdotio/AgentGuard and release.yml, with
+      # trusted-publisher entry on npmjs.com naming basdotio/bas-guard and release.yml, with
       # direct `npm publish` allowed. There is no NPM_TOKEN secret to expire or leak. Renaming
       # this file or moving the repo breaks publishing until those five entries are recreated.
       #

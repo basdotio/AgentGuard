@@ -1,4 +1,4 @@
-# AgentGuard 架构(as built)
+# BAS Guard 架构(as built)
 
 [English](architecture.md) | **中文**
 
@@ -20,7 +20,7 @@
 
 AI 编码 agent 会**自动加载** skills、MCP server、hooks、subagents、slash commands、指令文件。
 这些东西是**"指令 + 被授予的工具权限"**,不是文档 —— 其中任何一个都能藏一条 agent 会照做的指令。
-AgentGuard 把这些 artifact 从磁盘上读进来跑规则,产出一个可复现的风险分和一份报告。它**从不执行
+BAS Guard 把这些 artifact 从磁盘上读进来跑规则,产出一个可复现的风险分和一份报告。它**从不执行
 被扫描的内容,也不外连**(除非你显式打开可选的 LLM judge)。它是**体检,不是保证清除**:分数是
 相对风险信号,不是安全证书。
 
@@ -67,7 +67,7 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
 | [`inbox`](../internal/inbox/) | 下载目录扫描:候选发现、带上限且拒绝路径穿越的 zip 解包 | 376 |
 | [`safeio`](../internal/safeio/) | 打开一个不是自己写的文件的唯一途径:非常规文件在 Open 前拒绝,大小由读强制 | 101 |
 | [`redact`](../internal/redact/) | 唯一的脱敏器:已知 token 前缀、键名/旗标自证的凭据、URL userinfo、高熵串。是叶子包,`collect` 也用它;`detect.Redact` 委托它 | 209 |
-| [`cmdline`](../internal/cmdline/) | 把路径印进一条要复制粘贴的命令的唯一途径:完整路径、按 POSIX shell 加引号、绝不截短。`gate.CommandArg` 委托它;报告里 `aguard approve` 那一步也用它 | 97 |
+| [`cmdline`](../internal/cmdline/) | 把路径印进一条要复制粘贴的命令的唯一途径:完整路径、按 POSIX shell 加引号、绝不截短。`gate.CommandArg` 委托它;报告里 `bas-guard approve` 那一步也用它 | 97 |
 | [`testhome`](../internal/testhome/) | 只给测试用:模块里每个测试二进制(`baselines/` 除外,理由写在守卫里)都在临时的 `HOME`、指向它里面的四个 XDG 基础目录、没有 `CLAUDE_CONFIG_DIR` 和 `AGUARD_USAGE_LOG` 的环境里跑,没有哪个测试读得到开发者自己的配置、往开发者的用量日志里追加;`TestEveryTestPackageIsolatesTheHome` 要求每个有测试的包都有调用它的 `TestMain`,`TestDefaultLocations_AreInsideTheTestHome`(`cmd/bas-guard`)要求二进制解析出的每个默认位置都在临时 home 里 | 125 |
 | [`cmd/bas-guard`](../cmd/bas-guard/) | CLI 接线、`analyze()`、下载目录那一趟、hook runner、`llm setup/test/status/preview` | — |
 
@@ -130,7 +130,7 @@ Checked 那句数清单,清单什么都没数到时改数扫过的 artifact(`che
 一句白话;然后每条发现一个编号块 —— 每个维度一句固定短语说它是哪类问题、"谁 · 什么"且规则 ID 收尾、规则自己的 Why、
 判官的 triage 标签换成白话("likely a false alarm"、"one reading",并写明发现和分数都不变)、固定措辞的下一步
 (从哪个文件哪一行读起、这个维度该问的问题,以及只对闸门拦得住、有哈希、没有 critical 的 skill 给出确切的
-`aguard approve` 命令,用闸门自己的 `internal/cmdline` 加引号)。接着是一行 "Why N",由 `score.Explain` 推出 ——
+`bas-guard approve` 命令,用闸门自己的 `internal/cmdline` 加引号)。接着是一行 "Why N",由 `score.Explain` 推出 ——
 它就是 `score.Apply` 的计算过程,所以不会和分数打架;然后是一行简短的 Judge(版本号归 `--verbose`;
 `report.JudgeLineSuffix` 是唯一的扩展点)、白名单信任、没检查到的,最后一行说 `--verbose` 多给什么:扫描看了哪些地方
 (单个目标只写"只看了目标")、清单、OWASP 声明、卫生项列表。没有要看的东西时只印标题、带 ✅ 的分数行和 Judge 行。
@@ -195,7 +195,7 @@ P-044)—— 合成一个单元,把它们的发现合在一起按单 artifact �
 **规则表有版本号。** [`rules_version.go`](../internal/detect/rules_version.go) 按引擎顺序哈希"决定一条引擎规则发现的东西"——
 `builtinRules()` 里每条的 ID、维度、严重度、标志和正则源码,不含标题和解释——再加一个整数 `rulesEpoch`。结构化检查、权限检查和
 不是 `LLM-` ID 的 note 写在代码里,覆盖它们的只有 epoch。扫描报告里叫 `rules_version`,
-`aguard version` 会打印它,`rules.md` 页眉也写着它,所以改了正则不跑 `make docs` 就过不了 CI。它**只覆盖确定性检测**——
+`bas-guard version` 会打印它,`rules.md` 页眉也写着它,所以改了正则不跑 `make docs` 就过不了 CI。它**只覆盖确定性检测**——
 `overall` 的来源。**改 `builtinRules()` 之外的确定性检测代码时**——结构化/形状检查、角色门、词法层、读哪些文件、
 `collect` 的凭据 import 检查(`EXFIL-005`)、`permcheck`——只要改变了某个输入产出哪些发现,或发现的 ID/维度/严重度/advisory,
 **同一个提交里把 `rulesEpoch` 加一。** 没有东西强制它;忘了加,两份报告就会自称同一版规则,而产出它们的代码其实不同。
@@ -207,10 +207,10 @@ LLM 判官完全不在里面——提示词、证据落地、共识、严重度�
 skill 与 plugin 用树哈希(按相对路径排序 + 每个文件的 sha256);单文件用 sha256。它是信誉库的 key,
 所以必须跨机器、跨 checkout 稳定。**改动哈希逻辑会让
 [`reputation.json`](../internal/reputation/data/reputation.json) 里的每一条记录全部失效**,须用
-`aguard hash` 重新生成。`test/` 故意**不**排除 —— payload 会藏在那里。
+`bas-guard hash` 重新生成。`test/` 故意**不**排除 —— payload 会藏在那里。
 
 hook、MCP server、permission 列表用的是**内容哈希**([`detect/contenthash.go`](../internal/detect/contenthash.go)),
-由 `analyze()` 在规则引擎跑完后紧接着填,先于信誉、闸门 `SessionStart`、`aguard approve` 和 Downloads 那一路读它。
+由 `analyze()` 在规则引擎跑完后紧接着填,先于信誉、闸门 `SessionStart`、`bas-guard approve` 和 Downloads 那一路读它。
 定义是 `sha256(<种类域> 0x00 <规范 JSON>)`,只覆盖配置本身 —— 整个 hook 或 server 条目,不含路径、不含 artifact 名 ——
 所以同一份配置在两台机器上是同一个身份。hook 的输入包含它运行的脚本内容(读不到时是一个说明原因的标记);secret 在哈希前
 由 `Redact` 的凭据那一半换掉,但带结构的片段(shell 语法、授权通配、URL 分隔符)绝不换:被拒的只是那一次替换,同一个值里
@@ -313,5 +313,5 @@ go test -run TestFailGate ./cmd/bas-guard/     # 跑单个测试
   用 `make dist` 构建、校验烧进二进制的版本号与 tag 一致,然后连校验和一起发布。
 
 改完 [`logical.go`](../internal/detect/logical.go) 或读取路径上的任何东西,**开 PR 前先用
-`aguard scan` 扫一遍真实的 `~/.claude`**。那是一个手写 lexer,吃的是攻击者可控的字节;它的第一版
+`bas-guard scan` 扫一遍真实的 `~/.claude`**。那是一个手写 lexer,吃的是攻击者可控的字节;它的第一版
 在真机上 panic 过(行尾是一个引号),而 table test 全绿。现在有两个 fuzz 目标守着它。

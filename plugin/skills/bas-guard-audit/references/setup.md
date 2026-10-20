@@ -1,7 +1,7 @@
-# Setting AgentGuard up, end to end
+# Setting BAS Guard up, end to end
 
 This is the first-run flow. `/bas-guard-setup` runs it; so does the audit skill when the user asks
-to set up, install or get started with AgentGuard in plain words, or asks for a check on a machine
+to set up, install or get started with BAS Guard in plain words, or asks for a check on a machine
 where the binary is not installed yet — a first scan without the gate offer and the usage card is
 a first run done halfway. One flow, one file; edit it here.
 
@@ -15,9 +15,9 @@ language, then return to the flow in English.
 Before step 1, print this roadmap so the user knows what is coming and how much of it is
 theirs to decide:
 
-> Setting up AgentGuard — five steps:
+> Setting up BAS Guard — five steps:
 >
-> 1. Install the `aguard` binary (checksum-verified)
+> 1. Install the `bas-guard` binary (checksum-verified)
 > 2. First scan of your setup
 > 3. Walk through what it found — **you choose** what happens to each finding
 > 4. Offer the load-time gate — **your decision**
@@ -28,13 +28,14 @@ theirs to decide:
 Then start each step's report with `[Step N/5] <name>` — e.g. `[Step 2/5] First scan` — so the
 user always knows where they are and how many decisions remain.
 
-1. **Binary.** `command -v aguard || ls ./bin/aguard`. If missing, use the `bas-guard-audit`
+1. **Binary.** `command -v bas-guard || command -v aguard || ls ./bin/bas-guard`. Found only as `aguard` (an install
+   from before v0.30.0): use that name for every command below. If missing, use the `bas-guard-audit`
    skill's `references/install.md` — including the checksum verification, which is not optional.
    Run its steps as separate single commands. If the app blocks a download or move step (auto
    mode does this at random), follow install.md's "If a step is blocked" section exactly: one
    sentence, the three Terminal lines with the platform filled in, wait for "done". Do not
    retry or improvise around the block.
-   If present, do NOT stop at "already installed": run `aguard version` — if it reports the
+   If present, do NOT stop at "already installed": run `bas-guard version` — if it reports the
    plugin is newer than the binary, that is the answer — otherwise compare it with the
    latest release tag as described in install.md's "Upgrading" section, and when it is older,
    upgrade in place (same path, so an installed gate keeps working). Report the version you
@@ -42,7 +43,7 @@ user always knows where they are and how many decisions remain.
    allowlist, and it looks exactly like an up-to-date one until someone checks.
 
 2. **First scan.** Use the `bas-guard-audit` skill. Root: $ARGUMENTS (default `~/.claude`).
-   Run `aguard scan --verbose --report` (the HTML report lands in the reports directory and
+   Run `bas-guard scan --verbose --report` (the HTML report lands in the reports directory and
    its path is printed; the Downloads section lists agent-shaped items sitting in ~/Downloads,
    each with its own score, outside the environment score), then triage properly per that skill's `references/triage.md` —
    worst artifact by name and score, real findings separated from advisory shapes, and any
@@ -73,7 +74,7 @@ user always knows where they are and how many decisions remain.
    > setup; the gate stands in front of what tries to load next. Approvals are remembered by
    > content hash, so an edited skill asks again by itself.
 
-   Then `aguard hook status`, and `aguard hook install --dry-run` shown before any real
+   Then `bas-guard hook status`, and `bas-guard hook install --dry-run` shown before any real
    install, from a *stable* binary path. State plainly that it covers skills only, that plugin hooks and MCP servers are live
    from turn one and are not gated, and that it takes effect only for sessions started after a
    restart. Say how many of each the scan actually found — its `hooks` and `mcp_servers` counts

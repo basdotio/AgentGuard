@@ -103,10 +103,10 @@ If a hook is one the user did not add, that is the finding. Hooks are the surfac
 Quarantine, don't delete:
 
 ```bash
-aguard clean --zombie --apply --dry-run   # preview
-aguard clean --zombie --apply             # move to <root>/.aguard-trash (recorded; --undo restores)
-aguard clean --resolve D-… --keep <name>  # a duplicate pair: quarantine the side NOT named
-aguard clean --undo last                  # put a batch back if the call was wrong
+bas-guard clean --zombie --apply --dry-run   # preview
+bas-guard clean --zombie --apply             # move to <root>/.aguard-trash (recorded; --undo restores)
+bas-guard clean --resolve D-… --keep <name>  # a duplicate pair: quarantine the side NOT named
+bas-guard clean --undo last                  # put a batch back if the call was wrong
 ```
 
 Those paths cover never-used skills and duplicate pairs. For any other artifact the user has
@@ -149,7 +149,7 @@ Rules for writing one, in order of importance:
 
 - `.aguardignore` suppresses **findings before scoring**. It changes the score and the
   `--fail-on` result. Keyed by rule ID and evidence path.
-- `aguard approve <path>` tells the **load-time gate** to trust one exact set of bytes. It is
+- `bas-guard approve <path>` tells the **load-time gate** to trust one exact set of bytes. It is
   keyed by the artifact's **canonical hash**, changes no score, and re-opens by itself the
   moment the artifact is edited.
 
@@ -159,7 +159,7 @@ in this location and I accept it" is a baseline. See `bas-guard-gate` for approv
 ## Finish by rescanning
 
 ```bash
-aguard scan --root <root>
+bas-guard scan --root <root>
 ```
 
 State the before/after: which artifact, which findings gone, which deliberately baselined and

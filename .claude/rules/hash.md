@@ -11,7 +11,7 @@ skill 与 plugin 用树哈希(按相对路径排序 + 每个文件的 sha256);�
 要同时从**哈希遍历和扫描遍历**中排除的原因。**改动哈希逻辑会让
 [internal/reputation/data/reputation.json](../../internal/reputation/data/reputation.json)
 里的每一条记录全部失效**,以及**闸门里每一条已存的用户批准**(`internal/gate` 也按这个哈希建索引),
-须用 `aguard hash` 重新生成。`TestHashGolden` 用两个字面常量钉住了当前定义 —— 现有的其他哈希测试
+须用 `bas-guard hash` 重新生成。`TestHashGolden` 用两个字面常量钉住了当前定义 —— 现有的其他哈希测试
 全都是"拿一个哈希和另一个同样算法算出来的哈希比",定义整体挪动时它们照样绿,只有字面常量会红。
 `test/` 故意**不**排除 —— payload 会藏在那里。
 
@@ -37,7 +37,7 @@ skill 与 plugin 用树哈希(按相对路径排序 + 每个文件的 sha256);�
 这三类在 collect 里是 `""`,而每个消费方都把 `""` 读成"没人审过"(`Approved`、`Match` 恒 false)。它们的哈希在
 **detect 阶段**算(脚本跟进在那里,collect 不能 import detect;`Redact` 的实现已挪进 collect 也能 import 的 `internal/redact`,
 但这不是把哈希挪进 collect 的理由),由 `analyze()` 在 `Run` 之后**紧接着**填,
-先于信誉、闸门 `SessionStart`、`aguard approve`、Downloads;`aguard hash` 调同一个函数。定义:
+先于信誉、闸门 `SessionStart`、`bas-guard approve`、Downloads;`bas-guard hash` 调同一个函数。定义:
 `hex(sha256(<域> 0x00 <规范 JSON>))`,域是 `aguard:hook:v1` / `aguard:mcp:v1` / `aguard:permission:v1` /
 `aguard:settings-env:v1`。`TestContentHashGolden` 钉五个字面常量,**规范输入字节也钉**,可以 `printf … | shasum` 手算。
 

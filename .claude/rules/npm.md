@@ -9,7 +9,7 @@ paths:
 
 面向用户的说明在 [README.md](../../README.md#install);这里只写不要怎么改。
 布局是**六个包**:一个 launcher(`bin/bas-guard.js` + 从自己 `package.json` 读名字,`bas-guard` 和过渡期的
-`aguard` 两个命令都指向它)加四个平台包(带 `os`/`cpu`,各装一份静态二进制,文件名 `bas-guard`),再加一个不带 scope 的
+`bas-guard` 两个命令都指向它)加四个平台包(带 `os`/`cpu`,各装一份静态二进制,文件名 `bas-guard`),再加一个不带 scope 的
 别名包 `bas-guard`(P-082,`NPM_ALIAS_NAME`):它不带二进制、不带平台清单,只按**同一版本**依赖 launcher 并 `require` 它,
 所以 launcher 的退出码和 stdio 约定是唯一的一份(`TestNpmAliasPackage`、`TestNpmAliasForwardsToTheLauncher`)。
 别名包只暴露 `bas-guard`:不带 scope 的 `aguard` 是别人的包名。发布顺序是平台包 → launcher → 别名包。
@@ -27,12 +27,12 @@ paths:
   钉住其中最现实的那条(`--no-optional` 或跨平台 lockfile 装出来的半套)。
 - **"退什么码"和"说不说话"是两个问题,后者按类别分而不是按单个信号分。**
   `ROUTINE_SIGNALS`(INT、TERM、HUP、QUIT、PIPE)是人或系统**请求**程序停止:Ctrl-C、关终端、
-  `kill`、`aguard scan | head` 关掉管道,裸二进制对这些一个字都不打,launcher 也不许打 ——
+  `kill`、`bas-guard scan | head` 关掉管道,裸二进制对这些一个字都不打,launcher 也不许打 ——
   否则最常见的那种打断长扫描的方式,结尾会多出一行指着 `node_modules` 里某个文件的"错误"。
   剩下的(SEGV/BUS/ABRT/OOM 的 KILL)是二进制**失败**了,那才值得一行。第一版只特判了
   SIGPIPE(因为实测只碰到它),SIGINT 照样在刷噪音 —— **加信号前先问它属于哪一类**,
   `TestNpmLauncherReproducesTheBinarysExit` 两类各有用例。
-- **`stdio: "inherit"` 是承重的**,不是顺手写的:`aguard hook` 从 **stdin** 读 JSON hook 事件,
+- **`stdio: "inherit"` 是承重的**,不是顺手写的:`bas-guard hook` 从 **stdin** 读 JSON hook 事件,
   管道到不了子进程,闸门就永远看不到它被问的那个事件。
 - **包名只在 `Makefile` 的 `NPM_NAME` 里出现一次。** launcher 在运行时用自己
   `package.json` 的 `name` 拼出平台包名,所以 shim 里写死 scope 会在改名后仍然解析到一个
@@ -65,7 +65,7 @@ paths:
   prerelease,实测 npm 照收。真正的后果是手动发布会把一个垃圾版本号永久占掉(npm 不允许复用)。
   显式传 `NPM_VERSION=` 仍然放行 —— 那是明说的选择,不是 git 的副产物。
 - **发布凭证是 npm trusted publishing(OIDC),没有 `NPM_TOKEN`**(2026-09-30)。五个包在 npmjs.com
-  上各有一条 trusted publisher:`basdotio/AgentGuard` + `release.yml`,环境留空,勾了 "Allow npm publish"
+  上各有一条 trusted publisher:`basdotio/bas-guard` + `release.yml`,环境留空,勾了 "Allow npm publish"
   (不勾就只能 `npm stage publish`,每版要人用 2FA 逐个批准,而且"npm 先于 GitHub release"那条顺序保证会失效)。
   **改 workflow 文件名、搬仓库、加新平台包,都要去 npmjs.com 重建/新增这几条**,否则 publish 报的是一个
   什么都没说的 ENEEDAUTH。它要 npm ≥ 11.5.1,所以 setup-node 是 24 不是 20,publish 步骤开头有一条

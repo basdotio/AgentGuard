@@ -1,8 +1,8 @@
 <!-- SPDX-License-Identifier: MIT -->
 # 加载时闸门
 
-`aguard hook` 在 **agent 加载一个 skill 之前**审它，凡是带发现的都会先问你一句。用的是
-`aguard check` 不带 `--llm` 时那套静态扫描 —— 不调模型、不联网、不执行任何东西 —— 只是把答案送到它真正值钱的
+`bas-guard hook` 在 **agent 加载一个 skill 之前**审它，凡是带发现的都会先问你一句。用的是
+`bas-guard check` 不带 `--llm` 时那套静态扫描 —— 不调模型、不联网、不执行任何东西 —— 只是把答案送到它真正值钱的
 那一刻。
 
 英文版：[install-gate.md](install-gate.md)。
@@ -10,9 +10,9 @@
 ## 安装
 
 ```bash
-aguard hook install             # 合并进 ~/.claude/settings.json，先自动备份
-aguard hook install --dry-run   # 只看改动，不写
-aguard hook uninstall           # 只删它自己那几条
+bas-guard hook install             # 合并进 ~/.claude/settings.json，先自动备份
+bas-guard hook install --dry-run   # 只看改动，不写
+bas-guard hook uninstall           # 只删它自己那几条
 ```
 
 装完重启 Claude Code —— hook 是会话启动时读的。
@@ -25,14 +25,14 @@ aguard hook uninstall           # 只删它自己那几条
 
 | 事件 | 行为 |
 |---|---|
-| `PreToolUse[Skill]` | 解析 skill、扫描、判断。已批准 → 完全沉默。干净且第一次见 → 一行提示，随后记住。**低于阈值但有 medium 及以上发现 → 每次加载都一行提示，不记住**（直到内容干净，或你 `aguard approve` 它）。发现达到阈值 → **拦住加载并问你**。 |
+| `PreToolUse[Skill]` | 解析 skill、扫描、判断。已批准 → 完全沉默。干净且第一次见 → 一行提示，随后记住。**低于阈值但有 medium 及以上发现 → 每次加载都一行提示，不记住**（直到内容干净，或你 `bas-guard approve` 它）。发现达到阈值 → **拦住加载并问你**。 |
 | `PostToolUse[Skill]` | 你在弹窗里同意了就记下来 —— 但要先重新读一遍目标，确认哈希仍是弹窗里给你看的那份。 |
 | `SessionStart` | 盘点整个 root，报告未批准且带发现的 artifact。**只告知，拦不住**。没有要报的东西时，它仍然会说明闸门**管不着**哪些面 —— 一个安静的环境，恰恰是主人最容易认为"全都被守住了"的那种。 |
 
 装完想确认它真的在工作：
 
 ```bash
-aguard hook status
+bas-guard hook status
 ```
 
 三种状态说得很清楚：**已激活** / **没装** / **注册了但已死**。第三种是这条命令存在的理由 ——
@@ -40,7 +40,7 @@ aguard hook status
 一台从没装过的机器）。那时候 Claude Code 每次都去执行一个不存在的命令，**每个 skill 都无审计放行，
 而那份安静跟"一切正常"长得一模一样**。退出码：激活 `0`，其余 `1`。
 
-**`aguard scan` 也会报这一种**（`GATE-001`）—— 没人会定期跑一个状态命令，而 `scan` 是大家本来
+**`bas-guard scan` 也会报这一种**（`GATE-001`）—— 没人会定期跑一个状态命令，而 `scan` 是大家本来
 就在跑的。它是维度 0 的 note，**不计分**：死掉的 hook 让*报告*不可信，不让任何 artifact 更危险。
 
 ## 为什么是加载时，不是安装时
@@ -57,10 +57,10 @@ skill 还可以是 `git clone` 进来的、`cp` 进来的、或者你在某个�
 ## 批准记的是内容，不是名字
 
 ```bash
-aguard approve ./some-skill        # 信任这一份确切的字节
-aguard approvals                   # 列出已信任的
-aguard approvals forget <hash>     # 撤销一条;前缀也行,包括闸门消息里打印的短哈希
-aguard approvals forget all
+bas-guard approve ./some-skill        # 信任这一份确切的字节
+bas-guard approvals                   # 列出已信任的
+bas-guard approvals forget <hash>     # 撤销一条;前缀也行,包括闸门消息里打印的短哈希
+bas-guard approvals forget all
 ```
 
 key 是 artifact 的 **canonical 哈希** —— 就是信誉库用的那个树哈希，跨机器、跨 checkout 稳定。批准
@@ -69,10 +69,10 @@ key 是 artifact 的 **canonical 哈希** —— 就是信誉库用的那个树�
 也没有什么命令需要你记得重跑。
 
 没有哈希的内容批准不了。解析失败的配置文件、扫描器打不开的文件，都没有可以拿来做批准 key 的哈希，
-所以 `aguard approve` 会拒绝它 —— 说明是哪个 artifact、为什么，退出码 2，状态文件不动。
-`aguard check <path> --json` 会列出说明哪里没读到的 note。
+所以 `bas-guard approve` 会拒绝它 —— 说明是哪个 artifact、为什么，退出码 2，状态文件不动。
+`bas-guard check <path> --json` 会列出说明哪里没读到的 note。
 
-闸门消息里的 `aguard check` 和 `aguard approve` 命令带的是 artifact 的**完整路径**,按 POSIX shell
+闸门消息里的 `bas-guard check` 和 `bas-guard approve` 命令带的是 artifact 的**完整路径**,按 POSIX shell
 的规则加引号,所以原样复制粘贴就能跑。给人读的那行路径超过 160 个字符会被截短(桌面版装的 skill
 通常比这更长),命令里的不会。路径里有控制字符或不可见字符时用 `$'…'` 转义写出,bash、zsh、ksh
 都认;加引号后超过 4096 字节的路径不给命令,改成一个占位符。
@@ -81,7 +81,7 @@ key 是 artifact 的 **canonical 哈希** —— 就是信誉库用的那个树�
 回答的弹窗背后的判决（最多一小时）：你的回答是在另一次 hook 调用里到达的，而这个文件是两次调用之间
 唯一共享的东西。**读不出来的状态文件会退化成
 "什么都问一遍"，而不是"什么都放行"** —— 这两个失败方向不对称：丢批准只是多弹几次窗，而信任一个读
-不懂的文件是白送一次静默放行。同理，`aguard hook` 绝不覆盖一个它没读懂的文件。
+不懂的文件是白送一次静默放行。同理，`bas-guard hook` 绝不覆盖一个它没读懂的文件。
 
 ## 你的权限模式会改变它的行为
 
@@ -95,7 +95,7 @@ Claude Code 的 `auto` / `acceptEdits` / `bypassPermissions` / `dontAsk` 这几�
 ```
 This session runs in permission mode "auto", which answers prompts automatically.
 An "ask" would have been accepted without you ever seeing it, so this was REFUSED instead.
-To load it anyway, decide outside the session: aguard approve "<path>"
+To load it anyway, decide outside the session: bas-guard approve "<path>"
 ```
 
 `default` 和 `plan` 不受影响(那两个会真的弹给人看);**不认识的新模式也不升级** —— 把 Claude Code
@@ -118,7 +118,7 @@ To load it anyway, decide outside the session: aguard approve "<path>"
   "我没审到"和"我审了没问题"是这整个工具存在的意义所在的那两个答案。
 - **干净路径那行提示可能看不见。** 它走的是 hook 协议的 `systemMessage` 字段,实测在
   VSCode 扩展里不渲染。这不影响拦截(拦截走的是 `permissionDecision`,一定生效),但意味着
-  "审过了、没问题"这件事你可能收不到反馈。想确认就跑 `aguard hook status` 和 `aguard approvals`
+  "审过了、没问题"这件事你可能收不到反馈。想确认就跑 `bas-guard hook status` 和 `bas-guard approvals`
   —— 后者会列出它审过并信任的每一份内容。
 - **静态方法的限制照旧**：README 里那份能力边界在这里全部成立 —— 闸门证明不了恶意、解不出混淆
   payload 的意图、抓不到零日。

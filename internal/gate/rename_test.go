@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: MIT
 package gate
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
 
 // TestLooksLikeOurs: the gate claims a registration as its own under the command's old name and
 // under its new one (P-082), including the release-asset names a downloaded binary keeps, and
@@ -39,6 +44,43 @@ func TestOnDiskNamesKeptAcrossRename(t *testing.T) {
 	} {
 		if got != want {
 			t.Errorf("on-disk name changed: %q, want %q", got, want)
+		}
+	}
+}
+
+// TestStatusNamesARegistrationUnderTheOldName: a gate registered as `aguard hook` keeps working
+// after the rename (P-082), and `hook status` says how to move it to the new name — it does not
+// move it (Q4): the operator decides. A registration under bas-guard gets no such line.
+func TestStatusNamesARegistrationUnderTheOldName(t *testing.T) {
+	for _, tc := range []struct {
+		registered string
+		wantHint   bool
+	}{{"aguard", true}, {"bas-guard", false}} {
+		root := t.TempDir()
+		dir := t.TempDir()
+		exe := filepath.Join(dir, tc.registered)
+		if err := os.WriteFile(exe, []byte("#!/bin/sh\n"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		plan, err := PlanInstall(root, HookCommand(exe))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := plan.Apply(); err != nil {
+			t.Fatal(err)
+		}
+		st, err := CheckStatus(root, filepath.Join(dir, "bas-guard"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !st.Active() {
+			t.Fatalf("%s: a live registration under either name must read as active: %+v", tc.registered, st.Events)
+		}
+		var out strings.Builder
+		st.Describe(&out)
+		got := strings.Contains(out.String(), "old command name aguard") && strings.Contains(out.String(), exe+" hook uninstall")
+		if got != tc.wantHint {
+			t.Errorf("registered as %s: switch hint present = %v, want %v:\n%s", tc.registered, got, tc.wantHint, out.String())
 		}
 	}
 }
