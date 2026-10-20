@@ -17,7 +17,27 @@ rate copied into prose goes stale on the next rule. `git tag` and the Releases p
 - Invariants: never executes scanned content, no cross-root symlink reads, secret redaction before storage (+ high-entropy fallback).
 - Single static binary (`CGO_ENABLED=0`), MIT + SPDX, CI, bilingual README.
 
-## v0.2.0 – v0.28.1
+## v0.2.0 – v0.29.0
+
+**v0.29.0 (2026-10-20) — the tool also answers to its new name, BAS Guard: `bas-guard`, `~/.config/bas-guard` and
+`BAS_GUARD_*` work, and everything under the old names keeps working.**
+
+"AgentGuard" and the command `aguard` are also used by other projects, including an unscoped npm package that installs a
+different program called `aguard`; the tool is being renamed to BAS Guard (P-082). This release is the compatibility half:
+nothing a user already set up changes. No rule, score formula, flag, exit code or JSON field changed: `rules`
+(`8fc8772b2951`), `judge-prompt` (`b851dfd5412b`) and `judge-excerpt` (9) on the `aguard version` line are the same as in
+v0.28.1. The binary is still called `aguard`; the name change of the command, the repository and the plugin comes in a
+later release.
+
+- **A gate registered under either name is recognised.** `hook status` and `hook uninstall` find an entry whose binary is
+  called `bas-guard` (or a `bas-guard-<os>-<arch>` download) as well as one called `aguard` (P-082).
+- **The config directory is `~/.config/bas-guard`** (or `$XDG_CONFIG_HOME/bas-guard`) for a first setup. A setup made
+  before this release keeps working from `~/.config/aguard`, which is read where it is when it is the only one; nothing
+  is moved. With both present the new one is used and `llm status` says the old one is ignored (P-082).
+- **`BAS_GUARD_LLM_KEY`, `BAS_GUARD_USAGE_LOG` and `BAS_GUARD_FAIL_ON`** (the pre-commit hook's threshold) are read first;
+  `AGUARD_LLM_KEY`, `AGUARD_USAGE_LOG` and `AGUARD_FAIL_ON` keep working (P-082).
+- **Names on disk are unchanged**: `.aguard-approvals.json`, `.aguardignore`, `.aguard-trash` and the settings backups
+  keep their names, so every approval, baseline and quarantine already there is still found.
 
 **v0.28.1 (2026-10-19) — the samples of a judge question are sent as one identical request, so an endpoint's prompt
 cache can serve the repeats.**
