@@ -15,7 +15,7 @@
    地址,而 Go 默认的策略只比主机名就带上 key,307/308 还把摘录重发给任何主机。
 
    其余入口**即使配置里开着判官也一个请求都不发**。钉住它的是 `TestZeroDial_OnlyTheJudgeConnects`
-   (`cmd/aguard/zero_dial_test.go`):`judge.Transport`(测试接缝,生产里恒为 nil)和 `http.DefaultTransport` 各换成
+   (`cmd/bas-guard/zero_dial_test.go`):`judge.Transport`(测试接缝,生产里恒为 nil)和 `http.DefaultTransport` 各换成
    一个只计数、拒绝请求的 RoundTripper,**先**断言上面三条路径确实被判官那个计数器看见(否则测试是瞎的),**再**断言
    零表里每个入口两个计数器都是 0:`scan`(含它追加的闸门存活探测;`clean` 用的是同一个 `scanEnv`)、不带 `--llm` 的下载项、`scan --llm` 但
    `llm.enabled: false`、`check`、`check --llm` 但 `llm.enabled: false`、`hook` 的 `PreToolUse`/`PostToolUse` 重扫/`SessionStart`、`approve`、`approvals`、
@@ -31,7 +31,7 @@
 
    **它只看得见经过 `judge.Transport` 或 `http.DefaultTransport` 的请求**,不是"进程内所有 `net/http` 请求"。看不见的,逐条:
    - **自带 `http.Transport` 的 client**:两个计数器都不经过。本模块的产品代码由 `TestZeroDial_NoClientOutsideTheJudge`
-     (`cmd/aguard/zero_dial_source_test.go`)从源码上堵住:`cmd/`、`internal/` 的非测试文件里,`internal/judge` 之外
+     (`cmd/bas-guard/zero_dial_source_test.go`)从源码上堵住:`cmd/`、`internal/` 的非测试文件里,`internal/judge` 之外
      不许出现 `net/http` 的 `Client`/`Transport` 类型;`internal/judge` 里不许出现 `http.Transport`,`http.Client` 只许是
      `NewHTTP` 里**唯一那一个** `http.Client{Transport: Transport, …}` 字面量的类型(`Transport` 的值就是接缝;
      另外只带重定向策略 `CheckRedirect`,它只决定下一跳发不发,发出去的每一跳都过同一个 `Transport`,

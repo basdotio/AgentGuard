@@ -46,7 +46,7 @@ var DimensionMap = map[string]string{
 	"Intent mismatch":       "",
 }
 
-// Adapter measures aguard. The binary is EXECUTED rather than linked: cmd/aguard.analyze is not
+// Adapter measures aguard. The binary is EXECUTED rather than linked: cmd/bas-guard.analyze is not
 // importable, and a copy of its steps here would drift the first time it gained one.
 type Adapter struct {
 	// Bin is the aguard binary under measurement.

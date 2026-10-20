@@ -26,7 +26,7 @@ conventions in `.claude/rules/conventions.md` explain the one dependency that tr
   home and never your own `~/.config/aguard/config.yaml` or `AGUARD_USAGE_LOG`; a test fails if a
   package anywhere in the module lacks it (`baselines/` is excepted, for the reason the guard names).
   A new default location — a file the binary reads or writes when nobody names one — gets a row in
-  `TestDefaultLocations_AreInsideTheTestHome` (`cmd/aguard`).
+  `TestDefaultLocations_AreInsideTheTestHome` (`cmd/bas-guard`).
 - A change to a detection rule runs against the corpus benchmark (`make bench`, needs a sibling
   checkout of `agent-artifact-corpus`) and states its before/after per source, with n. Numbers are
   never pooled across sources.

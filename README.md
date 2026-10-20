@@ -72,7 +72,7 @@ chmod +x "aguard-$PLAT" && sudo mv "aguard-$PLAT" /usr/local/bin/aguard
 git clone https://github.com/basdotio/AgentGuard && cd AgentGuard
 make build          # produces bin/aguard
 # or directly:
-CGO_ENABLED=0 go build -o bin/aguard ./cmd/aguard
+CGO_ENABLED=0 go build -o bin/aguard ./cmd/bas-guard
 ```
 
 Every release ships the four static binaries plus `SHA256SUMS.txt`, all built by

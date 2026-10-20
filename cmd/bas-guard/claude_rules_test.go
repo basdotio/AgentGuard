@@ -309,7 +309,7 @@ func TestClaudeRulesProblemsAreCaught(t *testing.T) {
 // TestEpochRuleLoadsWhereCoveredCodeIsEdited: detect.rulesEpoch is the only thing that moves the
 // rules version when deterministic detection outside builtinRules() changes, and nothing enforces
 // the bump. Its doc comment sits in internal/detect/rules_version.go, which a change to permcheck,
-// collect or cmd/aguard never opens — so the rule has to be in a rules file that loads when that
+// collect or cmd/bas-guard never opens — so the rule has to be in a rules file that loads when that
 // code is edited, on one line that names the constant, the table it does not cover and the
 // regeneration step.
 func TestEpochRuleLoadsWhereCoveredCodeIsEdited(t *testing.T) {
@@ -330,7 +330,7 @@ func TestEpochRuleLoadsWhereCoveredCodeIsEdited(t *testing.T) {
 		"internal/collect/imports.go",     // EXFIL-005
 		"internal/permcheck/permcheck.go", // PERM-*
 		"internal/gate/status.go",         // GATE-001, raised by scan
-		"cmd/aguard/main.go",              // analyze(): which stages run
+		"cmd/bas-guard/main.go",              // analyze(): which stages run
 	} {
 		if _, err := os.Stat(filepath.Join(repoRoot(), covered)); err != nil {
 			t.Fatalf("%s is gone; point this test at the file that now holds that check: %v", covered, err)

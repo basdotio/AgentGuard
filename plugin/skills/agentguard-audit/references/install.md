@@ -139,7 +139,7 @@ source repository.
 git clone https://github.com/basdotio/AgentGuard && cd AgentGuard
 make build                                        # -> bin/aguard
 # or, without make:
-CGO_ENABLED=0 go build -o bin/aguard ./cmd/aguard
+CGO_ENABLED=0 go build -o bin/aguard ./cmd/bas-guard
 ```
 
 ## Windows

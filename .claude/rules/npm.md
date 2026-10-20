@@ -71,7 +71,7 @@ paths:
 - **`npx` 和加载时闸门不能混用**,这是 npm 这条路新开的口子:`hook install` 注册绝对路径,
   npx 的路径在 npm 的 `_npx` 缓存里、之后会被回收,回收之后就是 `GATE-001`
   ——每个 skill 未经审计地加载,而外表和"受保护"一模一样。所以
-  `cmd/aguard/gate.go` 的 `ephemeralExeWarning` 在 install(含 `--dry-run`)和 `hook status`
+  `cmd/bas-guard/gate.go` 的 `ephemeralExeWarning` 在 install(含 `--dry-run`)和 `hook status`
   两处都会警告。**名单只有 `_npx`/`_cacache` 两项,别往里加宽泛的东西**:在正常
   `npm i -g` 路径上响的警告会教会运维跳过警告,而这条恰恰是他必须读的
   (`TestEphemeralExeWarningNamesOnlyDisposablePaths` 两个方向都钉住了)。

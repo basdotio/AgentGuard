@@ -6,7 +6,7 @@
 // user-level config.yaml, the key file, the reports folder), CLAUDE_CONFIG_DIR (the default
 // root) and AGUARD_USAGE_LOG (the file every judge run appends a line to). A test that leaves
 // them alone runs against whatever the developer has there: a config.yaml naming a provider
-// this build does not accept turned 71 tests in cmd/aguard red for reasons that had nothing to
+// this build does not accept turned 71 tests in cmd/bas-guard red for reasons that had nothing to
 // do with the code under test (P-075), and a usage log set in the developer's shell gained 42
 // lines of test traffic from one `go test ./...` (P-077). XDG_CACHE_HOME, XDG_STATE_HOME and
 // XDG_DATA_HOME are read by nothing today; they are moved too, so the first default that lands
@@ -16,7 +16,7 @@
 // four XDG base directories, CLAUDE_CONFIG_DIR or AGUARD_USAGE_LOG the binary was started with.
 // Every package in the module that has tests calls it from TestMain, baselines/ excepted for a
 // stated reason (TestEveryTestPackageIsolatesTheHome); TestIsolation_RealHomeConfigIsNotSeen in
-// cmd/aguard proves it on a planted config, and TestDefaultLocations_AreInsideTheTestHome there
+// cmd/bas-guard proves it on a planted config, and TestDefaultLocations_AreInsideTheTestHome there
 // asks the product for every default location it resolves and requires each under Home().
 //
 // This package is imported by tests only and must stay free of module imports: internal/config

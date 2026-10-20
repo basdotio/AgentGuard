@@ -23,7 +23,7 @@ import (
 var noPassKinds = []model.ArtifactKind{model.KindPlugin, model.KindDirectory, model.KindQuarantined}
 
 // AsksNothingOf reports whether the judge has no question for content of this kind. The LLM-000
-// note below and the --fail-on-llm gate (cmd/aguard failGate) both read it, so what the report
+// note below and the --fail-on-llm gate (cmd/bas-guard failGate) both read it, so what the report
 // discloses and what the exit code says cannot disagree.
 func AsksNothingOf(kind model.ArtifactKind) bool {
 	for _, k := range noPassKinds {
@@ -38,7 +38,7 @@ func AsksNothingOf(kind model.ArtifactKind) bool {
 // (AsksNothingOf) and, for a plugin, none of its children (score.Families, P-044) is of a kind that has
 // one. A plugin's skills, commands and agents are artifacts of their own with their kind's questions, so
 // a plugin holding one of them is answered through it; a plugin holding none is still asked nothing.
-// The LLM-000 note below and the --fail-on-llm gate (cmd/aguard unaskedTarget) both read this, so what
+// The LLM-000 note below and the --fail-on-llm gate (cmd/bas-guard unaskedTarget) both read this, so what
 // the report discloses and what the exit code says cannot disagree. Like AsksNothingOf it goes by kind:
 // a child of a judged kind with nothing to send counts as judged (P-038's decision 1).
 func Unasked(arts []model.ArtifactReport) []bool {

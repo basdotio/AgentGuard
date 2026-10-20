@@ -34,7 +34,7 @@
 
 ## 0. 先纠正一个前提：不是从零开始
 
-`cmd/aguard/adversarial_test.go` 里的 `scanAttacks()` **已经是一份标注语料**——30 个场景，
+`cmd/bas-guard/adversarial_test.go` 里的 `scanAttacks()` **已经是一份标注语料**——30 个场景，
 每行带 `wantCaught` / `wantQuiet` / `wantNote` / `wantMissed`+`knownGap`，
 `TestAdversarialCorpus_Coverage` 还强制"每行必须断言点什么"。标注语义、精度对照组、
 已知空洞取反断言——这三件最难想清楚的事都已经做完了。
@@ -508,7 +508,7 @@ expect:
 
 照 `hack/gen-rules` 的两段式，理由相同（**生成的文档才可能是真的**）：
 
-1. `cmd/aguard/benchmark_test.go` —— 复用现成的 `scanEnv` / `checkTarget`（adversarial harness
+1. `cmd/bas-guard/benchmark_test.go` —— 复用现成的 `scanEnv` / `checkTarget`（adversarial harness
    已经在用），遍历语料，把每个样本的实测 finding 集合 + 标注写进 `testdata/corpus/results.json`；
 2. `hack/gen-bench` —— 读 `results.json`，渲染 `docs/benchmark.md`；
 3. ~~`make bench` 跑这两步；CI 跑 `make bench` 并在 `git diff` 非空时失败。~~ → 见 §4.6：`make bench` 保留为入口，**CI 不卡**。

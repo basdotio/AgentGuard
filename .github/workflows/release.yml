@@ -57,7 +57,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
           set -euo pipefail
-          got=$(./dist/aguard-linux-amd64 version | awk '{print $2}')
+          got=$(./dist/bas-guard-linux-amd64 version | awk '{print $2}')
           if [ "$got" != "${GITHUB_REF_NAME}" ]; then
             echo "binary reports '$got' but the tag is '${GITHUB_REF_NAME}'" >&2
             exit 1
@@ -92,7 +92,7 @@ jobs:
       - name: upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: aguard-dist
+          name: bas-guard-dist
           path: dist/
 
       # npm goes BEFORE the GitHub release, because npm is the half that cannot be redone: a
@@ -154,4 +154,4 @@ jobs:
             --title "${GITHUB_REF_NAME}" \
             --generate-notes \
             --verify-tag \
-            dist/aguard-* dist/SHA256SUMS.txt
+            dist/bas-guard-* dist/aguard-* dist/SHA256SUMS.txt

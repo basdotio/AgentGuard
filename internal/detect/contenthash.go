@@ -102,7 +102,7 @@ const redacted = "<REDACTED>"
 // never overwritten, other kinds keep what they have, and an artifact standing for a config file
 // that did not parse keeps "" — it was never read, and "" is the key nothing can match.
 //
-// cmd/aguard.analyze calls this immediately after Run, before anything reads Hash.
+// cmd/bas-guard.analyze calls this immediately after Run, before anything reads Hash.
 func ContentHashes(root string, arts []model.ArtifactReport) []model.ArtifactReport {
 	// The scripts' anchor must not depend on how the root was typed: `--root ~/.claude/` made
 	// home == root and `aguard hash .` made home ".", so `~/…` scripts resolved somewhere else and

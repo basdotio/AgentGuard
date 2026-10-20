@@ -226,5 +226,5 @@ Stated because a gap you know about is a different thing from a gap you do not:
   across statements — both need a syntax tree, see the AST entry in `ROADMAP.md`.
 
 The full, current list with rationale lives in `ROADMAP.md` under "Known limitations",
-where each confirmed evasion is also asserted inverted in `cmd/aguard/adversarial_test.go`
+where each confirmed evasion is also asserted inverted in `cmd/bas-guard/adversarial_test.go`
 so that closing it fails a test.

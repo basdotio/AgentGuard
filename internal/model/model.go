@@ -204,7 +204,7 @@ type ArtifactReport struct {
 	// list. It is how a 100-score artifact says "trusted" rather than "clean": with a GOOD
 	// match its findings are suppressed and it is otherwise indistinguishable, in JSON and
 	// HTML, from an artifact that never had any. Audit metadata only — the verdict's effect on
-	// Findings and Score is applied once, in cmd/aguard.applyReputation, and the REP-GOOD /
+	// Findings and Score is applied once, in cmd/bas-guard.applyReputation, and the REP-GOOD /
 	// REP-BAD note is still the record a reader is meant to see first.
 	Reputation *ReputationMark `json:"reputation,omitempty"`
 	// Plugin is set on a plugin's skill, command or agent collected as an artifact of its own

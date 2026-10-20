@@ -163,7 +163,7 @@ func TestEveryTestPackageIsolatesTheHome(t *testing.T) {
 		t.Errorf("%s has tests but no TestMain running them through testhome.Main; add, in a _test.go file,\n"+
 			"\tfunc TestMain(m *testing.M) { os.Exit(testhome.Main(m)) }", dir)
 	}
-	// Positive control: the walk saw this package, cmd/aguard and the hack/ tools, or it proves
+	// Positive control: the walk saw this package, cmd/bas-guard and the hack/ tools, or it proves
 	// nothing; and every excluded tree exists, so a rename cannot leave a stale exclusion behind.
 	for _, dir := range []string{
 		filepath.Join("internal", "testhome"), filepath.Join("cmd", "aguard"),

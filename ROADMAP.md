@@ -121,7 +121,7 @@ progress, what is recorded but not scheduled, and the limitations we state out l
   judgement that keeps the generated-directory disclosure to one merged note. The honest fix
   is probably guidance (write `Bash(make test)`, fully specified) plus a rule narrow enough
   to name the case, not a blanket widening of `PERM-006`.
-- **Evasions confirmed by the adversarial corpus** (`cmd/aguard/adversarial_test.go`, each asserted inverted so closing one fails the test):
+- **Evasions confirmed by the adversarial corpus** (`cmd/bas-guard/adversarial_test.go`, each asserted inverted so closing one fails the test):
   - ~~The *contents* of a `GeneratedDir` are not scanned.~~ **CLOSED for the artifact's own build
     output.** One predicate was answering two questions, and they have different answers: "is this part
     of the artifact's IDENTITY" (hashing) and "should this be READ" (scanning). `collect/skip.go` now

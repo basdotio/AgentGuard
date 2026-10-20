@@ -38,11 +38,11 @@
 //
 // Usage (from the repo root, with a built binary):
 //
-//	go run ./hack/reputation-refresh -aguard bin/aguard                 # renew: report only
-//	go run ./hack/reputation-refresh -aguard bin/aguard -write          # renew: update the JSON
-//	go run ./hack/reputation-refresh -aguard bin/aguard -add plugin-dev # draft an entry + review sheet
-//	go run ./hack/reputation-refresh -aguard bin/aguard -add plugin-dev -write
-//	go run ./hack/reputation-refresh -aguard bin/aguard -add-desktop import-memory   # a Claude Desktop built-in
+//	go run ./hack/reputation-refresh -aguard bin/bas-guard                 # renew: report only
+//	go run ./hack/reputation-refresh -aguard bin/bas-guard -write          # renew: update the JSON
+//	go run ./hack/reputation-refresh -aguard bin/bas-guard -add plugin-dev # draft an entry + review sheet
+//	go run ./hack/reputation-refresh -aguard bin/bas-guard -add plugin-dev -write
+//	go run ./hack/reputation-refresh -aguard bin/bas-guard -add-desktop import-memory   # a Claude Desktop built-in
 //
 // `-add -write` appends the draft with an EMPTY reason. internal/reputation's tests then fail
 // until a human fills it in — deliberately: there is no path by which an unreasoned entry ends
@@ -81,7 +81,7 @@ type listFile struct {
 }
 
 func main() {
-	aguard := flag.String("aguard", "bin/aguard", "path to a built aguard binary")
+	aguard := flag.String("aguard", "bin/bas-guard", "path to a built aguard binary")
 	market := flag.String("marketplace", defaultMarketplace, "marketplace git URL, or a local checkout / marketplace.json path")
 	write := flag.Bool("write", false, "update reputation.json in place (default: report only)")
 	add := flag.String("add", "", "draft an allowlist entry for this marketplace plugin: scan it, print a review sheet and the entry; with -write, append it with reason left empty")

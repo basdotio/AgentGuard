@@ -66,7 +66,7 @@ chmod +x "aguard-$PLAT" && sudo mv "aguard-$PLAT" /usr/local/bin/aguard
 git clone https://github.com/basdotio/AgentGuard && cd AgentGuard
 make build          # 产出 bin/aguard
 # 或直接:
-CGO_ENABLED=0 go build -o bin/aguard ./cmd/aguard
+CGO_ENABLED=0 go build -o bin/aguard ./cmd/bas-guard
 ```
 
 每个 release 都带这四个静态二进制加一份 `SHA256SUMS.txt`,由

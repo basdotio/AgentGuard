@@ -20,7 +20,7 @@ import (
 func build(t *testing.T) string {
 	t.Helper()
 	bin := filepath.Join(t.TempDir(), "aguard")
-	out, err := exec.Command("go", "build", "-o", bin, "../../../cmd/aguard").CombinedOutput()
+	out, err := exec.Command("go", "build", "-o", bin, "../../../cmd/bas-guard").CombinedOutput()
 	if err != nil {
 		t.Skipf("cannot build aguard here: %v\n%s", err, out)
 	}

@@ -58,7 +58,7 @@ collect.CollectAll(root)                     纯读，产出 []ArtifactReport
 ```
 
 **关键耦合点：** `Apply` 的输入是一份完整的 `ScanResult`，不是独立重扫。CLI 里
-`cmd/aguard/main.go` 的 clean 分支先跑 `scanEnv`，再把结果交给 `Apply`。这意味着
+`cmd/bas-guard/main.go` 的 clean 分支先跑 `scanEnv`，再把结果交给 `Apply`。这意味着
 **扫描与移动之间存在时间窗口**，`resolveTarget` 里的 content-hash 复核就是为这个窗口存在的。
 
 ---

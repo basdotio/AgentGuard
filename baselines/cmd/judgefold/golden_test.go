@@ -142,7 +142,7 @@ func (j *scriptedJudge) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func buildAguard(t *testing.T) string {
 	t.Helper()
 	bin := filepath.Join(t.TempDir(), "aguard")
-	if out, err := exec.Command("go", "build", "-o", bin, "../../../cmd/aguard").CombinedOutput(); err != nil {
+	if out, err := exec.Command("go", "build", "-o", bin, "../../../cmd/bas-guard").CombinedOutput(); err != nil {
 		t.Skipf("cannot build aguard here: %v\n%s", err, out)
 	}
 	return bin

@@ -26,7 +26,7 @@ AgentGuard 把这些 artifact 从磁盘上读进来跑规则,产出一个可复�
 
 ## 流水线
 
-[`cmd/aguard/main.go`](../cmd/aguard/main.go) 里的 `analyze()` 是 `scan`/`check`/`clean` 的
+[`cmd/bas-guard/main.go`](../cmd/bas-guard/main.go) 里的 `analyze()` 是 `scan`/`check`/`clean` 的
 **唯一编排入口**。**各阶段的先后顺序是有意为之**,该函数的注释解释了原因:
 
 ```
@@ -68,8 +68,8 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
 | [`safeio`](../internal/safeio/) | 打开一个不是自己写的文件的唯一途径:非常规文件在 Open 前拒绝,大小由读强制 | 101 |
 | [`redact`](../internal/redact/) | 唯一的脱敏器:已知 token 前缀、键名/旗标自证的凭据、URL userinfo、高熵串。是叶子包,`collect` 也用它;`detect.Redact` 委托它 | 209 |
 | [`cmdline`](../internal/cmdline/) | 把路径印进一条要复制粘贴的命令的唯一途径:完整路径、按 POSIX shell 加引号、绝不截短。`gate.CommandArg` 委托它;报告里 `aguard approve` 那一步也用它 | 97 |
-| [`testhome`](../internal/testhome/) | 只给测试用:模块里每个测试二进制(`baselines/` 除外,理由写在守卫里)都在临时的 `HOME`、指向它里面的四个 XDG 基础目录、没有 `CLAUDE_CONFIG_DIR` 和 `AGUARD_USAGE_LOG` 的环境里跑,没有哪个测试读得到开发者自己的配置、往开发者的用量日志里追加;`TestEveryTestPackageIsolatesTheHome` 要求每个有测试的包都有调用它的 `TestMain`,`TestDefaultLocations_AreInsideTheTestHome`(`cmd/aguard`)要求二进制解析出的每个默认位置都在临时 home 里 | 125 |
-| [`cmd/aguard`](../cmd/aguard/) | CLI 接线、`analyze()`、下载目录那一趟、hook runner、`llm setup/test/status/preview` | — |
+| [`testhome`](../internal/testhome/) | 只给测试用:模块里每个测试二进制(`baselines/` 除外,理由写在守卫里)都在临时的 `HOME`、指向它里面的四个 XDG 基础目录、没有 `CLAUDE_CONFIG_DIR` 和 `AGUARD_USAGE_LOG` 的环境里跑,没有哪个测试读得到开发者自己的配置、往开发者的用量日志里追加;`TestEveryTestPackageIsolatesTheHome` 要求每个有测试的包都有调用它的 `TestMain`,`TestDefaultLocations_AreInsideTheTestHome`(`cmd/bas-guard`)要求二进制解析出的每个默认位置都在临时 home 里 | 125 |
+| [`cmd/bas-guard`](../cmd/bas-guard/) | CLI 接线、`analyze()`、下载目录那一趟、hook runner、`llm setup/test/status/preview` | — |
 
 有一处职责是被刻意切成两半的,值得先知道,因为两半都叫"permission":
 
@@ -282,7 +282,7 @@ v0.9.0 起:读用户文件一律经 `safeio`;存在但读不了的条目被披�
   分支、不变量 2 背后的符号链接约束依赖的原语在那边行为不同。源码构建可用;发布产物只有
   darwin/linux,直到有 CI matrix 在 Windows 上跑完整套测试。
 
-**已确认的规避手法**在 [`cmd/aguard/adversarial_test.go`](../cmd/aguard/adversarial_test.go) 里
+**已确认的规避手法**在 [`cmd/bas-guard/adversarial_test.go`](../cmd/bas-guard/adversarial_test.go) 里
 **反向断言** —— 补上任何一条都会让测试失败,于是缺口不会像 checklist 条目那样被忘掉。目前只剩一条:
 `ExcludeFromScan` 目录(vendored 或生成的树)的内容不扫 —— 那里的发现是别人依赖的问题 —— 而把 agent
 指进去的 artifact 会被报(`SUP-004`)。未知扩展名、无主顶层文件、同形字命令名曾在这张表上,现在都能抓到;
@@ -295,7 +295,7 @@ make build            # -> bin/aguard(CGO_ENABLED=0,version/commit/date 由 -ldf
 make test             # go test -race -cover ./...
 make lint             # golangci-lint
 make dist             # 发布二进制 + SHA256SUMS.txt(darwin/linux)
-go test -run TestFailGate ./cmd/aguard/     # 跑单个测试
+go test -run TestFailGate ./cmd/bas-guard/     # 跑单个测试
 ./bin/aguard scan --root ~/.claude          # 真机冒烟测试
 ```
 

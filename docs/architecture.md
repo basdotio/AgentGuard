@@ -29,7 +29,7 @@ the score is a relative risk signal, not a safety certificate.
 
 ## Pipeline
 
-[`cmd/aguard/main.go`](../cmd/aguard/main.go)'s `analyze()` is the single orchestration point
+[`cmd/bas-guard/main.go`](../cmd/bas-guard/main.go)'s `analyze()` is the single orchestration point
 for `scan`, `check` and `clean`. **The stage order is load-bearing**, and the function's
 comments say why:
 
@@ -75,8 +75,8 @@ Each package is an approximately pure stage over the immutable types in
 | [`safeio`](../internal/safeio/) | The one way a file the tool did not write is opened: non-regular files refused before Open, size capped by the read | 101 |
 | [`redact`](../internal/redact/) | The one secret redactor: known token prefixes, announced credentials, URL userinfo, high-entropy runs. A leaf, so `collect` uses it too; `detect.Redact` delegates | 209 |
 | [`cmdline`](../internal/cmdline/) | The one way a path is printed into a command meant for pasting: the full path quoted for a POSIX shell, never clipped. `gate.CommandArg` delegates; the report's `aguard approve` next step uses it | 97 |
-| [`testhome`](../internal/testhome/) | Tests only: every test binary in the module (`baselines/` excepted, for a reason the guard names) runs with a temporary `HOME`, the four XDG base directories inside it, and no `CLAUDE_CONFIG_DIR` or `AGUARD_USAGE_LOG`, so no test reads the developer's own config or appends to their usage log; `TestEveryTestPackageIsolatesTheHome` requires its `TestMain` in each package with tests, and `TestDefaultLocations_AreInsideTheTestHome` (`cmd/aguard`) requires every default location the binary resolves to lie inside the temporary home | 125 |
-| [`cmd/aguard`](../cmd/aguard/) | CLI wiring, `analyze()`, the Downloads pass, the gate runner, `llm setup/test/status/preview` | — |
+| [`testhome`](../internal/testhome/) | Tests only: every test binary in the module (`baselines/` excepted, for a reason the guard names) runs with a temporary `HOME`, the four XDG base directories inside it, and no `CLAUDE_CONFIG_DIR` or `AGUARD_USAGE_LOG`, so no test reads the developer's own config or appends to their usage log; `TestEveryTestPackageIsolatesTheHome` requires its `TestMain` in each package with tests, and `TestDefaultLocations_AreInsideTheTestHome` (`cmd/bas-guard`) requires every default location the binary resolves to lie inside the temporary home | 125 |
+| [`cmd/bas-guard`](../cmd/bas-guard/) | CLI wiring, `analyze()`, the Downloads pass, the gate runner, `llm setup/test/status/preview` | — |
 
 Two responsibilities are split in a way worth knowing up front, because both halves say
 "permission":
@@ -372,7 +372,7 @@ structure only; and the report names the worst artifact beside the mean.
   a CI matrix runs the suite on Windows.
 
 **Confirmed evasions** are asserted *inverted* in
-[`cmd/aguard/adversarial_test.go`](../cmd/aguard/adversarial_test.go) — closing one makes a
+[`cmd/bas-guard/adversarial_test.go`](../cmd/bas-guard/adversarial_test.go) — closing one makes a
 test fail, so a gap cannot be forgotten the way a checklist item can. Currently one: the contents
 of an `ExcludeFromScan` directory (a vendored or generated tree) are not scanned — its findings
 would be about somebody else's dependency — while the artifact that directs the agent into it is
@@ -386,7 +386,7 @@ make build            # -> bin/aguard (CGO_ENABLED=0, version/commit/date via -l
 make test             # go test -race -cover ./...
 make lint             # golangci-lint
 make dist             # release binaries + SHA256SUMS.txt (darwin/linux)
-go test -run TestFailGate ./cmd/aguard/     # one test
+go test -run TestFailGate ./cmd/bas-guard/     # one test
 ./bin/aguard scan --root ~/.claude          # the real-machine smoke test
 ```
 

@@ -502,7 +502,7 @@ llm:
 ## 12. 项目结构(Go 包)
 
 ```
-cmd/aguard/          # main + cobra 命令;analyze() 是 scan/check/clean 唯一编排入口;inbox.go 是下载目录那条线
+cmd/bas-guard/          # main + cobra 命令;analyze() 是 scan/check/clean 唯一编排入口;inbox.go 是下载目录那条线
 internal/collect/    # 每类 artifact 的 collector(含 desktop.go 桌面版仓库、connectors.go、environment.go 沙箱识别、unowned.go)
 internal/parse/      # frontmatter/yaml/json 解析
 internal/detect/     # 静态引擎:rules_data.go 规则表、logical.go 词法归一、shape.go 形状检查、comments.go、redact.go(委托)、owasp.go

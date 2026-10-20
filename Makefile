@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # AgentGuard build. Pure Go, single static binary (CGO disabled).
-BIN     := bin/aguard
-PKG     := ./cmd/aguard
+BIN     := bin/bas-guard
+PKG     := ./cmd/bas-guard
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 COMMIT  := $(shell git rev-parse --short HEAD 2>/dev/null || echo none)
 DATE    := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -125,9 +125,12 @@ dist:
 	@for t in $(DIST_TARGETS); do \
 	  os=$${t%/*}; arch=$${t#*/}; ext=; [ $$os = windows ] && ext=.exe; \
 	  echo "  $$os/$$arch"; \
-	  GOOS=$$os GOARCH=$$arch go build -ldflags "$(LDFLAGS)" -o dist/aguard-$$os-$$arch$$ext $(PKG) || exit 1; \
+	  GOOS=$$os GOARCH=$$arch go build -ldflags "$(LDFLAGS)" -o dist/bas-guard-$$os-$$arch$$ext $(PKG) || exit 1; \
+	  cp dist/bas-guard-$$os-$$arch$$ext dist/aguard-$$os-$$arch$$ext || exit 1; \
 	done
-	@cd dist && $(SHA256) aguard-* > SHA256SUMS.txt && echo "  SHA256SUMS.txt"
+	@# aguard-* are byte-identical copies under the pre-rename name (P-082), so a
+	@# releases/latest/download/aguard-<os>-<arch> link written before the rename keeps working.
+	@cd dist && $(SHA256) bas-guard-* aguard-* > SHA256SUMS.txt && echo "  SHA256SUMS.txt"
 
 # npm distribution. THE package name lives here and nowhere else: the launcher derives the
 # per-platform package names from its own package.json at run time, and the templates take it

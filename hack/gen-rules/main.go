@@ -286,7 +286,7 @@ func main() {
 	p("- Chained expressions (`Buffer.from(secret).toString('base64')`) and following a value\n")
 	p("  across statements — both need a syntax tree, see the AST entry in `ROADMAP.md`.\n\n")
 	p("The full, current list with rationale lives in `ROADMAP.md` under \"Known limitations\",\n")
-	p("where each confirmed evasion is also asserted inverted in `cmd/aguard/adversarial_test.go`\n")
+	p("where each confirmed evasion is also asserted inverted in `cmd/bas-guard/adversarial_test.go`\n")
 	p("so that closing it fails a test.\n")
 
 	out := "docs/rules.md"

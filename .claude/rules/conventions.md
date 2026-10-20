@@ -48,10 +48,10 @@
   `excludedTrees` 里)都有 `func TestMain(m *testing.M) { os.Exit(testhome.Main(m)) }`,`HOME` 和四个 XDG 基础目录
   (`CONFIG`/`CACHE`/`STATE`/`DATA`)指向临时目录、`CLAUDE_CONFIG_DIR` 和 `AGUARD_USAGE_LOG` 清掉 —— 后者以前没清,
   开发者 shell 里设了它,一次 `go test ./...` 就往真用量日志里追加 42 行测试流量。**加一个默认位置**(没人指定时二进制
-  自己去读写的文件或目录),就在 `TestDefaultLocations_AreInsideTheTestHome`(`cmd/aguard`)里加一行:它调产品自己的
+  自己去读写的文件或目录),就在 `TestDefaultLocations_AreInsideTheTestHome`(`cmd/bas-guard`)里加一行:它调产品自己的
   解析函数,要求每个答案都在 `testhome.Home()` 之下;只比环境变量的检查看不见用量日志那种缺口。
   以前 `--config` 为空的测试读的是真机的 `~/.config/aguard/config.yaml`,一个本构建不认的 `llm.provider` 就让
-  cmd/aguard 71 个测试全红。新包少了它,`TestEveryTestPackageIsolatesTheHome` 红;`TestIsolation_RealHomeConfigIsNotSeen`
+  cmd/bas-guard 71 个测试全红。新包少了它,`TestEveryTestPackageIsolatesTheHome` 红;`TestIsolation_RealHomeConfigIsNotSeen`
   在"真" home 里放一份坏配置重跑测试二进制来证明它。**测试起的 `go build`、`git` 用 `testhome.OriginalEnviron()`**
   (缓存、GOENV、git 配置在真 home 下);**跑 aguard 本身的子进程永远不用它**。`make verify` 的插件自扫同理,
   `HOME`/`XDG_CONFIG_HOME` 指向 `bin/` 下一个没人创建的路径。

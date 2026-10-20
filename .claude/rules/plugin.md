@@ -64,7 +64,7 @@ paths:
   marketplace 条目里的 `version` 不是可选的装饰:桌面版的更新检查读的是账号级名单里的 `availableVersion`,
   服务端从 marketplace.json 条目算,条目没写 version 就永远显示 "No changes since the last release"
   (2026-09-05 真机确认;CLI 那边读 plugin.json,两边不一致时 CLI 静默取 plugin.json)。
-  `TestMarketplaceEntryVersionMatchesPlugin` 钉住两个文件相等,以及 marketplace 名等于 `cmd/aguard/version.go` 的
+  `TestMarketplaceEntryVersionMatchesPlugin` 钉住两个文件相等,以及 marketplace 名等于 `cmd/bas-guard/version.go` 的
   `homeMarketplace`(`AgentGuard`)。skill/command 是纯文本,没有构建步骤,也**不进 canonical 哈希的排除名单**(它们不是
   生成物)。
 - **`aguard version` 的升级提示按"这一份安装"给命令,不写死 marketplace**(2026-09-30)。原来是字面量 `agentguard@guard`:

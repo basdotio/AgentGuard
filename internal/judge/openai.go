@@ -97,7 +97,7 @@ func (c *HTTPClient) TemperatureOmitted() bool { return c.noTemperature.Load() }
 // http.DefaultTransport, exactly what the bare &http.Client{} this replaced used.
 //
 // It exists for invariant #1 (no network except the explicitly enabled judge): the commands pass
-// a nil client, so this is the one point every judge request crosses, and a test in cmd/aguard
+// a nil client, so this is the one point every judge request crosses, and a test in cmd/bas-guard
 // swaps it for a counter to prove which entry points send anything and which send nothing. A
 // caller that supplies its own *http.Client is not affected by it.
 var Transport http.RoundTripper

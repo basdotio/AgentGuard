@@ -668,7 +668,7 @@ func readMCPServers(path, nameSuffix string, decode mcpServerDecoder, env *model
 // SettingsEnvName is the artifact name for a settings file's `env` block. It is a
 // KindPermission artifact — the block configures the agent's process, which is a permission
 // decision — but it is NOT a permissions list, so the permission auditor must not be run on it a
-// second time; cmd/aguard.analyze and detect key on this name to tell the two apart.
+// second time; cmd/bas-guard.analyze and detect key on this name to tell the two apart.
 const SettingsEnvName = "settings env"
 
 var settingsScopes = []struct{ file, nameSuffix string }{
