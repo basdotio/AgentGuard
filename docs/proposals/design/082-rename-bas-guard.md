@@ -44,22 +44,25 @@ Stage 1 (compatibility release):
 
 - [ ] A binary called `bas-guard` and the same binary called `aguard` behave identically.
   `TestCommandNameAgnostic` runs both and diffs `version`, `scan --json`, `check --json` and `hook` replies.
-- [ ] The gate recognises its own entries under both names. `TestLooksLikeOurs` covers
-  `/x/aguard hook`, `/x/bas-guard hook`, `/x/aguard.exe hook`, `/x/bas-guard hook status`, and the npm launcher paths.
-  `hook status` and `hook uninstall` find an entry installed under either name, and `hook install` replaces an old
-  `aguard` entry instead of adding a second one. Reverse assertion: an unrelated command such as `/x/aguardian hook`
-  or `/x/guard hook` is still **not** ours.
+- [ ] The gate recognises its own entries under both names (`looksLikeOurs`, `internal/gate/status.go`).
+  `TestLooksLikeOurs` covers both bare names, quoted paths with spaces, the release-asset names
+  (`aguard-linux-amd64`, `bas-guard-darwin-arm64`) and the npm platform-package paths. Reverse assertion:
+  `/x/guard hook`, `/x/basguard hook`, `/x/other-tool hook` and `/x/bas-guard scan` are **not** ours.
+  (`hook install` matches the exact command, as it always has; telling an `aguard` registration how to switch is
+  stage 2, Q4.)
 - [ ] Config directory: the new directory is `$XDG_CONFIG_HOME/bas-guard`, else `~/.config/bas-guard`. When it is
   absent and the old `aguard` directory exists, config, the key file and reports are read from the old one, and
-  nothing is moved without the operator. `TestConfigDirFallback` has four rows: only new, only old, both (new wins,
-  and a note says the old one is ignored), neither.
+  nothing is moved without the operator. `TestConfigDirFallback` has four rows: only new, only old, both (new wins),
+  neither. With both present, `llm status` names the old one as ignored (`TestLLMStatus_NamesIgnoredLegacyDir`).
 - [ ] Environment: every `AGUARD_*` name the tool or its scripts read also has a `BAS_GUARD_*` form, and the new
   form wins when both are set. Today that is three names: `AGUARD_USAGE_LOG` (`cmd/aguard/usagelog.go`),
   `AGUARD_LLM_KEY` (the default key variable in `internal/config/config.go`), and `AGUARD_FAIL_ON` (`hack/pre-commit`).
-  `TestEnvAliases` has one row for each Go reader, and the pre-commit hook's harness covers the third.
-- [ ] On-disk names in the scan root (`.aguard-approvals.json`, `.aguardignore`, `.aguard-trash`,
-  `settings.json.aguard-bak`) keep their names. They are **not** renamed in this proposal (Out of scope). A test pins
-  that an approval written by v0.28.x is still honoured: `TestApprovalsSurviveRename`.
+  `TestEnvAliases`, `TestAPIKeyFromRenamedEnv` and `TestUsageLog_RenamedEnv` cover the Go readers. The pre-commit
+  hook has no test harness, so the review package shows its three cases (neither set, old only, both set).
+- [ ] On-disk names in the scan root keep their names. They are **not** renamed in this proposal (Out of scope), so
+  every approval store, baseline, quarantine and settings backup already on disk is still found.
+  `TestOnDiskNamesKeptAcrossRename` (gate: `.aguard-approvals.json`, `.aguard-bak`, `.aguard-bak.prev`),
+  `TestTrashDirKeptAcrossRename` (collect) and `TestIgnoreFileKeptAcrossRename` (clean) pin them.
 - [ ] `make verify` is green. The zero-dial tables gain no row: renaming adds no network path.
 
 Stage 2 (rename release):
@@ -115,11 +118,10 @@ Stage 1, one PR (proposed v0.29.0):
 
 | W | In one sentence | Commit message |
 |---|---|---|
-| 1 | Tests first: both command names, gate ownership, config-dir fallback, env aliases, approvals survive | `test: the tool answers to bas-guard and aguard alike (P-082)` |
-| 2 | Gate recognises `bas-guard` and `aguard` entries; install replaces the old one | `gate: an entry under either name is ours, and install replaces the old one (P-082)` |
-| 3 | Config dir `bas-guard` with read-only fallback to `aguard` | `config: ~/.config/bas-guard, falling back to the aguard directory (P-082)` |
-| 4 | `BAS_GUARD_*` environment aliases | `config: BAS_GUARD_* environment variables, AGUARD_* still read (P-082)` |
-| 5 | Docs: both names documented, nothing called deprecated yet | `docs: the bas-guard name alongside aguard (P-082)` |
+| 1 | Tests first: both command names, gate ownership, config-dir fallback, env aliases, on-disk names kept | `test: the tool answers to bas-guard and aguard alike (P-082)` |
+| 2 | Gate recognises `bas-guard` and `aguard` entries | `gate: a registration under either name is ours (P-082)` |
+| 3 | Config dir `bas-guard` with fallback to `aguard`, `llm status` note, and `BAS_GUARD_*` environment names | `config: ~/.config/bas-guard and BAS_GUARD_* names, the aguard ones still read (P-082)` |
+| 4 | Docs: the new directory and variable names, nothing called deprecated yet | `docs: the bas-guard directory and BAS_GUARD_ variables (P-082)` |
 
 Stage 2, one PR (proposed v0.30.0), after the maintainer renames the repository on GitHub:
 
@@ -134,17 +136,17 @@ Stage 2, one PR (proposed v0.30.0), after the maintainer renames the repository 
 
 ## Open questions
 
-1. **Two PRs and two releases, or one?** Recommended: two. Stage 1 can ship before the GitHub rename and is fully
+1. **Two PRs and two releases, or one?** **Decided (2026-10-20)**: two, as recommended. Recommended: two. Stage 1 can ship before the GitHub rename and is fully
    reversible. Stage 2 needs the rename to have happened (the module path must equal the repository path).
-2. **Copyright holder** in LICENSE and NOTICE: "AgentGuard authors" → "BAS Guard authors"? Recommended: yes, as
+2. **Copyright holder** in LICENSE and NOTICE: "AgentGuard authors" → "BAS Guard authors"? **Decided (2026-10-20)**: yes, in stage 2, as recommended. Recommended: yes, as
    "BAS Guard authors (formerly AgentGuard authors)". A holder name is not a licence change.
-3. **How long do the old names last?** Recommended: the `aguard` alias, the `aguard-*` release assets, the old config
+3. **How long do the old names last?** **Decided (2026-10-20)**: as recommended. Recommended: the `aguard` alias, the `aguard-*` release assets, the old config
    directory and the `AGUARD_*` variables stay for at least two minor releases **and** three months after stage 2,
    whichever is later. Removal is its own proposal with a release note one version ahead.
-4. **Should `hook install` move existing registrations to the new command automatically?** Recommended: no. The gate
+4. **Should `hook install` move existing registrations to the new command automatically?** **Decided (2026-10-20)**: no, as recommended; the `hook status` line ships in stage 2. Recommended: no. The gate
    keeps working through the alias. `hook status` adds one line ("registered as aguard; `bas-guard hook install`
    switches it"), and the operator decides.
-5. **On-disk names** (`.aguard-*`): leave them for good, or plan new names later? Recommended: leave them. They are
+5. **On-disk names** (`.aguard-*`): leave them for good, or plan new names later? **Decided (2026-10-20)**: leave them, as recommended. Recommended: leave them. They are
    implementation details in the operator's own directory, and renaming them buys nothing but migration risk.
 
 ## Done
