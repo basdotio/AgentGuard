@@ -27,7 +27,7 @@ The maintainer chose the name **BAS Guard**:
 | Go module path | `github.com/basdotio/AgentGuard` | **`github.com/basdotio/bas-guard`** |
 | Command | `aguard` | **`bas-guard`**, with `aguard` kept as an alias during the transition |
 | npm | `@bas.io/guard`, bin `aguard` | `@bas.io/guard` unchanged, bin `bas-guard` (plus `aguard`); unscoped **`bas-guard`** published as a thin alias, so `npx bas-guard` works and the name cannot be squatted |
-| Plugin | marketplace `AgentGuard`, plugin `aguard`, commands `/aguard-*`, skills `agentguard-*` | marketplace and plugin **`bas-guard`**, commands `/bas-guard-*`, skills `bas-guard-*` |
+| Plugin | marketplace `AgentGuard`, plugin `aguard`, commands `/aguard-*`, skills `agentguard-*` | marketplace **`bas-guard`**, plugin **`basguard`** (Q6), commands `/bas-guard-*`, skills `bas-guard-*` |
 
 ## Initial direction
 
@@ -75,10 +75,14 @@ Stage 2 (rename release):
 - [ ] npm: `@bas.io/guard` installs both `bas-guard` and `aguard`, and the launcher's stdio and exit-code contract is
   unchanged (its existing tests pass). The unscoped `bas-guard` package depends on `@bas.io/guard` at the same version
   and only forwards to it.
-- [ ] Plugin: `.claude-plugin/marketplace.json` declares `bas-guard` with one plugin `bas-guard`. Commands and skills
-  are renamed, and their text uses `bas-guard`. `version` tells an install under the old plugin name `aguard` (or the
-  older `agentguard`) to switch, using the mechanism `legacyBundleName` already has (`cmd/aguard/version.go`).
-  `TestMarketplaceEntryVersionMatchesPlugin` and the plugin self-scan pass.
+- [ ] Plugin: `.claude-plugin/marketplace.json` declares marketplace `bas-guard` with one plugin `basguard` (Q6).
+  Commands and skills are renamed, and their text uses `bas-guard`, falling back to an `aguard` binary from before the
+  rename. `version` tells an install under `aguard` or `agentguard` to switch (`legacyBundles`,
+  `cmd/bas-guard/version.go`); from the pre-rename marketplace the command uninstalls, removes marketplace `AgentGuard`,
+  adds `basdotio/bas-guard` and installs `basguard@bas-guard`. `TestPluginNameCannotCollideInTheInstallCache` also
+  checks `AgentGuard`; `TestPluginVersionLine_LegacyName` covers both old names; the plugin self-scan passes.
+- [ ] `hook status` names a registration under `aguard` and says how to switch, without moving it (Q4):
+  `TestStatusNamesARegistrationUnderTheOldName`.
 - [ ] Prose: README pair, docs pairs, CONTRIBUTING, NOTICE, report headers (`internal/report/reader.go`,
   `markdown.go`), `--help`, the `version` line and the generated `docs/rules.md` say BAS Guard and `bas-guard`. The
   `version` line keeps its field order: the release workflow reads `$2` as the version.
@@ -130,8 +134,9 @@ Stage 2, one PR (proposed v0.30.0), after the maintainer renames the repository 
 | 6 | Module path `github.com/basdotio/bas-guard` everywhere, `go 1.23.5` kept | `chore: module path github.com/basdotio/bas-guard (P-082)` |
 | 7 | `cmd/bas-guard`, build and release produce both binary names | `build: bas-guard binaries, aguard copies for the transition (P-082)` |
 | 8 | npm launcher installs both bins; unscoped `bas-guard` alias package | `npm: bas-guard bin and an unscoped bas-guard alias package (P-082)` |
-| 9 | Plugin, marketplace, commands and skills renamed; legacy-name hint extended | `plugin: bas-guard, and a hint for installs under aguard (P-082)` |
-| 10 | Prose, report headers, help, version line, generated rules doc | `docs: BAS Guard (P-082)` |
+| 9 | Plugin, marketplace, commands and skills renamed; legacy-name hint extended | `plugin: basguard in marketplace bas-guard, and a switch hint for installs under aguard (P-082)` |
+| 10a | Help, messages, reports, the version line (comments and string literals only) | `cli: BAS Guard and bas-guard in help, messages, reports and the version line (P-082)` |
+| 10b | Prose, a rename section in the README pair, the plugin's `aguard` fallback, `hook status` hint, LICENSE holder | `docs: BAS Guard, with a rename section and the plugin's fallback to an aguard binary (P-082)` |
 | 11 | Release record and CHANGELOG with the migration steps | `proposals: P-082 release record (P-082)` |
 
 ## Open questions
@@ -149,10 +154,18 @@ Stage 2, one PR (proposed v0.30.0), after the maintainer renames the repository 
 5. **On-disk names** (`.aguard-*`): leave them for good, or plan new names later? **Decided (2026-10-20)**: leave them, as recommended. Recommended: leave them. They are
    implementation details in the operator's own directory, and renaming them buys nothing but migration risk.
 
+6. **Plugin name** (asked during stage 2). The marketplace name must equal the repository name, `bas-guard`, for
+   Claude Desktop (`.claude/rules/plugin.md`), and the plugin name must not equal it: equal up to case fails to install
+   on macOS, and exactly equal makes every update `rm -rf` the whole marketplace cache (issues/022, option C).
+   **Decided (2026-10-21)**: `basguard`, as recommended (`/plugin install basguard@bas-guard`).
+
 ## Done
 
 ```
-Merged: (stage 1) PR #104 (2026-10-20) · (stage 2) …
-Released: (stage 1) v0.29.0 · (stage 2) …
-Evidence: …
+Merged: (stage 1) PR #104 (2026-10-20) · (stage 2) PR <number> (find the shas with git log --grep P-082)
+Released: (stage 1) v0.29.0 · (stage 2) v0.30.0 (fill in after the release)
+Evidence: TestCommandNameAgnostic (cmd/bas-guard/rename_test.go): aguard and bas-guard give byte-identical version, check, scan
+Evidence: version line unchanged across the rename: rules=8fc8772b2951 judge-prompt=b851dfd5412b judge-excerpt=9 (as in v0.29.0)
+Evidence: hash domains, judge fence, on-disk names, SARIF tool name: 0 changed lines against main; baselines/: imports and the cmd path only, baselines/results untouched
+Evidence: make dist: 8 binaries (bas-guard-* and byte-identical aguard-*), 8/8 in SHA256SUMS.txt; npm-dist lays out 6 packages, a local install runs bas-guard, aguard and npx bas-guard
 ```
