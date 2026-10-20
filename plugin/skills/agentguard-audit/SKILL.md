@@ -175,7 +175,8 @@ Everything else in the folder was counted, never read, never named — say so if
 
 Every full scan should carry `--report`: it writes a self-contained HTML report (score gauge,
 findings grouped by artifact with line-level evidence, the cleanup section) to
-`~/.config/aguard/reports/scan-<timestamp>.html` and prints the path. It costs nothing and it is
+`~/.config/bas-guard/reports/scan-<timestamp>.html` (or `~/.config/aguard/reports/` on a setup made before the
+rename to BAS Guard) and prints the path. It costs nothing and it is
 the form a non-technical user can actually read, keep and compare with last month's.
 
 - **A binary older than 0.4.4 does not know `--report`** and rejects the flag. If that happens,
@@ -184,7 +185,7 @@ the form a non-technical user can actually read, keep and compare with last mont
 - **On a routine scan, do not open it unasked.** End with one line — where it is, and "say
   'open the report' to view it". A browser window on every scan is noise.
 - **When asked, open it**: `open <path>` on macOS, `xdg-open <path>` on Linux.
-- **Say the trend when there is one.** Reports accumulate in `~/.config/aguard/reports/`, so
+- **Say the trend when there is one.** Reports accumulate in the directory the scan printed, so
   after a `--report` scan check for the previous report and put the two scores side by side —
   `grep -oE '[0-9]+/100' <previous-report> | head -1` recovers its headline score. Attribute
   the change: findings fixed or artifacts removed move the number honestly; artifacts merely
