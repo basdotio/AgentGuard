@@ -36,7 +36,7 @@ v0.28.1.
 ## Done
 
 ```
-Merged: PR <number> (2026-10-20; find the sha with git log --grep P-083)
+Merged: PR #105 (2026-10-20; find the sha with git log --grep P-083)
 Released: v0.29.0
 Evidence: make verify: all gates passed on the branch; go1.23.5, go.mod and go.sum identical to v0.28.1
 Evidence: TestMarketplaceEntryVersionMatchesPlugin green with both files at 0.29.0
