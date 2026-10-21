@@ -21,7 +21,7 @@ func TestBareName_IsNotADirective(t *testing.T) {
 		return Verdict{Flagged: true, Severity: "high", Category: "concealed-directive", Summary: "ignore previous instructions",
 			Evidence: "claude-ignore", BarrierEvidence: "claude-ignore"}, nil
 	}}
-	notes, _ := Run(context.Background(), client, arts, Options{Concurrency: 1})
+	Run(context.Background(), client, arts, Options{Concurrency: 1})
 	if f := findingByRule(arts[0], "LLM-007"); f != nil {
 		t.Fatalf("a bare name raised LLM-007: %+v", f)
 	}
@@ -37,7 +37,7 @@ func TestBareName_IsNotADirective(t *testing.T) {
 	client = &scriptedClient{answer: func(r Request) (Verdict, error) {
 		return Verdict{Flagged: false, BarrierEvidence: "claude-ignore"}, nil
 	}}
-	notes, _ = Run(context.Background(), client, arts, Options{Concurrency: 1})
+	notes, _ := Run(context.Background(), client, arts, Options{Concurrency: 1})
 	noted := false
 	for _, n := range notes {
 		noted = noted || (n.RuleID == "LLM-005" && strings.Contains(n.Why, "a name, not an instruction"))
