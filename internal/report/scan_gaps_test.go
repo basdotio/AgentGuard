@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // lowResult is a Low-band result over one clean skill, the base every row below adds one thing to.

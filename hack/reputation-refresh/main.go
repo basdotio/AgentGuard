@@ -9,7 +9,7 @@
 // the entry still looks curated.
 //
 // Renewal runs under one rule: the marketplace's new pin is accepted only if the plugin's bytes
-// are unchanged (same canonical hash — nothing to re-read) or `aguard check` on it produces the
+// are unchanged (same canonical hash — nothing to re-read) or `bas-guard check` on it produces the
 // SAME finding fingerprint the human review covered, meaning every finding present is one a
 // person already read and explained. Anything added or removed fails closed — the entry is
 // left alone, the tool exits 1, and the diff is printed for whoever reviews next. It never
@@ -38,11 +38,11 @@
 //
 // Usage (from the repo root, with a built binary):
 //
-//	go run ./hack/reputation-refresh -aguard bin/aguard                 # renew: report only
-//	go run ./hack/reputation-refresh -aguard bin/aguard -write          # renew: update the JSON
-//	go run ./hack/reputation-refresh -aguard bin/aguard -add plugin-dev # draft an entry + review sheet
-//	go run ./hack/reputation-refresh -aguard bin/aguard -add plugin-dev -write
-//	go run ./hack/reputation-refresh -aguard bin/aguard -add-desktop import-memory   # a Claude Desktop built-in
+//	go run ./hack/reputation-refresh -aguard bin/bas-guard                 # renew: report only
+//	go run ./hack/reputation-refresh -aguard bin/bas-guard -write          # renew: update the JSON
+//	go run ./hack/reputation-refresh -aguard bin/bas-guard -add plugin-dev # draft an entry + review sheet
+//	go run ./hack/reputation-refresh -aguard bin/bas-guard -add plugin-dev -write
+//	go run ./hack/reputation-refresh -aguard bin/bas-guard -add-desktop import-memory   # a Claude Desktop built-in
 //
 // `-add -write` appends the draft with an EMPTY reason. internal/reputation's tests then fail
 // until a human fills it in — deliberately: there is no path by which an unreasoned entry ends
@@ -63,8 +63,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/reputation"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/reputation"
 )
 
 const (
@@ -81,7 +81,7 @@ type listFile struct {
 }
 
 func main() {
-	aguard := flag.String("aguard", "bin/aguard", "path to a built aguard binary")
+	aguard := flag.String("aguard", "bin/bas-guard", "path to a built bas-guard binary")
 	market := flag.String("marketplace", defaultMarketplace, "marketplace git URL, or a local checkout / marketplace.json path")
 	write := flag.Bool("write", false, "update reputation.json in place (default: report only)")
 	add := flag.String("add", "", "draft an allowlist entry for this marketplace plugin: scan it, print a review sheet and the entry; with -write, append it with reason left empty")
@@ -286,7 +286,7 @@ func runAdd(aguard, market, name string, write bool, out io.Writer) error {
 }
 
 // printReviewSheet lists every scoring finding with its evidence, worst first, so the reviewer
-// reads exactly what the entry will suppress. Snippets come from aguard already redacted.
+// reads exactly what the entry will suppress. Snippets come from bas-guard already redacted.
 func printReviewSheet(out io.Writer, name string, res model.ScanResult) {
 	var fs []model.Finding
 	for _, a := range res.Artifacts {
@@ -515,8 +515,8 @@ func cloneAt(url, sha string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// Resolve the temp dir before handing it to aguard. On macOS $TMPDIR sits under /var, a
-	// symlink to /private/var; aguard resolves the root's symlinks when it relativises evidence
+	// Resolve the temp dir before handing it to bas-guard. On macOS $TMPDIR sits under /var, a
+	// symlink to /private/var; bas-guard resolves the root's symlinks when it relativises evidence
 	// paths, `Rel` then fails against the unresolved root, and the path degrades to its last two
 	// segments (`scripts/server.cjs` instead of `skills/brainstorming/scripts/server.cjs`). A
 	// fingerprint recorded on one machine would then never match on another — measured: every
@@ -557,9 +557,9 @@ func gitOutput(dir string, args ...string) string {
 	return strings.TrimSpace(string(b))
 }
 
-// ---- aguard -------------------------------------------------------------------------------
+// ---- bas-guard -------------------------------------------------------------------------------
 
-// checkJSON runs `aguard check <dir> --json`. Exit code 1 is the gate saying "findings at or
+// checkJSON runs `bas-guard check <dir> --json`. Exit code 1 is the gate saying "findings at or
 // above the threshold" — expected here, the JSON is still complete. Exit code 2 is a failure.
 func checkJSON(aguard, dir string) (model.ScanResult, error) {
 	cmd := exec.Command(aguard, "check", dir, "--json")
@@ -568,26 +568,26 @@ func checkJSON(aguard, dir string) (model.ScanResult, error) {
 	if err := cmd.Run(); err != nil {
 		var ee *exec.ExitError
 		if !errors.As(err, &ee) || ee.ExitCode() != 1 {
-			return model.ScanResult{}, fmt.Errorf("aguard check: %v: %s", err, bytes.TrimSpace(stderr.Bytes()))
+			return model.ScanResult{}, fmt.Errorf("bas-guard check: %v: %s", err, bytes.TrimSpace(stderr.Bytes()))
 		}
 	}
 	var res model.ScanResult
 	if err := json.Unmarshal(stdout.Bytes(), &res); err != nil {
-		return model.ScanResult{}, fmt.Errorf("aguard check --json: %w", err)
+		return model.ScanResult{}, fmt.Errorf("bas-guard check --json: %w", err)
 	}
 	return res, nil
 }
 
-// hashOf runs `aguard hash <dir>` and returns the canonical hash (first field of the last line).
+// hashOf runs `bas-guard hash <dir>` and returns the canonical hash (first field of the last line).
 func hashOf(aguard, dir string) (string, error) {
 	b, err := exec.Command(aguard, "hash", dir).Output()
 	if err != nil {
-		return "", fmt.Errorf("aguard hash: %w", err)
+		return "", fmt.Errorf("bas-guard hash: %w", err)
 	}
 	lines := strings.Split(strings.TrimSpace(string(b)), "\n")
 	fields := strings.Fields(lines[len(lines)-1])
 	if len(fields) == 0 || len(fields[0]) != 64 {
-		return "", fmt.Errorf("aguard hash: unexpected output %q", strings.TrimSpace(string(b)))
+		return "", fmt.Errorf("bas-guard hash: unexpected output %q", strings.TrimSpace(string(b)))
 	}
 	return fields[0], nil
 }

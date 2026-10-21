@@ -5,15 +5,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/score"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/score"
 )
 
 // The four shape rules were written for four samples that evade line rules, and each
 // fires on its sample — at medium. The gate stops at high, so all four loaded. Three of the
 // rules are structural facts about the artifact, not heuristics about a line: a text file
 // that is a zip, bytecode shipped beside its source, a package manager pointed at a stranger.
-// Measured on a real install (per-rule counts over `aguard scan --json`) they fire on nothing benign, so
+// Measured on a real install (per-rule counts over `bas-guard scan --json`) they fire on nothing benign, so
 // they gate at high. OBF-007 (blank-line padding) stays low: it is the weakest signal of the
 // four and the sample it was written for carries its medium elsewhere (EXFIL-004).
 

@@ -16,8 +16,8 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/basdotio/AgentGuard/internal/detect"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/detect"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // Padding. An author can pad one line with thousands of bytes of whitespace — or of the invisible

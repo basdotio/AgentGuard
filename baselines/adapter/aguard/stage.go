@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/collect"
+	"github.com/basdotio/bas-guard/internal/collect"
 )
 
 // StagedRoot is a sample laid out where aguard looks: Root is the config root to scan and Home its

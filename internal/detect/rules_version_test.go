@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // The rules version is how two reports say whether the same rules produced them. These tests pin

@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/baselines/adapter"
+	"github.com/basdotio/bas-guard/baselines/adapter"
 )
 
 // The six injected-fault fixtures, judged here rather than by `corpus score`. The corpus is

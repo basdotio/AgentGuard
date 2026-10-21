@@ -9,8 +9,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/parse"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/parse"
 )
 
 // This file collects the surfaces Claude Code loads WITHOUT being asked: rules, workflows, output
@@ -313,7 +313,7 @@ var defaultManagedPolicyPaths = map[string][]string{
 // --root. Folding its content into findings would make `overall` depend on how the machine is
 // administered, and `overall` is the one number a third party must be able to recompute offline
 // from the same artifacts. Reproducibility wins; the operator gets told where to look instead, and
-// can audit it directly with `aguard check <path>`.
+// can audit it directly with `bas-guard check <path>`.
 //
 // Called by the CLI rather than by CollectAll. Stat-ing absolute OS paths during collection made
 // every test that builds a root depend on how the HOST is administered: creating
@@ -329,7 +329,7 @@ func ManagedPolicyNotes() []model.Finding {
 			Title: "Managed policy instructions present, not scanned",
 			Why: "An organisation-managed instruction file loads before every other instruction and cannot be " +
 				"excluded, but it sits outside --root; scanning it would make the reproducible score depend on " +
-				"machine administration. Audit it directly with `aguard check`.",
+				"machine administration. Audit it directly with `bas-guard check`.",
 			Evidence: []model.Evidence{{File: p, Line: 0, Snippet: "managed policy file exists"}},
 		})
 	}
@@ -373,7 +373,7 @@ var loadedParents = map[string]bool{
 // a case-insensitive or Win32 filesystem would fold them. Judging the path as written was bypassed
 // three ways, two of them verified end-to-end with the payload re-collected as a live rule:
 //
-//	cd <root>/rules/inner && aguard clean --root . --apply    # Clean(".") == ".", no segment to match
+//	cd <root>/rules/inner && bas-guard clean --root . --apply    # Clean(".") == ".", no segment to match
 //	ln -s <root>/rules/inner <root>/qroot; --root <root>/qroot # the symlink was never resolved
 //	--root <root>/Rules                                        # same directory on macOS, different string
 func QuarantineUnsafe(root string) string {

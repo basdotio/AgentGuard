@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/safeio"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/safeio"
 )
 
 // The root collectors are an ALLOWLIST of known layouts: skills/, agents/, commands/,
@@ -127,7 +127,7 @@ const UnownedNoteTitle = "Unowned entries under the root were not read"
 // asserts the two agree.
 const aguardApprovalsFile = ".aguard-approvals.json"
 
-// aguardSettingsBackup mirrors the suffix `aguard hook install` appends when it backs up
+// aguardSettingsBackup mirrors the suffix `bas-guard hook install` appends when it backs up
 // settings.json. Same reasoning as above: reporting "I did not read the backup I just made"
 // is noise, and it shows up on every scan of a machine where the gate is installed. Matched
 // as a PREFIX: the gate keeps two slots (the original, and .prev for the last change).

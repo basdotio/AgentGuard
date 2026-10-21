@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// Endpoint is a configured endpoint (llm.base_url) as aguard shows it — in a report, a note, an
+// Endpoint is a configured endpoint (llm.base_url) as bas-guard shows it — in a report, a note, an
 // error, a command's output (P-076). The request uses the URL as written; only its display goes
 // through here.
 //

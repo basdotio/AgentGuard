@@ -8,6 +8,7 @@ report.html
 
 # personal LLM endpoint config (config.example.yaml is the shared one)
 aguard.yaml
+bas-guard.yaml
 .env.local
 
 # local scan output staged for review (never committed: it carries real paths and code)
@@ -15,6 +16,7 @@ aguard.yaml
 
 # stray build output at the repo root: the Makefile writes to bin/ and dist/, both ignored above.
 /aguard
+/bas-guard
 
 # Claude Code per-machine settings; .claude/rules/ is tracked on purpose
 .claude/settings.local.json

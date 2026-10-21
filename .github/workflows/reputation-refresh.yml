@@ -27,7 +27,7 @@ jobs:
         with:
           go-version: '1.23'
       - name: build
-        run: CGO_ENABLED=0 go build -o bin/aguard ./cmd/aguard
+        run: CGO_ENABLED=0 go build -o bin/bas-guard ./cmd/bas-guard
       # continue-on-error, so the pull request below still opens with the entries that DID renew.
       # Exit 1 means "some entry needs a human" — and until this was split, it also meant the
       # eleven entries that renewed cleanly in the same run were never proposed: the job stopped
@@ -37,7 +37,7 @@ jobs:
       - name: renew entries whose finding set is unchanged
         id: refresh
         continue-on-error: true
-        run: go run ./hack/reputation-refresh -aguard bin/aguard -write
+        run: go run ./hack/reputation-refresh -aguard bin/bas-guard -write
       - name: the renewed list still passes its own tests
         run: go test ./internal/reputation/ ./hack/reputation-refresh/
       - name: open a pull request when something moved

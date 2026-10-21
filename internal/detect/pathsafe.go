@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/collect"
+	"github.com/basdotio/bas-guard/internal/collect"
 )
 
 // anchorRoot is the one spelling of the scan root every path check in this package sees. The

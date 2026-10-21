@@ -10,12 +10,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // One config root, every way a person types it. clean used to judge containment against the root AS
 // TYPED: withinDir resolves its base with EvalSymlinks but never makes it absolute, EvalSymlinks(".")
-// is ".", and "." cannot be related to the resolved trash directory — so `cd ~/.claude && aguard
+// is ".", and "." cannot be related to the resolved trash directory — so `cd ~/.claude && bas-guard
 // clean --root . --undo last` refused the root's own .aguard-trash as "outside the scanned root",
 // exactly when an operator reaches for undo. The absolute spelling is the reference for every other.
 

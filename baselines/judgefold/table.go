@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/baselines/run"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/baselines/run"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // Meta is what the table's header states about the fold that produced it.

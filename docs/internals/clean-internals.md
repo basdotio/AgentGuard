@@ -16,7 +16,7 @@
 
 ## 1. 一句话概括
 
-`clean` 是 AgentGuard 唯一会写盘的命令。它做两件事：**检测**（`internal/hygiene`，纯读、无 LLM）
+`clean` 是 BAS Guard 唯一会写盘的命令。它做两件事：**检测**（`internal/hygiene`，纯读、无 LLM）
 和**执行**（`internal/clean`，只有一种动作——把 `skills/` 下的目录移进 `<root>/.aguard-trash/`）。
 **它永不删除。** 删除是用户自己的动作。
 
@@ -58,7 +58,7 @@ collect.CollectAll(root)                     纯读，产出 []ArtifactReport
 ```
 
 **关键耦合点：** `Apply` 的输入是一份完整的 `ScanResult`，不是独立重扫。CLI 里
-`cmd/aguard/main.go` 的 clean 分支先跑 `scanEnv`，再把结果交给 `Apply`。这意味着
+`cmd/bas-guard/main.go` 的 clean 分支先跑 `scanEnv`，再把结果交给 `Apply`。这意味着
 **扫描与移动之间存在时间窗口**，`resolveTarget` 里的 content-hash 复核就是为这个窗口存在的。
 
 ---
@@ -216,7 +216,7 @@ roster 里叫 `docx`。不剥前缀，整套校准在任何嵌套布局上**静�
 否则每一次手打的 `/skill` 调用都会重新掉进有害方向。
 
 **一个真机上撞见的自污染回路，值得单独记一笔。** 在一次 Claude Code 会话里跑
-`aguard clean --zombie`，输出会把每个 zombie 的名字印到终端，而**终端输出会进 transcript**
+`bas-guard clean --zombie`，输出会把每个 zombie 的名字印到终端，而**终端输出会进 transcript**
 （transcript 是持续刷盘的，见 [`measurement-usage-records.md`](measurement-usage-records.md) §8.4）。于是**下一次跑同一条命令，这些名字已经"出现在 transcript 里"了，
 宽松判据把它们全部读作"用过"**——实测：第一次报 7 个 zombie，第二次报 0 个，代码一个字没改。
 精确判据不受这条回路影响，这是它存在的最好理由之一。
@@ -489,7 +489,7 @@ Unix-only 的建议锁在那里会静默退化成完全没有锁——那是最�
 
 锁文件内容是 `pid=… at=…`，拿不到锁时打印出来并给出 `rm` 提示。
 
-**⚠️ 这个锁只保护两个 aguard 运行之间。** 它不保护"Claude Code 正在跑"这种情况——实测确认
+**⚠️ 这个锁只保护两个 bas-guard 运行之间。** 它不保护"Claude Code 正在跑"这种情况——实测确认
 Claude Code 会 live watch `skills/`/`commands/`/`agents/`。
 
 **这仍然不是代码强制，但已经不只是文档约定了**：`reportSessionHazard` 会在**即将移动东西的运行**上
@@ -537,7 +537,7 @@ Claude Code 会 live watch `skills/`/`commands/`/`agents/`。
 **在东西放回架子之前让操作者看一眼盒子里是什么。**
 
 `previewRisk` 是这里真正回答问题的部分：**它跑完整的静态引擎**
-（`collect.CollectTarget` + `detect.New().Run`，与 `aguard check <path>` 同一条管线），
+（`collect.CollectTarget` + `detect.New().Run`，与 `bas-guard check <path>` 同一条管线），
 打印它会发现什么。实测的那次攻击里载荷在 SKILL.md 的**正文**：列目录只看到 `SKILL.md`，
 读前三行只看到 frontmatter，**两者都看不到 `curl … | bash`，规则能看到。**
 
@@ -623,7 +623,7 @@ Claude Code 会 live watch `skills/`/`commands/`/`agents/`。
 
 `clean` 不使用 1（那是 `scan`/`check` 的 `--fail-on`）。
 
-⚠️ 3 的存在理由：返回 0 后什么都没移动，会让 `aguard clean --apply && deploy` 相信清理跑过了。
+⚠️ 3 的存在理由：返回 0 后什么都没移动，会让 `bas-guard clean --apply && deploy` 相信清理跑过了。
 
 ---
 

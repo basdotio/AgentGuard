@@ -7,7 +7,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // Hooks are the highest-privilege surface in the environment: they run shell silently, on

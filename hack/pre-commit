@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT
-# AgentGuard pre-commit gate.
+# BAS Guard pre-commit gate.
 # Install:  cp hack/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
 #
 # Blocks a commit if any staged skill/agent artifact scans at or above the threshold.
@@ -9,7 +9,8 @@ set -euo pipefail
 
 # BAS_GUARD_FAIL_ON is the name since the rename to BAS Guard (P-082) and wins; AGUARD_FAIL_ON
 # still works.
-AGUARD="${AGUARD:-aguard}"
+# The binary is bas-guard since the rename (P-082); an install from before it has only aguard.
+AGUARD="${AGUARD:-$(command -v bas-guard >/dev/null 2>&1 && echo bas-guard || echo aguard)}"
 FAIL_ON="${BAS_GUARD_FAIL_ON:-${AGUARD_FAIL_ON:-high}}"
 
 # Staged skill dirs (dirs whose SKILL.md is staged). Bash 3 compatible: macOS ships 3.2, which
@@ -26,14 +27,14 @@ fi
 
 status=0
 for dir in "${skills[@]}"; do
-  echo "AgentGuard: checking $dir"
+  echo "BAS Guard: checking $dir"
   if ! "$AGUARD" check "$dir" --fail-on "$FAIL_ON" --quiet; then
-    echo "  ✗ $dir failed AgentGuard gate (>= $FAIL_ON). Run: $AGUARD check $dir" >&2
+    echo "  ✗ $dir failed the BAS Guard gate (>= $FAIL_ON). Run: $AGUARD check $dir" >&2
     status=1
   fi
 done
 
 if [ "$status" -ne 0 ]; then
-  echo "Commit blocked by AgentGuard. Fix findings, or set AGUARD_FAIL_ON=critical to relax." >&2
+  echo "Commit blocked by BAS Guard. Fix findings, or set BAS_GUARD_FAIL_ON=critical to relax." >&2
 fi
 exit "$status"

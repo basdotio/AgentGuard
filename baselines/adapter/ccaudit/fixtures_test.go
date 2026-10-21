@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/baselines/adapter"
+	"github.com/basdotio/bas-guard/baselines/adapter"
 )
 
 // The real warning line cc-audit printed on the traverse-only-dir fixture, 2026-09-23, verbatim

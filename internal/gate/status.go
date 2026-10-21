@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/detect"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/detect"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // EventStatus is one registered (or missing) hook entry.
@@ -20,7 +20,7 @@ type EventStatus struct {
 	// the failure this whole command exists for: settings.json still says the gate is on,
 	// nothing runs, and the resulting silence is indistinguishable from "all clear".
 	Broken bool
-	// Foreign marks an aguard registration at a DIFFERENT path than the running binary —
+	// Foreign marks a bas-guard registration at a DIFFERENT path than the running binary —
 	// usually a stale entry from a build directory or an older install.
 	Foreign bool
 }
@@ -173,10 +173,15 @@ func (s Status) Describe(w io.Writer) {
 		case e.Broken:
 			fmt.Fprintf(w, "  ⚠ %-22s %s\n      THAT FILE DOES NOT EXIST — this event runs nothing.\n", e.Event, e.Command)
 		case e.Foreign:
-			fmt.Fprintf(w, "  ✓ %-22s %s\n      (a different aguard than the one you just ran)\n", e.Event, e.Command)
+			fmt.Fprintf(w, "  ✓ %-22s %s\n      (a different bas-guard than the one you just ran)\n", e.Event, e.Command)
 		default:
 			fmt.Fprintf(w, "  ✓ %-22s %s\n", e.Event, e.Command)
 		}
+	}
+	if exe, ok := s.legacyRegistration(); ok {
+		// P-082 Q4: the old name keeps working, and moving it is the operator's call.
+		fmt.Fprintf(w, "\n  Registered under the old command name aguard (renamed to bas-guard in v0.30.0). It keeps\n"+
+			"  working; to switch: bas-guard hook install, then %s hook uninstall\n", exe)
 	}
 	fmt.Fprintln(w)
 	switch {
@@ -186,9 +191,9 @@ func (s Status) Describe(w io.Writer) {
 		// Named as loudly as possible: this state LOOKS installed and protects nothing.
 		fmt.Fprintln(w, "The gate is REGISTERED BUT DEAD — settings.json points at a binary that is gone,")
 		fmt.Fprintln(w, "so every skill loads unaudited and the silence looks exactly like a clean result.")
-		fmt.Fprintln(w, "Fix: aguard hook install   (re-points it at this binary)")
+		fmt.Fprintln(w, "Fix: bas-guard hook install   (re-points it at this binary)")
 	default:
-		fmt.Fprintln(w, "The gate is NOT active. Install it with: aguard hook install")
+		fmt.Fprintln(w, "The gate is NOT active. Install it with: bas-guard hook install")
 	}
 	if s.StoreProblem != "" {
 		fmt.Fprintf(w, "\napprovals: %s\n", s.StoreProblem)
@@ -196,8 +201,23 @@ func (s Status) Describe(w io.Writer) {
 	}
 	fmt.Fprintf(w, "\napprovals: %d recorded (%s)\n", s.Approvals, s.ApprovalsPath)
 	if s.Approvals > 0 {
-		fmt.Fprintln(w, "           list them with: aguard approvals")
+		fmt.Fprintln(w, "           list them with: bas-guard approvals")
 	}
+}
+
+// legacyRegistration returns the binary of a live registration made under the pre-rename name
+// aguard (P-082), so Describe can say how to move it; ok is false when there is none.
+func (s Status) legacyRegistration() (exe string, ok bool) {
+	for _, e := range s.Events {
+		if e.Command == "" || e.Broken {
+			continue
+		}
+		x, _ := splitCommand(e.Command)
+		if strings.HasPrefix(filepath.Base(x), "aguard") {
+			return x, true
+		}
+	}
+	return "", false
 }
 
 func (s Status) anyBroken() bool {
@@ -247,10 +267,10 @@ func DeadRegistrationNote(st Status) *model.Finding {
 	return &model.Finding{
 		RuleID: "GATE-001", Dimension: 0, Severity: model.SevMedium, Source: model.SrcStatic,
 		Title: "Load-time gate is registered but cannot run",
-		Why: fmt.Sprintf("%s registers AgentGuard's load-time gate for %s, but the command it names does not exist. "+
+		Why: fmt.Sprintf("%s registers BAS Guard's load-time gate for %s, but the command it names does not exist. "+
 			"Claude Code runs nothing at those interception points, so every skill loads WITHOUT being audited — "+
 			"and the resulting silence is indistinguishable from a clean result. "+
-			"Re-point it at this binary with: aguard hook install",
+			"Re-point it at this binary with: bas-guard hook install",
 			st.SettingsPath, strings.Join(dead, ", ")),
 		Evidence: []model.Evidence{{File: st.SettingsPath, Line: 0, Snippet: "missing hook command: " + detect.Redact(cmd)}},
 	}

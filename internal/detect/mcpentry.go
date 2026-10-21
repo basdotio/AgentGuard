@@ -4,8 +4,8 @@ package detect
 import (
 	"encoding/json"
 
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/safeio"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/safeio"
 )
 
 // mcpServerMap is the server map of an MCP config document: its `mcpServers` member, or the

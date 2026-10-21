@@ -12,11 +12,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/basdotio/AgentGuard/internal/collect"
-	"github.com/basdotio/AgentGuard/internal/detect"
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/parse"
-	"github.com/basdotio/AgentGuard/internal/score"
+	"github.com/basdotio/bas-guard/internal/collect"
+	"github.com/basdotio/bas-guard/internal/detect"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/parse"
+	"github.com/basdotio/bas-guard/internal/score"
 )
 
 // Options tunes how a judge run talks to the endpoint. The zero value is usable — defaults()
@@ -87,7 +87,7 @@ type Stats struct {
 	// times and triage once, so without this split what one question costs can only be guessed.
 	TriageCalls int
 	// UsageByPass is the run's calls, re-asks and reported tokens by the pass that made them, keyed by
-	// the name `aguard llm preview` gives the pass (P-072). Its entries sum exactly to Calls, Reasked
+	// the name `bas-guard llm preview` gives the pass (P-072). Its entries sum exactly to Calls, Reasked
 	// and the client's token totals; nil when no call was made.
 	UsageByPass map[string]model.PassUsage
 	Latencies   []time.Duration // one per issued call, retries included

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // unitResult builds a result from JSON, so the `plugin` member that links a child to its plugin can be

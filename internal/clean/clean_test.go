@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/collect"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/collect"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // TrashDirForTest names the quarantine directory in assertions. Spelled via the collector's constant
@@ -631,7 +631,7 @@ func TestUndo_CoordinatedRewriteSucceedsButIsAnnounced(t *testing.T) {
 // TestSessionHazard_ShownOnlyWhenSomethingMoves pins the SCOPING, which is the whole reason this
 // caution is worth printing. Claude Code watches skills/ live, so a run that moves files while a
 // session is open changes that session's environment underneath it — and the lock cannot see a
-// session, only another aguard run.
+// session, only another bas-guard run.
 //
 // The warning was already in `clean --help`, where nobody reads it. Moving it into the run is only
 // an improvement if it stays rare: on every invocation it becomes wallpaper, which is the exact

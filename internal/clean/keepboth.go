@@ -9,8 +9,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/safeio"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/safeio"
 )
 
 // "Keep both" is a real answer, not an evasion. Two skills with identical descriptions are
@@ -27,7 +27,7 @@ import (
 //   - Append only. The file is the operator's; this never rewrites or reorders what is there.
 //   - NOTHING attacker-controlled is written verbatim. See ignoreComment.
 
-// ignoreFile is the baseline's fixed name. Also spelled in cmd/aguard; kept here because this is
+// ignoreFile is the baseline's fixed name. Also spelled in cmd/bas-guard; kept here because this is
 // the only place that WRITES it.
 const ignoreFile = ".aguardignore"
 

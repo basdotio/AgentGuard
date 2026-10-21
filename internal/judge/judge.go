@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Package judge is AgentGuard's M5 LLM intent judge (spec §5.2/§16.4): it catches
+// Package judge is BAS Guard's M5 LLM intent judge (spec §5.2/§16.4): it catches
 // "the description says A but the code does B" mismatches that static rules miss.
 //
 // Hard constraints (must never be relaxed):
@@ -19,8 +19,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/detect"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/detect"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // Threat dimensions (spec §3) an LLM verdict can map to. The dimension is fixed PER MODE and

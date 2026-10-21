@@ -44,10 +44,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/basdotio/AgentGuard/baselines/adapter"
-	"github.com/basdotio/AgentGuard/baselines/adapter/sarif"
-	"github.com/basdotio/AgentGuard/baselines/corpus"
-	"github.com/basdotio/AgentGuard/baselines/ledger"
+	"github.com/basdotio/bas-guard/baselines/adapter"
+	"github.com/basdotio/bas-guard/baselines/adapter/sarif"
+	"github.com/basdotio/bas-guard/baselines/corpus"
+	"github.com/basdotio/bas-guard/baselines/ledger"
 )
 
 // ScanTimeout bounds one scan. Matches the aguard adapter's: the corpus's injected-fault

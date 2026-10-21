@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 package report
 
-import "github.com/basdotio/AgentGuard/internal/model"
+import "github.com/basdotio/bas-guard/internal/model"
 
 // sanitizeResult returns a copy of r with every string that originated on disk — artifact
 // names and paths, finding titles and evidence, notes, cleanup items, Downloads items, scan

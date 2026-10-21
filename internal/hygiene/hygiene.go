@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Package hygiene finds "junk" — the cleanup half of AgentGuard (spec §6). All checks
+// Package hygiene finds "junk" — the cleanup half of BAS Guard (spec §6). All checks
 // are deterministic (no LLM): oversized descriptions (context bloat), duplicate/near-
 // duplicate skills, dangling file references, and — best-effort — never-used skills.
 // This is the differentiated "360 cleanup" value; it quantifies recoverable context.
@@ -10,11 +10,11 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/clean"
-	"github.com/basdotio/AgentGuard/internal/collect"
-	"github.com/basdotio/AgentGuard/internal/detect"
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/parse"
+	"github.com/basdotio/bas-guard/internal/clean"
+	"github.com/basdotio/bas-guard/internal/collect"
+	"github.com/basdotio/bas-guard/internal/detect"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/parse"
 )
 
 // bloatThresholdTokens: a skill description above this is flagged as context bloat.

@@ -14,7 +14,7 @@ package detect
 import (
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/redact"
+	"github.com/basdotio/bas-guard/internal/redact"
 )
 
 // Redact returns s with any secret-looking value replaced by <REDACTED>. Idempotent.

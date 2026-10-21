@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // parseFailedHook is the scan a Skill event gets when its name resolves to a directory shaped
@@ -30,7 +30,7 @@ func parseFailedHook(hash string) model.ScanResult {
 // as trusted and says so. With an empty hash the record is dropped by the store (no key, no
 // approval), but the branch used to say "trusted from now on for content (none)" anyway and
 // report the store as changed, so the runner rewrote — or created — an approvals file holding
-// nothing new. The same contract as `aguard approve` applies: never say "trusted" over an
+// nothing new. The same contract as `bas-guard approve` applies: never say "trusted" over an
 // empty hash, say it was not remembered and why, and leave the store alone. The load itself
 // still passes: no decision is returned, as for any clean load (fail-open is not in question —
 // this content WAS scanned).
@@ -43,7 +43,7 @@ func TestCleanLoadWithNoHashIsNotClaimedTrusted(t *testing.T) {
 		{
 			name: "PARSE-000 hook from a root-shaped skill directory",
 			res:  parseFailedHook(""),
-			want: `AgentGuard: hook "settings.json" 100/100 (Low) · no finding at or above the threshold · ` +
+			want: `BAS Guard: hook "settings.json" 100/100 (Low) · no finding at or above the threshold · ` +
 				`not remembered, it has no content hash: "/cfg/skills/x/settings.json" did not parse, so it was not fully read ` +
 				`[PARSE-000: Parse failed, artifact not fully covered] · it is audited again on every load`,
 		},
@@ -52,7 +52,7 @@ func TestCleanLoadWithNoHashIsNotClaimedTrusted(t *testing.T) {
 			res: model.ScanResult{Artifacts: []model.ArtifactReport{{
 				Kind: model.KindInstruction, Name: "notes.md", Path: "/cfg/skills/x/notes.md", Score: 100,
 			}}},
-			want: `AgentGuard: instruction "notes.md" 100/100 (Low) · no finding at or above the threshold · ` +
+			want: `BAS Guard: instruction "notes.md" 100/100 (Low) · no finding at or above the threshold · ` +
 				`not remembered, it has no content hash: the scanner could not compute one · it is audited again on every load`,
 		},
 	}

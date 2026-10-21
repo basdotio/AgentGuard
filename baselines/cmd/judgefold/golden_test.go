@@ -21,10 +21,10 @@ import (
 	"testing"
 	"time"
 
-	aguardadapter "github.com/basdotio/AgentGuard/baselines/adapter/aguard"
-	"github.com/basdotio/AgentGuard/baselines/corpus"
-	"github.com/basdotio/AgentGuard/baselines/judgefold"
-	"github.com/basdotio/AgentGuard/internal/model"
+	aguardadapter "github.com/basdotio/bas-guard/baselines/adapter/aguard"
+	"github.com/basdotio/bas-guard/baselines/corpus"
+	"github.com/basdotio/bas-guard/baselines/judgefold"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // The end-to-end fixture: the aguard binary built from this tree, driven through the real
@@ -142,7 +142,7 @@ func (j *scriptedJudge) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func buildAguard(t *testing.T) string {
 	t.Helper()
 	bin := filepath.Join(t.TempDir(), "aguard")
-	if out, err := exec.Command("go", "build", "-o", bin, "../../../cmd/aguard").CombinedOutput(); err != nil {
+	if out, err := exec.Command("go", "build", "-o", bin, "../../../cmd/bas-guard").CombinedOutput(); err != nil {
 		t.Skipf("cannot build aguard here: %v\n%s", err, out)
 	}
 	return bin

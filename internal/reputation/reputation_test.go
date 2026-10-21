@@ -26,7 +26,7 @@ func TestEmbeddedListValid(t *testing.T) {
 // TestEmbeddedListHasNoPlaceholders: this file feeds the score — a GOOD entry suppresses
 // findings and a MALICIOUS one raises a critical — so a demonstration record shipped here is
 // a false record. An all-zero hash matches nothing and was therefore harmless in effect, but
-// it still inflated `aguard version`'s entry count and made the blocklist look populated when
+// it still inflated `bas-guard version`'s entry count and made the blocklist look populated when
 // it was not. An empty half is disclosed by being empty; it is not filled with an example.
 func TestEmbeddedListHasNoPlaceholders(t *testing.T) {
 	db := Load()

@@ -25,8 +25,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/collect"
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/collect"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // Discovery limits. Generous for a Downloads folder, tight enough that a pathological one
@@ -157,7 +157,7 @@ func Discover(dir string) Discovery {
 		}
 		sort.Strings(exts)
 		d.Notes = append(d.Notes, note("Archives of other types not read",
-			fmt.Sprintf("%d archive(s) with extension %s were not opened: only .zip is inspected. Extract one yourself and point aguard check at the folder.", n, strings.Join(exts, ", ")), dir))
+			fmt.Sprintf("%d archive(s) with extension %s were not opened: only .zip is inspected. Extract one yourself and point bas-guard check at the folder.", n, strings.Join(exts, ", ")), dir))
 	}
 	sort.Slice(d.Candidates, func(i, j int) bool { return d.Candidates[i].Path < d.Candidates[j].Path })
 	return d

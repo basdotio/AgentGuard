@@ -71,8 +71,8 @@ func TestResolveAPIKey_EnvThenFile(t *testing.T) {
 	}
 
 	cfg.LLM.APIKeyFile = filepath.Join(dir, "absent.key")
-	if _, err := cfg.ResolveAPIKey(); err == nil || !strings.Contains(err.Error(), "aguard llm setup") {
-		t.Errorf("missing key file: err = %v, want a pointer to `aguard llm setup`", err)
+	if _, err := cfg.ResolveAPIKey(); err == nil || !strings.Contains(err.Error(), "bas-guard llm setup") {
+		t.Errorf("missing key file: err = %v, want a pointer to `bas-guard llm setup`", err)
 	}
 	if err := WriteKey(filepath.Join(dir, "empty.key"), "  \n"); err == nil {
 		t.Error("WriteKey accepted an empty key")
@@ -119,7 +119,7 @@ func TestLoad_PresetFillsEndpoint(t *testing.T) {
 }
 
 // TestLoadUser_DefaultLocation: with no --config, the user-level file is read when present and
-// its absence is defaults — so `aguard scan --llm` needs no path once `aguard llm setup` ran.
+// its absence is defaults — so `bas-guard scan --llm` needs no path once `bas-guard llm setup` ran.
 func TestLoadUser_DefaultLocation(t *testing.T) {
 	x := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", x)
@@ -129,7 +129,7 @@ func TestLoadUser_DefaultLocation(t *testing.T) {
 	}
 	def, _ := DefaultPath()
 	// A first setup gets the post-rename directory (P-082); TestConfigDirFallback covers an
-	// existing aguard one.
+	// existing bas-guard one.
 	if def != filepath.Join(x, "bas-guard", "config.yaml") {
 		t.Fatalf("DefaultPath = %q", def)
 	}

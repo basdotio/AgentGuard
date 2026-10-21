@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 func TestFriendlyArtifact(t *testing.T) {
@@ -90,7 +90,7 @@ func TestText_SummaryLeadsForBothReaders(t *testing.T) {
 	// was checked, then one block per finding (plain phrase, who · what with the rule id last, next step,
 	// evidence), and what --verbose adds. The inventory closes the --verbose view (below).
 	order := []string{
-		"AgentGuard · /x/.claude",
+		"BAS Guard · /x/.claude",
 		"Risk score 69/100 (Elevated) — 2 findings to look at",
 		"There are problems you should fix before relying on this setup.",
 		"Checked 2 skills, 1 hook.",

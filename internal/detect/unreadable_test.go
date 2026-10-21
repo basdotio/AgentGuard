@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // TestUnreadableEntryIsDisclosed pins the unreadable-directory disclosure. A skill whose payload sits in a directory that is

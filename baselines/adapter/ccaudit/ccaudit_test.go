@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/baselines/adapter/sarif"
-	"github.com/basdotio/AgentGuard/baselines/corpus"
-	"github.com/basdotio/AgentGuard/baselines/ledger"
+	"github.com/basdotio/bas-guard/baselines/adapter/sarif"
+	"github.com/basdotio/bas-guard/baselines/corpus"
+	"github.com/basdotio/bas-guard/baselines/ledger"
 )
 
 // TestScanAlwaysReturnsARow is the one rule the Adapter interface says is not negotiable, and

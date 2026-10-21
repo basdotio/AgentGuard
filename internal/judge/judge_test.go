@@ -16,9 +16,9 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/report"
-	"github.com/basdotio/AgentGuard/internal/score"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/report"
+	"github.com/basdotio/bas-guard/internal/score"
 )
 
 func TestClampSeverity(t *testing.T) {

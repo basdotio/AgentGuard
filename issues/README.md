@@ -40,7 +40,7 @@
 ## 判定口径
 
 - **检测绕过**：攻击者读过本扫描器源码后可以主动利用的手法，多数已由对抗语料
-  ([cmd/aguard/adversarial_test.go](../cmd/aguard/adversarial_test.go)) 用**反向断言**固化——
+  ([cmd/aguard/adversarial_test.go](../cmd/bas-guard/adversarial_test.go)) 用**反向断言**固化——
   修复后对应测试会失败，提醒同步更新断言与本目录状态。
 - **覆盖缺口**：有内容没被读到。"部分缓解"指未读行为已通过 `COV-000` / `SUP-004`
   通报或部分拦截，但内容本身仍未被扫描。

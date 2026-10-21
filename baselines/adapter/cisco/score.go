@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/baselines/ledger"
+	"github.com/basdotio/bas-guard/baselines/ledger"
 )
 
 // ScanResult is the subset of `--format json` this adapter reads (probed at 2.1.0, 2026-09-24).

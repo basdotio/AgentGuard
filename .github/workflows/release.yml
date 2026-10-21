@@ -57,7 +57,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
           set -euo pipefail
-          got=$(./dist/aguard-linux-amd64 version | awk '{print $2}')
+          got=$(./dist/bas-guard-linux-amd64 version | awk '{print $2}')
           if [ "$got" != "${GITHUB_REF_NAME}" ]; then
             echo "binary reports '$got' but the tag is '${GITHUB_REF_NAME}'" >&2
             exit 1
@@ -92,7 +92,7 @@ jobs:
       - name: upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: aguard-dist
+          name: bas-guard-dist
           path: dist/
 
       # npm goes BEFORE the GitHub release, because npm is the half that cannot be redone: a
@@ -110,7 +110,7 @@ jobs:
       # first package with "cannot publish over the previously published versions".
       #
       # Auth is npm trusted publishing (OIDC), not a stored token: each of the five packages has a
-      # trusted-publisher entry on npmjs.com naming basdotio/AgentGuard and release.yml, with
+      # trusted-publisher entry on npmjs.com naming basdotio/bas-guard and release.yml, with
       # direct `npm publish` allowed. There is no NPM_TOKEN secret to expire or leak. Renaming
       # this file or moving the repo breaks publishing until those five entries are recreated.
       #
@@ -139,11 +139,14 @@ jobs:
             echo "publishing $spec"
             (cd "$dir" && npm publish --access public --provenance)
           }
+          # Platform packages, then the launcher that pins them, then the unscoped alias that
+          # depends on the launcher (P-082): each is published only once what it needs is there.
           for d in dist/npm/*/; do
-            case "$d" in */launcher/) continue ;; esac
+            case "$d" in */launcher/|*/alias/) continue ;; esac
             publish "${d%/}"
           done
           publish dist/npm/launcher
+          publish dist/npm/alias
 
       - name: create release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -154,4 +157,4 @@ jobs:
             --title "${GITHUB_REF_NAME}" \
             --generate-notes \
             --verify-tag \
-            dist/aguard-* dist/SHA256SUMS.txt
+            dist/bas-guard-* dist/aguard-* dist/SHA256SUMS.txt

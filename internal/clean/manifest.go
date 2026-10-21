@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/basdotio/AgentGuard/internal/collect"
-	"github.com/basdotio/AgentGuard/internal/safeio"
+	"github.com/basdotio/bas-guard/internal/collect"
+	"github.com/basdotio/bas-guard/internal/safeio"
 )
 
 // The manifest is what makes a quarantine reversible. Before it existed, recovery was a `mv` line
@@ -130,7 +130,7 @@ func lock(root string) (release func(), err error) {
 	if err != nil {
 		if errors.Is(err, fs.ErrExist) {
 			held, _ := os.ReadFile(p)
-			return nil, fmt.Errorf("another aguard clean is running (lock held since %s).\n"+
+			return nil, fmt.Errorf("another bas-guard clean is running (lock held since %s).\n"+
 				"If no other run is active, remove the stale lock:\n  rm %s",
 				strings.TrimSpace(string(held)), p)
 		}

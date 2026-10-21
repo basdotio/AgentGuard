@@ -15,7 +15,7 @@
    地址,而 Go 默认的策略只比主机名就带上 key,307/308 还把摘录重发给任何主机。
 
    其余入口**即使配置里开着判官也一个请求都不发**。钉住它的是 `TestZeroDial_OnlyTheJudgeConnects`
-   (`cmd/aguard/zero_dial_test.go`):`judge.Transport`(测试接缝,生产里恒为 nil)和 `http.DefaultTransport` 各换成
+   (`cmd/bas-guard/zero_dial_test.go`):`judge.Transport`(测试接缝,生产里恒为 nil)和 `http.DefaultTransport` 各换成
    一个只计数、拒绝请求的 RoundTripper,**先**断言上面三条路径确实被判官那个计数器看见(否则测试是瞎的),**再**断言
    零表里每个入口两个计数器都是 0:`scan`(含它追加的闸门存活探测;`clean` 用的是同一个 `scanEnv`)、不带 `--llm` 的下载项、`scan --llm` 但
    `llm.enabled: false`、`check`、`check --llm` 但 `llm.enabled: false`、`hook` 的 `PreToolUse`/`PostToolUse` 重扫/`SessionStart`、`approve`、`approvals`、
@@ -31,7 +31,7 @@
 
    **它只看得见经过 `judge.Transport` 或 `http.DefaultTransport` 的请求**,不是"进程内所有 `net/http` 请求"。看不见的,逐条:
    - **自带 `http.Transport` 的 client**:两个计数器都不经过。本模块的产品代码由 `TestZeroDial_NoClientOutsideTheJudge`
-     (`cmd/aguard/zero_dial_source_test.go`)从源码上堵住:`cmd/`、`internal/` 的非测试文件里,`internal/judge` 之外
+     (`cmd/bas-guard/zero_dial_source_test.go`)从源码上堵住:`cmd/`、`internal/` 的非测试文件里,`internal/judge` 之外
      不许出现 `net/http` 的 `Client`/`Transport` 类型;`internal/judge` 里不许出现 `http.Transport`,`http.Client` 只许是
      `NewHTTP` 里**唯一那一个** `http.Client{Transport: Transport, …}` 字面量的类型(`Transport` 的值就是接缝;
      另外只带重定向策略 `CheckRedirect`,它只决定下一跳发不发,发出去的每一跳都过同一个 `Transport`,
@@ -57,7 +57,7 @@
    - 树里的文件解析后必须落在**树自己的 root** 之内。**唯一的例外是根上的 `SKILL.md`**:Claude Code 2.1.107 的加载器读的就是它,
      跟着软链走、不做任何约束;它可以落在**装着这个 skill 的 skills 目录**之内(`SkillMDBound`:解析后的 skill root 的父目录名为
      `skills` 时是那个目录,那个目录属于插件时是插件 root —— P-044 约束子项的同一个容器),除非它是凭据路径(`CredentialPath`,
-     与 `@import` 同一份名单)。边界从路径推出来,所以 `scan`、`check`、闸门、`aguard hash`、`clean` 算出同一个哈希。
+     与 `@import` 同一份名单)。边界从路径推出来,所以 `scan`、`check`、闸门、`bas-guard hash`、`clean` 算出同一个哈希。
    - 解析不了的链接(悬空、环)按**链接文本**定位:文本在边界内 → 存在但没读(不可读标记 + 聚合的 `COV-000`);在边界外 → 拒绝。
      以前哈希按父目录算"在内",规则按 `EvalSymlinks` 失败算"在外",两边说的不是一回事。
    - **拒绝一律计分、一律出声**:被拒的条目是 artifact 上**一条** `SCOPE-001`(medium,维度 9,按 `HOOK-002` 的理由:加载或执行的

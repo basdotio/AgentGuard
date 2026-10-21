@@ -6,15 +6,15 @@ paths:
 ## LLM judge(`internal/judge`,可选)
 
 必须同时满足 config `llm.enabled: true` **和** `--llm` 才会启用;`scan` 和 `check` 都接受 `--llm`(`check` 自 P-004),
-`clean`、加载时闸门和 `aguard approve` 永不调用它。
+`clean`、加载时闸门和 `bas-guard approve` 永不调用它。
 **配置和密钥(2026-09-04 改)**:不传 `--config` 时读 `$XDG_CONFIG_HOME/aguard/config.yaml`,否则
 `~/.config/aguard/config.yaml`(`config.LoadUser`;`config.Load` 保持纯函数给测试用)—— 放在扫描 root **之外**,
 放进 `~/.claude` 会被当成无人认领的散落文件每次披露。`provider` 可以是预设名(`config.Presets`,只填
 base_url 和默认模型,用户写的一律优先;不认识的名字是加载错误,不能悄悄退回 localhost)。密钥多了
 `api_key_file`:spec §16.3 原文是"只读环境变量,不落盘",**放宽的理由**是在线端点全都要 key,而"设环境
 变量"是非技术用户做不到的那一步——他们能做到的是把 key 粘进 `~/.zshrc`,同样是明文落盘,还没有权限检查。
-所以文件必须 0600,组/他人可读一律拒用并给出 chmod(`ResolveAPIKey`),env 仍然优先给 CI。`aguard llm
-setup/test/status` 是插件 `/aguard-llm` 驱动的三个原语:setup 在终端里用 x/term 隐藏输入读 key,管道时用 `--key-stdin`(两种都不进参数列表,
+所以文件必须 0600,组/他人可读一律拒用并给出 chmod(`ResolveAPIKey`),env 仍然优先给 CI。`bas-guard llm
+setup/test/status` 是插件 `/bas-guard-llm` 驱动的三个原语:setup 在终端里用 x/term 隐藏输入读 key,管道时用 `--key-stdin`(两种都不进参数列表,
 终端那条也不进 shell 历史和聊天记录,所以插件流程**先推终端**,贴进对话是知情的退路);只写
 用户做了决定的字段、结束前必须印"内容会发到 X";`CheckEndpoint` 拒绝非 https 的远程地址(key 是
 Bearer 头,明文 http 等于把它送上网),setup/test/judge 三处都过它,judge 侧是一条 `LLM-000`;test 用真实的 client 打一次(`HTTPClient.Ping`),
@@ -69,7 +69,7 @@ k 个请求逐字节相同,端点的提示词缓存才接得住重复;重问和 
 11.7 s → 21.7 s),也别为了缓存加 `prompt_cache_key`(逐字节相同的请求本来就路由到一处,实测不带它命中 44.5%,带它 45.8%)。`base_url` 非 loopback 时追加 `LLM-002` 隐私警告。**`ScanResult.Judge`(2026-09-05)**:`--llm` 时必填,记录跑没跑、
 判了几个、几次调用、补了几条、没跑的原因;两个渲染器在摘要里印一行,HTML 的判官区块在请求了就出现(空则放那一行),
 没开 `--llm` 一律不提 —— "跑了没发现"和"没跑"以前在报告上一模一样,这是不变量 #5 用在判官自己身上。
-**`aguard llm preview` 和真跑共用同一份计划和同一段载荷代码**(`judge.Plan`,P-027):`Run` 和 `Plan` 都走 `schedule`
+**`bas-guard llm preview` 和真跑共用同一份计划和同一段载荷代码**(`judge.Plan`,P-027):`Run` 和 `Plan` 都走 `schedule`
 (建表 + `max_calls` 截断 + shortened 注记),客户端和预览都用 `judgePayload`/`triagePayload` 渲染栅栏里的文本,趟名和规则 ID 都读
 `modeInfo`。**不要在 `cmd/` 里另写一份渲染,也不要给预览单独的截断或排序**——预览一旦和发出去的字节不同,就成了会漂移的第二实现。
 `TestPlan_PayloadsAreWhatTheClientSends`(真 `NewHTTP` + httptest)和 `TestLLMPreview_MatchesWhatScanAndCheckSend`(二进制,真跑)逐字节钉着。

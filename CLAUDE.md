@@ -3,7 +3,7 @@
 
 本文件为 Claude Code (claude.ai/code) 在本仓库中工作时提供指引。
 
-本仓库是 `aguard` 的 Go 实现(module `github.com/basdotio/AgentGuard`),**所有代码都在这里**。
+本仓库是 `bas-guard` 的 Go 实现(module `github.com/basdotio/bas-guard`),**所有代码都在这里**。
 
 > **module path 有三处必须始终一致**:`go.mod` 的 module 指令、每个 `.go` 文件的 import、
 > 以及 `hack/github-action.yml` 里那条 `go install`(它会被拷到分发仓库,所以那边也要跟着动)。
@@ -42,7 +42,7 @@ make hooks                       # 装 pre-commit 到 .git/hooks/(clone 后跑�
 make dist                        # 交叉编译到 dist/(darwin/linux;windows 见下)
 go vet ./...                     # CI 也会跑
 
-go test -run TestFailGate ./cmd/aguard/                # 跑单个测试
+go test -run TestFailGate ./cmd/bas-guard/                # 跑单个测试
 go test -race ./internal/detect/                       # 跑单个包
 
 ./bin/aguard scan --root ~/.claude          # 全量扫描
@@ -69,9 +69,9 @@ echo '{"hook_event_name":"PreToolUse","tool_name":"Skill","tool_input":{"skill":
 
 | 文件 | 原段 | 何时加载 |
 |---|---|---|
-| [pipeline.md](.claude/rules/pipeline.md) | 流水线 | `cmd/aguard/**`、`internal/**` |
+| [pipeline.md](.claude/rules/pipeline.md) | 流水线 | `cmd/bas-guard/**`、`internal/**` |
 | [invariants.md](.claude/rules/invariants.md) | 不变量 —— 不要削弱 | 始终 |
-| [gate.md](.claude/rules/gate.md) | 加载时闸门(`internal/gate`) | `internal/gate/**`、`cmd/aguard/gate*.go`、`hack/pre-commit` |
+| [gate.md](.claude/rules/gate.md) | 加载时闸门(`internal/gate`) | `internal/gate/**`、`cmd/bas-guard/gate*.go`、`hack/pre-commit` |
 | [score.md](.claude/rules/score.md) | 评分(`internal/score`) | `internal/score/**` |
 | [detect.md](.claude/rules/detect.md) | 检测引擎(`internal/detect`) | `internal/detect/**`、`hack/gen-rules/**` |
 | [reputation.md](.claude/rules/reputation.md) | 声誉白名单(`internal/reputation`) | `internal/reputation/**`、`hack/reputation-refresh/**` |

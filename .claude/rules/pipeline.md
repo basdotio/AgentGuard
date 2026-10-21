@@ -1,12 +1,12 @@
 ---
 paths:
-  - "cmd/aguard/**"
+  - "cmd/bas-guard/**"
   - "internal/**"
 ---
 <!-- SPDX-License-Identifier: MIT -->
 ## 流水线
 
-[cmd/aguard/main.go](../../cmd/aguard/main.go) 里的 `analyze()` 是 `scan`/`check`/`clean`
+[cmd/bas-guard/main.go](../../cmd/bas-guard/main.go) 里的 `analyze()` 是 `scan`/`check`/`clean`
 的唯一编排入口。**各阶段的先后顺序是有意为之**,该函数的注释解释了原因:
 
 ```
@@ -107,7 +107,7 @@ collect  → detect → permcheck → reputation → ignore/baseline → judge(�
   Linux 机多印一行,绝不会把沙箱当本机。它**不改分、不藏发现**,只在 `ScanResult.Sandbox` 上加注,三个渲染器在最顶上印一条
   醒目横幅(带判断依据)+ 一句"去 Code 标签在本机跑"。**关键是横幅进了报告文件本身**,不依赖 Claude 临场解释——文件被单独
   转发时也带着警告。`check` 不填它(单目标不是环境扫描)。
-- **下载目录是另一条流水线,不进环境分**([internal/inbox](../../internal/inbox/),`cmd/aguard/inbox.go`)。`scan` 默认还看
+- **下载目录是另一条流水线,不进环境分**([internal/inbox](../../internal/inbox/),`cmd/bas-guard/inbox.go`)。`scan` 默认还看
   `~/Downloads`(`--inbox`,`off` 关),找出像 agent 的东西——有 SKILL.md / `.claude-plugin/plugin.json` / `.mcp.json` /
   CLAUDE.md / AGENTS.md / .cursorrules 的目录、这些散落文件、索引里带这些名字的 zip——每个单独走 `checkTarget`,结果放
   `ScanResult.Inbox`,报告里单独一节。**三条边界,别动**:(1) 不进 `Overall`——分数的含义是"agent 会加载的东西",一个下了

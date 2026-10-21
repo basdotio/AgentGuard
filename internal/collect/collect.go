@@ -25,8 +25,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/safeio"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/safeio"
 )
 
 // Result bundles the collected artifacts, environment summary, and scan-level notes
@@ -131,7 +131,7 @@ func looksLikeRoot(dir string) bool {
 
 // singleFileKind names a lone file target by where it sits. A .md directly under a commands/
 // directory is a slash command — the kind a scan of the parent root gives it — so
-// `aguard check ~/.claude/commands/deploy.md` runs the rules the scan runs, instead of reading
+// `bas-guard check ~/.claude/commands/deploy.md` runs the rules the scan runs, instead of reading
 // the file as prose because its name is not SKILL.md. Anything else is an instruction file,
 // classified by name downstream.
 func singleFileKind(path string) model.ArtifactKind {
@@ -141,7 +141,7 @@ func singleFileKind(path string) model.ArtifactKind {
 	return model.KindInstruction
 }
 
-// CollectTarget builds the artifact set for `aguard check <path>` — which is a SINGLE
+// CollectTarget builds the artifact set for `bas-guard check <path>` — which is a SINGLE
 // skill/dir/file, NOT a .claude root. Layout is detected (spec §3 gate contract; fixes
 // the review B1 bug where a bare skill dir hit CollectAll, found no skills/, and scored
 // a malicious skill as clean). Order matters — most specific first:
@@ -568,7 +568,7 @@ var rootMCPFiles = []string{".claude.json", ".mcp.json"}
 // of rootMCPFiles that is there and is not the very file home's copy is (a symlink to it, or a root
 // with no parent). One that exists but cannot be stat'ed is returned too, so mcpServersFrom says so.
 //
-// A repository scanned as its own root — the CI template's `aguard scan --root .` — keeps its project
+// A repository scanned as its own root — the CI template's `bas-guard scan --root .` — keeps its project
 // .mcp.json exactly there. Before the root was anchored, `.` read it only because home WAS the root;
 // the absolute spelling never read it, and unowned.go counts both names as owned, so not even a note
 // said so: a curl-into-shell server in a repository's own .mcp.json failed the gate under `.` and
@@ -668,7 +668,7 @@ func readMCPServers(path, nameSuffix string, decode mcpServerDecoder, env *model
 // SettingsEnvName is the artifact name for a settings file's `env` block. It is a
 // KindPermission artifact — the block configures the agent's process, which is a permission
 // decision — but it is NOT a permissions list, so the permission auditor must not be run on it a
-// second time; cmd/aguard.analyze and detect key on this name to tell the two apart.
+// second time; cmd/bas-guard.analyze and detect key on this name to tell the two apart.
 const SettingsEnvName = "settings env"
 
 var settingsScopes = []struct{ file, nameSuffix string }{

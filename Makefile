@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
-# AgentGuard build. Pure Go, single static binary (CGO disabled).
-BIN     := bin/aguard
-PKG     := ./cmd/aguard
+# BAS Guard build. Pure Go, single static binary (CGO disabled).
+BIN     := bin/bas-guard
+PKG     := ./cmd/bas-guard
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 COMMIT  := $(shell git rev-parse --short HEAD 2>/dev/null || echo none)
 DATE    := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -30,7 +30,7 @@ lint:
 # handed over for review. The self-scan covers the shipped plugin — a repository that gates other
 # people's skills runs its own through the same gate. Each line is its own shell; the first failure stops make. The order is
 # cheapest-first so a red vet does not wait for the race detector. Deliberately absent: the
-# real-machine scan (`aguard scan --root ~/.claude`) — that one is run by hand after collect/detect
+# real-machine scan (`bas-guard scan --root ~/.claude`) — that one is run by hand after collect/detect
 # changes, because its input is this machine, not the repository. For the same reason the
 # self-scan runs with HOME and XDG_CONFIG_HOME at a path nothing creates, so no config is found:
 # the gate's answer must not depend on the config.yaml of whoever runs it (P-075; the Go tests get
@@ -58,15 +58,15 @@ hooks:
 docs:
 	go run ./hack/gen-rules
 
-# Run aguard over the agent-artifact-corpus and grade the verdicts (P-010, P-015). Three steps,
+# Run bas-guard over the agent-artifact-corpus and grade the verdicts (P-010, P-015). Three steps,
 # two of them the corpus's own: `corpus samples` (work list) → baselines/cmd/baseline (ours:
-# stage each sample where aguard looks, exec the freshly built binary, fold to one word, and
+# stage each sample where bas-guard looks, exec the freshly built binary, fold to one word, and
 # account for EVERY test point in a ledger) → `corpus score`.
 #
 # The driver replaced hack/corpus-runner in P-015 W5. That runner returned before the binary was
 # executed for any sample it could not place, so 127 test points were never handed to the scanner
-# at all — and the reason recorded against them was the runner's belief about aguard rather than
-# aguard's behaviour. Measured after the change: 3539 of 3539 scored, 0 uncovered; recall over
+# at all — and the reason recorded against them was the runner's belief about bas-guard rather than
+# bas-guard's behaviour. Measured after the change: 3539 of 3539 scored, 0 uncovered; recall over
 # the full malicious set is 85/300 (28%) where the partial denominator read 71/173 (41%).
 # The corpus is a sibling checkout, never vendored (licence isolation) and never a CI dependency;
 # this target is for a maintainer's machine. Verdicts and per-sample JSON land under bin/bench/
@@ -78,7 +78,7 @@ docs:
 #
 # `corpus score` takes the verdicts file alone: the harness dropped its -tool flag on 2026-09-23
 # (corpus commit 5c2ac85). Two callers here had to follow, and the first fix caught only one: the
-# last line below, and the driver's `-score-tool aguard`, which makes the driver's OWN scorecard
+# last line below, and the driver's `-score-tool bas-guard`, which makes the driver's OWN scorecard
 # step pass the same dead flag — so the run still died after the ten-minute driver pass, with the
 # verdicts on disk and neither scorecard printed. The driver keeps the flag for a corpus whose
 # scorer has it; this target does not pass it until the harness grows it back.
@@ -125,14 +125,20 @@ dist:
 	@for t in $(DIST_TARGETS); do \
 	  os=$${t%/*}; arch=$${t#*/}; ext=; [ $$os = windows ] && ext=.exe; \
 	  echo "  $$os/$$arch"; \
-	  GOOS=$$os GOARCH=$$arch go build -ldflags "$(LDFLAGS)" -o dist/aguard-$$os-$$arch$$ext $(PKG) || exit 1; \
+	  GOOS=$$os GOARCH=$$arch go build -ldflags "$(LDFLAGS)" -o dist/bas-guard-$$os-$$arch$$ext $(PKG) || exit 1; \
+	  cp dist/bas-guard-$$os-$$arch$$ext dist/aguard-$$os-$$arch$$ext || exit 1; \
 	done
-	@cd dist && $(SHA256) aguard-* > SHA256SUMS.txt && echo "  SHA256SUMS.txt"
+	@# aguard-* are byte-identical copies under the pre-rename name (P-082), so a
+	@# releases/latest/download/aguard-<os>-<arch> link written before the rename keeps working.
+	@cd dist && $(SHA256) bas-guard-* aguard-* > SHA256SUMS.txt && echo "  SHA256SUMS.txt"
 
 # npm distribution. THE package name lives here and nowhere else: the launcher derives the
 # per-platform package names from its own package.json at run time, and the templates take it
 # by substitution. Renaming the package is this one line plus the READMEs.
 NPM_NAME    := @bas.io/guard
+# The unscoped alias (P-082): `npx bas-guard` runs NPM_NAME, and nobody else can take the name. It
+# depends on NPM_NAME at exactly its own version and carries no binary.
+NPM_ALIAS_NAME := bas-guard
 # npm needs bare semver; the Go stamp is a git describe, so `v0.8.1` -> `0.8.1`.
 #
 # An untagged tree stamps `0.8.1-2-gabc` or `0.8.1-dirty`, and npm ACCEPTS both — they are legal
@@ -148,7 +154,7 @@ NPM_VERSION ?= $(patsubst v%,%,$(VERSION))
 NPM_VERSION_DERIVED := $(if $(filter file,$(origin NPM_VERSION)),1,)
 NPM_OUT     := dist/npm
 
-# Lay out the five packages under dist/npm: one launcher package plus one per platform, each
+# Lay out the six packages under dist/npm: one launcher package plus one per platform, each
 # carrying its own static binary. No package has an install script — the binary is IN the
 # tarball and npm picks the right one from the os/cpu fields. The widespread alternative (a
 # postinstall that downloads a binary) is the exact shape this scanner reports on other
@@ -167,14 +173,14 @@ npm-dist:
 	fi
 	@for t in $(DIST_TARGETS); do \
 	  os=$${t%/*}; arch=$${t#*/}; \
-	  [ -f dist/aguard-$$os-$$arch ] || { echo "dist/aguard-$$os-$$arch missing — run 'make dist' first" >&2; exit 1; }; \
+	  [ -f dist/bas-guard-$$os-$$arch ] || { echo "dist/bas-guard-$$os-$$arch missing — run 'make dist' first" >&2; exit 1; }; \
 	done
 	@rm -rf $(NPM_OUT)
 	@mkdir -p $(NPM_OUT)/launcher/bin
 	@sed -e 's|__NAME__|$(NPM_NAME)|g' -e 's|__VERSION__|$(NPM_VERSION)|g' \
 	  npm/package.json.tmpl > $(NPM_OUT)/launcher/package.json
 	@sed -e 's|__NAME__|$(NPM_NAME)|g' npm/README.md.tmpl > $(NPM_OUT)/launcher/README.md
-	@cp npm/bin/aguard.js $(NPM_OUT)/launcher/bin/aguard.js
+	@cp npm/bin/bas-guard.js $(NPM_OUT)/launcher/bin/bas-guard.js
 	@echo "  $(NPM_NAME)@$(NPM_VERSION)"
 	@for t in $(DIST_TARGETS); do \
 	  os=$${t%/*}; goarch=$${t#*/}; \
@@ -187,10 +193,17 @@ npm-dist:
 	      -e 's|__OS__|'"$$os"'|g' \
 	      -e 's|__CPU__|'"$$cpu"'|g' \
 	      npm/platform.package.json.tmpl > $$dir/package.json || exit 1; \
-	  cp dist/aguard-$$os-$$goarch $$dir/aguard || exit 1; \
-	  chmod 0755 $$dir/aguard || exit 1; \
+	  cp dist/bas-guard-$$os-$$goarch $$dir/bas-guard || exit 1; \
+	  chmod 0755 $$dir/bas-guard || exit 1; \
 	  echo "  $(NPM_NAME)-$$os-$$cpu"; \
 	done
+	@mkdir -p $(NPM_OUT)/alias/bin
+	@sed -e 's|__ALIAS__|$(NPM_ALIAS_NAME)|g' -e 's|__NAME__|$(NPM_NAME)|g' -e 's|__VERSION__|$(NPM_VERSION)|g' \
+	  npm/alias/package.json.tmpl > $(NPM_OUT)/alias/package.json
+	@sed -e 's|__NAME__|$(NPM_NAME)|g' npm/alias/README.md.tmpl > $(NPM_OUT)/alias/README.md
+	@sed -e 's|__NAME__|$(NPM_NAME)|g' npm/alias/bin/bas-guard.js > $(NPM_OUT)/alias/bin/bas-guard.js
+	@chmod 0755 $(NPM_OUT)/alias/bin/bas-guard.js
+	@echo "  $(NPM_ALIAS_NAME)@$(NPM_VERSION)"
 
 clean:
 	rm -rf bin dist

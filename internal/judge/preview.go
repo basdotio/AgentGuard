@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
-// PlannedCall is one question a run would ask, as `aguard llm preview` shows it (P-027): which
+// PlannedCall is one question a run would ask, as `bas-guard llm preview` shows it (P-027): which
 // artifact it is about, which pass asks it, and the exact text it would carry inside its nonce
 // fence. A question asked several times (llm.samples) is one PlannedCall with Calls > 1 — the
 // payload is the same every time.

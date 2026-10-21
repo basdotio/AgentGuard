@@ -13,7 +13,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // A reply the reader refuses is a ReplyError, whatever the refusal; a transport error is not.

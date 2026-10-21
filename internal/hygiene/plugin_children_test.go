@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // TestAnalyze_SkipsAPluginsChildren: a plugin's skills are artifacts of their own for the judge and the

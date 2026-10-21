@@ -46,7 +46,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/basdotio/AgentGuard/baselines/ledger"
+	"github.com/basdotio/bas-guard/baselines/ledger"
 )
 
 // MinimumN is the smallest number of qualifying malicious samples on one surface at which an

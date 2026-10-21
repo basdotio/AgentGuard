@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // questionTable builds a task table the way buildTasks lays it out: each entry is one question

@@ -18,7 +18,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/basdotio/AgentGuard/internal/redact"
+	"github.com/basdotio/bas-guard/internal/redact"
 )
 
 // newNonce returns an unpredictable barrier token (spec §5.2). crypto/rand failure is
@@ -97,7 +97,7 @@ func (c *HTTPClient) TemperatureOmitted() bool { return c.noTemperature.Load() }
 // http.DefaultTransport, exactly what the bare &http.Client{} this replaced used.
 //
 // It exists for invariant #1 (no network except the explicitly enabled judge): the commands pass
-// a nil client, so this is the one point every judge request crosses, and a test in cmd/aguard
+// a nil client, so this is the one point every judge request crosses, and a test in cmd/bas-guard
 // swaps it for a counter to prove which entry points send anything and which send nothing. A
 // caller that supplies its own *http.Client is not affected by it.
 var Transport http.RoundTripper
@@ -198,7 +198,7 @@ type chatResponse struct {
 
 // Judge sends one redacted comparison and parses the model's JSON verdict.
 // Ping makes one minimal chat call and reports how long it took. It is the health check behind
-// `aguard llm test`: the same endpoint, model, key and request shape a real judge run uses, so a
+// `bas-guard llm test`: the same endpoint, model, key and request shape a real judge run uses, so a
 // wrong URL, a bad key, a renamed model or a blocked network fails HERE, with the server's own
 // error in hand, rather than as N failed calls at the end of a scan. Nothing scanned is sent.
 func (c *HTTPClient) Ping(ctx context.Context) (time.Duration, error) {

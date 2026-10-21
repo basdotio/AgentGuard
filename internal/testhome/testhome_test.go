@@ -98,10 +98,10 @@ var excludedTrees = map[string]string{
 	// ./cmd/corpus, the scorer) with the inherited environment. Under the isolated home those
 	// children get an empty build and module cache and lose the developer's GOENV — slow online,
 	// failing offline — and steering the non-test spawns to OriginalEnviron would change
-	// non-test code. In process it reads no aguard config, and the aguard it runs gets an
+	// non-test code. In process it reads no bas-guard config, and the bas-guard it runs gets an
 	// environment the adapter builds from nothing (HOME and XDG_CONFIG_HOME in its work
 	// directory, no AGUARD_USAGE_LOG).
-	"baselines": "starts the Go toolchain from non-test code; its aguard children get an environment built from nothing",
+	"baselines": "starts the Go toolchain from non-test code; its bas-guard children get an environment built from nothing",
 }
 
 // skipDir reports whether the walk never descends into a directory of this name: hidden trees
@@ -163,10 +163,10 @@ func TestEveryTestPackageIsolatesTheHome(t *testing.T) {
 		t.Errorf("%s has tests but no TestMain running them through testhome.Main; add, in a _test.go file,\n"+
 			"\tfunc TestMain(m *testing.M) { os.Exit(testhome.Main(m)) }", dir)
 	}
-	// Positive control: the walk saw this package, cmd/aguard and the hack/ tools, or it proves
+	// Positive control: the walk saw this package, cmd/bas-guard and the hack/ tools, or it proves
 	// nothing; and every excluded tree exists, so a rename cannot leave a stale exclusion behind.
 	for _, dir := range []string{
-		filepath.Join("internal", "testhome"), filepath.Join("cmd", "aguard"),
+		filepath.Join("internal", "testhome"), filepath.Join("cmd", "bas-guard"),
 		filepath.Join("hack", "gen-rules"), filepath.Join("hack", "reputation-refresh"),
 	} {
 		if !withTests[dir] {

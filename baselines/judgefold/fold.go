@@ -9,11 +9,11 @@ import (
 	"strconv"
 	"strings"
 
-	aguardadapter "github.com/basdotio/AgentGuard/baselines/adapter/aguard"
-	"github.com/basdotio/AgentGuard/baselines/corpus"
-	"github.com/basdotio/AgentGuard/baselines/ledger"
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/score"
+	aguardadapter "github.com/basdotio/bas-guard/baselines/adapter/aguard"
+	"github.com/basdotio/bas-guard/baselines/corpus"
+	"github.com/basdotio/bas-guard/baselines/ledger"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/score"
 )
 
 // advisoryRule never counts toward a verdict. Binaries since the former repository's P-019

@@ -8,9 +8,9 @@ import (
 	"io"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/detect"
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/score"
+	"github.com/basdotio/bas-guard/internal/detect"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/score"
 )
 
 // Sanitize strips control characters (C0, DEL, C1) from any string before it is written to a
@@ -211,7 +211,7 @@ func writeText(w io.Writer, r model.ScanResult, verbose bool) {
 				fmt.Fprintf(w, "  · %s: %s\n", Sanitize(h.Kind), Sanitize(h.Detail))
 			}
 		} else {
-			fmt.Fprintf(w, "\nJunk / hygiene: %d item(s) — `aguard clean` lists them; --verbose prints them here.\n", len(r.Hygiene))
+			fmt.Fprintf(w, "\nJunk / hygiene: %d item(s) — `bas-guard clean` lists them; --verbose prints them here.\n", len(r.Hygiene))
 		}
 	}
 

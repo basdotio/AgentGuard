@@ -1,4 +1,4 @@
-# AgentGuard architecture (as built)
+# BAS Guard architecture (as built)
 
 **English** | [中文](architecture.zh-CN.md)
 
@@ -21,7 +21,7 @@ CLI, about 20k lines of tests (596 test functions plus 2 fuzz targets), three di
 
 An AI coding agent auto-loads skills, MCP servers, hooks, subagents, slash commands and
 instruction files. Each of those is *instructions plus granted tool permissions* — not
-documentation — and any of them can carry a directive the agent will follow. AgentGuard reads
+documentation — and any of them can carry a directive the agent will follow. BAS Guard reads
 those artifacts on disk, matches them against rules, and produces a reproducible risk score
 plus a report. It never executes what it scans and never makes a network call (unless you
 explicitly turn on the optional LLM judge). It is a body-check, not a guarantee of removal:
@@ -29,7 +29,7 @@ the score is a relative risk signal, not a safety certificate.
 
 ## Pipeline
 
-[`cmd/aguard/main.go`](../cmd/aguard/main.go)'s `analyze()` is the single orchestration point
+[`cmd/bas-guard/main.go`](../cmd/bas-guard/main.go)'s `analyze()` is the single orchestration point
 for `scan`, `check` and `clean`. **The stage order is load-bearing**, and the function's
 comments say why:
 
@@ -74,9 +74,9 @@ Each package is an approximately pure stage over the immutable types in
 | [`inbox`](../internal/inbox/) | The Downloads scan: candidate discovery and bounded, traversal-refusing zip extraction | 376 |
 | [`safeio`](../internal/safeio/) | The one way a file the tool did not write is opened: non-regular files refused before Open, size capped by the read | 101 |
 | [`redact`](../internal/redact/) | The one secret redactor: known token prefixes, announced credentials, URL userinfo, high-entropy runs. A leaf, so `collect` uses it too; `detect.Redact` delegates | 209 |
-| [`cmdline`](../internal/cmdline/) | The one way a path is printed into a command meant for pasting: the full path quoted for a POSIX shell, never clipped. `gate.CommandArg` delegates; the report's `aguard approve` next step uses it | 97 |
-| [`testhome`](../internal/testhome/) | Tests only: every test binary in the module (`baselines/` excepted, for a reason the guard names) runs with a temporary `HOME`, the four XDG base directories inside it, and no `CLAUDE_CONFIG_DIR` or `AGUARD_USAGE_LOG`, so no test reads the developer's own config or appends to their usage log; `TestEveryTestPackageIsolatesTheHome` requires its `TestMain` in each package with tests, and `TestDefaultLocations_AreInsideTheTestHome` (`cmd/aguard`) requires every default location the binary resolves to lie inside the temporary home | 125 |
-| [`cmd/aguard`](../cmd/aguard/) | CLI wiring, `analyze()`, the Downloads pass, the gate runner, `llm setup/test/status/preview` | — |
+| [`cmdline`](../internal/cmdline/) | The one way a path is printed into a command meant for pasting: the full path quoted for a POSIX shell, never clipped. `gate.CommandArg` delegates; the report's `bas-guard approve` next step uses it | 97 |
+| [`testhome`](../internal/testhome/) | Tests only: every test binary in the module (`baselines/` excepted, for a reason the guard names) runs with a temporary `HOME`, the four XDG base directories inside it, and no `CLAUDE_CONFIG_DIR` or `AGUARD_USAGE_LOG`, so no test reads the developer's own config or appends to their usage log; `TestEveryTestPackageIsolatesTheHome` requires its `TestMain` in each package with tests, and `TestDefaultLocations_AreInsideTheTestHome` (`cmd/bas-guard`) requires every default location the binary resolves to lie inside the temporary home | 125 |
+| [`cmd/bas-guard`](../cmd/bas-guard/) | CLI wiring, `analyze()`, the Downloads pass, the gate runner, `llm setup/test/status/preview` | — |
 
 Two responsibilities are split in a way worth knowing up front, because both halves say
 "permission":
@@ -159,7 +159,7 @@ one plain sentence, then one numbered block per finding — what it is about in 
 dimension, who · what with the rule id last, the rule's Why, the judge's triage label in plain words
 ("likely a false alarm", "one reading", and that the finding and the score stand), and a next step
 in fixed words (which file and line to read, the dimension's question, and — only for a skill the
-load-time gate can stop, with a hash and no critical — the exact `aguard approve` command, quoted by
+load-time gate can stop, with a hash and no critical — the exact `bas-guard approve` command, quoted by
 the gate's own `internal/cmdline`). A "Why N" line follows, built from `score.Explain` — the working
 `score.Apply` did, so it cannot disagree with the number — then one short Judge line (its versions
 are `--verbose`'s; `report.JudgeLineSuffix` is the one extension point), what was trusted, what was
@@ -241,7 +241,7 @@ what decides an engine rule's finding — each `builtinRules()` entry's ID, dime
 flags and pattern source, in engine order, but not its title or explanation — plus an integer
 `rulesEpoch`. The structural and permission checks and the notes that are not `LLM-` IDs are
 built inline, so the epoch is all that covers them. Scan reports carry it as `rules_version`,
-`aguard version` prints it, and the `rules.md` header shows it, so a pattern change cannot ship
+`bas-guard version` prints it, and the `rules.md` header shows it, so a pattern change cannot ship
 without `make docs`. It covers **deterministic detection only** — what `overall` is
 computed from. **When you change deterministic detection code outside `builtinRules()`** —
 structural or shape checks, the role gate, the lexical layer, which files are read, `collect`'s
@@ -259,11 +259,11 @@ Skills and plugins get a tree hash (relative paths sorted, plus each file's sha2
 file gets its sha256. It is the reputation database key, so it must be stable across machines
 and checkouts. **Changing the hashing logic invalidates every entry in
 [`reputation.json`](../internal/reputation/data/reputation.json)**; regenerate with
-`aguard hash`. `test/` is deliberately *not* excluded — payloads hide there.
+`bas-guard hash`. `test/` is deliberately *not* excluded — payloads hide there.
 
 Hooks, MCP servers and permission lists get a **content hash** instead
 ([`detect/contenthash.go`](../internal/detect/contenthash.go)), filled by `analyze()` right after
-the rule engine runs and before reputation, the gate's `SessionStart`, `aguard approve` or the
+the rule engine runs and before reputation, the gate's `SessionStart`, `bas-guard approve` or the
 Downloads pass read it. It is `sha256(<kind domain> 0x00 <canonical JSON>)` over the configuration
 alone — the whole hook or server entry, no path, no artifact name — so one configuration on two
 machines is one identity. A hook's input includes the content of the script it runs (or a marker
@@ -372,7 +372,7 @@ structure only; and the report names the worst artifact beside the mean.
   a CI matrix runs the suite on Windows.
 
 **Confirmed evasions** are asserted *inverted* in
-[`cmd/aguard/adversarial_test.go`](../cmd/aguard/adversarial_test.go) — closing one makes a
+[`cmd/bas-guard/adversarial_test.go`](../cmd/bas-guard/adversarial_test.go) — closing one makes a
 test fail, so a gap cannot be forgotten the way a checklist item can. Currently one: the contents
 of an `ExcludeFromScan` directory (a vendored or generated tree) are not scanned — its findings
 would be about somebody else's dependency — while the artifact that directs the agent into it is
@@ -386,7 +386,7 @@ make build            # -> bin/aguard (CGO_ENABLED=0, version/commit/date via -l
 make test             # go test -race -cover ./...
 make lint             # golangci-lint
 make dist             # release binaries + SHA256SUMS.txt (darwin/linux)
-go test -run TestFailGate ./cmd/aguard/     # one test
+go test -run TestFailGate ./cmd/bas-guard/     # one test
 ./bin/aguard scan --root ~/.claude          # the real-machine smoke test
 ```
 
@@ -407,6 +407,6 @@ Conventions that reviewers will hold you to:
   publishes the binaries with their checksums.
 
 After a change to [`logical.go`](../internal/detect/logical.go) or anything in the reader path,
-run `aguard scan` against a real `~/.claude` before opening the PR. That file is a hand-written
+run `bas-guard scan` against a real `~/.claude` before opening the PR. That file is a hand-written
 lexer eating attacker-controlled bytes; its first version panicked on a real machine (a line
 ending in a single quote) while the table tests stayed green. Two fuzz targets guard it now.

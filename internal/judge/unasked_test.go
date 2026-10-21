@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // unaskedNotes returns the LLM-000 notes saying the judge asked nothing about some artifacts.

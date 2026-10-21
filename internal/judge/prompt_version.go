@@ -131,7 +131,7 @@ var promptVersionOnce = sync.OnceValue(func() string { return promptVersion(shap
 
 // PromptVersion names the prompts this build's judge sends: the first 12 hex digits of a sha256
 // over the request body of every call shape, scanned content, model and nonce stood in. A --llm
-// report carries it as judge.prompt_version and `aguard version` prints it as judge-prompt=.
+// report carries it as judge.prompt_version and `bas-guard version` prints it as judge-prompt=.
 //
 // Two values that differ mean the model was asked differently. Two that agree mean every prompt,
 // layout, response format, temperature and request field was the same — not that the model, the

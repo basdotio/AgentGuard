@@ -1,8 +1,8 @@
 <!-- SPDX-License-Identifier: MIT -->
 # Load-time gate
 
-`aguard hook` audits a skill **before an agent loads it**, and asks you about anything that
-carries a finding. It is the same static scan `aguard check` runs without `--llm` — no model, no
+`bas-guard hook` audits a skill **before an agent loads it**, and asks you about anything that
+carries a finding. It is the same static scan `bas-guard check` runs without `--llm` — no model, no
 network, nothing executed — delivered at the moment the answer is worth something.
 
 Chinese version: [install-gate.zh-CN.md](install-gate.zh-CN.md).
@@ -10,9 +10,9 @@ Chinese version: [install-gate.zh-CN.md](install-gate.zh-CN.md).
 ## Install
 
 ```bash
-aguard hook install          # merges into ~/.claude/settings.json, backing it up first
-aguard hook install --dry-run   # see the change without making it
-aguard hook uninstall        # removes exactly its own entries
+bas-guard hook install          # merges into ~/.claude/settings.json, backing it up first
+bas-guard hook install --dry-run   # see the change without making it
+bas-guard hook uninstall        # removes exactly its own entries
 ```
 
 Restart Claude Code — hooks are read when a session starts.
@@ -27,14 +27,14 @@ not trip `HOOK-001`.
 
 | Event | What happens |
 |---|---|
-| `PreToolUse[Skill]` | Resolve the skill, scan it, decide. Already approved → silence. Clean and new → one line, then remembered. **Below the threshold but with a finding at medium or above → one line on every load, not remembered** (until the content is clean, or you `aguard approve` it). Findings at or above the threshold → **the load stops and you are asked**. |
+| `PreToolUse[Skill]` | Resolve the skill, scan it, decide. Already approved → silence. Clean and new → one line, then remembered. **Below the threshold but with a finding at medium or above → one line on every load, not remembered** (until the content is clean, or you `bas-guard approve` it). Findings at or above the threshold → **the load stops and you are asked**. |
 | `PostToolUse[Skill]` | If you approved at the prompt, record it — but only after re-reading the target and confirming the bytes still hash to what the prompt described. |
 | `SessionStart` | Audit the whole root and report unapproved artifacts carrying findings. Informs only; it cannot block. When nothing needs raising it still states what the gate does **not** cover, because a quiet environment is the one whose owner is most likely to assume it covers everything. |
 
 To confirm it is actually wired up:
 
 ```bash
-aguard hook status
+bas-guard hook status
 ```
 
 Three states, stated plainly: **active**, **not installed**, or **registered but dead**. The
@@ -60,10 +60,10 @@ So the gate does not try to stop a download. It stops the artifact from speaking
 ## Approvals are keyed by content, not by name
 
 ```bash
-aguard approve ./some-skill        # trust these exact bytes
-aguard approvals                   # list what has been trusted
-aguard approvals forget <hash>     # withdraw one; a prefix works, including the short hash a gate message printed
-aguard approvals forget all
+bas-guard approve ./some-skill        # trust these exact bytes
+bas-guard approvals                   # list what has been trusted
+bas-guard approvals forget <hash>     # withdraw one; a prefix works, including the short hash a gate message printed
+bas-guard approvals forget all
 ```
 
 The key is the artifact's **canonical hash** — the same tree hash the reputation library uses,
@@ -73,11 +73,11 @@ edited character produces a different hash, and the gate asks again **by itself*
 tune, no cache to invalidate, nothing to remember to re-run.
 
 Content with no hash cannot be approved. A config file that did not parse, or a file the scanner
-could not open, has no hash for an approval to be keyed on, so `aguard approve` refuses it — it
+could not open, has no hash for an approval to be keyed on, so `bas-guard approve` refuses it — it
 names the artifact and the reason, exits 2, and leaves the store untouched.
-`aguard check <path> --json` lists the notes that say what could not be read.
+`bas-guard check <path> --json` lists the notes that say what could not be read.
 
-The `aguard check` and `aguard approve` commands in the gate's messages carry the artifact's
+The `bas-guard check` and `bas-guard approve` commands in the gate's messages carry the artifact's
 **full path**, quoted for a POSIX shell, so they work pasted exactly as printed. The path shown
 for reading is shortened past 160 characters (a skill installed through the desktop app is usually
 longer than that); the command is not. A path holding a control or invisible character is spelled
@@ -89,7 +89,7 @@ approvals it holds, for at most an hour, the verdict behind each prompt still wa
 answer: the answer arrives in a separate hook call, and this file is the only thing the two
 calls share. A store that
 cannot be parsed degrades to *asking about everything* rather than to allowing it — the two
-failure directions are not symmetric, and `aguard hook` will not overwrite a file it could not
+failure directions are not symmetric, and `bas-guard hook` will not overwrite a file it could not
 read.
 
 ## Your permission mode changes what it does
@@ -106,7 +106,7 @@ configured it, and the setting you would need to change is not the gate's.
 ```
 This session runs in permission mode "auto", which answers prompts automatically.
 An "ask" would have been accepted without you ever seeing it, so this was REFUSED instead.
-To load it anyway, decide outside the session: aguard approve "<path>"
+To load it anyway, decide outside the session: bas-guard approve "<path>"
 ```
 
 `default` and `plan` are unaffected — both show the question. An **unrecognised** mode does not
@@ -137,8 +137,8 @@ edges of.
 - **The clean-path notice may be invisible.** It travels in the hook protocol's
   `systemMessage` field, which does not render in the VS Code extension. Blocking is
   unaffected (that goes through `permissionDecision` and always takes effect), but it means
-  "audited, nothing found" may reach you as silence. `aguard hook status` and
-  `aguard approvals` are where to look instead — the latter lists every piece of content the
+  "audited, nothing found" may reach you as silence. `bas-guard hook status` and
+  `bas-guard approvals` are where to look instead — the latter lists every piece of content the
   gate has audited and trusted.
 - **Static limits still apply.** Everything in the README's capability boundary holds here —
   the gate cannot prove malice, decode an obfuscated payload's intent, or catch a zero-day.

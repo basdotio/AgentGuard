@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // Four malicious samples cleared the gate on a medium finding each, and the gate then
@@ -41,7 +41,7 @@ func TestPassWithMediumFindingIsNotRemembered(t *testing.T) {
 	if strings.Contains(msg, "trusted from now on") {
 		t.Errorf("the pass message promises memory it does not have: %q", msg)
 	}
-	for _, want := range []string{"OBF-006", "not recorded", "aguard approve"} {
+	for _, want := range []string{"OBF-006", "not recorded", "bas-guard approve"} {
 		if !strings.Contains(msg, want) {
 			t.Errorf("pass message lacks %q: %q", want, msg)
 		}

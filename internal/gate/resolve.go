@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/collect"
+	"github.com/basdotio/bas-guard/internal/collect"
 )
 
 // ResolveSkill turns the name in a Skill tool call into the directory to audit.

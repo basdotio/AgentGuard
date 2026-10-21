@@ -31,7 +31,7 @@ tools:
     repo: https://github.com/basdotio/AgentGuard
     uploads_samples: false
     uploads_samples_basis: >-
-      invariant #1, enforced by TestZeroDial_OnlyTheJudgeConnects (cmd/aguard/zero_dial_test.go):
+      invariant #1, enforced by TestZeroDial_OnlyTheJudgeConnects (cmd/bas-guard/zero_dial_test.go):
       aguard sends no request except from the explicitly opted-in LLM judge (scan --llm, check
       --llm, llm test), which a baseline run does not enable unless -aguard-extra-args passes --llm — and
       then run.yaml replaces this line with one written for that run.

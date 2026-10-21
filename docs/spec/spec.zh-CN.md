@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: MIT -->
-# AgentGuard 技术规格(Spec)
+# BAS Guard 技术规格(Spec)
 
 > **这是规格源头。** 源码注释里的 `spec §N` 全部指向本文件的对应小节。
 > 代码现状看 [../docs/architecture.md](../architecture.md),规则条数以 [../docs/rules.md](../rules.md) 头部计数块为准,
@@ -40,26 +40,26 @@ Collect(发现+读取) → Parse(结构化) → Detect(静态规则+AST) → Jud
 ## 3. CLI 接口
 
 ```
-aguard scan  [--root ~/.claude] [--json] [--html out.html] [--sarif out.sarif] [--md out.md|-] [--report] [--llm]
+bas-guard scan  [--root ~/.claude] [--json] [--html out.html] [--sarif out.sarif] [--md out.md|-] [--report] [--llm]
              [--inbox <dir>|off] [--zombie] [--fail-on <level>] [--fail-on-llm <level>]
              # --report 写自包含 HTML 到 $XDG_CONFIG_HOME/aguard/reports/(带时间戳,路径打印出来)
              # --inbox 默认 ~/Downloads:另一条流水线,见 §4「下载目录」,永不进环境分
-aguard clean [--root ~/.claude] [--apply] [--undo <id>|last] [--ask] [--dry-run]
+bas-guard clean [--root ~/.claude] [--apply] [--undo <id>|last] [--ask] [--dry-run]
              # 默认只列;--apply 只「移动」到 <root>/.aguard-trash,永不删除;--undo 按批次恢复
-aguard check <path-or-zip> [--json] [--sarif out.sarif] [--md out.md|-] [--fail-on high] [--llm] [--fail-on-llm <level>]
+bas-guard check <path-or-zip> [--json] [--sarif out.sarif] [--md out.md|-] [--fail-on high] [--llm] [--fail-on-llm <level>]
                                                        # 装前闸门:单个 skill/插件/目录/文件/zip;默认静态,--llm 与 scan 是同一个开关
                                                        # 基线不自动发现:目标即被审对象,只认显式 --ignore
-aguard hook install|uninstall|status [--dry-run]       # 加载时闸门:注册为 Claude Code hook,见 §17
-aguard hook                                            # hook runner:从 stdin 读事件(由 Claude Code 调用)
-aguard approve <path> · aguard approvals               # 闸门的批准(key 是 canonical 哈希,永不是名字)
-aguard hash <path>                                     # 打印 canonical 信誉哈希
-aguard llm setup|test|status                           # 可选 LLM 判官的配置三原语,见 §11
-aguard llm preview [path]                              # 不发送、不要密钥,列出 --llm 会发的每次调用和栅栏内原文(P-027)
-aguard version                                         # 版本 + 与已装插件版本的比对
+bas-guard hook install|uninstall|status [--dry-run]       # 加载时闸门:注册为 Claude Code hook,见 §17
+bas-guard hook                                            # hook runner:从 stdin 读事件(由 Claude Code 调用)
+bas-guard approve <path> · bas-guard approvals               # 闸门的批准(key 是 canonical 哈希,永不是名字)
+bas-guard hash <path>                                     # 打印 canonical 信誉哈希
+bas-guard llm setup|test|status                           # 可选 LLM 判官的配置三原语,见 §11
+bas-guard llm preview [path]                              # 不发送、不要密钥,列出 --llm 会发的每次调用和栅栏内原文(P-027)
+bas-guard version                                         # 版本 + 与已装插件版本的比对
 ```
 
 - **全局 flags**:`--root`(默认 `~/.claude`)、`--config`(判定模型配置)、`--quiet`。
-- **LLM 判定默认关**:`scan` 与 `check` 都需显式 `--llm` 才启用意图判定(B1),两边是同一个开关、发同一份脱敏摘录、走同一个 `analyze()`。`check` 的输入是装前的不可信内容,这**不构成**拒绝 `--llm` 的理由:`scan --llm` 本来就对 `~/Downloads` 里还没装的候选逐个走 `check` 的路径去判(§4.1);注入想要的降分方向由 §5.2.1 的单向性封死(只能让攻击者自己的 artifact 更可疑);`--fail-on` 照旧只看确定性发现。**加载时闸门(§17)和 `aguard approve` 恒静态**,不读这个开关。(2026-10-08 P-004;此前 `check` 拒绝 `--llm`,唯一的绕路 `scan --root <目标>` 会自动读目标自带的 `.aguardignore`。)
+- **LLM 判定默认关**:`scan` 与 `check` 都需显式 `--llm` 才启用意图判定(B1),两边是同一个开关、发同一份脱敏摘录、走同一个 `analyze()`。`check` 的输入是装前的不可信内容,这**不构成**拒绝 `--llm` 的理由:`scan --llm` 本来就对 `~/Downloads` 里还没装的候选逐个走 `check` 的路径去判(§4.1);注入想要的降分方向由 §5.2.1 的单向性封死(只能让攻击者自己的 artifact 更可疑);`--fail-on` 照旧只看确定性发现。**加载时闸门(§17)和 `bas-guard approve` 恒静态**,不读这个开关。(2026-10-08 P-004;此前 `check` 拒绝 `--llm`,唯一的绕路 `scan --root <目标>` 会自动读目标自带的 `.aguardignore`。)
 - **两个闸门开关是分开的**:`--fail-on` 只看确定性发现(`overall` 侧,§5.3),**任何 LLM 输出都动不了它**;`--fail-on-llm` 看含升级的一侧,**默认空=关**,要自愿承担 LLM 误报风险才打开。**已实现**;需**两次**主动选择(传 flag **且** `llm.authority: escalate`),只传 flag 而未授权是**报错拒绝**而非静默忽略 —— 永不触发的闸门比没有闸门更糟;**授权还须带投票**(P-046):`llm.samples ≥ 3`(`config.MinSamplesToEscalate`),否则同样拒绝、点名 `llm.samples: 3`——卡构建的只能是多数采样同意的判决,不能是一次抽样(P-041 实测:`samples: 3` 下良性 1→0,`samples: 1` 下 6→11)。不传 `--fail-on-llm` 时两个键不受此约束。`check` 有同一个 flag、同一套语义(P-004)。**两个阈值连同授权在采集之前校验**:打错的级别或缺授权是退出码 2,判官一个请求都不发、报告不印;不会因为确定性发现先命中 `--fail-on` 而被一个退出码 1 盖住(`check` 默认 `--fail-on high`,以前这是常态)。**判官没能回答不是通过**(P-026):设了 `--fail-on-llm`、没有闸门命中,但判官没跑(没传 `--llm`、`llm.enabled: false`、端点被拒、key 拿不到)或跑短了(`JudgeSummary.Failed > 0` 或 `Skipped > 0`)→ 退出码 `4`,stderr 一行写原因(`--quiet` 下也印),报告内容不变。只看判官摘要自己的计数:摘录被截短、`LLM-005` 丢弃的判决都算回答了。优先级 `2` > `1` > `4` > `0`;只设 `--fail-on` 时永远不看判官状态;下载目录不卡门,它的判官摘要也不参与。
 - **退出码**:`0` 无高危;`1` 有 ≥ `--fail-on`(或 `--fail-on-llm`)级别发现;`2` 运行错误(**2 不是通过,扫描没有发生**,例如 `--root` 打错);`3` 仅 `clean`:部分执行,每条被拒的都点名;`4` 仅 `--fail-on-llm`:闸门无法评估(判官没跑或跑短了;或 `check` 的目标是判官没有可问的 —— 无法识别的目录,或里面没有任何可加载 skill、命令、子 agent 的 plugin,P-038/P-044),**4 不是通过**。被信号中断以 `128 + 信号号` 结束。经 npm launcher 运行时逐位透传。
 - **判官用量日志**(P-073,opt-in):环境变量 `BAS_GUARD_USAGE_LOG=<路径>`(或改名前的 `AGUARD_USAGE_LOG`,两个都设时以前者为准,P-082)设了时,每次**至少发出一次调用**的判官运行按判官块各追加一行 JSON —— `scan` 的环境块(`section: environment`)和 Downloads 块(`section: downloads`,对各项的合计)、`check` 一行、`llm test` 一行(`calls: 1`,失败为 `failed: 1`,无 `samples`)。字段:`time`(RFC 3339 UTC)、`command`、`tool_version`、`rules_version`、`prompt_version`、`excerpt_version`、`model`、`endpoint`(**只写源** `scheme://host[:port]`,不写路径、query、userinfo)、`samples`,以及 `judge` 块的计数(`calls` `failed` `skipped` `retries` `triage_calls` `repaired` `reasked`,为真时 `temperature_omitted`,端点报了才有 `prompt_tokens`/`completion_tokens`,报了缓存命中才有 `cached_prompt_tokens`(P-071),按趟分的 `usage_by_pass`(P-072;`llm test` 那一行没有,连通性检查不属于任何一趟)),值照抄判官块、不重新计数。**被扫内容一概不进**(artifact 名、路径、发现、摘录、`reason`、`artifacts`/`findings` 计数)。不设或为空:哪儿都不写,所有输出逐字节不变。文件以 0600 创建,`O_APPEND` 一行一次 write;路径是符号链接(含悬空)、目录、特殊文件或父路径不是目录 → stderr 一行警告(`--quiet` 下也印)、不写;写失败不改退出码、不改报告。只写本地文件,不是出网路径(§16 不变量 4),也**不是费用记录**:工具不算钱,只记端点报告的用量。
@@ -89,7 +89,7 @@ aguard version                                         # 版本 + 与已装插�
 **配置文件作用域(B4)**:hooks/permissions/MCP 不止一个来源,按优先级枚举并**标注每条 finding 来自哪个作用域**:
 `<root>/settings.json` → `<root>/settings.local.json` → 项目级 `.claude/settings.json` / `settings.local.json` → 项目 `.mcp.json` → `~/.claude.json`。P0 至少覆盖用户级 + 当前工作目录项目级。
 
-> 实现现状(2026-09-15):plugin 整棵树扫成一个 artifact,**同时**它自带的 hook 按 (event, matcher, command) 拆成独立 hook artifact(走 `settings.json` 同一个 builder,`HOOK-001`、脚本跟进、判官 hook pass 全都适用),自带的 MCP server(插件根 `.mcp.json`/`mcp.json`)拆成独立 mcp artifact,**按配置里的 key(`MCPServer`,经 `detect.MCPServerKey`)找条目**;**带不带 `mcpServers` 外壳都认**(P-029,2026-10-10 实测 Claude Code 2.1.107:插件 MCP 文件按 `doc.mcpServers || doc` 读,外壳缺失或为 JS 假值时顶层就是 server 表、照样启动;外壳键区分大小写;无外壳时只有带 `command` 或 `type` 的对象才算 server;用户级/项目级配置不认无外壳形式,不按此读),规则和判官的 MCP 配置那一趟都跑 —— artifact 名带 ` (plugin …)` 后缀,2026-10-09 之前(P-021)规则和判官按名字找、找不到,每个插件 server 都是零 unit 的 100 分。一条 hook 命令、一个插件 MCP server 条目因此都出现两次(树里的文本 + 独立 artifact),报告按 (artifact, rule) 折叠,两行说的是不同粒度的事;宁可重复,不要让树扫描依赖 hook 解析成功。插件自带的 skills、commands、子 agent 自 P-044 起也**各自成为 artifact**(`scan` 和 `check <插件>` 都采;`Plugin` 字段指回插件 artifact 的名字;名字 `<bundle>:<leaf> (plugin …)`,与闸门解析 `plugin:skill` 同一个 leaf;skill 用该目录的树哈希,命令/子 agent 用文件哈希,即 `aguard hash` 与闸门算的那个)。**只采 Claude Code 2.1.107 会加载的**(从安装的二进制里读出的加载器):`skills/SKILL.md`,否则 `skills/<x>/SKILL.md` 一层(`<x>` 可以是软链);`commands/` 下递归的 `.md`,含 `SKILL.md` 的目录算一个 skill 形的命令且不再下钻,软链条目跳过;`agents/` 下递归的 `.md`,软链跳过;manifest 的 `skills`/`commands`/`agents` 路径(字符串、数组,`commands` 还可以是带 `source` 的对象)在默认目录**之外追加**,出插件根的路径拒收。`docs/<语言>/`、`.agents/` 这类镜像副本不采(`issues/017`)。判官按子项的种类问(§5.2);静态发现插件树和子项两边都有,人读的渲染器和 SARIF 只在插件那一行印一次(`score.Family.ShownByPlugin`,判官的分诊同一个谓词),环境分把插件和子项算作一个单元(§5.3),信誉 GOOD 命中插件树哈希时子项一并压制(字节在命中的树里),闸门的 SessionStart、`approve` 和 hygiene 跳过子项。`check <插件>` **仍不拆** hook 和 MCP(`issues/023` 的后续)。插件 manifest(`.claude-plugin/plugin.json`)里声明的 `mcpServers`(内联、路径、数组、MCPB)以及数组形式的外壳,Claude Code 会启动(内联、路径、数组外壳三种 2026-10-10 实测),**仍未采集**(数组外壳照旧出解析失败的 artifact)。
+> 实现现状(2026-09-15):plugin 整棵树扫成一个 artifact,**同时**它自带的 hook 按 (event, matcher, command) 拆成独立 hook artifact(走 `settings.json` 同一个 builder,`HOOK-001`、脚本跟进、判官 hook pass 全都适用),自带的 MCP server(插件根 `.mcp.json`/`mcp.json`)拆成独立 mcp artifact,**按配置里的 key(`MCPServer`,经 `detect.MCPServerKey`)找条目**;**带不带 `mcpServers` 外壳都认**(P-029,2026-10-10 实测 Claude Code 2.1.107:插件 MCP 文件按 `doc.mcpServers || doc` 读,外壳缺失或为 JS 假值时顶层就是 server 表、照样启动;外壳键区分大小写;无外壳时只有带 `command` 或 `type` 的对象才算 server;用户级/项目级配置不认无外壳形式,不按此读),规则和判官的 MCP 配置那一趟都跑 —— artifact 名带 ` (plugin …)` 后缀,2026-10-09 之前(P-021)规则和判官按名字找、找不到,每个插件 server 都是零 unit 的 100 分。一条 hook 命令、一个插件 MCP server 条目因此都出现两次(树里的文本 + 独立 artifact),报告按 (artifact, rule) 折叠,两行说的是不同粒度的事;宁可重复,不要让树扫描依赖 hook 解析成功。插件自带的 skills、commands、子 agent 自 P-044 起也**各自成为 artifact**(`scan` 和 `check <插件>` 都采;`Plugin` 字段指回插件 artifact 的名字;名字 `<bundle>:<leaf> (plugin …)`,与闸门解析 `plugin:skill` 同一个 leaf;skill 用该目录的树哈希,命令/子 agent 用文件哈希,即 `bas-guard hash` 与闸门算的那个)。**只采 Claude Code 2.1.107 会加载的**(从安装的二进制里读出的加载器):`skills/SKILL.md`,否则 `skills/<x>/SKILL.md` 一层(`<x>` 可以是软链);`commands/` 下递归的 `.md`,含 `SKILL.md` 的目录算一个 skill 形的命令且不再下钻,软链条目跳过;`agents/` 下递归的 `.md`,软链跳过;manifest 的 `skills`/`commands`/`agents` 路径(字符串、数组,`commands` 还可以是带 `source` 的对象)在默认目录**之外追加**,出插件根的路径拒收。`docs/<语言>/`、`.agents/` 这类镜像副本不采(`issues/017`)。判官按子项的种类问(§5.2);静态发现插件树和子项两边都有,人读的渲染器和 SARIF 只在插件那一行印一次(`score.Family.ShownByPlugin`,判官的分诊同一个谓词),环境分把插件和子项算作一个单元(§5.3),信誉 GOOD 命中插件树哈希时子项一并压制(字节在命中的树里),闸门的 SessionStart、`approve` 和 hygiene 跳过子项。`check <插件>` **仍不拆** hook 和 MCP(`issues/023` 的后续)。插件 manifest(`.claude-plugin/plugin.json`)里声明的 `mcpServers`(内联、路径、数组、MCPB)以及数组形式的外壳,Claude Code 会启动(内联、路径、数组外壳三种 2026-10-10 实测),**仍未采集**(数组外壳照旧出解析失败的 artifact)。
 >
 > **plugin 的来源不止 `installed_plugins.json`。** Claude 桌面版(Cowork 和桌面版里的 Code 标签)在 Customize 里装的插件和 skill 同步到 `~/Library/Application Support/Claude/local-agent-mode-sessions/`,启动 CLI 时用 `--plugin-dir` 塞进去,**不经过** manifest;只读 root 的扫描对它们全盲,而这正是非技术用户的安装路径。`collect/desktop.go` 按 home 定位,布局是未文档化的观察结果(2026-09-04,macOS),只允许单向 best-effort:目录不存在 → 什么都不出;在但读不了 → `IO-000`/`COV-000`/`SCOPE-001`。桌面版的 skills 包**按单个 skill 采**(整包哈希一上传就变,单 skill 树哈希才稳)。同名 bundle 多份时按内容哈希去重,最新会话优先。
 >
@@ -192,7 +192,7 @@ type Rule struct {
 - **connector 工具说明的投毒规则**(`MCP-001..004`,只在 `roleToolDesc` 下跑):说明让模型读本地文件/密钥并传出;指挥别的工具或让模型对用户隐藏;伪装成 system prompt(`<IMPORTANT>`、对 "the assistant" 下令);把数据发去外部 URL。工具说明是「agent 会读并照做的文本」,所以另外只跑维度 1 的规则(和 doc 一样,`curl|sh` 写在说明里是描述不是执行)。四条对着真机 44 个工具的语料(Figma + visualize)验过不误报:正常说明里合法地写着 "IMPORTANT: load X before calling"、`<placeholder>`、token 和 URL,每条规则都比这些窄。
 - **规则表版本 `rules_version`**(P-002,2026-10-09):`detect.RulesVersion()` = sha256 的前 12 位十六进制,输入是 `builtinRules()` **按引擎顺序**逐条的 `ID`、`Dimension`、`Severity`、`Advisory` 与四个 `*Only` 标志、`re`/`except` 的正则源码(逐字段长度前缀,正则里什么字节都可能有),外加规则条数和未导出的 `rulesEpoch` 整数。**只覆盖确定性检测**:它的用途是对着产出它的规则离线复算 `overall`,判官只动 `overall_effective`,所以 `internal/judge` 的一切(提示词、证据落地、k-of-n 共识、严重度钳制)都不在 `rules_version` 里,改它们不加 epoch。判官由 `--llm` 报告自己的 `judge` 摘要(§8)标识(P-031,§5.2):`prompt_version`(算出来的)与 `excerpt_version`(手动加一)标判官的代码,`model` 与 `samples` 标它怎么跑;`authority` 与其余 `llm` 配置不进报告。**`Title`/`Why`/`Ref` 不进**:它们解释一条发现,不决定它响不响、多重。**按引擎顺序、不排序**:同一行上的发现按规则顺序 append,重排可能改变报告,版本号就该变。`Rule` 加字段必须表态进不进哈希(`TestRulesVersion_EveryRuleFieldIsDecided`)。
   **`rulesEpoch` 的纪律**:规则表之外的确定性检测代码 —— 结构化/形状/外泄链检查、角色门(`roleAllows`/`roleForPath`)、词法层(`logical.go`)、注释处理、读哪些文件、`collect` 的凭据 import 检查(`EXFIL-005`)、`permcheck` —— 只要改变了"某个输入产出哪些确定性发现,或某条发现的 ID/维度/严重度/advisory",**同一个提交里加一**;判官不在其列(见上);标题、解释、证据格式、评分权重的改动不加。**没有机械强制**:哈希源码会被只改注释的提交推动,那正是这个版本号要避免的假警报。所以对它只能说"不同 ⇒ 规则变了;相同 ⇒ 规则表相同",**不能说"相同 ⇒ 检测逻辑相同"**。
-  它出现在三处:`ScanResult.RulesVersion`(§8)、`aguard version` 行末(` · rules=<v>`,`$2` 仍是版本号)、`docs/rules.md` 页眉 —— 后者让漂移检查也覆盖"只改正则、不改标题"的提交。**评分权重和信誉名单不在里面**:前者属于另一类原因"分数不可复现"(与"规则变了""输入变了"分开),后者在 version 行上有自己的计数,且 `--no-reputation` 可关。`inputs_digest` 与 `aguard verify`(输入摘要与离线复核)未做。
+  它出现在三处:`ScanResult.RulesVersion`(§8)、`bas-guard version` 行末(` · rules=<v>`,`$2` 仍是版本号)、`docs/rules.md` 页眉 —— 后者让漂移检查也覆盖"只改正则、不改标题"的提交。**评分权重和信誉名单不在里面**:前者属于另一类原因"分数不可复现"(与"规则变了""输入变了"分开),后者在 version 行上有自己的计数,且 `--no-reputation` 可关。`inputs_digest` 与 `bas-guard verify`(输入摘要与离线复核)未做。
 
 **10 维度规则集**(每维度一组,P0 各给种子规则):注入/过度权限/数据外泄/代码执行/供应链/混淆/后门/资源滥用/文件系统/意图不符。**规则从 OWASP Agentic Top 10 / MITRE ATLAS 公开分类重新推导,每条注释标注依据 ID;skill-guard/NOVA 仅作参考对照,不移植文件**(决策3,规避 copyleft 传染)。
 
@@ -200,7 +200,7 @@ type Rule struct {
 
 ### 5.2 隔离 LLM 判定(可选增强)
 
-**触发**:默认**关**;仅在 `scan --llm` 或 `check --llm`(P-004)且有 config 时调用;加载时闸门、`aguard approve`、`clean` 恒不调用。**每个 pass 的触发条件按下表分三类**,判据是**成本与作用域**,不是谨慎程度:
+**触发**:默认**关**;仅在 `scan --llm` 或 `check --llm`(P-004)且有 config 时调用;加载时闸门、`bas-guard approve`、`clean` 恒不调用。**每个 pass 的触发条件按下表分三类**,判据是**成本与作用域**,不是谨慎程度:
 
 | pass | 作用 kind | 触发方式 | 依赖静态的什么 | 状态 |
 |---|---|---|---|---|
@@ -255,7 +255,7 @@ MCP 配置按 `detect.ConfigLines` 渲染成 `key=value` 行(与静态读同一�
 - 判定输出走**结构化 schema**(强制 JSON):`{verdict: safe|suspicious|malicious, dimension, confidence, evidence_lines[], rationale}`。
 - 判定器**无工具、无网络访问被审目标、不执行任何内容**——纯文本推理。
 - **送给模型的摘录先压缩、再截两头**(2026-09-08):连续空行折成一行、注释行整行去掉(用和 A1 同一个分类器;注释是脚本里作者对读者说话的地方,正是攻击者会对判官说话的地方,解释器从不读注释,判官也不该读),字节上限内保留文件头 2/3 + 尾 1/3 并放一行 `N line(s) omitted` 标记。摘录不再与文件连续,所以每个 `sourceUnit` 带 `lineMap` 把摘录行映射回原文行号,证据落地仍引真实 `file:line`。触发它的是十万个空行把 payload 推到 2000 字节前缀之外、以及三段写给判官看的注释。intent 提示词多了一类**「披露了也要报」**:改包源、写 git hook / shell 启动文件 / 定时任务,描述老实写着「配置企业 npm 镜像」也不放行。`LLM-005` 带最多三条没落地的引文(截 120 字符、再过一次 Redact),用来分「模型在转述」和「摘录切掉了它引的行」;整段引文落不了地时按行拆开逐行找,每行仍要一字不差。**`N line(s) omitted` 标记是我们插进摘录的行,不在任何文件里:落在它上面的引用按落不了地处理**(P-006)。**行内垫料在任何封顶之前折掉**(P-020):一行里连续超过 128 字节的空白(`unicode.IsSpace`,换行除外)或不可见字符(`detect.Invisible`)换成落地读它的样子——一个空格,只有不可见字符时为空;从不跨 `\n`,所以 `lineMap` 不变,折后规范化文本与原文相同,落地、行号、P-006 的窗口都不受影响。位置在摘录构造器的唯一收口 `egress.redact`:Redact → 折叠 → (折过才)再 Redact → 换家目录。触发它的是一行垫几千字节空白的指令被换成省略标记或纯空白前缀、三个各在每文件上限内的垫料脚本花光合计上限;每 128 字节插一个可见字符的垫料仍算内容。
-- **判官自己的两个版本号**(P-031,2026-10-10):`judge.PromptVersion()` 是**算出来的** —— 客户端每一种请求形状(6 趟 × 两侧都有/声明为空/行为为空/都为空 × 温度 0 与 `samplingTemperature`,外加比上限多一条的 triage)的完整 JSON 请求体,被扫内容、模型名和 nonce 换成固定占位,逐个长度前缀后取 sha256 前 12 位;`TestPromptVersion_HashesWhatTheClientSends` 用真客户端经 httptest 逐字节核对每个请求体就是被哈希的那个,所以提示词、版式、回复格式、温度、请求字段一变,要么版本号变,要么测试红。`judge.ExcerptVersion`(`ground.go`)是**手动加一**的整数,管哪些 artifact 走哪几趟、每趟带什么文本(压缩、截两头与行号映射、声明用途/hook/MCP/connector 的渲染、解码上限、垫料折叠、家目录替换与脱敏顺序)和引文怎么落地;golden 测试把一个固定夹具的摘录与落地结果的摘要和这个整数**一起**钉死,只改一边就红,夹具没走到的改动仍靠人记得加。两者连同 `model`、`samples` 进 `judge` 摘要(§8),`aguard version` 在 `rules=` 后面印 `judge-prompt=`/`judge-excerpt=`。**不能说**「版本和模型相同 ⇒ 答案相同」(模型是采样的,厂商可以不改名就换模型),也**不能说**两个版本覆盖整个判官:共识、严重度钳制、只提示表都不在里面,只有 `tool_version` 标它们。判官仍不在 `rules_version` 里(§5.1)。
+- **判官自己的两个版本号**(P-031,2026-10-10):`judge.PromptVersion()` 是**算出来的** —— 客户端每一种请求形状(6 趟 × 两侧都有/声明为空/行为为空/都为空 × 温度 0 与 `samplingTemperature`,外加比上限多一条的 triage)的完整 JSON 请求体,被扫内容、模型名和 nonce 换成固定占位,逐个长度前缀后取 sha256 前 12 位;`TestPromptVersion_HashesWhatTheClientSends` 用真客户端经 httptest 逐字节核对每个请求体就是被哈希的那个,所以提示词、版式、回复格式、温度、请求字段一变,要么版本号变,要么测试红。`judge.ExcerptVersion`(`ground.go`)是**手动加一**的整数,管哪些 artifact 走哪几趟、每趟带什么文本(压缩、截两头与行号映射、声明用途/hook/MCP/connector 的渲染、解码上限、垫料折叠、家目录替换与脱敏顺序)和引文怎么落地;golden 测试把一个固定夹具的摘录与落地结果的摘要和这个整数**一起**钉死,只改一边就红,夹具没走到的改动仍靠人记得加。两者连同 `model`、`samples` 进 `judge` 摘要(§8),`bas-guard version` 在 `rules=` 后面印 `judge-prompt=`/`judge-excerpt=`。**不能说**「版本和模型相同 ⇒ 答案相同」(模型是采样的,厂商可以不改名就换模型),也**不能说**两个版本覆盖整个判官:共识、严重度钳制、只提示表都不在里面,只有 `tool_version` 标它们。判官仍不在 `rules_version` 里(§5.1)。
 
 ### 5.2.1 LLM 定位:对抗式分析层(铁律)
 
@@ -380,7 +380,7 @@ type ArtifactReport struct {
                           // (SKILL.md + 全部脚本/资源,排序后逐文件 sha256 再汇总);单文件 artifact=文件 sha256。
                           // 风险主要在脚本,故不能只哈希 SKILL.md(B3-应修)。connector=工具清单哈希。
                           // hook/mcp/permission=内容哈希(P-009,detect 阶段算,先于信誉/闸门):
-                          //   sha256(<域> 0x00 <规范 JSON>),域 aguard:{hook,mcp,permission,settings-env}:v1;
+                          //   sha256(<域> 0x00 <规范 JSON>),域 bas-guard:{hook,mcp,permission,settings-env}:v1;
                           //   hook 与 mcp 哈希整个条目;不含任何路径和 artifact 名;secret 先过 Redact 的凭据那一半
                           //   (不含高熵兜底),且替换不许拿走结构字符(shell 元字符、授权通配、URL 分隔符)——
                           //   按每一次替换判,被拒的那段原样进哈希,同一个值里别的替换照做(P-043);
@@ -411,7 +411,7 @@ type ScanResult struct {
     OverallEffective int  // 含合格 LLM 发现;恒 ≤ Overall;不开 --llm 时二者相等
     ToolVersion string
     RulesVersion string // 规则表版本(§5.1),json:"rules_version",总是出现:tool_version 标的是提交,不是规则;只覆盖确定性检测(Overall 的来源),判官不在内,由 `judge` 摘要的 prompt_version/excerpt_version 标识(P-031);两份报告的它不同 = 规则变了,相同 = 规则表相同(不等于检测逻辑相同,见 §5.1 的 epoch 纪律)
-    Judge     *JudgeSummary `json:",omitempty"` // --llm 时必填:跑没跑、判了几个、几次调用(其中 triage 几次、重试几次;回复靠"提前合上"的修补才读出来的几次,`repaired`,P-034)、端点自报的 token(没报则缺省;其中端点自报从提示词缓存取的那部分另记 `cached_prompt_tokens`,是 `prompt_tokens` 的子集、不另加,厂商按自己的费率计,为 0 或端点不报时缺省,P-071)、按趟分的用量(`usage_by_pass`,P-072:键是 `aguard llm preview` 给这一趟的名字 `intent` `injection` `result` `deobfuscation` `collusion` `capability` `mcp-config` `server` `triage`,每项 `calls`、`reasked` 加端点报的三个 token 数;重试和重问都记在发出它的那一趟里,各项相加**恰好**等于块上的 `calls`、`reasked` 和三个 token 总数;一次调用都没发就没有这个键;只是 token 数,不是费用)、补了几条、没跑的原因(§16.8 用在判官自己身上:「跑了没发现」和「没跑」以前在报告上一模一样)、是哪个判官(`prompt_version`/`excerpt_version` 每个块都有,`model`/`samples` 配好判官才有,都取实际生效的值;端点拒收 `temperature` 字段、客户端去掉它重发之后 `temperature_omitted: true`,P-052;密钥、请求头、`authority` 不记;P-031,§5.2)
+    Judge     *JudgeSummary `json:",omitempty"` // --llm 时必填:跑没跑、判了几个、几次调用(其中 triage 几次、重试几次;回复靠"提前合上"的修补才读出来的几次,`repaired`,P-034)、端点自报的 token(没报则缺省;其中端点自报从提示词缓存取的那部分另记 `cached_prompt_tokens`,是 `prompt_tokens` 的子集、不另加,厂商按自己的费率计,为 0 或端点不报时缺省,P-071)、按趟分的用量(`usage_by_pass`,P-072:键是 `bas-guard llm preview` 给这一趟的名字 `intent` `injection` `result` `deobfuscation` `collusion` `capability` `mcp-config` `server` `triage`,每项 `calls`、`reasked` 加端点报的三个 token 数;重试和重问都记在发出它的那一趟里,各项相加**恰好**等于块上的 `calls`、`reasked` 和三个 token 总数;一次调用都没发就没有这个键;只是 token 数,不是费用)、补了几条、没跑的原因(§16.8 用在判官自己身上:「跑了没发现」和「没跑」以前在报告上一模一样)、是哪个判官(`prompt_version`/`excerpt_version` 每个块都有,`model`/`samples` 配好判官才有,都取实际生效的值;端点拒收 `temperature` 字段、客户端去掉它重发之后 `temperature_omitted: true`,P-052;密钥、请求头、`authority` 不记;P-031,§5.2)
     Inbox     *InboxReport  `json:",omitempty"` // 下载目录那条流水线的结果(§4.1),永不进 Overall
     Locations []Location    `json:",omitempty"` // 扫了哪里,各标 read/absent/off(§4.3);check 不填
     Sandbox   *SandboxInfo  `json:",omitempty"` // 在云端沙箱里跑时的判断依据(§4.2);nil = 本机
@@ -432,7 +432,7 @@ type ScanResult struct {
 
 2026-09-05 以后加的几块,三个渲染器一致:**判官那一行**(`--llm` 时摘要里必有,「跑了 N 个 M 次调用,补了 K 条」或「没跑,因为…」,两趟都写:环境一趟 + Downloads 一趟);**Downloads 一节**(§4.1,在环境发现之后、白名单压制之前,每条目自己的分数与一句建议 —— 有发现时不许写「Nothing flagged」,一条写「One thing to read」;`worst` 只报最重的静态发现,AI 线索单独计数;每条目的覆盖说明不折进 `--verbose`);**沙箱横幅**(§4.2,最顶上,带依据);**「Where the scan looked」**(§4.3,在 Scan details 里)。每条发现后面是一句「What to do」,证据和审阅理由折叠,清理项用白话标签。**头条旁必须并列最差 artifact**(2026-09-15,W-013):环境分是均值,144 个满分项能把一个 0/100 抬成 69,而报告从不印那个 0;现在印「最差单项 N/100 — 谁,均值跨 M 项、其中 K 项满分」,只有一项或最差=均值时省略,纯派生,`Overall` 不动。清单行要说出**插件内嵌的 skill 数**(W-012):它们在插件树里读了,但不进 `skills=`,不说的后果是审阅者公开写"它不递归"。人读的两个渲染器要清掉 Unicode 方向/零宽字符(W-011,见 §16 不变量 7 在 CLAUDE.md 的措辞),机器格式不清。**判官的 triage 标签也在清洗范围内**(`sanitizeResult` 覆盖 `ArtifactReport.Advisory`,P-006):markdown 的代码跨度假定换行已被清掉,reason 里一个 `\n\n` 就能结束跨度、把后面渲染成标记。SARIF 里判官规则的 `fullDescription`/`help` 用工具自己的定义(`model.JudgeRuleText`),不用某条发现的 `Why` —— 规则说明只建一次,取的是先遍历到的那条,对判官规则那是模型对某一个 artifact 写的一句话。
 
-**默认终端视图为不写代码的读者重排**(2026-10-15,P-058;`--verbose`、JSON、SARIF、HTML、markdown 的数据一项不少,markdown 跟同一顺序):标题说报告关于什么(`check` 的目标写 `<名字> (<种类>)`,否则写 root)→ 分数行带要看几条(无事可做时带 ✅ 写 nothing to fix)→ 一句白话 → 每条静态发现一个编号块(维度短语;"谁 · 什么"、规则 ID 收尾;规则的 Why;**判官的 triage 看法用白话**,写明发现和分数都不变、只有一次读数 —— triage 只问一次,没有票数;**下一步**用固定措辞:读哪个文件哪一行 + 维度那句问题,`REP-BAD` 写移除,`aguard approve` 命令只给闸门拦得住的 skill —— 有哈希、无 critical、是目标或在 root 内,每个 artifact 一次)→ **"Why N"**(由评分公式的计算过程 `score.Explain` 和已印出的编号推出,对不上就不印)→ 一行简短的 **Judge**(看了什么、加了什么、有没有失败;模型与两个版本号归 `--verbose`;有唯一一个扩展点)→ **`LLM-002` 印成外发告知**(发到哪个主机、几次调用,或一次都没发),不再算覆盖缺口 → 判官自己的发现 → Downloads → 白名单压制 → 未检查项(折叠)→ 一行说 `--verbose` 多给什么。Scan details(看了哪些地方 —— 单个目标只写"只看了目标"、清单、OWASP、静态分析声明)与卫生项列表只在 `--verbose`。没有任何发现、note、信任决定、未读内容时,默认档只印标题、分数行、(环境扫描的)清单句和 Judge 行。
+**默认终端视图为不写代码的读者重排**(2026-10-15,P-058;`--verbose`、JSON、SARIF、HTML、markdown 的数据一项不少,markdown 跟同一顺序):标题说报告关于什么(`check` 的目标写 `<名字> (<种类>)`,否则写 root)→ 分数行带要看几条(无事可做时带 ✅ 写 nothing to fix)→ 一句白话 → 每条静态发现一个编号块(维度短语;"谁 · 什么"、规则 ID 收尾;规则的 Why;**判官的 triage 看法用白话**,写明发现和分数都不变、只有一次读数 —— triage 只问一次,没有票数;**下一步**用固定措辞:读哪个文件哪一行 + 维度那句问题,`REP-BAD` 写移除,`bas-guard approve` 命令只给闸门拦得住的 skill —— 有哈希、无 critical、是目标或在 root 内,每个 artifact 一次)→ **"Why N"**(由评分公式的计算过程 `score.Explain` 和已印出的编号推出,对不上就不印)→ 一行简短的 **Judge**(看了什么、加了什么、有没有失败;模型与两个版本号归 `--verbose`;有唯一一个扩展点)→ **`LLM-002` 印成外发告知**(发到哪个主机、几次调用,或一次都没发),不再算覆盖缺口 → 判官自己的发现 → Downloads → 白名单压制 → 未检查项(折叠)→ 一行说 `--verbose` 多给什么。Scan details(看了哪些地方 —— 单个目标只写"只看了目标"、清单、OWASP、静态分析声明)与卫生项列表只在 `--verbose`。没有任何发现、note、信任决定、未读内容时,默认档只印标题、分数行、(环境扫描的)清单句和 Judge 行。
 
 **Markdown 报告**(`--md <path>|-`,`scan` 与 `check`,2026-09-20,P-008):第三个人读渲染器,给 PR 评论和 issue。同一份派生结果(`sanitizeResult` → `Aggregate` → 白话层),同一阅读顺序,不加任何判断;`-` 写 stdout 并取代终端报告(stdout 只有一份东西,与 `--json` 同规则);`--verbose` 不影响它;在闸门之前写(与 SARIF 同序:最需要贴的那次恰好是失败的那次)。**硬要求一条**:所有来自被扫目录的字符串(名字、路径、片段、发现的标题与理由——静态规则会把文件名格式化进理由,判官的理由是模型写的)只能出现在代码跨度里;表格单元格里 `|` 转义;裸文本只有报告自己组的句子。原因是这份报告会离开本机进公开页面:裸的 `@name` 会 @ 人,`[x](url)` 是链接,`<img>` 是追踪像素,`|` 拆表格。证据带全路径(读者没有 `--verbose` 可加);覆盖 note 折进 `<details>`,`<summary>` 仍带条数与最高严重度(§16 不变量 8);发现永不折叠;维度 7/8 的 `advisory: not confirmed` 与判官一节的 advisory 标注照旧。
 
@@ -488,10 +488,10 @@ llm:
   authority: advisory             # advisory | escalate —— 是否允许 --fail-on-llm 生效(§5.2.1 前提③)
   samples: 1                      # k-of-n 采样数(1=不采样);>1 时取多数,调用量按 N 倍计
 ```
-- **默认 provider = OpenAI 兼容协议**:一套代码兼容本地小模型(Ollama 等)与云 API,满足"独立模型"要求且不锁死;**config 的零值仍指向本地**(`localhost:11434`)。**但用户实际走到的路是在线的**(2026-09-04 决定「先只考虑在线模型」):`aguard llm setup --list` 给的预设是 `deepseek` / `openai` / `qwen` 三个在线端点加 `openai_compatible` 自填;`provider` 可以是预设名,只填 base_url 和默认 model,用户写的一律优先,不认识的名字是加载错误而不是悄悄退回 localhost。所以 §16.4「托管端点必须是用户显式选择」靠 setup 让用户**选 provider** 这一步满足,而不是靠默认值。
+- **默认 provider = OpenAI 兼容协议**:一套代码兼容本地小模型(Ollama 等)与云 API,满足"独立模型"要求且不锁死;**config 的零值仍指向本地**(`localhost:11434`)。**但用户实际走到的路是在线的**(2026-09-04 决定「先只考虑在线模型」):`bas-guard llm setup --list` 给的预设是 `deepseek` / `openai` / `qwen` 三个在线端点加 `openai_compatible` 自填;`provider` 可以是预设名,只填 base_url 和默认 model,用户写的一律优先,不认识的名字是加载错误而不是悄悄退回 localhost。所以 §16.4「托管端点必须是用户显式选择」靠 setup 让用户**选 provider** 这一步满足,而不是靠默认值。
 - **配置文件默认位置是 `$XDG_CONFIG_HOME/bas-guard/config.yaml`,否则 `~/.config/bas-guard/config.yaml`**(改名前的 `aguard` 目录在只有它存在时照旧读取,两个都在时用新的、`llm status` 注明旧的被忽略,P-082),在扫描 root **之外**:放进 `~/.claude` 会被当成无人认领的散落文件每次披露。
-- **密钥文件必须 0600**,组/他人可读一律拒用并给出 `chmod 600`;env 仍优先给 CI。`aguard llm setup` 在终端用隐藏输入读 key(x/term),管道时 `--key-stdin`,两种都不进参数列表、不进 shell 历史;插件流程先推终端,贴进对话是知情的退路。setup 结束前必须印「内容会发到 X」。
-- **`CheckEndpoint` 拒绝非 https 的远程地址**(回环允许 http):key 是 Bearer 头,明文 http 等于把它送上网。setup/test/judge 三处都过它,judge 侧是一条 `LLM-000`。**端点回的重定向只跟同源的**(scheme、主机名、端口都和配置的一样,P-023):`CheckEndpoint` 只看得见配置里写的地址,而 Go 默认的重定向策略只比主机名就带上 key(https 降成 http、换端口、子域都带),307/308 还把摘录原样重发给任何主机。跨源的那一跳不发,这次调用失败、不重试,经同一条 `LLM-000` 进报告;报错只写目标的 scheme://host。`aguard llm test` 用真实 client 打一次,让错 key/错模型名在扫描之前失败;`status` 永不打印 key。
+- **密钥文件必须 0600**,组/他人可读一律拒用并给出 `chmod 600`;env 仍优先给 CI。`bas-guard llm setup` 在终端用隐藏输入读 key(x/term),管道时 `--key-stdin`,两种都不进参数列表、不进 shell 历史;插件流程先推终端,贴进对话是知情的退路。setup 结束前必须印「内容会发到 X」。
+- **`CheckEndpoint` 拒绝非 https 的远程地址**(回环允许 http):key 是 Bearer 头,明文 http 等于把它送上网。setup/test/judge 三处都过它,judge 侧是一条 `LLM-000`。**端点回的重定向只跟同源的**(scheme、主机名、端口都和配置的一样,P-023):`CheckEndpoint` 只看得见配置里写的地址,而 Go 默认的重定向策略只比主机名就带上 key(https 降成 http、换端口、子域都带),307/308 还把摘录原样重发给任何主机。跨源的那一跳不发,这次调用失败、不重试,经同一条 `LLM-000` 进报告;报错只写目标的 scheme://host。`bas-guard llm test` 用真实 client 打一次,让错 key/错模型名在扫描之前失败;`status` 永不打印 key。
 - 无配置/无 key/未 `--llm` → 静态结果照常(核心价值不依赖 LLM)。
 - 启用云 endpoint 时的一次性同意见 §5.2 / §16。
 - **`authority` / `samples` 只对自备端点生效**。托管端点下档位由服务端在响应中断言、采样数按套餐由服务端决定(N 次采样 = N 倍服务方成本),客户端这两个字段无效 —— 见 §5.2.1 前提③。
@@ -502,7 +502,7 @@ llm:
 ## 12. 项目结构(Go 包)
 
 ```
-cmd/aguard/          # main + cobra 命令;analyze() 是 scan/check/clean 唯一编排入口;inbox.go 是下载目录那条线
+cmd/bas-guard/          # main + cobra 命令;analyze() 是 scan/check/clean 唯一编排入口;inbox.go 是下载目录那条线
 internal/collect/    # 每类 artifact 的 collector(含 desktop.go 桌面版仓库、connectors.go、environment.go 沙箱识别、unowned.go)
 internal/parse/      # frontmatter/yaml/json 解析
 internal/detect/     # 静态引擎:rules_data.go 规则表、logical.go 词法归一、shape.go 形状检查、comments.go、redact.go(委托)、owasp.go
@@ -544,7 +544,7 @@ v1 写的 `internal/rules/` 从未存在:规则表就在 `detect/rules_data.go`,
 
 ## 14. 待定 —— 已全部关闭(2026-09-15 记录)
 
-1. **命名**:产品 AgentGuard,二进制 `aguard`,npm 包 `@bas.io/guard`,插件 `aguard@AgentGuard`(0.16.0 及之前叫 `agentguard`,在默认 macOS 上与 marketplace 名撞缓存目录、装不上,见 `issues/022`)。
+1. **命名**:产品 BAS Guard,二进制 `bas-guard`(过渡期仍可用 `aguard`),npm 包 `@bas.io/guard`(另有不带 scope 的别名包 `bas-guard`),插件 `basguard@bas-guard`。0.29 及之前产品叫 AgentGuard、二进制 `aguard`、插件 `aguard@AgentGuard`(P-082 改名,原因是同名项目和商标);0.16.0 及之前插件叫 `agentguard`,在默认 macOS 上与 marketplace 名撞缓存目录、装不上,见 `issues/022`。
 2. **HTML 报告**:已交付,信息架构见 §9。
 3. **AST**:**推迟到阶段 1 之后**,等 benchmark 的「错误响」列证明正则精度是真问题再付依赖成本。词法层(`logical.go`)已做。
 4. **规则来源**:从 OWASP Agentic / MITRE ATLAS 重新推导,每条带 `Ref`,已落地;`owasp.go` 给每条规则一个 ASI 位置,`TestASIMapping_EveryRuleHasADecidedPosition` 钉住。ASI 编号与官方核对仍是 `issues/014`。
@@ -614,7 +614,7 @@ v1 写的 `internal/rules/` 从未存在:规则表就在 `detect/rules_data.go`,
    `detect.Redact` 是它的委托。collect 在 detect 之下,它写的笔记里从文件正文或配置值抄来的那段 —— `@import` 引用、
    插件键、hook 事件键 —— 在 collect 阶段就过它(比 detect 阶段更早);闸门的 `GATE-001` 引用注册命令同样过它。
    扫描器自己从磁盘列出的名字、就是该发现 `Evidence.File` 的路径不在此列(是否脱敏是全引擎的一个问题,未定);
-   `aguard hook status` 的终端输出不是报告,注册命令按原样印(2026-10-09,P-018)。
+   `bas-guard hook status` 的终端输出不是报告,注册命令按原样印(2026-10-09,P-018)。
 4. **LLM 默认关 + 一次性同意 + 默认本地**:见 §3/§5.2/§11;`check` 与 `scan` 共用同一个显式 `--llm`,加载时闸门恒静态(§17)。**托管端点必须是用户显式选择,不得成为默认** —— 整套隐私论证(`Redact` 只做到"尽力而为"却可接受)唯一的支点就是"内容默认不出本机"。
    **出网的路径只有三条**,都要 `llm.enabled: true` 加一条显式命令:`scan --llm`(环境,以及它覆盖的下载目录候选项)、`check --llm`(单个目标:目录、文件或 `.zip`)和 `llm test`(一次不带被扫内容的连通检查)。三条路径上判官也不跟出配置的源的重定向(§11)。其余命令即使配置里开着判官也一个请求都不发。这一条由 `TestZeroDial_OnlyTheJudgeConnects` 钉住(§13 不变量测试 ④)。它只看得见经过判官的 transport(测试接缝 `judge.Transport`)或 `http.DefaultTransport` 的请求;看不见的是:自带 `http.Transport` 的 client(本模块的产品代码由 `TestZeroDial_NoClientOutsideTheJudge` 从源码上堵住:`internal/judge` 之外不许出现 `net/http` 的 `Client`/`Transport` 类型;`internal/judge` 之内只许 `NewHTTP` 造唯一一个 client,它的 transport 就是接缝(另外只带同源重定向策略 `CheckRedirect`,放行的每一跳都过同一个接缝)—— 正对照只看着它自己那几条路径用的 client,判官包不能豁免;接缝只许测试赋值)、依赖在它自己代码里造的这种 client(源码检查只读本模块;今天别的模块都不 import `net/http`,加第四个直接依赖前要先读它)、裸 `net.Dial`、子进程、表跑完再等 50 ms 仍未落地的异步请求(更早落地的会报出来,但不保证记在发出它的那一行),只写在 cobra `RunE` 闭包里、不在被测函数之内的代码,以及包级 `init()`(计数器装上之前它就跑完了;其中的 `applyBuildInfo` 在 `version` 那几行里另跑一次)。加一条出网路径必须同时改这里、不变量 #1 的清单和那条测试的正对照。
 5. **会话日志脱敏**:`zombie` 读 `history.jsonl`/`sessions/`(常含用户粘贴的明文 secret)同样走脱敏,截片入报告前 REDACTED。
@@ -624,16 +624,16 @@ v1 写的 `internal/rules/` 从未存在:规则表就在 `detect/rules_data.go`,
 
 ## 17. 加载时闸门(`internal/gate`,2026-09 起)
 
-`aguard hook` 注册成 Claude Code 的 hook,在 agent **加载**一个 skill 之前跑一遍 `check` 的静态路径。**闸门永不开判官**,`check --llm` 存在(P-004)不改变这一点:闸门每次加载都触发、有 deadline、fail-open,一次模型调用会让每次加载变慢、花一笔没人要求花的钱,而一个取决于端点有没有回话的答案不是闸门。`gateOptions` 与 `approvePath` 构造的 `scanOpts` 永不设 `llm`(`TestGateScannerNeverEnablesLLM` 用计数端点钉住);闸门的判决等于不带 `--llm` 的 `check`,也就是带 `--llm` 时的确定性那一半。名字叫「加载时」而不是「安装时」是结论不是措辞:Claude Code 没有安装时事件,而 skill 还可以 `git clone`/`cp` 进来;守得住的是加载,且那恰好是要紧的边界(磁盘上的 skill 是惰性的)。
+`bas-guard hook` 注册成 Claude Code 的 hook,在 agent **加载**一个 skill 之前跑一遍 `check` 的静态路径。**闸门永不开判官**,`check --llm` 存在(P-004)不改变这一点:闸门每次加载都触发、有 deadline、fail-open,一次模型调用会让每次加载变慢、花一笔没人要求花的钱,而一个取决于端点有没有回话的答案不是闸门。`gateOptions` 与 `approvePath` 构造的 `scanOpts` 永不设 `llm`(`TestGateScannerNeverEnablesLLM` 用计数端点钉住);闸门的判决等于不带 `--llm` 的 `check`,也就是带 `--llm` 时的确定性那一半。名字叫「加载时」而不是「安装时」是结论不是措辞:Claude Code 没有安装时事件,而 skill 还可以 `git clone`/`cp` 进来;守得住的是加载,且那恰好是要紧的边界(磁盘上的 skill 是惰性的)。
 
 - **批准的 key 是 canonical 哈希,永远不是名字或路径**:改一个字节哈希就变,闸门自己重新问;「按名字记住」会重新打开「换掉内容、留着名字」这条最便宜的规避。
-- **只有 `PreToolUse[Skill]` 能真的拦住东西**;插件自带的 hook、MCP server、远程 connector 从会话第一轮就是活的,没有加载事件。所以 `SessionStart` 那半必须在,且消息里**必须继续写着「这些没有被拦住」**,并且在没有告警时也发(最需要知道这句话的正是环境干净的人)。hook/MCP/permission 有了内容哈希(§8,P-009)之后,`SessionStart` 对其中**已批准**的同样跳过,配置或跟进的脚本改一个字节就重新列出;批准入口不变(`aguard approve`),没有新的写入路径。
+- **只有 `PreToolUse[Skill]` 能真的拦住东西**;插件自带的 hook、MCP server、远程 connector 从会话第一轮就是活的,没有加载事件。所以 `SessionStart` 那半必须在,且消息里**必须继续写着「这些没有被拦住」**,并且在没有告警时也发(最需要知道这句话的正是环境干净的人)。hook/MCP/permission 有了内容哈希(§8,P-009)之后,`SessionStart` 对其中**已批准**的同样跳过,配置或跟进的脚本改一个字节就重新列出;批准入口不变(`bas-guard approve`),没有新的写入路径。
 - **批准只能覆盖「给人看过的那份字节」**:`PreToolUse` 把判决按 `tool_use_id` 停在 pending,`PostToolUse` 重读目标、哈希一致才提升为批准。**pending 必须经过文件**(2026-10-08,P-007):每个 hook 事件是一个新进程,两次调用之间只共享 approvals 文件,所以 `LoadStore` 要把 pending 读回 —— 没有 id、没有哈希、无日期或日期在未来、超过一小时的行丢掉(过期规则与写入时的修剪是同一个函数)。此前 `LoadStore` 只读 approvals,弹窗里的同意从未被记下。
-- **有 medium 及以上确定性发现的放行不写批准**(2026-09-16,P-005):阈值决定拦不拦,记忆是另一个决定。只有零 medium 以上发现的内容记为 `clean`;否则每次加载重审并出声(带规则 ID,不带 snippet),直到内容干净或人用 `aguard approve` 显式接受(记为 `accepted-risk`)。low 仍记住。起因:四个专门为之写规则的恶意样本各以一条 medium 通过 high 阈值,并被永久记为已信任。
-- **没有内容哈希的东西批准不了,而且要说出来**(P-011):批准库拒收空 key(`Approved("")` 恒 false),所以 `aguard approve` 选中的最差 artifact 哈希为空(解析失败的配置、打不开的文件)时**拒绝**:点名 artifact 和原因,运行错误(退出码 2),不写批准库;不退到另一个有哈希的 artifact(那是批准一份判决没描述的内容)。以前它照样打印 `approved`,而什么都没存。
+- **有 medium 及以上确定性发现的放行不写批准**(2026-09-16,P-005):阈值决定拦不拦,记忆是另一个决定。只有零 medium 以上发现的内容记为 `clean`;否则每次加载重审并出声(带规则 ID,不带 snippet),直到内容干净或人用 `bas-guard approve` 显式接受(记为 `accepted-risk`)。low 仍记住。起因:四个专门为之写规则的恶意样本各以一条 medium 通过 high 阈值,并被永久记为已信任。
+- **没有内容哈希的东西批准不了,而且要说出来**(P-011):批准库拒收空 key(`Approved("")` 恒 false),所以 `bas-guard approve` 选中的最差 artifact 哈希为空(解析失败的配置、打不开的文件)时**拒绝**:点名 artifact 和原因,运行错误(退出码 2),不写批准库;不退到另一个有哈希的 artifact(那是批准一份判决没描述的内容)。以前它照样打印 `approved`,而什么都没存。
 - **`ask` 在会自动答应的权限模式下等于放行,所以升级成 `deny`**(`auto`/`acceptEdits`/`bypassPermissions`/`dontAsk`);不认识的模式不升级。
-- **本包 fail-open 且出声**,与工具其他部分相反:名字解析不了、扫描失败、超过 30s deadline,一律放行并出 `GATE-000`;一个 aguard 一有 bug 就让编辑器加载不了 skill 的闸门当天就会被卸掉。唯一反向例外:坏掉的 approvals 文件读成空。
-- **`hook install` 只合并不覆盖** settings.json,读不懂就报错;`uninstall` 删掉每一份自己的注册、只删自己的 inner 命令;备份两个槽位,`.aguard-bak` 是 aguard 碰之前的原始文件、永不覆盖,`.aguard-bak.prev` 存最近一次改动前的状态。
+- **本包 fail-open 且出声**,与工具其他部分相反:名字解析不了、扫描失败、超过 30s deadline,一律放行并出 `GATE-000`;一个 bas-guard 一有 bug 就让编辑器加载不了 skill 的闸门当天就会被卸掉。唯一反向例外:坏掉的 approvals 文件读成空。
+- **`hook install` 只合并不覆盖** settings.json,读不懂就报错;`uninstall` 删掉每一份自己的注册、只删自己的 inner 命令;备份两个槽位,`.aguard-bak` 是 bas-guard 碰之前的原始文件、永不覆盖,`.aguard-bak.prev` 存最近一次改动前的状态。
 - **从 npm 的 `_npx`/`_cacache` 缓存路径装闸门要警告**:注册的是绝对路径,缓存回收后就是 `GATE-001`(每个 skill 未经审计加载,外表和受保护一样)。名单只这两项,不加宽泛的。
 - `scan` 会报「注册了但已死」(`GATE-001`,维度 0,不计分:死掉的 hook 让报告不可信,不让 artifact 更危险)。
 - **默认不装**(2026-09-13 驳回外部「默认开」建议):按当前误报率,门禁默认开会教人无脑点同意,那比不装更危险;setup 里是一步醒目、解释清楚的选项。

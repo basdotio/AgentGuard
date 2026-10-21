@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // Every hook event Claude Code fires runs the hook command as a NEW process. A verdict that

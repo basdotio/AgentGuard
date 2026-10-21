@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Package model holds AgentGuard's immutable result types (spec §8). Every scan
+// Package model holds BAS Guard's immutable result types (spec §8). Every scan
 // stage produces these; they are JSON-serializable and carry line-level, redacted
 // evidence. ScannedAt is injected by the caller so results are reproducible/testable.
 package model
@@ -204,7 +204,7 @@ type ArtifactReport struct {
 	// list. It is how a 100-score artifact says "trusted" rather than "clean": with a GOOD
 	// match its findings are suppressed and it is otherwise indistinguishable, in JSON and
 	// HTML, from an artifact that never had any. Audit metadata only — the verdict's effect on
-	// Findings and Score is applied once, in cmd/aguard.applyReputation, and the REP-GOOD /
+	// Findings and Score is applied once, in cmd/bas-guard.applyReputation, and the REP-GOOD /
 	// REP-BAD note is still the record a reader is meant to see first.
 	Reputation *ReputationMark `json:"reputation,omitempty"`
 	// Plugin is set on a plugin's skill, command or agent collected as an artifact of its own
@@ -616,7 +616,7 @@ type JudgeSummary struct {
 	// or does not report the field — the two look the same.
 	CachedPromptTokens int `json:"cached_prompt_tokens,omitempty"`
 	// UsageByPass breaks Calls, Reasked and the three token totals down by the pass that made the
-	// calls, keyed by the name `aguard llm preview` gives it (intent, injection, result,
+	// calls, keyed by the name `bas-guard llm preview` gives it (intent, injection, result,
 	// deobfuscation, collusion, capability, mcp-config, server, triage). Its entries sum exactly to
 	// the totals beside it; absent when no call was made (P-072).
 	UsageByPass map[string]PassUsage `json:"usage_by_pass,omitempty"`

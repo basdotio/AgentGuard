@@ -107,7 +107,7 @@ paths:
     冲突(规格 §5.1 本来就写了可以先用高精度兜底)。链式调用 `Buffer.from(x).toString('base64')`、跨语句
     追踪仍然做不到,ROADMAP 里记着,**不要在文档里含糊成已经做了**。
   - 这是手写 lexer 且吃攻击者可控的字节,所以配了 fuzz(不 panic、只删不增)。第一版就在真机上 panic 过
-    (行尾是一个引号),table test 没抓到 —— 改这个文件后请照旧跑一次 `aguard scan` 扫真实 `~/.claude`。
+    (行尾是一个引号),table test 没抓到 —— 改这个文件后请照旧跑一次 `bas-guard scan` 扫真实 `~/.claude`。
 - **形状检查**([shape.go](../../internal/detect/shape.go))问的是"这个文件是不是排成了让逐行读者到不了要害的样子",不是
   "这一行说了什么"。四条各对应 Trail of Bits `overtly-malicious-skills`(2026-09-08)里一个 4/4 绕过逐行规则的样本:
   `OBF-007` 空行填充(≥200 连续空行后还有代码,证据指向填充之后那一行——那是读者该跳去的地方);`OBF-006` 扩展名与魔数
@@ -117,7 +117,7 @@ paths:
   不跳过**;目标必须是 URL 或变量,SKILL.md 散文里的 "registry mirror" 不算;注释行不算——那个样本的注释是写给判官看的)。
   **`OBF-006`/`SUP-005`/`SUP-006` 是 high,`OBF-007` 是 low**(2026-09-16,P-005):四条在各自样本上都命中,但原先全是 medium,
   而闸门在 high 拦——报告层 4/4、闸门层 0/4,四个样本还被记成永久信任。三条是结构性事实(.txt 里是 zip、bytecode 随源码、
-  包源指向陌生 host),在真实安装上按规则数过 `aguard scan --json` 量到零命中才提的;**降回 medium 之前先量**,并且量的是拦下个数不是率。
+  包源指向陌生 host),在真实安装上按规则数过 `bas-guard scan --json` 量到零命中才提的;**降回 medium 之前先量**,并且量的是拦下个数不是率。
   `OBF-007` 不跟着提:它是四条里最弱的信号,它对应的样本(csv-summarizer)的 medium 在 `EXFIL-004`,那条归组 C 管;
   于是闸门层是 3/4,第四个靠"放行不记住"(gate.md)每次重审。`TestShapeRulesGateAtHigh`/`TestPaddingStaysLow` 钉两侧。
   配套的 `EXFIL-004`(整个环境被枚举:`os.environ.items()`、`printenv`、`env >`)是普通规则;`envWholeRE` 同时放行了
@@ -151,7 +151,7 @@ paths:
   (`nonregular_test.go` 的 `runWithin`):回归是"挂死"而不是"断言失败",而挂死的测试什么都报不出来。
 - **打开一个不是自己写的文件,只能经 [internal/safeio](../../internal/safeio/safeio.go)**(W-002b/W-004,2026-09-15)。同一个 bug
   ——FIFO 挂死、`os.ReadFile` 按被扫对象声明的大小分配——在哈希、内容、闸门三条路上各修过一次,然后在**配置读**这第四条路上被
-  发现,而且比前三条都宽:`parse.ReadSkill` 每次 scan/check 都走到,`tar` 会原样带着 FIFO 进 ~/Downloads,裸 `aguard scan` 就永久
+  发现,而且比前三条都宽:`parse.ReadSkill` 每次 scan/check 都走到,`tar` 会原样带着 FIFO 进 ~/Downloads,裸 `bas-guard scan` 就永久
   挂死;2 GiB 的 `settings.json` 让 RSS 到 3.19 GB 且 exit 0。修法不是再补第四个守卫,是把守卫收成**一个包**:`safeio.Stat`
   非常规即拒(在 Open 之前,因为 Open FIFO 就是阻塞点),`ReadFile(path, cap)` 用 `LimitReader(cap+1)` 让上限由读强制、"边读边长"
   的竞态在构造上不可达,`ReadPrefix` 给只要头部的调用方(frontmatter、@import、判官摘录),`Open` 给要 `*os.File` 流式读的

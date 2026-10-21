@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // shape.go — checks on the SHAPE of a file rather than the text of one line.

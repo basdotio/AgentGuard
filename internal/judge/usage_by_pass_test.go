@@ -13,7 +13,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // passRates are the tokens the stub reports for one answered call of each pass, all different, so
@@ -177,7 +177,7 @@ func TestRun_UsageByPass(t *testing.T) {
 	}
 }
 
-// TestRun_UsageByPassNamesThePreviewsPasses: the keys are the pass names `aguard llm preview`
+// TestRun_UsageByPassNamesThePreviewsPasses: the keys are the pass names `bas-guard llm preview`
 // prints, so a planned call and the usage it spent can be read side by side.
 func TestRun_UsageByPassNamesThePreviewsPasses(t *testing.T) {
 	arts := append(previewFixture(t), serverTree(t)...)

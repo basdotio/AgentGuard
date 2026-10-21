@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/basdotio/AgentGuard/internal/detect"
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/score"
+	"github.com/basdotio/bas-guard/internal/detect"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/score"
 )
 
 // Markdown renders the scan as GitHub-flavoured markdown — the third human-read renderer, for
@@ -36,7 +36,7 @@ func Markdown(w io.Writer, r0 model.ScanResult) error {
 	var b strings.Builder
 	p := func(format string, args ...any) { fmt.Fprintf(&b, format, args...) }
 
-	p("# AgentGuard scan · %s\n\n", code(r.Root))
+	p("# BAS Guard scan · %s\n\n", code(r.Root))
 	p("**Risk score %d/100 (%s)** — deterministic and reproducible; this is the number `--fail-on` reads.\n", r.Overall, score.Level(r.Overall))
 	hits, more := escalations(r)
 	if len(hits) > 0 || r.OverallEffective != r.Overall {
@@ -366,8 +366,8 @@ func mdScanDetails(b *strings.Builder, r model.ScanResult) {
 				len(cats)-len(silent), len(cats), strings.Join(silent, ", "))
 		}
 	}
-	fmt.Fprintf(b, "- Static analysis only: it cannot prove malice or see runtime behaviour. `--json` and `--sarif` carry every path in full; rule ids are explained in docs/rules.md: https://github.com/basdotio/AgentGuard/blob/main/docs/rules.md\n")
-	fmt.Fprintf(b, "\n<sub>AgentGuard %s", text(r.ToolVersion))
+	fmt.Fprintf(b, "- Static analysis only: it cannot prove malice or see runtime behaviour. `--json` and `--sarif` carry every path in full; rule ids are explained in docs/rules.md: https://github.com/basdotio/bas-guard/blob/main/docs/rules.md\n")
+	fmt.Fprintf(b, "\n<sub>BAS Guard %s", text(r.ToolVersion))
 	if r.ScannedAt > 0 {
 		fmt.Fprintf(b, " · scanned %s", time.Unix(r.ScannedAt, 0).UTC().Format("2006-01-02 15:04 UTC"))
 	}

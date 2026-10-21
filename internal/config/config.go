@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Package config loads AgentGuard's optional config (spec §11). The LLM intent judge
+// Package config loads BAS Guard's optional config (spec §11). The LLM intent judge
 // is OFF by default. The API key comes from an env var or from a
 // key file the user owns (mode 0600, see ResolveAPIKey) — the file exists because the
 // judge's only realistic endpoints are hosted ones that all need a key, and "set an
@@ -20,8 +20,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/basdotio/AgentGuard/internal/redact"
-	"github.com/basdotio/AgentGuard/internal/safeio"
+	"github.com/basdotio/bas-guard/internal/redact"
+	"github.com/basdotio/bas-guard/internal/safeio"
 	"gopkg.in/yaml.v3"
 )
 
@@ -50,7 +50,7 @@ type GateConfig struct {
 
 // LLMConfig configures the optional isolated intent judge (spec §5.2/§16.4).
 //
-// The call-budget knobs exist because a judge run is the only part of AgentGuard that costs
+// The call-budget knobs exist because a judge run is the only part of BAS Guard that costs
 // wall-clock time and (on a paid endpoint) money. They are a COURTESY SELF-LIMIT: this is a
 // client-side file the user can edit, so it protects the user's own time and bill — it is
 // not, and must never be sold as, a security or cost control (spec §11).
@@ -253,7 +253,7 @@ func (c Config) ResolveAPIKey() (string, error) {
 	fi, err := os.Stat(path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return "", fmt.Errorf("llm.api_key_file %s does not exist — run `aguard llm setup`", path)
+			return "", fmt.Errorf("llm.api_key_file %s does not exist — run `bas-guard llm setup`", path)
 		}
 		return "", err
 	}
@@ -266,12 +266,12 @@ func (c Config) ResolveAPIKey() (string, error) {
 	}
 	key := strings.TrimSpace(string(b))
 	if key == "" {
-		return "", fmt.Errorf("llm.api_key_file %s is empty — run `aguard llm setup`", path)
+		return "", fmt.Errorf("llm.api_key_file %s is empty — run `bas-guard llm setup`", path)
 	}
 	return key, nil
 }
 
-// KeySource says where the key would come from, for `aguard llm status` — never the key itself.
+// KeySource says where the key would come from, for `bas-guard llm status` — never the key itself.
 func (c Config) KeySource() string {
 	if c.LLM.APIKeyEnv != "" {
 		if v, from := LookupEnv(c.LLM.APIKeyEnv); v != "" {
@@ -301,7 +301,7 @@ func (c Config) JudgeReady() bool {
 type Preset struct {
 	BaseURL string
 	Model   string
-	Label   string // human name for `aguard llm setup --list`
+	Label   string // human name for `bas-guard llm setup --list`
 }
 
 // ProviderGeneric is the escape hatch: any OpenAI-style endpoint, base_url and model spelled out.
@@ -404,7 +404,7 @@ func IgnoredLegacyConfigDir() (string, bool) {
 }
 
 // DefaultPath is the config file `--config` falls back to; DefaultKeyPath is where
-// `aguard llm setup` puts the key.
+// `bas-guard llm setup` puts the key.
 func DefaultPath() (string, error) {
 	d, err := ConfigDir()
 	if err != nil {

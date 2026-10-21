@@ -1,10 +1,10 @@
 <!-- SPDX-License-Identifier: MIT -->
-# `aguard clean` — 使用说明
+# `bas-guard clean` — 使用说明
 
 > 这是**使用**说明。要审计实现或改这段代码，看 [`clean-internals.md`](internals/clean-internals.md)：
 > 那里有数据流、每一道门禁的顺序、不变量与钉住它的测试的对照表，以及改动前的检查表。
 
-`clean` 是 aguard 的清理面。它回答两个问题：**哪些东西在白占上下文**，以及**哪些可以安全地移走**。
+`clean` 是 bas-guard 的清理面。它回答两个问题：**哪些东西在白占上下文**，以及**哪些可以安全地移走**。
 
 一句话记住它的边界：**`clean` 从不删除任何东西**。它只在你的配置根目录内部**移动**文件，把每一步写进可回放的记录，`--undo` 能原路放回。删除永远是你自己动手。
 
@@ -14,20 +14,20 @@
 
 ```bash
 # 1. 先看。纯读，不碰磁盘。
-aguard clean --root ~/.claude
+bas-guard clean --root ~/.claude
 
 # 2. 想让它找出"装了但没用过的 skill"，需要显式开
-aguard clean --root ~/.claude --zombie
+bas-guard clean --root ~/.claude --zombie
 
 # 3. 预演。打印计划，不创建任何目录、不移动任何东西
-aguard clean --root ~/.claude --zombie --apply --dry-run
+bas-guard clean --root ~/.claude --zombie --apply --dry-run
 
 # 4. 真做。移动到 ~/.claude/.aguard-trash/，打印 batch id
-aguard clean --root ~/.claude --zombie --apply
+bas-guard clean --root ~/.claude --zombie --apply
 
 # 5. 后悔了
-aguard clean --root ~/.claude --undo last
-aguard clean --root ~/.claude --undo b20260813T074252-1   # 或指定 batch
+bas-guard clean --root ~/.claude --undo last
+bas-guard clean --root ~/.claude --undo b20260813T074252-1   # 或指定 batch
 
 # 6. 确认无误后，删除由你自己执行
 rm -rf ~/.claude/.aguard-trash
@@ -37,11 +37,11 @@ rm -rf ~/.claude/.aguard-trash
 
 ```bash
 # 一对一对问过来（↑/↓ 选，回车确认）
-aguard clean --root ~/.claude --ask
+bas-guard clean --root ~/.claude --ask
 
 # 或者点名一对，在命令行里把选择说清楚
-aguard clean --root ~/.claude --resolve D-0cb2ed5b --keep browse
-aguard clean --root ~/.claude --resolve D-0cb2ed5b --keep-both
+bas-guard clean --root ~/.claude --resolve D-0cb2ed5b --keep browse
+bas-guard clean --root ~/.claude --resolve D-0cb2ed5b --keep-both
 ```
 
 两条路的执行完全相同（同一个门禁、同一份 manifest、同样 `--undo`），区别只在**你怎么把选择说出来**。
@@ -155,13 +155,13 @@ transcript，钝匹配下一次就把它们全读成"用过"。实测：第一�
 
 ```bash
 # 留 browse，把 devkit 移进 .aguard-trash（可 --undo）
-aguard clean --root ~/.claude --resolve D-0cb2ed5b --keep browse
+bas-guard clean --root ~/.claude --resolve D-0cb2ed5b --keep browse
 
 # 两个都留：记下这一项，以后不再列出来
-aguard clean --root ~/.claude --resolve D-0cb2ed5b --keep-both
+bas-guard clean --root ~/.claude --resolve D-0cb2ed5b --keep-both
 
 # 一对一对问过来
-aguard clean --root ~/.claude --ask
+bas-guard clean --root ~/.claude --ask
 ```
 
 `--ask` 每对印出两个候选。在真实终端里用 **↑/↓ 选、回车确认**；也可以直接敲 `1` / `2`。
@@ -366,7 +366,7 @@ O_EXCL 锁文件，不是 flock —— 这个二进制要在关闭 CGO 的情况
 - **只处理 skill。** rules、workflows、output-styles、memory、导入链、项目级 MCP 都已被 scan 采集并计分，但都不在 clean 的视野里。
 - **`--apply` 仍是"移走全部僵尸"，没有 `--apply-items <ids>`。** A2 的选边语法已经有了（`--resolve --keep` / `--ask`，§4.1），但 zombie 还不能逐个点名 —— 要么全做，要么不做。
 - **`.aguard-trash` 自身没有保留策略。** 它是我们发明的目录，Claude Code 不会碰它 —— 所以我们自己成了一个新的增长源。清它的责任目前在你。
-- **运行中的会话会实时看到变更。** 实测 Claude Code 监视 `skills/`、`commands/`、`agents/`。锁保护两个 aguard 之间，不保护 aguard 与正在对话的 agent 之间。**建议在没有活跃会话时执行 `--apply`。**
+- **运行中的会话会实时看到变更。** 实测 Claude Code 监视 `skills/`、`commands/`、`agents/`。锁保护两个 bas-guard 之间，不保护 bas-guard 与正在对话的 agent 之间。**建议在没有活跃会话时执行 `--apply`。**
 - **祖先 `.claude` 的 skill 会被漏掉。** 实测 project 作用域会向上找祖先 `.claude`，`--root <项目>/.claude` 看不到那些。
 - **被选中的 output-style 一旦被隔离，settings 里会留一个悬空引用**，目前没有配置完整性检查。
 

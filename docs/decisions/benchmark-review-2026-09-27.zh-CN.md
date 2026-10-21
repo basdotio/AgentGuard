@@ -10,11 +10,11 @@
 
 | 实验 | 数据在哪 | 版本 / 条件 |
 |---|---|---|
-| aguard 静态 | `baselines/results/aguard/2026-09-24/` | v0.12.0 前夜(`32b8de6`,v0.11.0 + P-015/016/017),阈值 high,信誉库关,语料 `5c2ac852`→`5c3db6ee` |
+| bas-guard 静态 | `baselines/results/aguard/2026-09-24/` | v0.12.0 前夜(`32b8de6`,v0.11.0 + P-015/016/017),阈值 high,信誉库关,语料 `5c2ac852`→`5c3db6ee` |
 | cc-audit | `baselines/results/ccaudit/2026-09-23/`,P-017 | v3.23.9 钉 sha256,默认档 |
 | Cisco skill-scanner | `baselines/results/skill-scanner/2026-09-24/` 与 `2026-09-24-excl-cisco/`,`complete/022-cisco-skill-scanner.md`(PR #23 待合入) | PyPI 2.1.0 钉 sha256,strict 档,policy `balanced` 哈希入 run.yaml |
-| aguard + 判官 | P-019(`complete/019-llm-009-advisory-only.md`,已发 v0.12.0)、P-021(`complete/021-bench-judge-passthrough.md`,已合 origin/dev)、[judge-comparison-2026-09-25.zh-CN.md](judge-comparison-2026-09-25.zh-CN.md)(artifact「aguard 判官对照测评」的 Markdown 版) | glm-5.3-flash,`samples: 1`,819 子集 = 300 恶意 + 19 hard negative + 500 分层良性 |
-| 静态当前版本测评 | artifact「aguard 当前版本测评」(2026-09-24 晚) | 同上第一行 |
+| bas-guard + 判官 | P-019(`complete/019-llm-009-advisory-only.md`,已发 v0.12.0)、P-021(`complete/021-bench-judge-passthrough.md`,已合 origin/dev)、[judge-comparison-2026-09-25.zh-CN.md](judge-comparison-2026-09-25.zh-CN.md)(artifact「bas-guard 判官对照测评」的 Markdown 版) | glm-5.3-flash,`samples: 1`,819 子集 = 300 恶意 + 19 hard negative + 500 分层良性 |
+| 静态当前版本测评 | artifact「bas-guard 当前版本测评」(2026-09-24 晚) | 同上第一行 |
 
 两份 artifact 里的数字互相对得上,也和 `plan.zh-CN.md` §3.1(2026-09-24 重述)对得上;
 唯一的口径差是 artifact 把反弹 shell 那条叫「P-018」——那是写文时预留的号,**018 已被 heeler adapter 占用**,
@@ -26,7 +26,7 @@
 
 **静态三列**(各自出厂默认档;两家竞品 `provisional: true`):
 
-| | aguard | cc-audit | skill-scanner |
+| | bas-guard | cc-audit | skill-scanner |
 |---|---|---|---|
 | 读哪些面 | 全部六个 | 全部六个 | **只读 skills**(strict 拒绝无 `SKILL.md` 的树) |
 | 恶意抓到 / 300 | **87**(29%) | **185**(62%) | 27(它 scored 的 143 个 read 基里 25) |
@@ -56,7 +56,7 @@
 
 ## 2. 逐实验结论
 
-### 2.1 aguard 静态:精度站住了,召回没动
+### 2.1 bas-guard 静态:精度站住了,召回没动
 
 **三天八条改动各自贡献了什么**(同一批 3,539 个样本上修前修后 diff):
 
@@ -92,11 +92,11 @@
 
 | 300 个恶意 | cc-audit 抓到 | cc-audit 漏 |
 |---|---|---|
-| aguard 抓到 | 82 | **5** |
-| aguard 漏 | **103** | 110 |
+| bas-guard 抓到 | 82 | **5** |
+| bas-guard 漏 | **103** | 110 |
 
-- **它多抓的 103 个里 61 个是 Cisco 服务端代码**:28 个 aguard 零发现(SQL 注入、SSTI 那批,按定位不做);
-  **33 个 aguard 报了 medium 或 low 的子进程、eval、base64,cc-audit 直接判 fail**。这正是我们量过、因为要多误报 19 个良性
+- **它多抓的 103 个里 61 个是 Cisco 服务端代码**:28 个 bas-guard 零发现(SQL 注入、SSTI 那批,按定位不做);
+  **33 个 bas-guard 报了 medium 或 low 的子进程、eval、base64,cc-audit 直接判 fail**。这正是我们量过、因为要多误报 19 个良性
   而否掉的那一步。**不是它会我们不会,是它付了我们不愿付的价**——那 1,066 个只有它报的良性就是这一步的账单。
 - **42 个非 Cisco**,按我们计划里的类别对上号:反弹 shell 3(W-027)· 编码和拆分 7(base64 包裹 ×4、跨文件拆分、引号拼接、
   零宽和 bidi 字符;它对"有编码"本身判 fail,我们的 `OBF-001` 是 medium)· 远程取指令和信标 5(`curl URL?host=$(hostname)`、
@@ -182,7 +182,7 @@ nvidia 那 5 个专门用同义改写绕关键词的样本,静态和 cc-audit �
    medium/low 的子进程、eval、base64——它靠"见到就 fail"拿走这 33 个,账单是 1,066 个良性。**再靠加正则或提级涨召回,
    会以精度为代价**,而精度是唯一的资产。
 
-3. **我们独有的东西是结构,不是行。** aguard 独抓的 5 个全是结构化检查(清单哈希变化、随包 `.pyc`、时间/环境门控、跨文件载荷、BCC);
+3. **我们独有的东西是结构,不是行。** bas-guard 独抓的 5 个全是结构化检查(清单哈希变化、随包 `.pyc`、时间/环境门控、跨文件载荷、BCC);
    attribution 59% 对 39% 是同一件事的另一面。**这决定了下一步的形态:做机制(还原、目的地、结构),不做规则条数。**
 
 4. **召回缺口是结构性的三块**,每块对应不同工具:
@@ -300,6 +300,6 @@ cc-audit 和 skill-scanner 在这一点上同样盲。措辞:"我们不执行,�
    (§5.2 第 258–259 行写的"第 2 步做完"作废);语料扩充改为 AI 起草、人逐条确认。
 4. **"判官按需触发"已实测否决**(本文没写进正文,讨论时提过):只在静态报到 medium 以上时才问判官,判官增益保住 14/62、
    丢 77%,省 63% 的调用。见 [`issues/021`](../../issues/021-judge-triage-by-static-severity-rejected.md)。
-5. **召回门槛的分母重定义**:本文 §1 与 §2.1 的召回都在 300 上;plan 的门槛表现在把 300 扣掉 aguard 声明的
+5. **召回门槛的分母重定义**:本文 §1 与 §2.1 的召回都在 300 上;plan 的门槛表现在把 300 扣掉 bas-guard 声明的
    `out_of_scope` 之后,分给朴素 + 规避门与语义门两部分。§2.1"静态天花板约 155/300"仍是按分层估的数,没变。
 6. **skill-scanner 那一列已合入**(PR #23,2026-09-28),§6 第二条"待合入"过期。

@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: MIT -->
-# AgentGuard Roadmap
+# BAS Guard Roadmap
 
 Status of what's shipped and what's planned. Ordered by the agreed priority.
 
@@ -21,7 +21,7 @@ progress, what is recorded but not scheduled, and the limitations we state out l
 
 > **C.8 and C.9 shipped** — see below. **B.7 (install-time gate) is closed as superseded, not
 > done**: Claude Code has no install event to hook, and one would not be complete anyway — a
-> skill also arrives by `git clone`, by `cp`, and by hand. The load-time gate (`aguard hook`,
+> skill also arrives by `git clone`, by `cp`, and by hand. The load-time gate (`bas-guard hook`,
 > shipped) holds the boundary that actually exists; see "Load-time gate" above for the design
 > record. What remains in this section is A.1.
 
@@ -121,7 +121,7 @@ progress, what is recorded but not scheduled, and the limitations we state out l
   judgement that keeps the generated-directory disclosure to one merged note. The honest fix
   is probably guidance (write `Bash(make test)`, fully specified) plus a rule narrow enough
   to name the case, not a blanket widening of `PERM-006`.
-- **Evasions confirmed by the adversarial corpus** (`cmd/aguard/adversarial_test.go`, each asserted inverted so closing one fails the test):
+- **Evasions confirmed by the adversarial corpus** (`cmd/bas-guard/adversarial_test.go`, each asserted inverted so closing one fails the test):
   - ~~The *contents* of a `GeneratedDir` are not scanned.~~ **CLOSED for the artifact's own build
     output.** One predicate was answering two questions, and they have different answers: "is this part
     of the artifact's IDENTITY" (hashing) and "should this be READ" (scanning). `collect/skip.go` now
@@ -144,8 +144,8 @@ progress, what is recorded but not scheduled, and the limitations we state out l
   can report clean while the session loads skills from an ancestor directory the scan never saw.
   Not handled; closing it means resolving the same ancestor chain Claude Code does.
 - **A running session sees cleanup happen** — measured: Claude Code watches `skills/`, `commands/`
-  and `agents/` for changes. The O_EXCL lock protects two `aguard` runs from each other, not
-  `aguard` from a live agent mid-conversation.
+  and `agents/` for changes. The O_EXCL lock protects two `bas-guard` runs from each other, not
+  `bas-guard` from a live agent mid-conversation.
 - **`skills/synced/` is sync-owned** — measured: it is repopulated automatically from archives.
   Quarantining anything under it would be undone by the next sync, so cleanup there should be
   refused rather than attempted. Currently neither refused nor attempted (it is not a zombie
@@ -175,7 +175,7 @@ progress, what is recorded but not scheduled, and the limitations we state out l
   MCP servers, and `CLAUDE.md`, are live from the first turn of a session and are never
   "loaded" through a tool call — the `SessionStart` audit reports them but cannot stop them.
 - **Only the GATE's own dead registration is reported, not any hook's.** `GATE-001` fires when
-  settings.json names an aguard binary that is gone. A hook of someone else's that names a
+  settings.json names an bas-guard binary that is gone. A hook of someone else's that names a
   missing local executable is still silent, because `detect.scriptRefs` only follows tokens
   with a script extension (`.sh`, `.py`, …) — an extensionless binary is neither read nor
   announced. Generalising it means deciding which first tokens are local paths and which are

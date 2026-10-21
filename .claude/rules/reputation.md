@@ -26,7 +26,7 @@ paths:
   **没有例外**:原来那条来历不明的种子条目(无 source、无 reason、也不在官方市场)已在
   2026-09-03 删除,理由正是"说不出为什么信它"。
 - **续期是机械的,审阅不是。** [hack/reputation-refresh](../../hack/reputation-refresh/main.go)
-  (`make reputation-refresh`)拉市场当前钉住的 commit,跑 `aguard check`,指纹**完全一致**才更新
+  (`make reputation-refresh`)拉市场当前钉住的 commit,跑 `bas-guard check`,指纹**完全一致**才更新
   hash/sha/version;多一条、少一条、换了文件,都退出 1 并打印差异,条目原样留着等人看。
   它**永不**自己编 reason,也永不放宽 reason 的覆盖范围。每周一有 workflow 跑它并开 PR
   (`.github/workflows/reputation-refresh.yml`);那个任务变红就是"需要重新审阅"的信号,不是抖动。

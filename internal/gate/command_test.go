@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
-	"github.com/basdotio/AgentGuard/internal/report"
+	"github.com/basdotio/bas-guard/internal/model"
+	"github.com/basdotio/bas-guard/internal/report"
 )
 
 // ordinaryVerdict is a verdict for a path with nothing in it a shell would act on — the common
@@ -29,17 +29,17 @@ func ordinaryVerdict(path string, sev model.Severity) Verdict {
 // copyable commands may only change for paths where today's form fails when pasted.
 func TestCommandsForAnOrdinaryPathAreUnchanged(t *testing.T) {
 	const p = "/Users/someone/Library/Application Support/Claude/skills/o'brien/pdf-export"
-	wantReason := "AgentGuard has not audited this skill before, and it carries findings.\n\n" +
+	wantReason := "BAS Guard has not audited this skill before, and it carries findings.\n\n" +
 		"  pdf-export  42/100 (High)\n  " + p + "\n  content hash a1e9cd5dbc1a…\n\n" +
 		"  high     EXEC-001   t-EXEC-001  run.sh:3\n\n" +
 		"Static rules only: no model was consulted, nothing was executed, nothing left the machine.\n" +
-		"Full report: aguard check \"" + p + "\" · trust these exact bytes: aguard approve \"" + p + "\"\n"
+		"Full report: bas-guard check \"" + p + "\" · trust these exact bytes: bas-guard approve \"" + p + "\"\n"
 	if got := ordinaryVerdict(p, model.SevHigh).Reason(); got != wantReason {
 		t.Errorf("Reason changed for an ordinary path:\ngot  %q\nwant %q", got, wantReason)
 	}
-	wantLine := "AgentGuard: skill \"pdf-export\" 42/100 (High) · below the threshold, but EXEC-001 (medium) found · " +
+	wantLine := "BAS Guard: skill \"pdf-export\" 42/100 (High) · below the threshold, but EXEC-001 (medium) found · " +
 		"not recorded as trusted: it is re-audited on every load until the content is clean, or you accept it with: " +
-		"aguard approve \"" + p + "\""
+		"bas-guard approve \"" + p + "\""
 	if got := ordinaryVerdict(p, model.SevMedium).UnrememberedLine(); got != wantLine {
 		t.Errorf("UnrememberedLine changed for an ordinary path:\ngot  %q\nwant %q", got, wantLine)
 	}
@@ -60,7 +60,7 @@ func TestDenyCommandForAnOrdinaryPathIsUnchanged(t *testing.T) {
 	if out.HookSpecificOutput == nil || out.HookSpecificOutput.PermissionDecision != DecisionDeny {
 		t.Fatalf("fixture: no deny under auto: %+v", out)
 	}
-	want := "To load it anyway, decide outside the session: aguard approve \"" + dir + "\"\n"
+	want := "To load it anyway, decide outside the session: bas-guard approve \"" + dir + "\"\n"
 	if r := out.HookSpecificOutput.PermissionDecisionReason; !strings.HasSuffix(r, want) {
 		t.Errorf("the refusal's command changed for an ordinary path:\n%s\nwant suffix %q", r, want)
 	}

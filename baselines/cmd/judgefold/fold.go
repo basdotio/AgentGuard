@@ -12,11 +12,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	aguardadapter "github.com/basdotio/AgentGuard/baselines/adapter/aguard"
-	"github.com/basdotio/AgentGuard/baselines/corpus"
-	"github.com/basdotio/AgentGuard/baselines/judgefold"
-	"github.com/basdotio/AgentGuard/baselines/ledger"
-	"github.com/basdotio/AgentGuard/internal/model"
+	aguardadapter "github.com/basdotio/bas-guard/baselines/adapter/aguard"
+	"github.com/basdotio/bas-guard/baselines/corpus"
+	"github.com/basdotio/bas-guard/baselines/judgefold"
+	"github.com/basdotio/bas-guard/baselines/ledger"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // folded is everything the outputs are written from.

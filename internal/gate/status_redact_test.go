@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/detect"
+	"github.com/basdotio/bas-guard/internal/detect"
 )
 
 // statusToken is an obviously fake GitHub token, the shape the redactor's known-prefix table removes.
@@ -39,7 +39,7 @@ func TestDeadRegistrationNote_SecretInCommandIsRedacted(t *testing.T) {
 }
 
 // TestDeadRegistrationNote_OrdinaryCommandUnchanged is the reverse assertion: the commands
-// `aguard hook install` actually writes render exactly as before.
+// `bas-guard hook install` actually writes render exactly as before.
 func TestDeadRegistrationNote_OrdinaryCommandUnchanged(t *testing.T) {
 	for _, cmd := range []string{
 		"/usr/local/bin/aguard hook",
@@ -58,7 +58,7 @@ func TestDeadRegistrationNote_OrdinaryCommandUnchanged(t *testing.T) {
 }
 
 // TestStatusDescribe_ShowsTheRegisteredCommandVerbatim pins the other half of the decision:
-// `aguard hook status` is not a report. It is the operator asking their own terminal which command
+// `bas-guard hook status` is not a report. It is the operator asking their own terminal which command
 // is registered, and on the "THAT FILE DOES NOT EXIST" line the path IS the answer. The redactor
 // masks real install paths — an npx cache path, the one an ephemeral install leaves behind when it
 // goes dead, is the case pinned here — so the status output prints the command as written.

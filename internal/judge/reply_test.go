@@ -13,7 +13,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // legacyParse is the reader as it stood before P-034: slice from the first `{` to the last `}`

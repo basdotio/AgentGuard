@@ -3,7 +3,7 @@ package redact
 
 import "testing"
 
-// TestEndpoint: what a configured judge endpoint looks like wherever aguard shows it (P-076). The
+// TestEndpoint: what a configured judge endpoint looks like wherever bas-guard shows it (P-076). The
 // credentials a URL can carry by its structure — the userinfo, the query values, a fragment — are
 // replaced; the scheme, host, port and path, which say where the requests go, are not.
 func TestEndpoint(t *testing.T) {

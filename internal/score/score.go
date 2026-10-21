@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Package score computes AgentGuard's risk score (spec §5.3). It produces TWO numbers from
+// Package score computes BAS Guard's risk score (spec §5.3). It produces TWO numbers from
 // one formula, run over two different sets of findings:
 //
 //   - Overall          — deterministic sources only (static / permission / hygiene). The same
@@ -13,7 +13,7 @@
 // is probabilistic. Rather than trade one for the other, they get a number each.
 package score
 
-import "github.com/basdotio/AgentGuard/internal/model"
+import "github.com/basdotio/bas-guard/internal/model"
 
 // Penalty weights (spec appendix A). Within a dimension only the max hit counts;
 // across dimensions penalties add; final score is clamped to [0,100].

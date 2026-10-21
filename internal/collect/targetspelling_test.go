@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // `check` and `hash` route a directory through looksLikeRoot, and looksLikeRoot asked

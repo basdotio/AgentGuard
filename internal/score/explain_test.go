@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // TestExplain_IsApply: the working a report prints under "Why N" (P-058) is the working Apply did — the

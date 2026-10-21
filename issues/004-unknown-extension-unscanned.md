@@ -23,7 +23,7 @@
 
 - 允许列表：[internal/detect/detect.go:25](../internal/detect/detect.go)（`textExts`），
   使用点：[internal/detect/detect.go:339](../internal/detect/detect.go)
-- 对抗语料反向断言：[cmd/aguard/adversarial_test.go:206](../cmd/aguard/adversarial_test.go)
+- 对抗语料反向断言：[cmd/aguard/adversarial_test.go:206](../cmd/bas-guard/adversarial_test.go)
 - README "Coverage caveats" + ROADMAP "Known limitations"
 
 ## 修复方向

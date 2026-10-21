@@ -4,12 +4,12 @@
 ## Build and check
 
 ```bash
-make build      # -> bin/aguard (CGO_ENABLED=0; version/commit/date via -ldflags)
+make build      # -> bin/bas-guard (CGO_ENABLED=0; version/commit/date via -ldflags)
 make test       # go test -race -cover ./...
 make lint       # golangci-lint (version pinned in .github/workflows/ci.yml)
 make docs       # regenerate docs/rules.md from the rule set — required after adding or changing a rule
 make verify     # everything CI runs, in one command; green before you ask for review
-make hooks      # optional: a pre-commit hook that scans staged skills with aguard itself
+make hooks      # optional: a pre-commit hook that scans staged skills with bas-guard itself
 ```
 
 Go 1.23.x. Do not let `go mod tidy` raise the `go` directive in `go.mod` (CI pins 1.23); the
@@ -26,7 +26,7 @@ conventions in `.claude/rules/conventions.md` explain the one dependency that tr
   home and never your own `~/.config/aguard/config.yaml` or `AGUARD_USAGE_LOG`; a test fails if a
   package anywhere in the module lacks it (`baselines/` is excepted, for the reason the guard names).
   A new default location — a file the binary reads or writes when nobody names one — gets a row in
-  `TestDefaultLocations_AreInsideTheTestHome` (`cmd/aguard`).
+  `TestDefaultLocations_AreInsideTheTestHome` (`cmd/bas-guard`).
 - A change to a detection rule runs against the corpus benchmark (`make bench`, needs a sibling
   checkout of `agent-artifact-corpus`) and states its before/after per source, with n. Numbers are
   never pooled across sources.

@@ -40,7 +40,7 @@ var redactPatterns = []*regexp.Regexp{
 // credKeys are key names that ANNOUNCE their value is a credential.
 //
 // `auth` is spelled out instead of the earlier `auth[a-z]*`: the wildcard also swallowed
-// `author` and `authority` (aguard's own `llm.authority` among them), which the 12-char floor
+// `author` and `authority` (bas-guard's own `llm.authority` among them), which the 12-char floor
 // used to hide and the floor below would not.
 const credKeys = `api[_-]?key|secret|token|password|passwd|auth(?:entication|ori[sz](?:ation)?)?|bearer|access[_-]?key|client[_-]?secret`
 

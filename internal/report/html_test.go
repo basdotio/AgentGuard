@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 func TestHTML_RendersAndEscapes(t *testing.T) {
@@ -30,7 +30,7 @@ func TestHTML_RendersAndEscapes(t *testing.T) {
 		t.Fatal(err)
 	}
 	out := buf.String()
-	if !strings.Contains(out, "AgentGuard") || !strings.Contains(out, "EXEC-001") {
+	if !strings.Contains(out, "BAS Guard") || !strings.Contains(out, "EXEC-001") {
 		t.Error("report missing core content")
 	}
 	if !strings.Contains(out, "69") || !strings.Contains(out, "Elevated") {

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/model"
+	"github.com/basdotio/bas-guard/internal/model"
 )
 
 // ReachKind is the answer to "may the scanner read this file of a tree?" (invariant #2, P-056).
@@ -89,7 +89,7 @@ func SkillMDRefused(dir string) bool {
 // a plugin's (its parent carries the plugin manifest), the plugin root, the container P-044 bounds a
 // plugin's children by. Anything else gets no widening ("").
 //
-// Derived from the path alone, so `scan`, `check`, the gate, `aguard hash` and `clean` — which all
+// Derived from the path alone, so `scan`, `check`, the gate, `bas-guard hash` and `clean` — which all
 // hash a skill by its directory — compute the same identity. Measured on a real ~/.claude (P-056):
 // 41 skills installed this way, every target inside `<root>/skills`.
 func SkillMDBound(root string) string {
