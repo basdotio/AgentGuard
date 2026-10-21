@@ -798,17 +798,18 @@ func TestPluginVersionLine_LegacyName(t *testing.T) {
 			name:   "aguard from the pre-rename marketplace: uninstall, drop the marketplace, add the new one",
 			ids:    map[string]string{"aguard@AgentGuard": "0.29.0"},
 			binary: "v0.30.0",
-			want: []string{"old name", "since 0.30.0 it is basguard",
+			want: []string{"old name", "it is basguard now", "no updates from 0.30.0 on",
 				"claude plugin uninstall aguard@AgentGuard && claude plugin marketplace remove AgentGuard && " +
 					"claude plugin marketplace add basdotio/bas-guard && claude plugin install basguard@bas-guard"},
 			notWant: []string{"claude plugin update"},
 		},
 		{
-			name:    "agentguard from the pre-rename marketplace",
-			ids:     map[string]string{"agentguard@AgentGuard": "0.16.0"},
-			binary:  "v0.30.0",
-			want:    []string{"old name", "since 0.17.0 it is basguard", "claude plugin uninstall agentguard@AgentGuard", "claude plugin install basguard@bas-guard"},
-			notWant: []string{"claude plugin update"},
+			name:   "agentguard from the pre-rename marketplace",
+			ids:    map[string]string{"agentguard@AgentGuard": "0.16.0"},
+			binary: "v0.30.0",
+			want:   []string{"old name", "it is basguard now", "no updates from 0.17.0 on", "claude plugin uninstall agentguard@AgentGuard", "claude plugin install basguard@bas-guard"},
+			// 0.17.0 is when agentguard stopped, not when the plugin became basguard (that was 0.30.0; in between it was aguard).
+			notWant: []string{"claude plugin update", "since 0.17.0 it is basguard"},
 		},
 		{
 			name:    "agentguard from the retired guard marketplace",
