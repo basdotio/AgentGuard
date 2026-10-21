@@ -126,3 +126,4 @@ always drift. A state change is one `git mv`; the file name stays the same, and 
 | [083](complete/083-release-0.29.0.md) | Release record v0.29.0: P-082 stage 1 | The maintainer said "release v0.29.0" (2026-10-20) | PR #105; v0.29.0 |
 | [085](complete/085-judge-label-names.md) | The judge's notes name an artifact through `Redact`: a long hyphenated skill name becomes `skill:<REDACTED>`, and two such skills cannot be told apart | issues/027 (2026-10-20) | PR #109; v0.30.0 |
 | [086](complete/086-release-0.30.0.md) | Release record v0.30.0: P-082 stage 2 and P-085 | The maintainer said "release v0.30.0" (2026-10-21) | PR #111; v0.30.0 |
+| [087](complete/087-a-name-is-not-a-directive.md) | A one-word quote is a name, not a directive: an injection category resting on it weighs medium, and it raises no `LLM-007` | The maintainer, 2026-10-21 (the benign-label review) | PR #113 |

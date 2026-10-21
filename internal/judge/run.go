@@ -234,7 +234,20 @@ func groundedFinding(t task, v Verdict) (verdict, barrier *model.Finding, droppe
 		}
 	}
 	if quote := strings.TrimSpace(v.BarrierEvidence); quote != "" {
-		if s, ok := groundSpan(quote, t.units); ok {
+		if s, ok := groundSpan(quote, t.units); ok && isBareName(s.text) {
+			// P-087: the content addressed the analyzer only if it SAID something. A grounded quote
+			// of one token (a hook named `claude-ignore`) is a name; read as an instruction to the
+			// model it is the same guess as above, and LLM-007's severity is the tool's — high —
+			// so the guess would weigh the most. Dropped and noted, like an unsupported claim.
+			if verdict != nil {
+				verdict.Why += " [the quote said to address the analyzer is one word, a name: not counted]"
+			} else {
+				dropped = true
+				if unquoted == "" {
+					unquoted = clipQuote(quote) + " (a name, not an instruction)"
+				}
+			}
+		} else if ok {
 			b := barrierFinding(t.req)
 			b.Evidence[0] = s.evidence()
 			barrier = b
