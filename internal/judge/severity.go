@@ -201,6 +201,12 @@ var catalogueParamLine = regexp.MustCompile(`(?m)^[^\n]*▸ param [^\n]*$`)
 // (mode, category) is taken as shown — the check exists for the places a guess was measured.
 func categoryShown(m Mode, artifact, cat, sent, quoted string) bool {
 	switch {
+	case (m == ModeInjection || m == ModeSteering) && isBareName(quoted):
+		// P-087: a directive is speech. A quote of one token — a hook whose whole command is
+		// `claude-ignore`, grounded because quoting a whole short document is allowed — is a NAME,
+		// and a name read as "ignore previous instructions" is the guess from a script name the
+		// prompt already forbids. Measured: three votes, concealed-directive, on exactly that hook.
+		return false
 	case m == ModeCapability:
 		re, ok := hookCategoryTokens[cat]
 		if !ok {
@@ -225,4 +231,10 @@ func categoryShown(m Mode, artifact, cat, sent, quoted string) bool {
 		return lines == 0
 	}
 	return true
+}
+
+// isBareName reports whether a quote is a single token: no whitespace inside it once trimmed. A
+// program name, an identifier or a path is not a sentence anyone can be told to obey.
+func isBareName(quoted string) bool {
+	return len(strings.Fields(quoted)) == 1
 }
