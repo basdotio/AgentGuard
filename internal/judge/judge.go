@@ -54,7 +54,7 @@ const (
 // construction. Both are UNTRUSTED artifact content and are fenced with a nonce so the model
 // can't be hijacked by instructions embedded in them (spec §5.2 barrier).
 type Request struct {
-	Artifact string // "kind:name", redacted, for labeling only
+	Artifact string // "kind:name" (artifactLabel), for labeling only; never sent
 	Mode     Mode
 	// Declared is the artifact's own account of what it is FOR — the side a behavior is
 	// judged against. For a skill that is its description; for a hook it is the structural
