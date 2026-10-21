@@ -17,7 +17,48 @@ rate copied into prose goes stale on the next rule. `git tag` and the Releases p
 - Invariants: never executes scanned content, no cross-root symlink reads, secret redaction before storage (+ high-entropy fallback).
 - Single static binary (`CGO_ENABLED=0`), MIT + SPDX, CI, bilingual README.
 
-## v0.2.0 – v0.29.0
+## v0.2.0 – v0.30.0
+
+**v0.30.0 (2026-10-21) — the tool is BAS Guard: command `bas-guard`, repository `basdotio/bas-guard`, plugin
+`basguard@bas-guard`. The `aguard` command keeps working; the old plugin name and the old `go install` path do not.**
+
+The second half of the rename (P-082); v0.29.0 taught the tool its new name. No rule, score formula, flag, exit code or
+JSON field changed: `rules` (`8fc8772b2951`), `judge-prompt` (`b851dfd5412b`) and `judge-excerpt` (9) on the
+`bas-guard version` line are the same as in v0.29.0. Content hashes, approvals, baselines, quarantined skills and the
+SARIF names code scanning keys on (`tool.driver.name`, the fingerprint key, the run properties) are unchanged, so no
+approval is asked again and no alert reopens.
+
+- **The command is `bas-guard`, and `aguard` still works.** Release assets are `bas-guard-<os>-<arch>`, with
+  byte-identical `aguard-<os>-<arch>` copies so `releases/latest/download/aguard-*` links keep working; `SHA256SUMS.txt`
+  lists both. `@bas.io/guard` installs both commands, and each npm platform package carries the binary under both
+  names, so a gate installed from npm before this release keeps running after `npm update`. A gate registered as
+  `aguard hook` keeps firing; `bas-guard hook status` names it and says how to switch (P-082).
+- **`npx bas-guard`** runs the same package through the new unscoped `bas-guard` package, which depends on
+  `@bas.io/guard` at the same version and only forwards to it. Install one of the two globally, not both (P-082).
+- **The plugin is `basguard` in marketplace `bas-guard`**, with commands `/bas-guard-*` and skills `bas-guard-*`. The
+  marketplace no longer lists `aguard`, so an `aguard@AgentGuard` install stops loading once its marketplace refreshes
+  ("Plugin aguard not found in marketplace AgentGuard"); the load-time gate lives in `settings.json` and keeps running.
+  `bas-guard version` prints the commands to switch (P-082).
+- **The repository and the Go module are `github.com/basdotio/bas-guard`.** GitHub redirects the old URLs.
+  `go install github.com/basdotio/AgentGuard/cmd/aguard@latest`, as in the old CI template, fails from this release on
+  ("module declares its path as: github.com/basdotio/bas-guard"); use
+  `go install github.com/basdotio/bas-guard/cmd/bas-guard@latest`, or pin `@v0.29.0` (P-082).
+- **The judge's notes name an artifact as the report does.** With `--llm`, a skill whose name is long, hyphenated and
+  carries digits, such as `migrating-tailwindcss-v4`, was named `skill:<REDACTED>` in the budget note, the note on quotes
+  that did not ground, the excerpt-shortening notes and the note on artifacts the judge asks nothing of, so two such
+  skills read the same. The notes now print the name the report prints; nothing sent to the model changed (P-085).
+
+**To switch.** Step 3 is needed for the plugin to load. The others can wait: the `aguard` command, the `aguard-*`
+assets, `~/.config/aguard` and the `AGUARD_*` variables stay for at least two minor releases and three months.
+
+1. Binary: `npm i -g @bas.io/guard@latest` (both commands), or download `bas-guard-<os>-<arch>` from the release, or
+   `go install github.com/basdotio/bas-guard/cmd/bas-guard@latest`.
+2. Gate: run `bas-guard hook status`. If it says the gate is registered under the old command name, run
+   `bas-guard hook install`, then the `… hook uninstall` it prints.
+3. Plugin: `claude plugin uninstall aguard@AgentGuard && claude plugin marketplace remove AgentGuard && claude plugin
+   marketplace add basdotio/bas-guard && claude plugin install basguard@bas-guard`, then restart Claude Code. In Claude
+   Desktop: install `basguard` from the `bas-guard` marketplace in the Customize panel, and remove `aguard`.
+4. Config: nothing to do. A setup in `~/.config/aguard` keeps working (v0.29.0).
 
 **v0.29.0 (2026-10-20) — the tool also answers to its new name, BAS Guard: `bas-guard`, `~/.config/bas-guard` and
 `BAS_GUARD_*` work, and everything under the old names keeps working.**
