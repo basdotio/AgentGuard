@@ -109,7 +109,7 @@ section was ignored.
 ## Done
 
 ```
-Merged: PR to be opened (find the sha with git log --grep P-084 after the merge)
+Merged: PR #107 (find the sha with git log --grep P-084 after the merge)
 Evidence: TestLoad_InvalidLLMSectionIsSetAside, TestLoad_StillRefusesWhatEveryRunReads (internal/config/llm_section_test.go); TestLoad_PresetFillsEndpoint and TestLoad_BadDurationIsAnError now read the same message through Problem()
 Evidence: TestInvalidLLMSection_StaticRunsGoAhead and TestInvalidLLMSection_GateStillAudits (cmd/aguard/llm_section_test.go) red on e18e255 (static runs exit 2; the gate answers GATE-000 "config error, this call was NOT audited"), green after
 Evidence: reverse — TestInvalidLLMSection_JudgePathsStillRefuse green before and after (check/scan --llm, check/scan --fail-on-llm high, llm test, llm status, llm preview: exit 2 with the provider message); an invalid gate.action still gives the GATE-000 config error
