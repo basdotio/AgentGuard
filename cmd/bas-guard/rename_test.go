@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -79,6 +80,10 @@ func TestCommandNameAgnostic(t *testing.T) {
 		}
 		return so.String(), se.String(), code
 	}
+	// scanned_at is the one field two runs may disagree on: it is in seconds, and the runs straddle a
+	// second boundary often enough to fail CI (seen on Linux, 1792581217 vs 1792581218). It is the
+	// clock, not the name, so it is zeroed before the comparison, as renderAll does for the zip tests.
+	clock := regexp.MustCompile(`"scanned_at": [0-9]+`)
 	for _, args := range [][]string{
 		{"version"},
 		{"check", skill, "--json", "--no-reputation"},
@@ -87,6 +92,7 @@ func TestCommandNameAgnostic(t *testing.T) {
 	} {
 		o1, e1, c1 := run(src, args...)
 		o2, e2, c2 := run(renamed, args...)
+		o1, o2 = clock.ReplaceAllString(o1, `"scanned_at": 0`), clock.ReplaceAllString(o2, `"scanned_at": 0`)
 		if c1 != c2 || o1 != o2 || e1 != e2 {
 			t.Errorf("%s: aguard and bas-guard differ\nexit %d vs %d\nstdout:\n%s\n---\n%s\nstderr:\n%s\n---\n%s",
 				strings.Join(args, " "), c1, c2, o1, o2, e1, e2)
