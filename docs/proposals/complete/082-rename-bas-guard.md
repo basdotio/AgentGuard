@@ -165,6 +165,8 @@ Stage 2, one PR (proposed v0.30.0), after the maintainer renames the repository 
    Claude Desktop (`.claude/rules/plugin.md`), and the plugin name must not equal it: equal up to case fails to install
    on macOS, and exactly equal makes every update `rm -rf` the whole marketplace cache (issues/022, option C).
    **Decided (2026-10-21)**: `basguard`, as recommended (`/plugin install basguard@bas-guard`).
+   Asked after stage 2 merged: an install under `aguard` stops loading once its marketplace refreshes; list an `aguard`
+   entry beside `basguard` for the transition? **Decided (2026-10-21)**: no; testers are told to switch.
 
 ## Done
 
@@ -177,6 +179,7 @@ Evidence: hash domains, judge fence, on-disk names, SARIF tool name: 0 changed l
 Evidence: (follow-up) the line above missed the SARIF fingerprint key and run properties, renamed together with their tests; TestSARIF_MachineNamesKeptAcrossRename (internal/report/sarif_rename_test.go) is red on #106 and green on #110, and sarif.go differs from v0.29.0 in comments and imports only
 Evidence: (follow-up) the npm platform packages of #106 carried only bas-guard, while hook install registers the resolved binary path, which for an npm install up to v0.29.0 is …/@bas.io/guard-<os>-<cpu>/aguard (npm pack of guard-darwin-arm64@0.29.0: files aguard, package.json); TestNpmPlatformPackageKeepsTheOldBinaryPath runs npm-dist and is red on #106, green on #110
 Evidence: (follow-up) the README pair said go install of the old path "stops at v0.29.0"; Go fails instead — on proxy.golang.org the renamed github.com/Sirupsen/logrus lists v1.10.2 as @latest and go install reports "module declares its path as: github.com/sirupsen/logrus" — so the README pair names the error, the new path and the @v0.29.0 pin
+Evidence: (follow-up) claude 2.1.107 in a scratch CLAUDE_CONFIG_DIR: aguard@AgentGuard installed from v0.29.0, its marketplace pointed at basdotio/AgentGuard and updated → "✘ failed to load — Plugin aguard not found in marketplace AgentGuard" (it does not merely stop updating). An aguard entry next to basguard would load it again; the maintainer chose not to list one (2026-10-21) and to tell testers to switch. The hint and the README pair now say the old name stops loading and the gate keeps running
 Evidence: (follow-up) the plugin hint read "since 0.17.0 it is basguard" for agentguard; TestPluginVersionLine_LegacyName now wants "it is basguard now" and "no updates from 0.17.0 on"
 Evidence: make dist: 8 binaries (bas-guard-* and byte-identical aguard-*), 8/8 in SHA256SUMS.txt; npm-dist lays out 6 packages, a local install runs bas-guard, aguard and npx bas-guard
 ```
