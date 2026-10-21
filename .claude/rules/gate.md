@@ -112,6 +112,9 @@ paths:
   字节给同一个答案;judge 在这条路上永不运行。`check` 自 P-004 起接受 `--llm`,**闸门不跟**:`gateOptions` 和
   `approvePath` 构造的 `scanOpts` 永不设 `llm`,`TestGateScannerNeverEnablesLLM` 用计数端点钉住(比检查字段更严:
   换一种方式在闸门里打开判官也会红)。闸门对应的是不带 `--llm` 的 `check`。
+  **同理,闸门不能因为 `llm` 段而停摆**(P-084):`config.Load` 把校验不过的 `llm` 段搁置(`LLMConfig.Problem`,默认值顶上),
+  只有用判官的路径拿它拒绝;以前一个本构建不认的 `llm.provider` 让每次加载都是 `GATE-000 config error` 放行。**别把 `llm` 段的
+  校验挪回 `Load` 的报错里**,`gate` 段的照旧是加载错误(它决定拦不拦)。`TestInvalidLLMSection_GateStillAudits` 两向都钉。
 - **`hook uninstall` 要删掉每一份、且只删我们自己的**(`removeCommand`,2026-09-08)。原来 `findEntry` 只返回第一个匹配、
   只删那一条:闸门被注册了两次(老安装路径、手改)时,uninstall 报成功、hook 照样触发。而且它删的是**整条 entry**——一条 entry 的
   inner hooks 里我们的命令和运维自己的命令共用同一个 matcher 时,把人家的也一起删了。现在遍历全部条目、只摘我们的 inner 命令、

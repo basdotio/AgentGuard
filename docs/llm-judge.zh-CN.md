@@ -106,7 +106,7 @@ llm:
 | 字段 | 含义 |
 |------|------|
 | `enabled` | 总开关。必须 `true` **且** 传 `--llm`。 |
-| `provider` | 预设 —— `deepseek`、`openai`、`qwen` —— 或 `openai_compatible` 对接任意 OpenAI 风格端点(Ollama / vLLM / LM Studio / 代理…)。不认识的名字是加载错误,不会悄悄退回默认。 |
+| `provider` | 预设 —— `deepseek`、`openai`、`qwen` —— 或 `openai_compatible` 对接任意 OpenAI 风格端点(Ollama / vLLM / LM Studio / 代理…)。不认识的名字是错误,不会悄悄退回默认(见下)。 |
 | `base_url` | 端点根。工具 POST 到 `<base_url>/chat/completions`,后缀加在路径上:`base_url` 里的 query(`https://gw.example/v1?api-version=2024-01-01`)原样跟在后面发出,结尾有没有 `/` 都一样,fragment 丢掉。预设会自动填;写了就覆盖。 |
 | `model` | **用哪个模型。** 预设给默认值;写端点实际提供的名字可覆盖。 |
 | `api_key_env` | 存密钥的**环境变量名**。先查它;给 CI 和喜欢这种方式的人。 |
@@ -118,6 +118,11 @@ llm:
 | `max_retries` | `429`/`5xx` 的重试次数,遵守 `Retry-After`(默认 `2`)。重试是同一个问题重发,**不计入** `max_calls`;`4xx`(密钥错、模型名错)是真实答复,永不重试。 |
 | `samples` | 每个问题问几遍(默认 `1`)。`>1` 时一条发现必须过**多数**才能影响 effective 分 —— 见[共识采样](#共识采样-samples)。调用量按这个数翻倍。 |
 | `authority` | `advisory`(默认)或 `escalate`。这个端点的意见能不能卡构建 —— 见[用判官卡闸门](#用判官卡闸门-fail-on-llm)。卡闸门还要 `samples: 3` 或更多。 |
+
+**本构建用不了的 `llm` 段只拦判官,不拦别的。** 不认识的 `provider` 或 `authority`、解析不了的 `timeout` / `total_timeout`,
+会让 `--llm`、`--fail-on-llm`、`llm test`、`llm status`、`llm preview` 带着原因退出码 2。不用判官的运行根本不读这一段:
+`scan` 和 `check` 照常跑、报告不变,在 stderr 说一次这一段被忽略了(`--quiet` 下不说),加载时闸门照常审。
+YAML 解析不了、或 `gate` 的值不认识,仍然让每条命令都停下。
 
 每次跑完会往 stderr 打一行 —— `N call(s) in 12.4s (p50 …, p95 …) · 0 retry · 0 failed ·
 41k tokens in / 900 out`;`--quiet` 可关掉。同样的成本不论加不加 `--quiet` 都在 JSON 摘要里
