@@ -221,6 +221,14 @@ func groundedFinding(t task, v Verdict) (verdict, barrier *model.Finding, droppe
 				// on one pass; the connector pass's own-service control is categoryShown's.
 				f.Severity = model.SevMedium
 				f.Why += " [category not shown by the text: credential-read (the credential's own service)]"
+			} else if cat == "credential-read" && t.req.Mode == ModeInjection && quoteGoesHome(units, s.file, s.text) {
+				// P-089: the same question on the text an agent reads. A SKILL.md's example that puts
+				// OPENAI_API_KEY in the Authorization header of a call to api.openai.com is how the
+				// API is used, and three votes called it a credential read. Asked of the lines around
+				// the quote rather than the whole document: a long SKILL.md documents several services,
+				// and one foreign destination anywhere in it would hide every example that goes home.
+				f.Severity = model.SevMedium
+				f.Why += " [category not shown by the text: credential-read (the credential's own service, nearby)]"
 			}
 			verdict = f
 		} else {
@@ -1111,6 +1119,38 @@ func lowestSeverity(votes []model.Finding) model.Severity {
 // unitGoesHome reports whether the behaviour unit a quote landed in was built from a file whose
 // named credential goes only to its own service (sourceUnit.goesHome). The file name is the
 // redacted relative path groundSpan cites, the same string the unit carries.
+// quoteWindow is how many lines either side of a quote quoteGoesHome reads: an example's request
+// is a few lines around its Authorization header, and a window much wider starts to take in the
+// next example's destination.
+const quoteWindow = 12
+
+// quoteGoesHome reports whether, in the unit the quote landed in, the lines within quoteWindow of
+// it read a named credential and send it only to that credential's own service — the static
+// chain's answer (detect.CredentialGoesHome), on a window instead of a whole file.
+func quoteGoesHome(units []sourceUnit, file, quoted string) bool {
+	q := strings.TrimSpace(quoted)
+	if q == "" {
+		return false
+	}
+	for _, u := range units {
+		if u.file != file {
+			continue
+		}
+		lines := strings.Split(u.text, "\n")
+		first := strings.SplitN(q, "\n", 2)[0]
+		for i, l := range lines {
+			if !strings.Contains(l, strings.TrimSpace(first)) {
+				continue
+			}
+			lo, hi := max(0, i-quoteWindow), min(len(lines), i+strings.Count(q, "\n")+1+quoteWindow)
+			if detect.CredentialGoesHome(u.file, strings.Join(lines[lo:hi], "\n")) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func unitGoesHome(units []sourceUnit, file string) bool {
 	for _, u := range units {
 		if u.file == file && !u.collapsed {
