@@ -113,13 +113,17 @@ claude plugin install basguard@bas-guard
 **Marketplaces** → `bas-guard` → **Enable auto-update**(桌面版添加 marketplace 时的 "Sync automatically"
 就是同一个开关)。二进制是另一回事,它从不自动更新;`bas-guard version` 会说它是否落后于插件。
 
-**v0.17.0 之前装过插件?** 那时它叫 `agentguard`,这个名字不会再收到更新。改名是因为在不区分大小写的文件系统上
+**v0.30.0 之前装过插件?** 那时它是 `aguard@AgentGuard`(v0.17.0 到 v0.29.x)或 `agentguard@AgentGuard`(v0.17.0 之前),
+这两个名字都不会再收到更新。`aguard` 是随改名为 BAS Guard 换掉的;`agentguard` 是因为在不区分大小写的文件系统上
 (macOS 默认就是),它和 marketplace 名 `AgentGuard` 在 Claude Code 的安装缓存里撞成同一个目录,安装报 `EINVAL`
-([issues/022](issues/022-plugin-install-case-collision-macos.md))。换一次就好;`bas-guard version` 会按你的安装给出确切命令:
+([issues/022](issues/022-plugin-install-case-collision-macos.md))。换一次就好;`bas-guard version` 会按你的安装给出确切命令,
+从 `AgentGuard` marketplace 换过来是:
 
 ```bash
+claude plugin uninstall aguard@AgentGuard    # v0.17.0 之前是 agentguard@AgentGuard
+claude plugin marketplace remove AgentGuard
+claude plugin marketplace add basdotio/bas-guard
 claude plugin install basguard@bas-guard
-claude plugin uninstall agentguard@AgentGuard
 ```
 
 

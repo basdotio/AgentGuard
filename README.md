@@ -129,15 +129,19 @@ and command updates arrive on their own — `/plugin` → **Marketplaces** → `
 auto-update** (the desktop app's "Sync automatically" toggle is the same thing). The binary is
 separate and never updates itself; `bas-guard version` says when it has fallen behind the plugin.
 
-**Installed the plugin before v0.17.0?** It was called `agentguard` then, and that name receives no
-further updates. It was renamed because it collides with the marketplace name `AgentGuard` in
-Claude Code's install cache on a case-insensitive filesystem — macOS by default — where installing
-it fails with `EINVAL` ([issues/022](issues/022-plugin-install-case-collision-macos.md)). Switch
-once; `bas-guard version` prints the exact command for your install:
+**Installed the plugin before v0.30.0?** It was `aguard@AgentGuard` (v0.17.0 to v0.29.x) or
+`agentguard@AgentGuard` (before v0.17.0), and neither name receives further updates. `aguard` went
+with the rename to BAS Guard; `agentguard` collided with the marketplace name `AgentGuard` in Claude
+Code's install cache on a case-insensitive filesystem — macOS by default — where installing it fails
+with `EINVAL` ([issues/022](issues/022-plugin-install-case-collision-macos.md)). Switch once;
+`bas-guard version` prints the exact command for your install, which from the `AgentGuard`
+marketplace is:
 
 ```bash
+claude plugin uninstall aguard@AgentGuard    # agentguard@AgentGuard before v0.17.0
+claude plugin marketplace remove AgentGuard
+claude plugin marketplace add basdotio/bas-guard
 claude plugin install basguard@bas-guard
-claude plugin uninstall agentguard@AgentGuard
 ```
 
 
