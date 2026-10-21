@@ -73,7 +73,9 @@ Stage 2 (rename release):
   `bas-guard-<os>-<arch>` **and** byte-identical `aguard-<os>-<arch>` copies for the transition. Old `latest/download/aguard-*` links in
   the wild keep working, and `SHA256SUMS.txt` lists both.
 - [ ] npm: `@bas.io/guard` installs both `bas-guard` and `aguard`, and the launcher's stdio and exit-code contract is
-  unchanged (its existing tests pass). The unscoped `bas-guard` package depends on `@bas.io/guard` at the same version
+  unchanged (its existing tests pass). Each platform package carries the binary as `bas-guard` and as a byte-identical
+  `aguard`, because a gate installed from npm before the rename is registered at `…/@bas.io/guard-<os>-<cpu>/aguard`
+  (`TestNpmPlatformPackageKeepsTheOldBinaryPath`; added by the follow-up PR #110). The unscoped `bas-guard` package depends on `@bas.io/guard` at the same version
   and only forwards to it.
 - [ ] Plugin: `.claude-plugin/marketplace.json` declares marketplace `bas-guard` with one plugin `basguard` (Q6).
   Commands and skills are renamed, and their text uses `bas-guard`, falling back to an `aguard` binary from before the
@@ -151,6 +153,8 @@ Stage 2, one PR (proposed v0.30.0), after the maintainer renames the repository 
 3. **How long do the old names last?** **Decided (2026-10-20)**: as recommended. Recommended: the `aguard` alias, the `aguard-*` release assets, the old config
    directory and the `AGUARD_*` variables stay for at least two minor releases **and** three months after stage 2,
    whichever is later. Removal is its own proposal with a release note one version ahead.
+   The `aguard` file in each npm platform package (added by the follow-up PR #110) is one of these: a gate installed from
+   npm is registered at that file's path, so removing it needs the gate moved first, not only a release note.
 4. **Should `hook install` move existing registrations to the new command automatically?** **Decided (2026-10-20)**: no, as recommended; the `hook status` line ships in stage 2. Recommended: no. The gate
    keeps working through the alias. `hook status` adds one line ("registered as aguard; `bas-guard hook install`
    switches it"), and the operator decides.
@@ -165,12 +169,13 @@ Stage 2, one PR (proposed v0.30.0), after the maintainer renames the repository 
 ## Done
 
 ```
-Merged: (stage 1) PR #104 (2026-10-20) · (stage 2) PR #106 (2026-10-21) · (follow-up) PR #110: the SARIF keys, the old-name plugin hint, the README switch block (find the shas with git log --grep P-082)
+Merged: (stage 1) PR #104 (2026-10-20) · (stage 2) PR #106 (2026-10-21) · (follow-up) PR #110: the npm platform packages' aguard copy, the SARIF keys, the old-name plugin hint, the README switch block (find the shas with git log --grep P-082)
 Released: (stage 1) v0.29.0 · (stage 2) v0.30.0 (fill in after the release)
 Evidence: TestCommandNameAgnostic (cmd/bas-guard/rename_test.go): aguard and bas-guard give byte-identical version, check, scan
 Evidence: version line unchanged across the rename: rules=8fc8772b2951 judge-prompt=b851dfd5412b judge-excerpt=9 (as in v0.29.0)
 Evidence: hash domains, judge fence, on-disk names, SARIF tool name: 0 changed lines against main; baselines/: imports and the cmd path only, baselines/results untouched
 Evidence: (follow-up) the line above missed the SARIF fingerprint key and run properties, renamed together with their tests; TestSARIF_MachineNamesKeptAcrossRename (internal/report/sarif_rename_test.go) is red on #106 and green on #110, and sarif.go differs from v0.29.0 in comments and imports only
+Evidence: (follow-up) the npm platform packages of #106 carried only bas-guard, while hook install registers the resolved binary path, which for an npm install up to v0.29.0 is …/@bas.io/guard-<os>-<cpu>/aguard (npm pack of guard-darwin-arm64@0.29.0: files aguard, package.json); TestNpmPlatformPackageKeepsTheOldBinaryPath runs npm-dist and is red on #106, green on #110
 Evidence: (follow-up) the plugin hint read "since 0.17.0 it is basguard" for agentguard; TestPluginVersionLine_LegacyName now wants "it is basguard now" and "no updates from 0.17.0 on"
 Evidence: make dist: 8 binaries (bas-guard-* and byte-identical aguard-*), 8/8 in SHA256SUMS.txt; npm-dist lays out 6 packages, a local install runs bas-guard, aguard and npx bas-guard
 ```
