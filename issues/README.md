@@ -35,7 +35,7 @@
 | [024](024-symlinked-loaded-files-outside-root-unscored.md) | 软链到 root 外的 command、agent、rule、workflow、output style 只通报不计分 | 覆盖缺口 | 中 | 未修复 |
 | [025](025-credentials-json-not-a-credential.md) | `.credentials.json` 不被认作凭据：import Claude Code 自己的凭据文件会被读取 | 安全缺陷 | 中 | 未修复 |
 | [026](026-clean-undo-relative-skill-md-link.md) | `SKILL.md` 是相对软链的 skill 能被 clean 隔离，却撤销不了 | 功能缺陷 | 中 | 未修复 |
-| [027](027-judge-label-redacts-hyphenated-names.md) | 长连字符 skill 名字被高熵兜底规则当成密钥：判官说明里两个不同的 skill 都叫 `skill:<REDACTED>` | 报告缺陷 | 低 | 未修复 |
+| [027](027-judge-label-redacts-hyphenated-names.md) | 长连字符 skill 名字被高熵兜底规则当成密钥：判官说明里两个不同的 skill 都叫 `skill:<REDACTED>` | 报告缺陷 | 低 | **已修复**（P-085：标签不再过 `Redact`） |
 
 ## 判定口径
 

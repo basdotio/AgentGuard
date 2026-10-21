@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/basdotio/AgentGuard/internal/detect"
 	"github.com/basdotio/AgentGuard/internal/model"
 	"github.com/basdotio/AgentGuard/internal/score"
 )
@@ -75,7 +74,7 @@ func unaskedNote(arts []model.ArtifactReport) (model.Finding, bool) {
 		count[a.Kind]++
 		total++
 		if len(labels) < maxUnaskedLabels {
-			labels = append(labels, detect.Redact(string(a.Kind)+":"+a.Name))
+			labels = append(labels, artifactLabel(a))
 		}
 	}
 	if total == 0 {
