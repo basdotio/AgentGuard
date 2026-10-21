@@ -68,6 +68,9 @@ func scanInbox(dir string, explicit bool, o scanOpts) (*model.InboxReport, error
 		if err != nil {
 			return nil, err
 		}
+		if err := c.LLM.Problem(); err != nil {
+			return nil, err
+		}
 		if !c.JudgeReady() {
 			why := "--llm was passed but config llm.enabled is false (or endpoint unset); the Downloads items had the static check only."
 			rep.Notes = append(rep.Notes, model.Finding{RuleID: "LLM-000", Dimension: 0, Severity: model.SevLow, Source: model.SrcLLM,

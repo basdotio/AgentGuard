@@ -109,8 +109,9 @@ func TestLoad_PresetFillsEndpoint(t *testing.T) {
 	if cfg.LLM.Model != "deepseek-reasoner" || cfg.LLM.BaseURL != "https://proxy.example/v1" {
 		t.Errorf("explicit model/base_url must win over the preset: %+v", cfg.LLM)
 	}
-	if _, err := Load(write("c.yaml", "llm:\n  provider: deepsek\n")); err == nil || !strings.Contains(err.Error(), "deepseek") {
-		t.Errorf("unknown provider: err = %v, want an error listing the presets", err)
+	// An unknown provider sets the section aside (P-084); the judge paths refuse with this message.
+	if c, err := Load(write("c.yaml", "llm:\n  provider: deepsek\n")); err != nil || c.LLM.Problem() == nil || !strings.Contains(c.LLM.Problem().Error(), "deepseek") {
+		t.Errorf("unknown provider: problem = %v, err = %v, want a problem listing the presets", c.LLM.Problem(), err)
 	}
 	cfg, err = Load(write("d.yaml", "llm:\n  provider: openai_compatible\n  base_url: http://localhost:8000/v1\n"))
 	if err != nil || cfg.LLM.BaseURL != "http://localhost:8000/v1" {
@@ -179,16 +180,17 @@ func TestLoad_CallBudgetDefaults(t *testing.T) {
 	}
 }
 
-// TestLoad_BadDurationIsAnError: a typo'd timeout must fail loudly at load, not quietly fall
-// back to a default the operator did not ask for.
+// TestLoad_BadDurationIsAnError: a typo'd timeout must fail loudly, not quietly fall back to a
+// default the operator did not ask for. Since P-084 it is the llm section's problem rather than a
+// Load error: every judge path refuses with it, and a static run never reads it.
 func TestLoad_BadDurationIsAnError(t *testing.T) {
 	for _, bad := range []string{"60 seconds", "-5s", "0s"} {
 		p := filepath.Join(t.TempDir(), "c.yaml")
 		if err := os.WriteFile(p, []byte("llm:\n  timeout: \""+bad+"\"\n"), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := Load(p); err == nil {
-			t.Errorf("timeout %q accepted; want a config error", bad)
+		if c, err := Load(p); err != nil || c.LLM.Problem() == nil {
+			t.Errorf("timeout %q: problem = %v, err = %v; want the section set aside with a problem", bad, c.LLM.Problem(), err)
 		}
 	}
 }

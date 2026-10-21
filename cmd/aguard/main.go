@@ -432,6 +432,9 @@ func analyze(root string, res collect.Result, o scanOpts) (model.ScanResult, err
 	if err != nil {
 		return model.ScanResult{}, err
 	}
+	if err := llmSectionUsable(cfg, o.llm, o.quiet, os.Stderr); err != nil {
+		return model.ScanResult{}, err
+	}
 	arts, covNotes := detect.New().Run(root, res.Artifacts)
 	// Hooks, MCP servers and permission lists get their content hash HERE, before anything below
 	// reads Hash: reputation in this function, and — through scanEnv / checkTarget — the gate's
@@ -1090,6 +1093,24 @@ func validateFailGates(failOn, failOnLLM string, llm config.LLMConfig) (sev, llm
 		}
 	}
 	return sev, llmSev, nil
+}
+
+// llmSectionUsable decides what a set-aside llm section (config.LLMConfig.Problem, P-084) means
+// for this run. A run that uses the judge refuses with the reason — the error Load used to return
+// for every run. A static run never reads the section and goes ahead, saying so once on w unless
+// quiet; quiet is also what the gate and each Downloads item pass, so the line cannot repeat per
+// load or per item. --fail-on-llm is refused earlier, by GateReady.
+func llmSectionUsable(cfg config.Config, useLLM, quiet bool, w io.Writer) error {
+	p := cfg.LLM.Problem()
+	switch {
+	case p == nil:
+		return nil
+	case useLLM:
+		return p
+	case !quiet:
+		fmt.Fprintf(w, "warning: %v — the llm section is ignored; this run is static\n", p)
+	}
+	return nil
 }
 
 // parseFailOn validates a threshold flag. Empty means the gate is off.

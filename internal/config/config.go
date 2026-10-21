@@ -5,7 +5,8 @@
 // judge's only realistic endpoints are hosted ones that all need a key, and "set an
 // environment variable" was the step non-technical users could not take; the shell
 // profile they would have pasted it into is a plaintext file too, without the mode
-// check. Missing/invalid config degrades to static-only.
+// check. A missing config is the defaults (static-only); an invalid llm section is set aside and
+// only the runs that use the judge refuse it (LLMConfig.Problem); anything else invalid fails Load.
 package config
 
 import (
@@ -84,6 +85,38 @@ type LLMConfig struct {
 	// and forgeable. A hosted endpoint would assert its own tier server-side instead — a client
 	// must never be able to self-certify.
 	Authority string `yaml:"authority"`
+
+	// problem is why Load set this section aside, nil when it did not (see Problem). Unexported,
+	// so YAML never reads or writes it.
+	problem error
+}
+
+// Problem is why this llm section cannot be used, or nil. Load validates the section on its own:
+// when that fails, it does not fail the file — a static run and the load-time gate never read the
+// section, and refusing them over it turned the gate off on every load (P-084). The section is set
+// aside instead: the defaults stand in (judge off) and the reason is kept here. Every path that
+// needs the judge — --llm, --fail-on-llm (GateReady), the llm commands — must ask for it first
+// and refuse with it, which is the message Load used to return.
+func (c LLMConfig) Problem() error { return c.problem }
+
+// validate is the llm section's own load-time check: the two durations, the provider (filling a
+// preset in), the authority. Not defaulted silently — each one either decides where excerpts
+// are sent or whether a build may fail on a verdict.
+func (c *LLMConfig) validate() error {
+	if _, _, err := c.Durations(); err != nil {
+		return err
+	}
+	if err := c.applyPreset(); err != nil {
+		return err
+	}
+	switch c.Authority {
+	case AuthorityAdvisory, AuthorityEscalate:
+		return nil
+	default:
+		// An unrecognised value here would otherwise decide, without saying so, whether a gate
+		// can fire.
+		return fmt.Errorf("config llm.authority %q: want %q or %q", c.Authority, AuthorityAdvisory, AuthorityEscalate)
+	}
 }
 
 // Default returns the safe default: LLM disabled, local endpoint.
@@ -141,6 +174,9 @@ const MinSamplesToEscalate = 3
 // error that names the key to change. Refused, not ignored: a gate that silently never fires is
 // worse than no gate, and a gate that fires on a single draw fails builds on noise.
 func (c LLMConfig) GateReady() error {
+	if c.problem != nil {
+		return c.problem
+	}
 	if !c.MayEscalate() {
 		return fmt.Errorf("--fail-on-llm requires config llm.authority: %s (currently %q) — "+
 			"the judge may only gate a build when you have explicitly granted it that",
@@ -200,23 +236,16 @@ func Load(path string) (Config, error) {
 	if err := yaml.Unmarshal(b, &cfg); err != nil {
 		return Config{}, fmt.Errorf("parse config %q: %w", path, err)
 	}
-	// Validate at LOAD time so a typo fails before any scanning work is done.
-	if _, _, err := cfg.LLM.Durations(); err != nil {
-		return Config{}, err
+	// Validate at LOAD time so a typo fails before any scanning work is done. The llm section is
+	// validated on its own and set aside rather than failing the file (Problem, P-084): the runs
+	// that need it refuse with the same message, the runs that never read it go ahead.
+	if err := cfg.LLM.validate(); err != nil {
+		cfg.LLM = Default().LLM
+		cfg.LLM.problem = err
 	}
-	if err := cfg.LLM.applyPreset(); err != nil {
-		return Config{}, err
-	}
-	switch cfg.LLM.Authority {
-	case AuthorityAdvisory, AuthorityEscalate:
-	default:
-		// Not defaulted silently: an unrecognised value here would otherwise decide, without
-		// saying so, whether a gate can fire.
-		return Config{}, fmt.Errorf("config llm.authority %q: want %q or %q",
-			cfg.LLM.Authority, AuthorityAdvisory, AuthorityEscalate)
-	}
-	// Same treatment for the gate: an unrecognised value here decides whether a load is
-	// interrupted or refused, which is not a thing to resolve by silently picking one.
+	// The gate section is every run's — the load-time gate and `approve` read it — so it stays a
+	// load error: an unrecognised value here decides whether a load is interrupted or refused,
+	// which is not a thing to resolve by silently picking one.
 	switch cfg.Gate.Action {
 	case GateAsk, GateDeny:
 	default:

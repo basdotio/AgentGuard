@@ -493,6 +493,10 @@ llm:
 - **密钥文件必须 0600**,组/他人可读一律拒用并给出 `chmod 600`;env 仍优先给 CI。`aguard llm setup` 在终端用隐藏输入读 key(x/term),管道时 `--key-stdin`,两种都不进参数列表、不进 shell 历史;插件流程先推终端,贴进对话是知情的退路。setup 结束前必须印「内容会发到 X」。
 - **`CheckEndpoint` 拒绝非 https 的远程地址**(回环允许 http):key 是 Bearer 头,明文 http 等于把它送上网。setup/test/judge 三处都过它,judge 侧是一条 `LLM-000`。**端点回的重定向只跟同源的**(scheme、主机名、端口都和配置的一样,P-023):`CheckEndpoint` 只看得见配置里写的地址,而 Go 默认的重定向策略只比主机名就带上 key(https 降成 http、换端口、子域都带),307/308 还把摘录原样重发给任何主机。跨源的那一跳不发,这次调用失败、不重试,经同一条 `LLM-000` 进报告;报错只写目标的 scheme://host。`aguard llm test` 用真实 client 打一次,让错 key/错模型名在扫描之前失败;`status` 永不打印 key。
 - 无配置/无 key/未 `--llm` → 静态结果照常(核心价值不依赖 LLM)。
+- **`llm` 段校验不过只拦判官**(P-084):`config.Load` 把它搁置(默认值顶上、判官关)并把原因留在 `LLMConfig.Problem`;
+  `--llm`、`--fail-on-llm`、`llm test/status/preview` 拿它退出码 2,静态 `scan`/`check`/`approve` 与加载时闸门照常运行
+  (CLI 非 `--quiet` 时 stderr 说一次)。以前整份文件报错:静态运行退 2,闸门每次加载 `GATE-000` 放行而不审。
+  `gate` 段的非法值与解析不了的 YAML 仍是加载错误。
 - 启用云 endpoint 时的一次性同意见 §5.2 / §16。
 - **`authority` / `samples` 只对自备端点生效**。托管端点下档位由服务端在响应中断言、采样数按套餐由服务端决定(N 次采样 = N 倍服务方成本),客户端这两个字段无效 —— 见 §5.2.1 前提③。
 - **`max_calls` 是礼貌性自限,不是成本控制**:它是客户端配置、用户可改,只用于保护用户自己的时间与账单;托管模式下真正的限额必须由服务端强制。
