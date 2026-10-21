@@ -162,13 +162,15 @@ func updateHint(in collect.PluginInstall, binaryVersion string) string {
 }
 
 // renamedLine reports an install under an old name, with no current install next to it.
+// lb.since is when that name stopped, not when the plugin got its current name: agentguard
+// stopped at 0.17.0, when the plugin became aguard.
 func renamedLine(old collect.PluginInstall, lb legacyBundle) string {
 	pv := bundleVersionOf(old.Dir)
 	if pv != "" {
 		pv = " " + pv
 	}
-	return fmt.Sprintf("plugin %s%s is installed under the plugin's old name: since %s it is %s, and the old name gets no further updates — %s",
-		lb.name, pv, lb.since, pluginBundleName, renameHint(old, lb.name))
+	return fmt.Sprintf("plugin %s%s is installed under the plugin's old name: it is %s now, and the old name gets no updates from %s on — %s",
+		lb.name, pv, pluginBundleName, lb.since, renameHint(old, lb.name))
 }
 
 // renameHint says how to move an install under oldBundle to pluginBundleName.
