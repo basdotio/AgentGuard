@@ -14,7 +14,7 @@
 
 This tool was called **AgentGuard** (command `aguard`, plugin `aguard@AgentGuard`, repository `basdotio/AgentGuard`)
 through v0.29. Other projects use those names, including an unscoped npm package `aguard` that installs a different
-program, so it is now **BAS Guard**. Nothing you set up stops working:
+program, so it is now **BAS Guard**. What you set up keeps working, except a `go install` of the old path (last item):
 
 - The `aguard` command still works: the npm package installs it next to `bas-guard`, and an `aguard` binary you
   installed by hand keeps working. A gate registered as `aguard hook` keeps firing; `bas-guard hook status` says how to
@@ -25,10 +25,12 @@ program, so it is now **BAS Guard**. Nothing you set up stops working:
   names.
 - The plugin is now `basguard@bas-guard`; `bas-guard version` prints the exact commands to switch an `aguard@AgentGuard`
   install.
-- `go install github.com/basdotio/AgentGuard/cmd/aguard@latest` stops at v0.29.0; use
-  `go install github.com/basdotio/bas-guard/cmd/bas-guard@latest`.
 - `npx bas-guard` runs the same package as `npx @bas.io/guard`. Install one of the two globally, not both: they
   provide the same `bas-guard` command.
+- `go install github.com/basdotio/AgentGuard/cmd/aguard@latest` (the old CI template) **fails** from v0.30.0 on, with
+  `module declares its path as: github.com/basdotio/bas-guard`. Use
+  `go install github.com/basdotio/bas-guard/cmd/bas-guard@latest`, whose command is `bas-guard`, or pin `@v0.29.0` to
+  keep the old build.
 
 ## What it is
 

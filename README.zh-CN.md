@@ -13,16 +13,17 @@
 ## 由 AgentGuard 改名而来
 
 这个工具在 v0.29 及之前叫 **AgentGuard**(命令 `aguard`,插件 `aguard@AgentGuard`,仓库 `basdotio/AgentGuard`)。这些名字也被
-别的项目在用,其中不带 scope 的 npm 包 `aguard` 装出来的是另一个程序,所以现在改名为 **BAS Guard**。已经配好的东西都照常能用:
+别的项目在用,其中不带 scope 的 npm 包 `aguard` 装出来的是另一个程序,所以现在改名为 **BAS Guard**。已经配好的东西都照常能用,只有按旧路径 `go install` 的例外(最后一条):
 
 - `aguard` 命令仍然可用:npm 包会把它和 `bas-guard` 一起装上,你手动装的 `aguard` 二进制也照常能用。注册成 `aguard hook` 的闸门照常生效,
   `bas-guard hook status` 会告诉你怎么切换。
 - 只有 `~/.config/aguard/` 时照旧从那里读配置,`AGUARD_*` 环境变量都照常有效(和 `BAS_GUARD_*` 同时设时以后者为准)。
 - 批准记录(`.aguard-approvals.json`)、基线(`.aguardignore`)、隔离区(`.aguard-trash`)都保留原来的文件名。
 - 插件现在是 `basguard@bas-guard`;`bas-guard version` 会给出把 `aguard@AgentGuard` 换过来的确切命令。
-- `go install github.com/basdotio/AgentGuard/cmd/aguard@latest` 停在 v0.29.0;请改用
-  `go install github.com/basdotio/bas-guard/cmd/bas-guard@latest`。
 - `npx bas-guard` 和 `npx @bas.io/guard` 跑的是同一个包。全局安装时二选一,不要两个都装:它们提供的是同一个 `bas-guard` 命令。
+- `go install github.com/basdotio/AgentGuard/cmd/aguard@latest`(旧的 CI 模板)从 v0.30.0 起**会失败**,报
+  `module declares its path as: github.com/basdotio/bas-guard`。改用 `go install github.com/basdotio/bas-guard/cmd/bas-guard@latest`
+  (装出来的命令是 `bas-guard`),或者钉在 `@v0.29.0` 继续用旧版。
 
 ## 是什么
 
