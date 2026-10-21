@@ -23,8 +23,9 @@ program, so it is now **BAS Guard**. What you set up keeps working, except a `go
   (`BAS_GUARD_*` wins when both are set).
 - Approvals (`.aguard-approvals.json`), baselines (`.aguardignore`) and quarantined skills (`.aguard-trash`) keep their
   names.
-- The plugin is now `basguard@bas-guard`; `bas-guard version` prints the exact commands to switch an `aguard@AgentGuard`
-  install.
+- The plugin is now `basguard@bas-guard`. The marketplace no longer lists `aguard`, so an `aguard@AgentGuard` install
+  stops loading when its marketplace refreshes ("Plugin aguard not found in marketplace AgentGuard"); the load-time gate
+  is not part of the plugin and keeps running. `bas-guard version` prints the exact commands to switch.
 - `npx bas-guard` runs the same package as `npx @bas.io/guard`. Install one of the two globally, not both: they
   provide the same `bas-guard` command.
 - `go install github.com/basdotio/AgentGuard/cmd/aguard@latest` (the old CI template) **fails** from v0.30.0 on, with
@@ -132,12 +133,13 @@ auto-update** (the desktop app's "Sync automatically" toggle is the same thing).
 separate and never updates itself; `bas-guard version` says when it has fallen behind the plugin.
 
 **Installed the plugin before v0.30.0?** It was `aguard@AgentGuard` (v0.17.0 to v0.29.x) or
-`agentguard@AgentGuard` (before v0.17.0), and neither name receives further updates. `aguard` went
-with the rename to BAS Guard; `agentguard` collided with the marketplace name `AgentGuard` in Claude
-Code's install cache on a case-insensitive filesystem — macOS by default — where installing it fails
-with `EINVAL` ([issues/022](issues/022-plugin-install-case-collision-macos.md)). Switch once;
-`bas-guard version` prints the exact command for your install, which from the `AgentGuard`
-marketplace is:
+`agentguard@AgentGuard` (before v0.17.0). The marketplace lists neither, so Claude Code stops
+loading either once the marketplace refreshes ("Plugin aguard not found in marketplace
+AgentGuard"). `aguard` went with the rename to BAS Guard; `agentguard` collided with the
+marketplace name `AgentGuard` in Claude Code's install cache on a case-insensitive filesystem —
+macOS by default — where installing it fails with `EINVAL`
+([issues/022](issues/022-plugin-install-case-collision-macos.md)). Switch once; `bas-guard version`
+prints the exact command for your install, which from the `AgentGuard` marketplace is:
 
 ```bash
 claude plugin uninstall aguard@AgentGuard    # agentguard@AgentGuard before v0.17.0
