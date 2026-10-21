@@ -105,3 +105,15 @@ section was ignored.
    message, as today. It describes the judge configuration, and the honest description of an unusable one is the reason
    it is unusable; printing the stand-in defaults would describe a judge nobody configured.
    **Decided (2026-10-21)**: as recommended.
+
+## Done
+
+```
+Merged: PR to be opened (find the sha with git log --grep P-084 after the merge)
+Evidence: TestLoad_InvalidLLMSectionIsSetAside, TestLoad_StillRefusesWhatEveryRunReads (internal/config/llm_section_test.go); TestLoad_PresetFillsEndpoint and TestLoad_BadDurationIsAnError now read the same message through Problem()
+Evidence: TestInvalidLLMSection_StaticRunsGoAhead and TestInvalidLLMSection_GateStillAudits (cmd/aguard/llm_section_test.go) red on e18e255 (static runs exit 2; the gate answers GATE-000 "config error, this call was NOT audited"), green after
+Evidence: reverse — TestInvalidLLMSection_JudgePathsStillRefuse green before and after (check/scan --llm, check/scan --fail-on-llm high, llm test, llm status, llm preview: exit 2 with the provider message); an invalid gate.action still gives the GATE-000 config error
+Evidence: built binary, config `llm: {provider: not-a-provider}`: scan, check, approve exit 2 → 0 (scan and check with one stderr warning); hook PreToolUse and SessionStart GATE-000 → audited; version and hash unchanged
+Evidence: P-075's positive control caught the blind spot (config.Load accepted the planted llm.provider); both isolation tests now plant an invalid gate.action
+Evidence: make verify: all gates passed (go version go1.23.5 darwin/arm64, no toolchain switch; go.mod line 2 go 1.23.5; fresh test cache)
+```
