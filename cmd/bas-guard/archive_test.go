@@ -179,7 +179,7 @@ func resultURI(r map[string]any) string {
 
 func resultFingerprint(r map[string]any) string {
 	fp, _ := r["partialFingerprints"].(map[string]any)
-	s, _ := fp["bas-guard/v1"].(string)
+	s, _ := fp["aguard/v1"].(string)
 	return s
 }
 
@@ -287,8 +287,8 @@ func TestCheckDir_SARIFUnchanged(t *testing.T) {
 	if got := resultFingerprint(exec); got != dirSkillFingerprint {
 		t.Errorf("fingerprint = %q, want %q — a directory target's fingerprint moved, which reopens every alert", got, dirSkillFingerprint)
 	}
-	if got := doc.Runs[0].Properties["bas-guard/root"]; got != filepath.ToSlash(skill) {
-		t.Errorf("bas-guard/root = %v, want %q", got, skill)
+	if got := doc.Runs[0].Properties["aguard/root"]; got != filepath.ToSlash(skill) {
+		t.Errorf("aguard/root = %v, want %q", got, skill)
 	}
 	if res.Root != skill || len(res.Artifacts) != 1 || res.Artifacts[0].Path != skill {
 		t.Errorf("root=%q artifacts=%+v — want both to name the directory", res.Root, res.Artifacts)
