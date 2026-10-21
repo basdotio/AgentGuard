@@ -162,7 +162,7 @@ Stage 2, one PR (proposed v0.30.0), after the maintainer renames the repository 
 ## Done
 
 ```
-Merged: (stage 1) PR #104 (2026-10-20) · (stage 2) PR #106 (find the shas with git log --grep P-082)
+Merged: (stage 1) PR #104 (2026-10-20) · (stage 2) PR #106 (2026-10-21) · (follow-up) PR #110: the old-name plugin hint, the README switch block (find the shas with git log --grep P-082)
 Released: (stage 1) v0.29.0 · (stage 2) v0.30.0 (fill in after the release)
 Evidence: TestCommandNameAgnostic (cmd/bas-guard/rename_test.go): aguard and bas-guard give byte-identical version, check, scan
 Evidence: version line unchanged across the rename: rules=8fc8772b2951 judge-prompt=b851dfd5412b judge-excerpt=9 (as in v0.29.0)
