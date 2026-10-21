@@ -144,7 +144,7 @@ const (
 type task struct {
 	kind     taskKind
 	artifact int    // index into arts
-	label    string // redacted "kind:name", for triage + error messages
+	label    string // "kind:name" (artifactLabel), for triage + error messages
 	req      Request
 	items    []TriageItem
 	// units is the text this call was built from — the basis a verdict's quote is checked
@@ -490,6 +490,15 @@ func buildTasks(arts []model.ArtifactReport, samples int, eg egress) []task {
 	return tasks
 }
 
+// artifactLabel is how the judge names an artifact in its notes (LLM-000, LLM-005, what an excerpt
+// left out, the artifacts asked nothing): "kind:name", the name as the report lists it. It is not
+// sent to the model (Request.Artifact is never in a request body). It went through Redact once, and
+// the entropy catch-all removed long hyphenated names whole — `migrating-tailwindcss-v4` read
+// `skill:<REDACTED>` here while the report listed it by name, and two such skills could not be told
+// apart (P-084, issues/027). Every renderer prints the name as is (invariant #3 leaves names the
+// scanner lists outside Redact); this note draws no line of its own.
+func artifactLabel(a model.ArtifactReport) string { return string(a.Kind) + ":" + a.Name }
+
 // planFor decides which calls one artifact gets (spec §5.2 trigger table). Two rules shape
 // that table, and neither is about caution:
 //
@@ -503,7 +512,7 @@ func buildTasks(arts []model.ArtifactReport, samples int, eg egress) []task {
 // is turned into a request and its units, so the two hold the same bytes. The label is not sent:
 // it names the artifact in the report and in LLM-000/LLM-005 notes, never in a request body.
 func planFor(i int, a model.ArtifactReport, eg egress) []task {
-	label := detect.Redact(string(a.Kind) + ":" + a.Name)
+	label := artifactLabel(a)
 	var out []task
 	ask := func(req Request, units []sourceUnit) {
 		req.Artifact = label
@@ -640,7 +649,7 @@ func planFor(i int, a model.ArtifactReport, eg egress) []task {
 // ballot collects the samples of ONE question and turns them into at most one finding.
 type ballot struct {
 	artifact int
-	label    string // redacted "kind:name", for the LLM-005 note
+	label    string // "kind:name" (artifactLabel), for the LLM-005 note
 	// flagged holds the samples that flagged AND grounded, in sample order. Only these are
 	// votes: a verdict whose quote isn't in the source can't support anything.
 	flagged []model.Finding
