@@ -29,7 +29,9 @@ var isolationProbes = []string{"TestAdversarialCorpus", "TestE2E_StaticBaseline"
 func TestIsolation_RealHomeConfigIsNotSeen(t *testing.T) {
 	planted := t.TempDir()
 	home, xdg := filepath.Join(planted, "home"), filepath.Join(planted, "xdg")
-	const bad = "llm:\n  provider: not-a-provider-this-build-accepts\n"
+	// The gate section, not the llm one: since P-084 an invalid llm section is set aside and a
+	// static run goes ahead, so only a value every run reads makes the probes fail.
+	const bad = "gate:\n  action: not-an-action-this-build-accepts\n"
 	for _, p := range []string{
 		filepath.Join(home, ".config", "aguard", "config.yaml"),
 		filepath.Join(xdg, "aguard", "config.yaml"),

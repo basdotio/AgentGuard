@@ -100,7 +100,7 @@ func TestDefaultLocations_AreInsideTheTestHome(t *testing.T) {
 
 // TestIsolatedHome_OwnConfigIsStillRefused is the reverse assertion: the test home removes the
 // developer's config, not config loading (P-077). A config the test writes itself, naming a
-// provider this build does not accept, is refused through --config, and at the default location
+// gate.action this build does not accept, is refused through --config, and at the default location
 // inside the test home — with XDG_CONFIG_HOME set, and empty so the HOME fallback is the one
 // read. With neither, the scan runs on defaults.
 func TestIsolatedHome_OwnConfigIsStillRefused(t *testing.T) {
@@ -111,11 +111,13 @@ func TestIsolatedHome_OwnConfigIsStillRefused(t *testing.T) {
 	if _, err := scanEnv(root, scanOpts{quiet: true}); err != nil {
 		t.Fatalf("no config anywhere: %v, want a scan on defaults", err)
 	}
-	const bad = "llm:\n  enabled: true\n  provider: bogus\n"
+	// An invalid gate value, which every run reads: since P-084 an invalid llm section is set
+	// aside and a static scan goes ahead, so it would no longer prove the config was loaded.
+	const bad = "gate:\n  action: bogus\n"
 	refused := func(what string, err error) {
 		t.Helper()
-		if err == nil || !strings.Contains(err.Error(), `"bogus"`) {
-			t.Errorf("%s: err = %v, want the refusal naming the provider", what, err)
+		if err == nil || !strings.Contains(err.Error(), `gate.action "bogus"`) {
+			t.Errorf("%s: err = %v, want the refusal naming gate.action", what, err)
 		}
 	}
 
