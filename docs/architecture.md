@@ -348,7 +348,7 @@ hygiene/clean (report-only; `--apply` quarantines zombie skills reversibly, `--u
 deterministic scoring, `.aguardignore` baselines, the embedded reputation allowlist, the LLM
 judge with grounding + consensus over condensed head+tail excerpts, terminal/JSON/SARIF/HTML
 reports, both gates, and distribution as release binaries, a Claude Code plugin, and the
-`@bas.io/guard` npm package (five packages, no install scripts). Since v0.9.0: every read of a
+`@bas.io/guard` npm package (five packages, no install scripts; plus the unscoped `bas-guard` alias since v0.30.0). Since v0.9.0: every read of a
 user file goes through `safeio`; entries that exist but cannot be read are disclosed and change
 the tree hash; a credential `@import` is refused and scored (`EXFIL-005`); `check` routes on
 structure only; and the report names the worst artifact beside the mean.

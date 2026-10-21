@@ -109,10 +109,10 @@ jobs:
       # 5xx) could only be recovered by cutting a new version tag: the re-run would abort on the
       # first package with "cannot publish over the previously published versions".
       #
-      # Auth is npm trusted publishing (OIDC), not a stored token: each of the five packages has a
+      # Auth is npm trusted publishing (OIDC), not a stored token: each of the six packages has a
       # trusted-publisher entry on npmjs.com naming basdotio/bas-guard and release.yml, with
       # direct `npm publish` allowed. There is no NPM_TOKEN secret to expire or leak. Renaming
-      # this file or moving the repo breaks publishing until those five entries are recreated.
+      # this file or moving the repo breaks publishing until those six entries are recreated.
       #
       # --provenance: npm signs each package with this workflow's identity and the commit it built
       # from, verifiable with `npm audit signatures`. Trusted publishing does this on its own; the
