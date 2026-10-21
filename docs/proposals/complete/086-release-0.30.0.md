@@ -1,8 +1,8 @@
 <!-- SPDX-License-Identifier: MIT -->
 # 086 — Release record v0.30.0: P-082 stage 2 and P-085
 
-- **Source**: P-082 stage 2 merged (PR #106, 2026-10-21); the tag waits for the maintainer's word. A release does not go
-  through a proposal; this file is only the record.
+- **Source**: the maintainer said "merge #110 #111 and release v0.30.0" (2026-10-21). A release does not go through a
+  proposal; this file is only the record.
 - **Includes**:
   - P-082 stage 2, the rename to BAS Guard: module path, binary, npm, plugin, prose (PR #106);
   - its follow-up, found while preparing this record (PR #110): the npm platform packages keep the binary under its old

@@ -125,4 +125,4 @@ always drift. A state change is one `git mv`; the file name stays the same, and 
 | [082](complete/082-rename-bas-guard.md) | The tool shares its name and its command with other projects, so users find and install the wrong one | Maintainer decision (2026-10-20): the tool becomes BAS Guard, command `bas-guard`, repository `basdotio/bas-guard` |PR #104 (stage 1); v0.29.0 · PR #106 (stage 2), PR #110; v0.30.0 |
 | [083](complete/083-release-0.29.0.md) | Release record v0.29.0: P-082 stage 1 | The maintainer said "release v0.29.0" (2026-10-20) | PR #105; v0.29.0 |
 | [085](complete/085-judge-label-names.md) | The judge's notes name an artifact through `Redact`: a long hyphenated skill name becomes `skill:<REDACTED>`, and two such skills cannot be told apart | issues/027 (2026-10-20) | PR #109; v0.30.0 |
-| [086](complete/086-release-0.30.0.md) | Release record v0.30.0: P-082 stage 2 and P-085 | P-082 stage 2 merged (2026-10-21) | PR #111 |
+| [086](complete/086-release-0.30.0.md) | Release record v0.30.0: P-082 stage 2 and P-085 | The maintainer said "release v0.30.0" (2026-10-21) | PR #111; v0.30.0 |
