@@ -1,0 +1,84 @@
+# Assembled from the driver's run.yaml and judgefold's fold of raw/ (see raw_archive). The verdict files are the
+# fold's: a sample is malicious when a deterministic finding is >= high, or an LLM finding that ESCALATED (grounded,
+# 2 of 3) is >= high and its rule is not LLM-009. THIS IS NOT A BASELINE: the verdicts depend on a model, a day and
+# the sampling. Read baselines/README.md "Measuring the judge" before citing a figure.
+#
+# WHAT THIS RUN IS FOR: P-089 (an injection-pass credential-read weighs medium when the lines around the quote send the
+# key only to its own service), MAIN. The 17 benign samples that ever escalated an LLM-003 credential-read in a committed
+# run, the 30 review samples, and the 240 SkillHarm trees as the recall guard; main (v0.30.0) the same day as the branch.
+#
+# Written by baselines/cmd/baseline. Read baselines/README.md before citing any
+# figure produced alongside this file.
+#
+# measured by agent-guard's own adapter (agent-guard baselines/adapter/aguard), threshold "high" chosen by us, placement: by content, into a fake home; unplaceable trees are handed to `check` directly. EXTRA ARGS: --llm --config /Users/lewisqin/Projects/bascan/agent-guard-repo/agent-guard-work/judge-s3.yaml — the verdicts below fold deterministic findings only and are unaffected; anything these flags added lives in raw/ and is not committed, except what the judge cost, which run.yaml sums under judge_usage
+
+tool: aguard
+tool_version: bas-guard v0.30.0-3-g540b641 (commit 540b641, built 2026-10-21T12:54:49Z) · reputation entries=18 · rules=8fc8772b2951 · judge-prompt=b851dfd5412b · judge-excerpt=9
+threshold: high
+tool_extra_args:
+    - --llm
+    - --config
+    - <judge config, not committed: provider openai, model gpt-4.1-mini, samples 3, concurrency 4, max_retries 4>
+check_llm: true
+uploads_samples: true
+uploads_samples_basis: 'this run passed --llm to aguard: redacted excerpts of every judged artifact were sent to the endpoint named in the judge config. The verdicts fold deterministic findings only, so verdicts.jsonl and the scorecard are unaffected; what the judge found exists only in raw/ (kept as a release asset, never in the tree) and is folded by baselines/cmd/judgefold, and what it cost is summed under judge_usage.'
+corpus_commit: aceef06e
+started_at: 2026-10-21T12:59:27.416337Z
+adapter: agent-guard baselines/adapter/aguard
+placement: by content, into a fake home; unplaceable trees are handed to `check` directly
+provisional: false
+counts:
+    scored: 282
+    no_verdict: 0
+    error: 0
+work_list_size: 282
+judge_usage:
+    basis: reported
+    basis_note: 'summed from the tool''s own counts: every sample with a judge summary reported triage_calls and retries. Questions asked = (calls - triage_calls) / the judge''s samples setting, exact only when skipped is 0'
+    reported_samples: 282
+    derived_samples: 0
+    calls: 3150
+    failed: 0
+    skipped: 0
+    repaired: 72
+    reasked: 13
+    triage_calls: 111
+    retries: 0
+    prompt_tokens: 5320391
+    completion_tokens: 1148335
+    cached_prompt_tokens: 1758080
+    usage_by_pass:
+        capability:
+            calls: 132
+            prompt_tokens: 117312
+            completion_tokens: 12071
+        collusion:
+            calls: 9
+            prompt_tokens: 8922
+            completion_tokens: 1381
+        injection:
+            calls: 1323
+            reasked: 5
+            prompt_tokens: 2313101
+            completion_tokens: 662794
+            cached_prompt_tokens: 592000
+        intent:
+            calls: 789
+            reasked: 7
+            prompt_tokens: 1197327
+            completion_tokens: 193306
+            cached_prompt_tokens: 394624
+        result:
+            calls: 786
+            reasked: 1
+            prompt_tokens: 1615578
+            completion_tokens: 273507
+            cached_prompt_tokens: 771456
+        triage:
+            calls: 111
+            prompt_tokens: 68151
+            completion_tokens: 5276
+raw_archive:                          # raw/ is not in the tree (P-039); the archive is this run's primary evidence
+    asset: aguard-judge-raw-2026-10-p089.tar.gz
+    sha256: ebbf730d4ca3cc537002c93de206aafc3809546c93888901931e23b07e915717
+    note: 296545 bytes; attached to release v0.30.0 on 2026-10-22 (gh release download v0.30.0 --pattern aguard-judge-raw-2026-10-p089.tar.gz); the raw/ of this proposal's runs, each under the directory name used here

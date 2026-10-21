@@ -366,7 +366,7 @@ everything on your machine. That trade-off is yours.
 | `LLM-000` | Coverage note: the judge didn't fully run (unreachable / not enabled / partial), or has no pass for some artifacts (a plugin with no loadable skill, command or agent, a directory, quarantined content). |
 | `LLM-001` | Intent mismatch (dim 10). |
 | `LLM-002` | Privacy warning: the configured endpoint is not local. |
-| `LLM-003` | Hidden prompt injection in instruction text (dim 1). |
+| `LLM-003` | Hidden prompt injection in instruction text (dim 1). Since P-089 a `credential-read` vote whose quote sits within twelve lines of code that sends the named key only to its own service (`detect.CredentialGoesHome` on that window — a documented call putting `OPENAI_API_KEY` in the header of a request to `api.openai.com`) weighs medium with the reason; the window, not the whole document, because a long `SKILL.md` documents several services. |
 | `LLM-004` | Decoded obfuscated payload performs sensitive actions (dim 6). |
 | `LLM-005` | Coverage note: N flagged verdicts were **discarded** because the text they quoted isn't in what was sent (see below). |
 | `LLM-006` | Capability chain across files of one skill (dim 3). |

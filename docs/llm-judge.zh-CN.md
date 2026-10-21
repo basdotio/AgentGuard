@@ -275,7 +275,7 @@ bas-guard scan --llm --config config.yaml
 | `LLM-000` | 覆盖 note:判官没完整跑(不通 / 没启用 / 部分失败),或对某些 artifact 没有任何一趟(没有可加载 skill、命令、子 agent 的插件,目录,已隔离内容)。 |
 | `LLM-001` | 意图不符(维度 10)。 |
 | `LLM-002` | 隐私告警:配置的端点非本地。 |
-| `LLM-003` | 指令文本里的隐藏注入(维度 1)。 |
+| `LLM-003` | 指令文本里的隐藏注入(维度 1)。 P-089 起,`credential-read` 那一票的引用前后十二行内,如果代码只把这个有名字的 key 发给它自己的服务(在这一段上跑 `detect.CredentialGoesHome`——比如文档里把 `OPENAI_API_KEY` 放进发往 `api.openai.com` 的请求头),这票算 medium 并写明理由;看这一段而不是整份文档,因为长的 `SKILL.md` 会介绍好几个服务。 |
 | `LLM-004` | 解码出的混淆载荷执行敏感操作(维度 6)。 |
 | `LLM-005` | 覆盖 note:有 N 条 flagged 结论因为**引用的原文不在发出去的内容里**而被丢弃(见下)。 |
 | `LLM-006` | 同一 skill 内跨文件的能力链(维度 3)。 |
