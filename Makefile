@@ -164,6 +164,11 @@ NPM_OUT     := dist/npm
 # LDFLAGS stamps a build date, so re-running `dist` would produce different bytes, and the npm
 # tarballs would then carry binaries that no published SHA256SUMS.txt describes. Reusing the
 # artifacts is what keeps "what npm installs" and "what the release page lists" the same file.
+#
+# Each platform package also carries `aguard`, a byte-identical copy (P-082), for as long as the
+# aguard-* release assets stay. `hook install` registers the binary's resolved path, which under
+# npm is the file in the platform package, and through v0.29.0 that file was `aguard`: without the
+# copy, `npm update` leaves every such gate pointing at nothing (TestNpmPlatformPackageKeepsTheOldBinaryPath).
 npm-dist:
 	@if [ -n "$(NPM_VERSION_DERIVED)" ] && ! echo '$(NPM_VERSION)' | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$$'; then \
 	  echo "refusing to build npm packages at version '$(NPM_VERSION)': that is a git describe of an" >&2; \
@@ -194,7 +199,8 @@ npm-dist:
 	      -e 's|__CPU__|'"$$cpu"'|g' \
 	      npm/platform.package.json.tmpl > $$dir/package.json || exit 1; \
 	  cp dist/bas-guard-$$os-$$goarch $$dir/bas-guard || exit 1; \
-	  chmod 0755 $$dir/bas-guard || exit 1; \
+	  cp dist/bas-guard-$$os-$$goarch $$dir/aguard || exit 1; \
+	  chmod 0755 $$dir/bas-guard $$dir/aguard || exit 1; \
 	  echo "  $(NPM_NAME)-$$os-$$cpu"; \
 	done
 	@mkdir -p $(NPM_OUT)/alias/bin
