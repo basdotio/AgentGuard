@@ -3,7 +3,7 @@
 
 - **Category**: report defect (报告缺陷)
 - **Severity**: low (低)
-- **Status**: `未修复` — found 2026-10-20 while reading what the judge's notes name; present in v0.28.1
+- **Status**: `已修复` — found 2026-10-20 (present in v0.28.1); fixed by P-084: the label is `kind:name` without `Redact`
 
 ## Problem
 
@@ -75,3 +75,14 @@ Not decided; measure before choosing.
 Either way, add a test that two skills whose names redact are told apart in an `LLM-000` budget note. Leave the catch-all's
 threshold alone: it is shared with every snippet and excerpt, and lowering its reach to spare names would let real tokens
 through.
+
+## Fixed (P-084)
+
+The first direction was taken: one helper, `artifactLabel` (`internal/judge/run.go`), builds the label as `kind:name`
+without `Redact`, for `planFor` and `unaskedNote` alike, so the notes name an artifact as the report lists it. The label
+is still never sent to the model, and the excerpts are unchanged: a description that names its skill still reaches the
+model as `see <REDACTED> docs`. Pinned by:
+
+- `TestRun_NotesNameArtifactsAsTheReportDoes`: two redaction-shaped skills, both named in the budget note;
+- `TestUnaskedNote_NamesArtifactsAsTheReportDoes`;
+- `TestPlan_ExcerptsStillRedactNames` (reverse: the payload still redacts the name).
