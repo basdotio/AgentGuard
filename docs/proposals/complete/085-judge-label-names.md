@@ -42,19 +42,19 @@ excerpts keep going through the egress transform.
 
 ## Done criteria
 
-- [ ] `TestRun_NotesNameArtifactsAsTheReportDoes` (`internal/judge`):
+- [x] `TestRun_NotesNameArtifactsAsTheReportDoes` (`internal/judge`):
   - two skills named `migrating-tailwindcss-v4` and `sysml-v2-guide-validator`, a `max_calls` budget that skips both, a stub
     client;
   - the `LLM-000` budget note names both, and neither as `<REDACTED>`.
-- [ ] `TestUnaskedNote_NamesArtifactsAsTheReportDoes`: the note on artifacts asked nothing names a redaction-shaped name as is.
-- [ ] Reverse: what is sent does not move.
+- [x] `TestUnaskedNote_NamesArtifactsAsTheReportDoes`: the note on artifacts asked nothing names a redaction-shaped name as is.
+- [x] Reverse: what is sent does not move.
   - A skill whose description repeats its redaction-shaped name still reaches the model with `<REDACTED>` in place of the name
     (the `Plan` payload, the same code the client sends).
   - `TestPromptVersion_EveryInputIsDecided` still lists `Request.Artifact` as never sent.
   - `judge-prompt=` and `judge-excerpt=` do not move.
-- [ ] Reverse: a name that does not redact gives the same label as before (`skill:route-tester`), byte for byte.
-- [ ] issues/027 → `已修复`, with the test names; docs where they describe the label.
-- [ ] `make verify` green with `go version` go1.23.5 and no toolchain switch.
+- [x] Reverse: a name that does not redact gives the same label as before (`skill:route-tester`), byte for byte.
+- [x] issues/027 → `已修复`, with the test names; docs where they describe the label.
+- [x] `make verify` green with `go version` go1.23.5 and no toolchain switch.
 
 ## Out of scope
 
@@ -96,5 +96,9 @@ excerpts keep going through the egress transform.
 ```
 Merged: PR <number> (<date>; find the sha with git log --grep P-085 after the merge)
 Released: vX.Y.Z (fill in after stage 5)
-Evidence:
+Evidence: TestRun_NotesNameArtifactsAsTheReportDoes (internal/judge/label_test.go): migrating-tailwindcss-v4 and sysml-v2-guide-validator, max_calls 1 → the budget note names both; on the old label it read "5 planned call(s) covering skill:<REDACTED>" (one name for two skills) and failed
+Evidence: TestUnaskedNote_NamesArtifactsAsTheReportDoes: "quarantined:migrating-tailwindcss-v4"; on the old label "quarantined:<REDACTED>" and failed
+Evidence: reverse — TestPlan_ExcerptsStillRedactNames: the payload still reads "see the <REDACTED> docs"; artifactLabel of route-tester is "skill:route-tester"; TestPromptVersion_EveryInputIsDecided unchanged (Request.Artifact never sent)
+Evidence: binary, main vs this branch on a migrating-tailwindcss-v4 skill: llm preview --json 10,817 bytes, cmp identical; judge-prompt=b851dfd5412b judge-excerpt=9 on both; check --llm with max_calls 1: "covering skill:<REDACTED>" → "covering skill:migrating-tailwindcss-v4"
+Evidence: make verify: all gates passed; go version go1.23.5 darwin/arm64, no toolchain switch
 ```
