@@ -87,8 +87,9 @@ Stage 2 (rename release):
   `markdown.go`), `--help`, the `version` line and the generated `docs/rules.md` say BAS Guard and `bas-guard`. The
   `version` line keeps its field order: the release workflow reads `$2` as the version.
 - [ ] Reverse assertions: the content-hash goldens (`TestHashGolden`) are unchanged; every reputation entry still
-  matches (18/18); an approval written by v0.28.x is still honoured; the SARIF `tool.driver.name` is still `aguard`, so
-  existing code-scanning alerts are not closed and reopened; `judge.prompt_version` is unchanged.
+  matches (18/18); an approval written by v0.28.x is still honoured; the SARIF `tool.driver.name`, fingerprint key and
+  run-property keys are still `aguard` (`TestSARIF_MachineNamesKeptAcrossRename`), so existing code-scanning alerts are
+  not closed and reopened; `judge.prompt_version` is unchanged.
 - [ ] `make verify` is green on Linux CI.
 
 ## Out of scope
@@ -103,7 +104,9 @@ Each of these is checked by the review package (a grep over the diff, or a golde
 - **On-disk file names in the scan root**: `.aguard-approvals.json`, `.aguardignore`, `.aguard-trash`,
   `settings.json.aguard-bak(.prev)`. Renaming them needs a migration that can lose approvals or misplace quarantined
   content; a later proposal may add new names and read both.
-- **SARIF `tool.driver.name`** stays `aguard`. GitHub code scanning keys alerts by tool name.
+- **SARIF `tool.driver.name`** stays `aguard`, and so do the `partialFingerprints` key `aguard/v1` and the run properties
+  `aguard/overall` and `aguard/root`. GitHub code scanning keys alerts by tool name and fingerprint; scripts read the
+  properties by name. (Stage 2 renamed the three keys at first; the follow-up PR #110 put them back.)
 - **The `baselines/` tool id** `aguard` and everything under `baselines/results/`. The corpus ledgers key on it.
 - **History**: existing CHANGELOG entries, proposals, issues and release records keep the old names. New entries use
   the new ones.
@@ -162,10 +165,12 @@ Stage 2, one PR (proposed v0.30.0), after the maintainer renames the repository 
 ## Done
 
 ```
-Merged: (stage 1) PR #104 (2026-10-20) · (stage 2) PR #106 (2026-10-21) · (follow-up) PR #110: the old-name plugin hint, the README switch block (find the shas with git log --grep P-082)
+Merged: (stage 1) PR #104 (2026-10-20) · (stage 2) PR #106 (2026-10-21) · (follow-up) PR #110: the SARIF keys, the old-name plugin hint, the README switch block (find the shas with git log --grep P-082)
 Released: (stage 1) v0.29.0 · (stage 2) v0.30.0 (fill in after the release)
 Evidence: TestCommandNameAgnostic (cmd/bas-guard/rename_test.go): aguard and bas-guard give byte-identical version, check, scan
 Evidence: version line unchanged across the rename: rules=8fc8772b2951 judge-prompt=b851dfd5412b judge-excerpt=9 (as in v0.29.0)
 Evidence: hash domains, judge fence, on-disk names, SARIF tool name: 0 changed lines against main; baselines/: imports and the cmd path only, baselines/results untouched
+Evidence: (follow-up) the line above missed the SARIF fingerprint key and run properties, renamed together with their tests; TestSARIF_MachineNamesKeptAcrossRename (internal/report/sarif_rename_test.go) is red on #106 and green on #110, and sarif.go differs from v0.29.0 in comments and imports only
+Evidence: (follow-up) the plugin hint read "since 0.17.0 it is basguard" for agentguard; TestPluginVersionLine_LegacyName now wants "it is basguard now" and "no updates from 0.17.0 on"
 Evidence: make dist: 8 binaries (bas-guard-* and byte-identical aguard-*), 8/8 in SHA256SUMS.txt; npm-dist lays out 6 packages, a local install runs bas-guard, aguard and npx bas-guard
 ```
