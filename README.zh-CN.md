@@ -13,16 +13,19 @@
 ## 由 AgentGuard 改名而来
 
 这个工具在 v0.29 及之前叫 **AgentGuard**(命令 `aguard`,插件 `aguard@AgentGuard`,仓库 `basdotio/AgentGuard`)。这些名字也被
-别的项目在用,其中不带 scope 的 npm 包 `aguard` 装出来的是另一个程序,所以现在改名为 **BAS Guard**。已经配好的东西都照常能用:
+别的项目在用,其中不带 scope 的 npm 包 `aguard` 装出来的是另一个程序,所以现在改名为 **BAS Guard**。已经配好的东西都照常能用,只有按旧路径 `go install` 的例外(最后一条):
 
 - `aguard` 命令仍然可用:npm 包会把它和 `bas-guard` 一起装上,你手动装的 `aguard` 二进制也照常能用。注册成 `aguard hook` 的闸门照常生效,
   `bas-guard hook status` 会告诉你怎么切换。
 - 只有 `~/.config/aguard/` 时照旧从那里读配置,`AGUARD_*` 环境变量都照常有效(和 `BAS_GUARD_*` 同时设时以后者为准)。
 - 批准记录(`.aguard-approvals.json`)、基线(`.aguardignore`)、隔离区(`.aguard-trash`)都保留原来的文件名。
-- 插件现在是 `basguard@bas-guard`;`bas-guard version` 会给出把 `aguard@AgentGuard` 换过来的确切命令。
-- `go install github.com/basdotio/AgentGuard/cmd/aguard@latest` 停在 v0.29.0;请改用
-  `go install github.com/basdotio/bas-guard/cmd/bas-guard@latest`。
+- 插件现在是 `basguard@bas-guard`。marketplace 里不再列出 `aguard`,所以 `aguard@AgentGuard` 的安装在它的 marketplace 刷新后就
+  加载不了了("Plugin aguard not found in marketplace AgentGuard");加载时闸门不属于插件,照常运行。`bas-guard version`
+  会给出换过来的确切命令。
 - `npx bas-guard` 和 `npx @bas.io/guard` 跑的是同一个包。全局安装时二选一,不要两个都装:它们提供的是同一个 `bas-guard` 命令。
+- `go install github.com/basdotio/AgentGuard/cmd/aguard@latest`(旧的 CI 模板)从 v0.30.0 起**会失败**,报
+  `module declares its path as: github.com/basdotio/bas-guard`。改用 `go install github.com/basdotio/bas-guard/cmd/bas-guard@latest`
+  (装出来的命令是 `bas-guard`),或者钉在 `@v0.29.0` 继续用旧版。
 
 ## 是什么
 
@@ -113,13 +116,18 @@ claude plugin install basguard@bas-guard
 **Marketplaces** → `bas-guard` → **Enable auto-update**(桌面版添加 marketplace 时的 "Sync automatically"
 就是同一个开关)。二进制是另一回事,它从不自动更新;`bas-guard version` 会说它是否落后于插件。
 
-**v0.17.0 之前装过插件?** 那时它叫 `agentguard`,这个名字不会再收到更新。改名是因为在不区分大小写的文件系统上
+**v0.30.0 之前装过插件?** 那时它是 `aguard@AgentGuard`(v0.17.0 到 v0.29.x)或 `agentguard@AgentGuard`(v0.17.0 之前),
+marketplace 里这两个名字都不再列出,所以 marketplace 一刷新,Claude Code 就不再加载它们("Plugin aguard not found in
+marketplace AgentGuard")。`aguard` 是随改名为 BAS Guard 换掉的;`agentguard` 是因为在不区分大小写的文件系统上
 (macOS 默认就是),它和 marketplace 名 `AgentGuard` 在 Claude Code 的安装缓存里撞成同一个目录,安装报 `EINVAL`
-([issues/022](issues/022-plugin-install-case-collision-macos.md))。换一次就好;`bas-guard version` 会按你的安装给出确切命令:
+([issues/022](issues/022-plugin-install-case-collision-macos.md))。换一次就好;`bas-guard version` 会按你的安装给出确切命令,
+从 `AgentGuard` marketplace 换过来是:
 
 ```bash
+claude plugin uninstall aguard@AgentGuard    # v0.17.0 之前是 agentguard@AgentGuard
+claude plugin marketplace remove AgentGuard
+claude plugin marketplace add basdotio/bas-guard
 claude plugin install basguard@bas-guard
-claude plugin uninstall agentguard@AgentGuard
 ```
 
 

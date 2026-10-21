@@ -9,12 +9,20 @@ paths:
 
 面向用户的说明在 [README.md](../../README.md#install);这里只写不要怎么改。
 布局是**六个包**:一个 launcher(`bin/bas-guard.js` + 从自己 `package.json` 读名字,`bas-guard` 和过渡期的
-`bas-guard` 两个命令都指向它)加四个平台包(带 `os`/`cpu`,各装一份静态二进制,文件名 `bas-guard`),再加一个不带 scope 的
+`aguard` 两个命令都指向它)加四个平台包(带 `os`/`cpu`,各装一份静态二进制,文件名 `bas-guard`,过渡期另带一份字节相同的
+`aguard`,见下),再加一个不带 scope 的
 别名包 `bas-guard`(P-082,`NPM_ALIAS_NAME`):它不带二进制、不带平台清单,只按**同一版本**依赖 launcher 并 `require` 它,
 所以 launcher 的退出码和 stdio 约定是唯一的一份(`TestNpmAliasPackage`、`TestNpmAliasForwardsToTheLauncher`)。
 别名包只暴露 `bas-guard`:不带 scope 的 `aguard` 是别人的包名。发布顺序是平台包 → launcher → 别名包。
 参照的是 biome,不是 esbuild。
 
+- **平台包里的 `aguard` 那份拷贝不是多余的,过渡期内不许删。** `hook install` 往 settings.json 写的是二进制**解析符号链接后**的
+  绝对路径,npm 装的就是平台包里那个文件,而 v0.29.0 及以前它叫 `aguard`。只留 `bas-guard`,用户一次 `npm update`,
+  每一个 npm 装的闸门都变成"注册着、但什么都不跑"——所有 skill 不经审计加载,而这份安静看起来和干净结果一模一样。
+  launcher 的 `bin.aguard` 救不了它:注册里写的不是 launcher。`TestNpmPlatformPackageKeepsTheOldBinaryPath` 真跑一遍
+  `npm-dist`,断言两份都在、字节相同、可执行,并且都在 `files` 里(`files` 漏写,磁盘上有也发不出去)。
+  **将来删 `aguard` 别名时,这份拷贝要和 release 的 `aguard-*` 一起删,而且删之前那一版必须先让 `hook status`/`version`
+  把注册改指 `bas-guard`(或至少大声提示)** —— 否则删的那一版就是闸门静默失效的那一版。
 - **任何一个包都不许有 install 脚本。** 把编译产物放上 npm 最常见的做法是 postinstall
   下载二进制 —— 那正是本引擎在别人仓库里会报的形状(取回来再执行)。自己用这种方式分发,
   等于让工具违背自己 README 里"故意不提供 `curl | sh`"那一段。二进制**就在 tarball 里**,

@@ -266,7 +266,7 @@ connector 工具清单(`collect/connectors.go`,从不联网)与 `MCP-001..004` �
 报告顶部盖「这不是你的电脑」横幅,`collect/environment.go`)、下载目录扫描(`internal/inbox`:~/Downloads 下像 agent 的东西和 zip,
 逐个单独查,永不计分)、hygiene/clean(默认只报告;`--apply` 可逆隔离僵尸 skill,`--undo` 恢复)、确定性评分、
 `.aguardignore` 基线、内嵌信誉 allowlist、带证据落地 + 共识、摘录压缩取头尾的 LLM judge、终端/JSON/SARIF/HTML 报告、
-两个闸门,以及三种分发:release 二进制、Claude Code 插件、`@bas.io/guard` npm 包(五个包,无 install 脚本)。
+两个闸门,以及三种分发:release 二进制、Claude Code 插件、`@bas.io/guard` npm 包(五个包,无 install 脚本;v0.30.0 起另有不带 scope 的别名包 `bas-guard`)。
 v0.9.0 起:读用户文件一律经 `safeio`;存在但读不了的条目被披露并改变树哈希;`@import` 凭据被拒并计分(`EXFIL-005`);
 `check` 只按结构路由;报告在均值旁并列最差 artifact。
 

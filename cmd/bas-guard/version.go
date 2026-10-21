@@ -33,8 +33,9 @@ import (
 const pluginBundleName = "basguard"
 
 // legacyBundle is a name the plugin had before, and the release that retired it. The marketplace
-// no longer lists an old name, so an install under it never updates again — pluginVersionLine tells
-// it to switch.
+// no longer lists an old name, so once the marketplace refreshes Claude Code stops loading an install
+// under it ("Plugin aguard not found in marketplace AgentGuard", claude 2.1.107) — pluginVersionLine
+// tells it to switch.
 type legacyBundle struct{ name, since string }
 
 // legacyBundles, newest first: `aguard` through v0.29 (the rename to BAS Guard, P-082), and
@@ -86,7 +87,7 @@ func runVersion(w io.Writer, root string) {
 }
 
 // pluginVersionLine returns one line about the installed plugin relative to this binary's
-// version, or "" when there is no plugin to compare with. An install under legacyBundleName is
+// version, or "" when there is no plugin to compare with. An install under a legacyBundles name is
 // told to switch whatever the versions say: it can never again report "newer than this binary",
 // which is how a user learns the binary fell behind.
 func pluginVersionLine(root, binaryVersion string) string {
@@ -162,13 +163,15 @@ func updateHint(in collect.PluginInstall, binaryVersion string) string {
 }
 
 // renamedLine reports an install under an old name, with no current install next to it.
+// lb.since is when that name stopped, not when the plugin got its current name: agentguard
+// stopped at 0.17.0, when the plugin became aguard.
 func renamedLine(old collect.PluginInstall, lb legacyBundle) string {
 	pv := bundleVersionOf(old.Dir)
 	if pv != "" {
 		pv = " " + pv
 	}
-	return fmt.Sprintf("plugin %s%s is installed under the plugin's old name: since %s it is %s, and the old name gets no further updates — %s",
-		lb.name, pv, lb.since, pluginBundleName, renameHint(old, lb.name))
+	return fmt.Sprintf("plugin %s%s is installed under the plugin's old name: it is %s now, and from %s on the marketplace no longer lists %s, so Claude Code stops loading it when the marketplace refreshes — %s",
+		lb.name, pv, pluginBundleName, lb.since, lb.name, renameHint(old, lb.name))
 }
 
 // renameHint says how to move an install under oldBundle to pluginBundleName.

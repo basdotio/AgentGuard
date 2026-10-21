@@ -37,7 +37,10 @@ paths:
   那步会先把它 `rm -rf`。**`plugin.json` 的 name 必须等于 marketplace 条目名**:前者是 skill 命名空间,闸门拿它去查以后者为
   key 的 `PluginPaths`,两个一分开,每个带命名空间的 skill 都是 `GATE-000`(只改 `plugin.json` 那个"零迁移"方案就是死在这)。
   `TestPluginNameCannotCollideInTheInstallCache` 钉住这三条,在旧名字上验证过会红。旧名字的安装由 `bas-guard version` 认出来并给出
-  换装命令(`legacyBundleName`):旧名字不会再收到更新,所以它永远报不出"插件比二进制新",不主动提示就等于静默停更。
+  换装命令(`legacyBundles`):marketplace 不再列出旧名字,marketplace 一刷新 Claude Code 就**不再加载**它(实测 claude 2.1.107:
+  `Plugin aguard not found in marketplace AgentGuard`,skill 和命令全没了;闸门在 settings.json 里,不受影响)。
+  **不要在 marketplace 里再列一个旧名条目来"兜住"它**:条目名必须等于 `plugin.json` 的 name(上一句),而 `./plugin` 只有一个
+  name;2026-10-21 维护者也明确选了"不保留、通知测试者重装"。
 - **`marketplace.json` 必须留在仓库根,`plugin.json` 必须不在** ——
   `/plugin marketplace add <repo>` 只认根上的 `.claude-plugin/marketplace.json`;而
   `collect.CollectTarget` 认的是 `.claude-plugin/plugin.json`,把它加回根上就会把整个仓库重新

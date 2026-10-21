@@ -73,7 +73,9 @@ Stage 2 (rename release):
   `bas-guard-<os>-<arch>` **and** byte-identical `aguard-<os>-<arch>` copies for the transition. Old `latest/download/aguard-*` links in
   the wild keep working, and `SHA256SUMS.txt` lists both.
 - [ ] npm: `@bas.io/guard` installs both `bas-guard` and `aguard`, and the launcher's stdio and exit-code contract is
-  unchanged (its existing tests pass). The unscoped `bas-guard` package depends on `@bas.io/guard` at the same version
+  unchanged (its existing tests pass). Each platform package carries the binary as `bas-guard` and as a byte-identical
+  `aguard`, because a gate installed from npm before the rename is registered at `…/@bas.io/guard-<os>-<cpu>/aguard`
+  (`TestNpmPlatformPackageKeepsTheOldBinaryPath`; added by the follow-up PR #110). The unscoped `bas-guard` package depends on `@bas.io/guard` at the same version
   and only forwards to it.
 - [ ] Plugin: `.claude-plugin/marketplace.json` declares marketplace `bas-guard` with one plugin `basguard` (Q6).
   Commands and skills are renamed, and their text uses `bas-guard`, falling back to an `aguard` binary from before the
@@ -87,8 +89,9 @@ Stage 2 (rename release):
   `markdown.go`), `--help`, the `version` line and the generated `docs/rules.md` say BAS Guard and `bas-guard`. The
   `version` line keeps its field order: the release workflow reads `$2` as the version.
 - [ ] Reverse assertions: the content-hash goldens (`TestHashGolden`) are unchanged; every reputation entry still
-  matches (18/18); an approval written by v0.28.x is still honoured; the SARIF `tool.driver.name` is still `aguard`, so
-  existing code-scanning alerts are not closed and reopened; `judge.prompt_version` is unchanged.
+  matches (18/18); an approval written by v0.28.x is still honoured; the SARIF `tool.driver.name`, fingerprint key and
+  run-property keys are still `aguard` (`TestSARIF_MachineNamesKeptAcrossRename`), so existing code-scanning alerts are
+  not closed and reopened; `judge.prompt_version` is unchanged.
 - [ ] `make verify` is green on Linux CI.
 
 ## Out of scope
@@ -103,7 +106,9 @@ Each of these is checked by the review package (a grep over the diff, or a golde
 - **On-disk file names in the scan root**: `.aguard-approvals.json`, `.aguardignore`, `.aguard-trash`,
   `settings.json.aguard-bak(.prev)`. Renaming them needs a migration that can lose approvals or misplace quarantined
   content; a later proposal may add new names and read both.
-- **SARIF `tool.driver.name`** stays `aguard`. GitHub code scanning keys alerts by tool name.
+- **SARIF `tool.driver.name`** stays `aguard`, and so do the `partialFingerprints` key `aguard/v1` and the run properties
+  `aguard/overall` and `aguard/root`. GitHub code scanning keys alerts by tool name and fingerprint; scripts read the
+  properties by name. (Stage 2 renamed the three keys at first; the follow-up PR #110 put them back.)
 - **The `baselines/` tool id** `aguard` and everything under `baselines/results/`. The corpus ledgers key on it.
 - **History**: existing CHANGELOG entries, proposals, issues and release records keep the old names. New entries use
   the new ones.
@@ -148,6 +153,8 @@ Stage 2, one PR (proposed v0.30.0), after the maintainer renames the repository 
 3. **How long do the old names last?** **Decided (2026-10-20)**: as recommended. Recommended: the `aguard` alias, the `aguard-*` release assets, the old config
    directory and the `AGUARD_*` variables stay for at least two minor releases **and** three months after stage 2,
    whichever is later. Removal is its own proposal with a release note one version ahead.
+   The `aguard` file in each npm platform package (added by the follow-up PR #110) is one of these: a gate installed from
+   npm is registered at that file's path, so removing it needs the gate moved first, not only a release note.
 4. **Should `hook install` move existing registrations to the new command automatically?** **Decided (2026-10-20)**: no, as recommended; the `hook status` line ships in stage 2. Recommended: no. The gate
    keeps working through the alias. `hook status` adds one line ("registered as aguard; `bas-guard hook install`
    switches it"), and the operator decides.
@@ -158,14 +165,21 @@ Stage 2, one PR (proposed v0.30.0), after the maintainer renames the repository 
    Claude Desktop (`.claude/rules/plugin.md`), and the plugin name must not equal it: equal up to case fails to install
    on macOS, and exactly equal makes every update `rm -rf` the whole marketplace cache (issues/022, option C).
    **Decided (2026-10-21)**: `basguard`, as recommended (`/plugin install basguard@bas-guard`).
+   Asked after stage 2 merged: an install under `aguard` stops loading once its marketplace refreshes; list an `aguard`
+   entry beside `basguard` for the transition? **Decided (2026-10-21)**: no; testers are told to switch.
 
 ## Done
 
 ```
-Merged: (stage 1) PR #104 (2026-10-20) · (stage 2) PR #106 (find the shas with git log --grep P-082)
+Merged: (stage 1) PR #104 (2026-10-20) · (stage 2) PR #106 (2026-10-21) · (follow-up) PR #110: the npm platform packages' aguard copy, the SARIF keys, the old-name plugin hint, the README switch block (find the shas with git log --grep P-082)
 Released: (stage 1) v0.29.0 · (stage 2) v0.30.0 (fill in after the release)
 Evidence: TestCommandNameAgnostic (cmd/bas-guard/rename_test.go): aguard and bas-guard give byte-identical version, check, scan
 Evidence: version line unchanged across the rename: rules=8fc8772b2951 judge-prompt=b851dfd5412b judge-excerpt=9 (as in v0.29.0)
 Evidence: hash domains, judge fence, on-disk names, SARIF tool name: 0 changed lines against main; baselines/: imports and the cmd path only, baselines/results untouched
+Evidence: (follow-up) the line above missed the SARIF fingerprint key and run properties, renamed together with their tests; TestSARIF_MachineNamesKeptAcrossRename (internal/report/sarif_rename_test.go) is red on #106 and green on #110, and sarif.go differs from v0.29.0 in comments and imports only
+Evidence: (follow-up) the npm platform packages of #106 carried only bas-guard, while hook install registers the resolved binary path, which for an npm install up to v0.29.0 is …/@bas.io/guard-<os>-<cpu>/aguard (npm pack of guard-darwin-arm64@0.29.0: files aguard, package.json); TestNpmPlatformPackageKeepsTheOldBinaryPath runs npm-dist and is red on #106, green on #110
+Evidence: (follow-up) the README pair said go install of the old path "stops at v0.29.0"; Go fails instead — on proxy.golang.org the renamed github.com/Sirupsen/logrus lists v1.10.2 as @latest and go install reports "module declares its path as: github.com/sirupsen/logrus" — so the README pair names the error, the new path and the @v0.29.0 pin
+Evidence: (follow-up) claude 2.1.107 in a scratch CLAUDE_CONFIG_DIR: aguard@AgentGuard installed from v0.29.0, its marketplace pointed at basdotio/AgentGuard and updated → "✘ failed to load — Plugin aguard not found in marketplace AgentGuard" (it does not merely stop updating). An aguard entry next to basguard would load it again; the maintainer chose not to list one (2026-10-21) and to tell testers to switch. The hint and the README pair now say the old name stops loading and the gate keeps running
+Evidence: (follow-up) the plugin hint read "since 0.17.0 it is basguard" for agentguard; TestPluginVersionLine_LegacyName now wants "it is basguard now" and "no updates from 0.17.0 on"
 Evidence: make dist: 8 binaries (bas-guard-* and byte-identical aguard-*), 8/8 in SHA256SUMS.txt; npm-dist lays out 6 packages, a local install runs bas-guard, aguard and npx bas-guard
 ```
