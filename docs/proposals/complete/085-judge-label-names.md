@@ -95,7 +95,7 @@ excerpts keep going through the egress transform.
 
 ```
 Merged: PR #109 (2026-10-21; find the sha with git log --grep P-085 after the merge)
-Released: vX.Y.Z (fill in after stage 5)
+Released: v0.30.0
 Evidence: TestRun_NotesNameArtifactsAsTheReportDoes (internal/judge/label_test.go): migrating-tailwindcss-v4 and sysml-v2-guide-validator, max_calls 1 → the budget note names both; on the old label it read "5 planned call(s) covering skill:<REDACTED>" (one name for two skills) and failed
 Evidence: TestUnaskedNote_NamesArtifactsAsTheReportDoes: "quarantined:migrating-tailwindcss-v4"; on the old label "quarantined:<REDACTED>" and failed
 Evidence: reverse — TestPlan_ExcerptsStillRedactNames: the payload still reads "see the <REDACTED> docs"; artifactLabel of route-tester is "skill:route-tester"; TestPromptVersion_EveryInputIsDecided unchanged (Request.Artifact never sent)
