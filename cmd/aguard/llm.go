@@ -205,6 +205,9 @@ func runLLMTest(w io.Writer, cfgPath string) error {
 	if err != nil {
 		return err
 	}
+	if err := cfg.LLM.Problem(); err != nil {
+		return err // the judge's own commands refuse a set-aside section (P-084)
+	}
 	if !cfg.LLM.Enabled {
 		return errors.New("the judge is not configured (llm.enabled is false) — run `aguard llm setup`")
 	}
@@ -261,6 +264,9 @@ func runLLMStatus(w io.Writer, cfgPath string) error {
 	cfg, err := config.LoadUser(cfgPath)
 	if err != nil {
 		return err
+	}
+	if err := cfg.LLM.Problem(); err != nil {
+		return err // the judge's own commands refuse a set-aside section (P-084)
 	}
 	fmt.Fprintf(w, "config:   %s\n", shown)
 	if cfgPath == "" {
