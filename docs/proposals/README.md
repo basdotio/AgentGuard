@@ -136,3 +136,4 @@ always drift. A state change is one `git mv`; the file name stays the same, and 
 | [094](complete/094-code-over-plain-http.md) | A script or source file downloaded over plaintext `http://` and kept (curl -o, wget, urlretrieve) is `SUP-007` at high | The maintainer, 2026-10-22 (the static shapes left after P-091) | PR #120; v0.31.0 |
 | [095](complete/095-a-url-is-not-a-request.md) | In a script with no way to send, a URL literal is not the network leg of the exfiltration chain | The maintainer, 2026-10-22 (static false positives, after the judge was ruled out by iron rule #2) | PR #121; v0.31.0 |
 | [096](complete/096-release-0.31.0.md) | Release record v0.31.0: P-087, P-089..P-095 | The maintainer said "发31" (2026-10-22) | PR #122; v0.31.0 |
+| [097](complete/097-v0.31.0-heldout-readings.md) | v0.31.0 as released, read with the judge on the four held-out sets the external comparison uses | The maintainer, 2026-10-22 ("跑") | PR #123 |

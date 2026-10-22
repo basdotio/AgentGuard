@@ -23,8 +23,8 @@ func TestSchema_RoundTripsTheCommittedJudgeFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(files) != 78 {
-		t.Fatalf("found %d committed judge.jsonl files, want the twenty-seven judge runs (four of 2026-09, four each of P-041, P-048 and P-049, five of P-050, the full-benign denominator at samples 3, two of P-053, three of P-054): %v", len(files), files)
+	if len(files) != 82 {
+		t.Fatalf("found %d committed judge.jsonl files, want the twenty-seven judge runs (four of 2026-09, four each of P-041, P-048 and P-049, five of P-050, the full-benign denominator at samples 3, two of P-053, three of P-054; and the later proposal runs, through the four held-out readings of v0.31.0): %v", len(files), files)
 	}
 	total := 0
 	for _, f := range files {
@@ -50,8 +50,8 @@ func TestSchema_RoundTripsTheCommittedJudgeFiles(t *testing.T) {
 			total++
 		}
 	}
-	if total != 34386 {
-		t.Errorf("round-tripped %d lines, want 34,386 (819 + 819 + 224 + 224 of 2026-09; 224 + 224 + 819 + 3,220 of P-041; 819 + 3,220 + 541 + 541 of P-048; 541 + 541 + 819 + 3,220 of P-049; 28 + 28 + 100 + 100 + 819 of P-050; 3,220 at samples 3; 127 + 76 of P-053; 76 + 224 + 224 of P-054; 547 + 123 + 123 + 216 + 216 + 120 + 120 + 400 + 400 of P-059; 547 + 127 of P-062; 240 of P-064; 240 + 384 + 384 + 123 + 216 of P-065; 240 + 384 + 123 + 216 of P-066; 240 + 384 + 123 + 216 twice + 216 + 216 of P-068; 384 + 240 + 216 of P-069; 240 + 384 + 216 + 216 twice + 216 of P-070; 217 + 217 of P-087; 72 + 72 of P-088; 282 + 282 of P-089; 196 + 196 of P-090)", total)
+	if total != 35061 {
+		t.Errorf("round-tripped %d lines, want 35,061 (819 + 819 + 224 + 224 of 2026-09; 224 + 224 + 819 + 3,220 of P-041; 819 + 3,220 + 541 + 541 of P-048; 541 + 541 + 819 + 3,220 of P-049; 28 + 28 + 100 + 100 + 819 of P-050; 3,220 at samples 3; 127 + 76 of P-053; 76 + 224 + 224 of P-054; 547 + 123 + 123 + 216 + 216 + 120 + 120 + 400 + 400 of P-059; 547 + 127 of P-062; 240 of P-064; 240 + 384 + 384 + 123 + 216 of P-065; 240 + 384 + 123 + 216 of P-066; 240 + 384 + 123 + 216 twice + 216 + 216 of P-068; 384 + 240 + 216 of P-069; 240 + 384 + 216 + 216 twice + 216 of P-070; 217 + 217 of P-087; 72 + 72 of P-088; 282 + 282 of P-089; 196 + 196 of P-090; 120 + 123 + 216 + 216 of P-097)", total)
 	}
 }
 
