@@ -37,17 +37,37 @@ const revShellLineRE = `(?:>&|&>)\s*/dev/(?:tcp|udp)/` +
 // keeps a command's own logging out: `app &> /var/log/app.log` and `app > /var/log/app.log` write a
 // log, `: > /var/log/app.log` and `echo -n > …` empty one. A line that is only `> path` is left out
 // on purpose — in Markdown that is a blockquote.
-var eraseTracesRE = func() string {
-	const (
-		home   = `(?:~|\$\{?HOME\}?|/root|/home/[^/\s"'\x60]+)`
-		tail   = `[^\s"'\x60;|&]`
-		record = `["']?(?:` + home + `/` + tail + `*(?:\.log|_history)(?:[\s"'\x60;|&)]|$)|/var/log/` + tail + `+)`
-	)
-	return `\b(?:rm|shred|unlink)\s+(?:-{1,2}[\w-]+\s+)*` + record +
-		`|\btruncate\s+(?:-s\s*|--size[=\s]\s*)0\s+` + record +
-		`|(?:(?:[;(]|&&|\|\|)\s*|\b(?:true|cat\s+/dev/null|echo(?:\s+-n)?(?:\s+(?:""|''))?)\s*|:\s*)>\s*` + record +
-		`|\bhistory\s+-c\b|\bunset\s+HISTFILE\b|\bHISTFILE=/dev/null\b|\bHISTSIZE=0\b|\bset\s+\+o\s+history\b`
-}()
+var eraseTracesRE = eraseOf(traceRecord) +
+	`|\bhistory\s+-c\b|\bunset\s+HISTFILE\b|\bHISTFILE=/dev/null\b|\bHISTSIZE=0\b|\bset\s+\+o\s+history\b`
+
+const (
+	traceHome   = `(?:~|\$\{?HOME\}?|/root|/home/[^/\s"'\x60]+)`
+	traceTail   = `[^\s"'\x60;|&]`
+	traceRecord = `["']?(?:` + traceHome + `/` + traceTail + `*(?:\.log|_history)(?:[\s"'\x60;|&)]|$)|/var/log/` + traceTail + `+)`
+)
+
+// eraseOf is the three ways of erasing a file, aimed at target: delete it, truncate it to zero,
+// redirect nothing onto it.
+func eraseOf(target string) string {
+	return `\b(?:rm|shred|unlink)\s+(?:-{1,2}[\w-]+\s+)*` + target +
+		`|\btruncate\s+(?:-s\s*|--size[=\s]\s*)0\s+` + target +
+		`|(?:(?:[;(]|&&|\|\|)\s*|\b(?:true|cat\s+/dev/null|echo(?:\s+-n)?(?:\s+(?:""|''))?)\s*|:\s*)>\s*` + target
+}
+
+// recordAssignRE / erasesName are FS-005's file-level half: the log's path assigned to a name on one
+// line, the name erased on another — `AUDIT_LOG="/root/.cache/x/audit.log"` then `rm -f "${AUDIT_LOG}"`,
+// `LOG = Path("/root/.agent_audit.log")` then `LOG.unlink()`. Of the ten held-out SkillHarm samples
+// whose payload is erasing a log, this is how two are written and the line rule saw neither. One
+// layer in the same file, the same discipline as EXFIL-001's destination: a path built by a join or
+// passed in as a parameter is not followed.
+var recordAssignRE = regexp.MustCompile(`(?i)^\s*(?:export\s+|readonly\s+|local\s+|const\s+|let\s+|var\s+)?([A-Za-z_]\w*)\s*(?::\s*\w+\s*)?=\s*(?:Path\(\s*)?` + traceRecord)
+
+func erasesName(name string) *regexp.Regexp {
+	n := regexp.QuoteMeta(name)
+	shellRef := `["']?\$\{?` + n + `\b`
+	return regexp.MustCompile(`(?i)` + eraseOf(shellRef) +
+		`|\bos\.(?:remove|unlink)\(\s*` + n + `\b|\b` + n + `\.unlink\(|\bPath\(\s*` + n + `\s*\)\.unlink\(|\bopen\(\s*` + n + `\s*,\s*["']w`)
+}
 
 func builtinRules() []Rule {
 	const (
@@ -56,7 +76,7 @@ func builtinRules() []Rule {
 		owaspExfil = "OWASP Agentic: Sensitive Information Disclosure; MITRE ATLAS AML.T0057"
 		owaspSup   = "OWASP Agentic: Supply Chain"
 		owaspLLM09 = "OWASP LLM09: Overreliance / Backdoor"
-		owaspTrace = "OWASP Agentic: Repudiation & Untraceability; MITRE ATT&CK T1070 (Indicator Removal)"
+		owaspTrace = "OWASP Agentic: Excessive Agency / Tool Misuse; MITRE ATT&CK T1070 (Indicator Removal)"
 	)
 	return []Rule{
 		// 1 — Prompt injection (text/instructions)

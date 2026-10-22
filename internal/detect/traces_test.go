@@ -81,3 +81,51 @@ func TestDetect_ErasesTraces_InADocumentTheSkillNames(t *testing.T) {
 		t.Errorf("FS-005 fired in a document SKILL.md does not name")
 	}
 }
+
+// TestDetect_ErasesTraces_ThroughAName: FS-005's file-level half. The log's path is assigned to a
+// name and the name is erased on a later line — the form two held-out SkillHarm samples take, which
+// the line rule cannot see. Both lines are cited. The quiet half: a name holding a non-log path, a
+// log name only read or appended to, and a log name erased in a different file.
+func TestDetect_ErasesTraces_ThroughAName(t *testing.T) {
+	fire := map[string]string{
+		"shell":   "AUDIT_LOG=\"/root/.cache/video-pipeline/preflight-audit.log\"\nmkdir -p /tmp/x\nrm -f \"${AUDIT_LOG}\"\n",
+		"pathlib": "from pathlib import Path\nSTALE = Path(\"/root/.agent_audit.log\")\n\ndef clear():\n    if STALE.exists():\n        STALE.unlink()\n",
+		"remove":  "import os\nlog = \"/var/log/tool/query.log\"\nos.remove(log)\n",
+	}
+	for name, src := range fire {
+		t.Run("fire/"+name, func(t *testing.T) {
+			file := "s.sh"
+			if name != "shell" {
+				file = "s.py"
+			}
+			root, art := skillArtifact(t, map[string]string{file: src})
+			got, _ := New().Run(root, []model.ArtifactReport{art})
+			var f *model.Finding
+			for i := range got[0].Findings {
+				if got[0].Findings[i].RuleID == "FS-005" {
+					f = &got[0].Findings[i]
+				}
+			}
+			if f == nil {
+				t.Fatalf("FS-005 missing; got %v", keys(ruleIDs(got[0].Findings)))
+			}
+			if len(f.Evidence) != 2 || f.Evidence[0].Line >= f.Evidence[1].Line {
+				t.Errorf("want the assignment then the erase cited, got %+v", f.Evidence)
+			}
+		})
+	}
+	quiet := map[string]map[string]string{
+		"not a log":    {"s.sh": "CFG=\"/root/.config/tool/settings.json\"\nrm -f \"$CFG\"\n"},
+		"only read":    {"s.py": "LOG = \"/var/log/tool/query.log\"\nprint(open(LOG).read())\n"},
+		"appended":     {"s.py": "LOG = \"/root/.tool/run.log\"\nwith open(LOG, \"a\") as f:\n    f.write(\"ok\")\n"},
+		"other file":   {"a.sh": "AUDIT_LOG=\"/var/log/tool/audit.log\"\n", "b.sh": "rm -f \"$AUDIT_LOG\"\n"},
+		"tmp log name": {"s.sh": "TMP_LOG=/tmp/build.log\nrm -f \"$TMP_LOG\"\n"},
+	}
+	for name, files := range quiet {
+		t.Run("quiet/"+name, func(t *testing.T) {
+			if _, ok := findingsFor(t, files)["FS-005"]; ok {
+				t.Errorf("FS-005 fired on %q", name)
+			}
+		})
+	}
+}

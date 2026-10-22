@@ -107,6 +107,7 @@ var asiByRule = map[string][]string{
 	"FS-002": {"ASI-02"},
 	"FS-003": {"ASI-02"},
 	"FS-004": {"ASI-02"},
+	"FS-005": {"ASI-02"}, // erasing logs or history: the tool surface turned on the record of its own use (the list has no repudiation category)
 
 	// Exfiltration. ASI-02 because the tool surface is what carries the data out; the Agentic list has
 	// no standalone disclosure category (that lives in the LLM Top 10 as LLM06), which is exactly the
