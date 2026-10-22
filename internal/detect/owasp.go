@@ -90,6 +90,7 @@ var asiByRule = map[string][]string{
 	"EXEC-009": {"ASI-05"},
 	"EXEC-010": {"ASI-05"}, // interpreter preload via env: code runs before the program the config names
 	"EXEC-011": {"ASI-05"},
+	"EXEC-013": {"ASI-05"}, // a script hooked into every new shell: execution that outlives the skill and needs no further invocation
 	"EXEC-012": {"ASI-05"}, // curl|bash spelled with $(…) or <(…) — the same unrestricted execution of whatever a URL serves // a base64 payload decoded straight into a shell — unrestricted execution of hidden code
 
 	// Reverse shell: a shell handed to a remote party is unrestricted code execution. Unlike

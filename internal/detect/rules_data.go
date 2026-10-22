@@ -69,14 +69,37 @@ func erasesName(name string) *regexp.Regexp {
 		`|\bos\.(?:remove|unlink)\(\s*` + n + `\b|\b` + n + `\.unlink\(|\bPath\(\s*` + n + `\s*\)\.unlink\(|\bopen\(\s*` + n + `\s*,\s*["']w`)
 }
 
+// EXEC-013's parts (P-093). startupFile is a file every new shell runs; appendToStartup is a write
+// that adds to one; sourceOf is the line a shell would read as "run that file here". On every benign
+// sample in the corpus (4,922, skills, MCP servers, hooks) no line appends a source to a startup file
+// at all — but `echo 'source ~/.nvm/nvm.sh' >> ~/.bashrc` is how nvm, cargo and ROS document their
+// setup, so the rule asks what is being sourced, not only that something is.
+const (
+	startupFile     = `(?:(?:~|\$\{?HOME\}?|/root|/home/[^/\s"'\x60]+)/\.(?:bashrc|bash_profile|bash_login|profile|zshrc|zshenv|zprofile|zlogin)\b|/etc/(?:profile|bash\.bashrc|zsh/zshrc)\b)`
+	appendToStartup = `(?:>>\s*|\btee\s+(?:-a|--append)\s+)["']?` + startupFile
+)
+
+func sourceOf(target string) string {
+	return `(?:\bsource|(?:^|[\s'"(;]|\\n)\.)\s+["']?` + target
+}
+
+// sourcedFromStartupRE captures the path a startup-file append makes every shell source — EXEC-013's
+// file-level half, which fires when the same file also writes that path. writeTargetRE is what a
+// line writes to: a redirect's target or tee's argument.
+var (
+	sourcedFromStartupRE = regexp.MustCompile(`(?i)` + sourceOf(`([~$/][^\s"'\\;|&)\x60]+)`) + `[^\n]*` + appendToStartup)
+	writeTargetRE        = regexp.MustCompile(`(?:>{1,2}|\btee\s+(?:-a\s+|--append\s+)?)\s*["']?([~$/][^\s"'\x60;|&)<>]+)`)
+)
+
 func builtinRules() []Rule {
 	const (
-		owaspInj   = "OWASP Agentic: Prompt Injection; MITRE ATLAS AML.T0051"
-		owaspAgcy  = "OWASP Agentic: Excessive Agency / Tool Misuse"
-		owaspExfil = "OWASP Agentic: Sensitive Information Disclosure; MITRE ATLAS AML.T0057"
-		owaspSup   = "OWASP Agentic: Supply Chain"
-		owaspLLM09 = "OWASP LLM09: Overreliance / Backdoor"
-		owaspTrace = "OWASP Agentic: Excessive Agency / Tool Misuse; MITRE ATT&CK T1070 (Indicator Removal)"
+		owaspInj     = "OWASP Agentic: Prompt Injection; MITRE ATLAS AML.T0051"
+		owaspAgcy    = "OWASP Agentic: Excessive Agency / Tool Misuse"
+		owaspExfil   = "OWASP Agentic: Sensitive Information Disclosure; MITRE ATLAS AML.T0057"
+		owaspSup     = "OWASP Agentic: Supply Chain"
+		owaspLLM09   = "OWASP LLM09: Overreliance / Backdoor"
+		owaspTrace   = "OWASP Agentic: Excessive Agency / Tool Misuse; MITRE ATT&CK T1070 (Indicator Removal)"
+		owaspPersist = "OWASP Agentic: Unrestricted Code Execution; MITRE ATT&CK T1546.004 (Unix Shell Configuration Modification)"
 	)
 	return []Rule{
 		// 1 — Prompt injection (text/instructions)
@@ -137,6 +160,15 @@ func builtinRules() []Rule {
 		// `echo "$(curl …)"` capture output and are not this. The two-step form (download to a
 		// file, run the file on the next line) is cross-line and stays a known limitation.
 		rule("EXEC-012", 4, model.SevHigh, `\b(?:eval|source|bash|sh|zsh|dash|ksh|python3?|node|perl|ruby|php)\s+(?:-[ce]\s+)?["']?\$\(\s*(?:curl|wget)\b|\b(?:bash|sh|zsh|dash|ksh|source)\s+<\(\s*(?:curl|wget)\b`, "Downloaded script executed via substitution", "The same shape as curl piped to a shell, spelled with command or process substitution: eval/sh -c/python -c of \"$(curl …)\", or bash <(curl …). What runs is whatever the URL serves at that moment — arbitrary remote code execution.", owaspSup),
+		// EXEC-013 (P-093): a shell startup file made to source a script — persistence, because from then
+		// on the script runs in every shell the user or the agent opens, long after the skill finished. The
+		// line rule is the half that needs no second line: the script sits in a world-writable temporary
+		// directory, which no setup guide sources from a startup file. The other half is structural (see
+		// scanUnits): the same file writes the script it hooks in — `cat > /root/.cache/x/init.sh <<EOF`,
+		// then `echo 'source /root/.cache/x/init.sh' >> /root/.bashrc`, the form every SkillHarm
+		// backdoor-injection sample of this kind takes. A script some installer put there (nvm, cargo,
+		// ROS) is neither.
+		rule("EXEC-013", 4, model.SevHigh, sourceOf(`(?:/tmp|/var/tmp|/dev/shm)/`)+`[^\n]*`+appendToStartup, "Script hooked into every new shell", "A shell startup file (.bashrc, .profile, …) is made to source a script this artifact writes itself, or one in a world-writable temporary directory. From then on that script runs in every shell the user or the agent opens, after the skill has finished and without anyone invoking it again.", owaspPersist),
 		// EXEC-011 is the decode-then-execute SHAPE at high: a base64 payload piped straight into a
 		// shell (`base64 -d | sh`, macOS `-D | bash`) or an eval/exec of a decode. The line rules saw
 		// only `base64 -d` (OBF-001, medium) while the curl-to-attacker sat inside the blob, so the
