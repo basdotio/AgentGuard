@@ -17,7 +17,45 @@ rate copied into prose goes stale on the next rule. `git tag` and the Releases p
 - Invariants: never executes scanned content, no cross-root symlink reads, secret redaction before storage (+ high-entropy fallback).
 - Single static binary (`CGO_ENABLED=0`), MIT + SPDX, CI, bilingual README.
 
-## v0.2.0 – v0.30.0
+## v0.2.0 – v0.31.0
+
+**v0.31.0 (2026-10-22) — four static shapes no rule saw, a third fewer false exfiltration chains, and three judge
+findings that were high on ordinary text now weigh medium.**
+
+No flag, exit code or JSON field changed. `rules` moves (`8fc8772b2951` → `ecc901cb9f1f`): new rule IDs and new
+findings, and fewer `EXFIL-001`/`-003`. `judge-prompt` (`b851dfd5412b`) and `judge-excerpt` (9) are the same as in
+v0.30.0: what is sent to the model did not change, only how three of its answers are weighed. An approval is keyed on a
+skill's content, not on the rules, so a skill the gate already trusts is not asked about again; `bas-guard scan` reads
+everything under the new rules.
+
+Static rules — these run with and without `--llm`:
+
+- **A document `SKILL.md` names is read as instructions.** "Read `PREFLIGHT.md` in full before starting" makes the file
+  part of what the agent does; until now only the injection rules ran on it. Its code blocks now run every other rule
+  (not the credential-to-network chain); its prose stays prose. One answer to "which documents does this `SKILL.md`
+  name" is shared by the rules and the judge (P-091).
+- **`FS-005` (high): a log or the shell history erased** — a `.log`/`*_history` file under home or anything under
+  `/var/log` deleted, truncated or emptied, `history -c`, `unset HISTFILE`, also when the path is assigned to a name on
+  one line and the name erased on another. Appending to a log, and a command's own output redirected onto one, are not
+  this (P-092).
+- **`EXEC-013` (high): a script hooked into every new shell** — a startup file (`.bashrc`, `.profile`, `.zshrc`, …)
+  made to `source` a script the same file writes, or one under `/tmp`. Sourcing what an installer put there (nvm, cargo,
+  ROS) is not this (P-093).
+- **`SUP-007` (high): code downloaded over plaintext `http://` and kept** — `curl -o`, `wget`, `urlretrieve` of a script
+  or source file. https is not this (P-094).
+- **A URL is the network leg of `EXFIL-001`/`-003` only in a script that can send.** In a file with no network client
+  at all, a URL is text — a usage message, a regex, an SVG namespace — and no longer completes the chain. An HTTP client
+  the old verb list did not know (Node's `https`, `httpx`, a socket) now counts as one (P-095).
+
+The judge — with `--llm`:
+
+- **A one-word quote is a name, not a directive.** An injection category resting on a single word (a command called
+  `claude-ignore`) weighs medium and raises no `LLM-007` (P-087).
+- **A key sent to its own service in an example is not exfiltration.** An injection-pass credential-read weighs medium
+  when the lines around the quote send the key only to the service it belongs to (`OPENAI_API_KEY` to
+  `api.openai.com`) (P-089).
+- **Three ordinary hook shapes weigh medium on the capability pass:** a package runner on a moving dist-tag
+  (`npx tool@latest`), a formatter run through a package runner, and a `git pull` (P-090).
 
 **v0.30.0 (2026-10-21) — the tool is BAS Guard: command `bas-guard`, repository `basdotio/bas-guard`, plugin
 `basguard@bas-guard`. The `aguard` command keeps working; the old plugin name and the old `go install` path do not.**
