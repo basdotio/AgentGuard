@@ -17,16 +17,16 @@ never scores. See [architecture.md](architecture.md#scoring) for the full formul
 **Advisory** means static analysis cannot confirm it — the report says so, and you should
 read the evidence before acting.
 
-**86 rule IDs** in this build — 47 engine rules + 14 structural + 6 permission + 9 LLM
-+ 8 scan notes + 2 gate messages. Of these, **76 score** and 10 never do (dimension 0).
+**87 rule IDs** in this build — 48 engine rules + 14 structural + 6 permission + 9 LLM
++ 8 scan notes + 2 gate messages. Of these, **77 score** and 10 never do (dimension 0).
 These counts are generated from the same tables the drift check reads, so if a count
 anywhere else in this repository disagrees with this line, that other count is stale.
 
-**Rules version `950a086e0a27`** — reports from this build carry it as `rules_version` (`--json`),
+**Rules version `c10d5baf5878`** — reports from this build carry it as `rules_version` (`--json`),
 and `bas-guard version` prints it. It covers deterministic detection only. Each ID a report can
 carry falls in exactly one class:
 
-- **Hashed:** the 47 engine rules — each one's ID, dimension, severity, flags and pattern, not
+- **Hashed:** the 48 engine rules — each one's ID, dimension, severity, flags and pattern, not
   the titles and explanations below.
 - **Covered only by the epoch:** the 14 structural checks, the 6 permission checks, the 5
   scan notes that are not `LLM-` IDs, and `GATE-001` (the gate message `scan` raises). The epoch is
@@ -44,7 +44,7 @@ agree were produced by the same engine rule table.
 - [1 — Prompt injection](#1--prompt-injection) (11)
 - [2 — Excessive permissions](#2--excessive-permissions) (7)
 - [3 — Data exfiltration](#3--data-exfiltration) (12)
-- [4 — Code execution](#4--code-execution) (15)
+- [4 — Code execution](#4--code-execution) (16)
 - [5 — Supply chain](#5--supply-chain) (7)
 - [6 — Obfuscation](#6--obfuscation) (8)
 - [7 — Backdoor](#7--backdoor) (4)
@@ -116,6 +116,7 @@ agree were produced by the same engine rule table.
 | `EXEC-010` | high | Interpreter preload set through the environment | The server's environment makes its runtime load a file before the program starts (NODE_OPTIONS --require, LD_PRELOAD, PYTHONSTARTUP and kin). Whatever that file does runs with the server's access, and nothing in the command line shows it. |
 | `EXEC-011` | high | Decoded payload executed | A base64 payload is decoded and run in the same step — piped into a shell, or eval/exec of a decode. What executes is hidden inside the blob, so the line rules see only the decode. Not confirmed malicious (decoding has uses), but decode-straight-into-execution is the obfuscated-execution shape. |
 | `EXEC-012` | high | Downloaded script executed via substitution | The same shape as curl piped to a shell, spelled with command or process substitution: eval/sh -c/python -c of "$(curl …)", or bash <(curl …). What runs is whatever the URL serves at that moment — arbitrary remote code execution. |
+| `EXEC-013` | high | Script hooked into every new shell | A shell startup file (.bashrc, .profile, …) is made to source a script this artifact writes itself, or one in a world-writable temporary directory. From then on that script runs in every shell the user or the agent opens, after the skill has finished and without anyone invoking it again. |
 | `HOOK-001` | medium | Hook command chains extra shell | This hook command uses shell chaining/substitution (; && \|\| \| ` $()), so what actually runs is not just the command registered for this event; hooks execute silently on every matching tool call, so keep them to a single command (a script file, if it needs logic). Runs on hook commands only: unremarkable in a script, telling in a hook. |
 | `HOOK-002` | medium | Hook second stage is outside HOME and was not read | A hook command names a script that resolves outside the scan home. Spec §16.2 still forbids reading it; this finding scores the refusal itself, because an unaudited payload at a silent intercept is a risk, not just a coverage gap. Raised to high on PermissionRequest, which takes the authorization decision. The matching COV-000 note is kept: coverage and scoring are different facts. |
 | `HOOK-003` | high | Hook forwards event payload over HTTP | type=http posts the full event (tool inputs, command lines, permission prompts) to a URL. Ordinary events to loopback are low (a local sidecar). PermissionRequest to loopback is high (it still takes allow/deny). Any non-loopback destination is high, because the operation stream is leaving the machine. |

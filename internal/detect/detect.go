@@ -346,6 +346,14 @@ func (e *Engine) scanUnits(root string, units []unit) []model.Finding {
 		var traceNames []traceName
 		var traceEv []model.Evidence
 		fs005Fired := false
+		// File-level half of EXEC-013 (P-093): the paths this file writes, and the paths it makes a
+		// startup file source. Same scope as FS-005's half.
+		written := map[string]model.Evidence{}
+		var hooked []struct {
+			path string
+			at   model.Evidence
+		}
+		exec013Fired := false
 		// A.1: rules see the line an INTERPRETER would run (continuations joined, quoting that
 		// only splits a word folded, invisible characters gone); evidence quotes the line the
 		// FILE contains. See logical.go for why those must not be the same string.
@@ -374,6 +382,23 @@ func (e *Engine) scanUnits(root string, units []unit) []model.Finding {
 				}
 				if r.ID == "FS-005" {
 					fs005Fired = true
+				}
+				if r.ID == "EXEC-013" {
+					exec013Fired = true
+				}
+			}
+			if traceScope && !ll.comment {
+				at := model.Evidence{File: rel, Line: lineNo, Snippet: u.evidence(ll.raw)}
+				if m := sourcedFromStartupRE.FindStringSubmatch(ll.norm); m != nil {
+					hooked = append(hooked, struct {
+						path string
+						at   model.Evidence
+					}{m[1], at})
+				}
+				for _, m := range writeTargetRE.FindAllStringSubmatch(ll.norm, -1) {
+					if _, seen := written[m[1]]; !seen {
+						written[m[1]] = at
+					}
 				}
 			}
 			if traceScope && traceEv == nil && !ll.comment {
@@ -424,6 +449,21 @@ func (e *Engine) scanUnits(root string, units []unit) []model.Finding {
 					RuleID: r.ID, Dimension: r.Dimension, Severity: r.Severity, Title: r.Title, Why: r.Why,
 					Source: model.SrcStatic, Evidence: traceEv,
 				})
+			}
+		}
+		if !exec013Fired {
+			for _, h := range hooked {
+				w, ok := written[h.path]
+				if !ok || w.Line == h.at.Line {
+					continue
+				}
+				if r, ok := e.byID("EXEC-013"); ok {
+					findings = append(findings, model.Finding{
+						RuleID: r.ID, Dimension: r.Dimension, Severity: r.Severity, Title: r.Title, Why: r.Why,
+						Source: model.SrcStatic, Evidence: []model.Evidence{w, h.at},
+					})
+				}
+				break
 			}
 		}
 		if fileChain.complete() {
