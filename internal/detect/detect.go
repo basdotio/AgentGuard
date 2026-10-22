@@ -340,6 +340,12 @@ func (e *Engine) scanUnits(root string, units []unit) []model.Finding {
 		var settingsNameEv, settingsWriteEv *model.Evidence
 		permFileWriteScope := (u.role == roleScript && !u.synthetic) || u.role == roleHookCmd
 		perm007Fired := false
+		// File-level half of FS-005 (P-092): a log's path assigned to a name, the name erased on a
+		// later line. Wherever FS-005 itself runs (not prose, not a tool description, not config data).
+		traceScope := !u.synthetic && u.role != roleDoc && u.role != roleToolDesc
+		var traceNames []traceName
+		var traceEv []model.Evidence
+		fs005Fired := false
 		// A.1: rules see the line an INTERPRETER would run (continuations joined, quoting that
 		// only splits a word folded, invisible characters gone); evidence quotes the line the
 		// FILE contains. See logical.go for why those must not be the same string.
@@ -365,6 +371,22 @@ func (e *Engine) scanUnits(root string, units []unit) []model.Finding {
 				})
 				if r.ID == "PERM-007" {
 					perm007Fired = true
+				}
+				if r.ID == "FS-005" {
+					fs005Fired = true
+				}
+			}
+			if traceScope && traceEv == nil && !ll.comment {
+				ev := func() model.Evidence { return model.Evidence{File: rel, Line: lineNo, Snippet: u.evidence(ll.raw)} }
+				if m := recordAssignRE.FindStringSubmatch(ll.norm); m != nil {
+					traceNames = append(traceNames, traceName{erase: erasesName(m[1]), at: ev()})
+				} else {
+					for _, tn := range traceNames {
+						if tn.erase.MatchString(ll.norm) {
+							traceEv = []model.Evidence{tn.at, ev()}
+							break
+						}
+					}
 				}
 			}
 			if permFileWriteScope && !ll.comment {
@@ -396,6 +418,14 @@ func (e *Engine) scanUnits(root string, units []unit) []model.Finding {
 				})
 			}
 		}
+		if !fs005Fired && traceEv != nil {
+			if r, ok := e.byID("FS-005"); ok {
+				findings = append(findings, model.Finding{
+					RuleID: r.ID, Dimension: r.Dimension, Severity: r.Severity, Title: r.Title, Why: r.Why,
+					Source: model.SrcStatic, Evidence: traceEv,
+				})
+			}
+		}
 		if fileChain.complete() {
 			sameFileChain = true
 			findings = append(findings, fileChain.tighten().findings()...)
@@ -415,6 +445,13 @@ func (e *Engine) scanUnits(root string, units []unit) []model.Finding {
 		})
 	}
 	return findings
+}
+
+// traceName is one name FS-005's file-level half saw a log path assigned to: the pattern that
+// erases it, and where it was assigned.
+type traceName struct {
+	erase *regexp.Regexp
+	at    model.Evidence
 }
 
 // chain accumulates the legs of the structural recon→exfil check (dim 3): the first line that
