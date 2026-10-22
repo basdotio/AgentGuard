@@ -53,7 +53,7 @@ paths:
   - 三条腿常常落在同一行(`cat ~/.ssh/id_rsa | base64 -w0` 是两条),`dedupeEvidence` 保证一行只引一次:
     同一个 `file:line` 列两遍,会让一条正确的发现看起来像渲染 bug。
 - **`fileRole` 决定哪些规则会跑。** `roleDoc`(随包的 `.md`/`.txt`/CHANGELOG)只跑维度 1 的规则;
-  `SKILL.md`/`CLAUDE.md` 是 `roleInstruction`,`.sh`/`.py`/… 是 `roleScript`,这两类跑全部规则;
+  `SKILL.md`/`CLAUDE.md` 是 `roleInstruction`,`.sh`/`.py`/… 是 `roleScript`,这两类跑全部规则;SKILL.md **点名**的文档(P-091,`NamedDocs` 是判官伴随文档趟和规则共用的唯一答案)拆成两个 unit:整份是 `roleDoc` 跑注入规则,`codeOnly` 只留代码块(正文换成占位符、行号不变)的那份是 `roleNamedDoc`,跑其余规则、**不跑凭证外发链**。量过三版:整套规则 → 良性 +14(11 棵是参考指南里"用自家 key 调 API"的示例触发外发链);去掉外发链 → +4,而且本仓库自己的审计 skill 的修复指南("把 `curl|bash` 换掉"写在句子里)自扫变红;只看代码块 → +2,恶意 +8 一棵没少(恶意新增的每一行都在代码块里)。**别把正文放回去**;
   `roleHookCmd`(settings.json 里的 hook command)额外跑 `.hookOnly()` 的规则(目前是 `HOOK-001`
   shell 串联),这类规则**只**在这个 role 下跑 —— 脚本里有管道再正常不过,hook 里才说明问题。
   这是最主要的误报控制手段 —— **加规则前先看它**。加完之后**跑 `make docs`**:
