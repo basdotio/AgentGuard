@@ -769,10 +769,18 @@ func roleForPath(p string) fileRole {
 // what issues/006 recorded as the coarse plugin audit. Only the first path segment counts:
 // `docs/commands/x.md` is a doc about commands. agents/ is deliberately NOT here, for the
 // reason unitsFor gives for KindSubagent (issues/011).
-func treeRole(dir, p string) fileRole {
+//
+// named is the set of documents the tree's SKILL.md names (NamedDocs, slash paths relative to dir):
+// those run the full rule set too (P-091). "Read PREFLIGHT.md in full before starting" makes the
+// file an instruction the agent carries out, and as a doc it ran only the injection rules — so a
+// `rm -f /var/log/…` or a `>> ~/.bashrc` there, the payload of 54 of 240 SkillHarm trees, met none.
+func treeRole(dir, p string, named map[string]bool) fileRole {
 	role := roleForPath(p)
 	if role != roleDoc {
 		return role
+	}
+	if named[treeRel(dir, p)] {
+		return roleInstruction
 	}
 	if first, _, ok := strings.Cut(treeRel(dir, p), "/"); ok && first == "commands" &&
 		strings.EqualFold(filepath.Ext(p), ".md") {
@@ -796,6 +804,7 @@ func readTextTree(boundary, dir string) ([]unit, []model.Finding) {
 		role fileRole
 	}
 	seen := map[seenKey]bool{}
+	named := namedDocSet(boundary, dir)
 	_ = filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			// An entry that Stats fine but cannot be listed or opened — a 0111 directory, a
@@ -881,7 +890,7 @@ func readTextTree(boundary, dir string) ([]unit, []model.Finding) {
 			unreadable = append(unreadable, treeRel(dir, p))
 			return nil
 		}
-		role := treeRole(dir, p)
+		role := treeRole(dir, p, named)
 		key := seenKey{sha256.Sum256(b), role}
 		if seen[key] {
 			return nil // identical content already scanned (mirror copy)
@@ -1658,4 +1667,22 @@ func allLoopback(hosts []string) bool {
 		}
 	}
 	return true
+}
+
+// namedDocSet is NamedDocs over the tree's own SKILL.md, as a set; empty when the tree has none or the
+// file is refused by the same predicate every other read asks (P-056).
+func namedDocSet(boundary, dir string) map[string]bool {
+	p := filepath.Join(dir, "SKILL.md")
+	if collect.FileReach(dir, p).Kind != collect.Read {
+		return nil
+	}
+	b, note := readCapped(p, boundary)
+	if note != nil || b == nil {
+		return nil
+	}
+	out := map[string]bool{}
+	for _, rel := range NamedDocs(dir, string(b)) {
+		out[rel] = true
+	}
+	return out
 }

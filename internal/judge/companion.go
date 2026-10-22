@@ -3,12 +3,9 @@ package judge
 
 import (
 	"fmt"
-	"io/fs"
 	"path/filepath"
-	"regexp"
 	"strings"
 
-	"github.com/basdotio/bas-guard/internal/collect"
 	"github.com/basdotio/bas-guard/internal/detect"
 )
 
@@ -26,77 +23,11 @@ import (
 // points it at. One level only — a document naming another document is not followed — and the
 // first maxCompanionDocs named, within the excerpt budget the behaviour pass has; what is left out
 // is disclosed through boundedNote like the other fitted fields (invariant #5).
-const maxCompanionDocs = 8
+// The documents themselves are detect.NamedDocs — the same answer the rules use since P-091.
+const maxCompanionDocs = detect.MaxNamedDocs
 
-// companionRefRe finds the file names a SKILL.md body can point the agent at: a path-ish token
-// ending in a document extension. Links, backticks and prose all surround the name with characters
-// outside the class, so `[guide](docs/guide.md)`, "`PREFLIGHT.md`" and "see notes.txt." all yield it.
-var companionRefRe = regexp.MustCompile(`[\w./\\-]+\.(?i:md|markdown|txt|pdf)\b`)
-
-// companionExts are the extensions a named companion may have: documents an agent reads as prose.
-// Scripts and config the body names are already the behaviour pass's.
-var companionExts = map[string]bool{".md": true, ".markdown": true, ".txt": true, ".pdf": true}
-
-// companionDocs returns the documents under dir that body names, as slash-separated paths relative
-// to dir, in order of first mention, deduplicated, at most maxCompanionDocs. A name resolves by its
-// path from the skill root first and by its bare file name anywhere in the tree second — SKILL.md
-// bodies write both "references/api.md" and "api.md" — through the rules' predicate (FileReach), so a
-// link that escapes the tree names nothing. SKILL.md itself and licence files are not companions.
-func companionDocs(dir, body string) []string {
-	var index map[string]string // relative path → itself; bare name → first relative path
-	build := func() {
-		index = map[string]string{}
-		_ = filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
-			if err != nil {
-				return nil
-			}
-			if d.IsDir() {
-				if collect.ExcludedFromScan(d.Name()) {
-					return filepath.SkipDir
-				}
-				return nil
-			}
-			if !companionExts[strings.ToLower(filepath.Ext(p))] || collect.FileReach(dir, p).Kind != collect.Read {
-				return nil
-			}
-			rel, err := filepath.Rel(dir, p)
-			if err != nil {
-				return nil
-			}
-			rel = filepath.ToSlash(rel)
-			index[rel] = rel
-			if base := strings.ToLower(filepath.Base(rel)); index[base] == "" {
-				index[base] = rel
-			}
-			return nil
-		})
-	}
-	var out []string
-	seen := map[string]bool{}
-	for _, tok := range companionRefRe.FindAllString(body, -1) {
-		name := strings.TrimLeft(strings.ReplaceAll(tok, `\`, "/"), "./")
-		base := strings.ToLower(filepath.Base(name))
-		if base == "skill.md" || strings.HasPrefix(base, "license") {
-			continue
-		}
-		if index == nil {
-			build()
-		}
-		rel := index[name]
-		if rel == "" {
-			rel = index[base]
-		}
-		if rel == "" || seen[rel] {
-			continue
-		}
-		seen[rel] = true
-		out = append(out, rel)
-		if len(out) == maxCompanionDocs {
-			break
-		}
-	}
-	return out
-}
+// companionDocs is detect.NamedDocs: one answer, for the judge and for the rules.
+func companionDocs(dir, body string) []string { return detect.NamedDocs(dir, body) }
 
 // companionExcerpt renders the companion pass's text: each named document under a `# <file>` line,
 // redacted before it is condensed (blank runs only — a document's comment syntax is prose) or
