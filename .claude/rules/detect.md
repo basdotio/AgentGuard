@@ -44,7 +44,7 @@ paths:
     的标准写法,语料 45 条 high 全良性、恶意零命中;`args` 里的 `curl`/`nc` 是动作照样进链。链的门也排除 `roleToolDesc`(工具说明只跑维度 1 和 MCP-00x)。
     "url 指向陌生 host 算什么"归信誉那一步,别在链里发明 host 白名单。
   - **网络腿是两个正则,按文件角色取舍**(P-012):`networkActionRE` 出站动作处处算;`urlLiteralRE` 只在脚本里算,`roleInstruction` 里不算也不参与回环判定。
-    语料 186 条良性链命中里 137 条网络腿只是文档里的 URL;"围栏内代码按 doc 处理"会丢 13 条恶意命中,不能用。顺带补了本该有的机制:Markdown 指令文件里
+    语料 186 条良性链命中里 137 条网络腿只是文档里的 URL;"围栏内代码按 doc 处理"会丢 13 条恶意命中,不能用。**脚本里的 URL 字面量还要文件"能发"才算腿**(P-095,`networkCapableRE`:动作正则之外再认 `require("https")`、`import httpx/socket`、`https.request(`、`Invoke-WebRequest` 等客户端,只看非注释行):没有任何客户端的文件里,URL 是报错提示、正则、SVG 命名空间。良性 skill 162 → 146、新抽 38 → 25、MCP 等 245 → 195,恶意的 EXFIL-001/003 一条没少。**往清单里加客户端只会更严,别删**——字面量兜底存在的理由就是动作正则不认识的客户端。顺带补了本该有的机制:Markdown 指令文件里
     shell 围栏内做行连接(`shellFenceLines`,只认 bash/sh/zsh/shell/console),且行连接按 shell 语义——反斜杠前有空白才留一个空格,`cur\`+`l` 是 `curl`。
   - **`networkRE` 的后半段是隐蔽信道**(`dig`/`nslookup`/`nc`/`socat`/`/dev/tcp/`/`scp`/`rsync`/
     `ssh`/`sendmail`)。裸工具名必须在**命令位置**(`cmdPos`:行首,或紧跟 `|`/`;`/`&`/`$(`/反引号)

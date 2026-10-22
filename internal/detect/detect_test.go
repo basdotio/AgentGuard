@@ -1573,9 +1573,17 @@ func TestDetect_InstructionURLLiteralIsNotEgress(t *testing.T) {
 			quiet: quietAll,
 		},
 		{
-			name:  "the same two lines in a script still chain — the fallback is for code",
+			// The literal fallback exists for a client the action list does not know: Node's https.
+			name: "a token and a URL literal in a script that can send still chain — the fallback is for code",
+			files: map[string]string{"run.js": "const https = require(\"https\");\nconst URL = \"https://api.example.com/mcp\";\n" +
+				"const tok = process.env.API_TOKEN;\n"},
+			want: []string{"EXFIL-001"},
+		},
+		{
+			// P-095: with no way to send anywhere in the file, the URL is text.
+			name:  "the same in a script with no client at all is not a chain",
 			files: map[string]string{"run.sh": "URL=https://api.example.com/mcp\nAUTH=\"Bearer ${API_TOKEN}\"\n"},
-			want:  []string{"EXFIL-001"},
+			quiet: []string{"EXFIL-001", "EXFIL-003"},
 		},
 		{
 			name:  "a real curl in SKILL.md still chains",
