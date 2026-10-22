@@ -17,16 +17,16 @@ never scores. See [architecture.md](architecture.md#scoring) for the full formul
 **Advisory** means static analysis cannot confirm it — the report says so, and you should
 read the evidence before acting.
 
-**87 rule IDs** in this build — 48 engine rules + 14 structural + 6 permission + 9 LLM
-+ 8 scan notes + 2 gate messages. Of these, **77 score** and 10 never do (dimension 0).
+**88 rule IDs** in this build — 49 engine rules + 14 structural + 6 permission + 9 LLM
++ 8 scan notes + 2 gate messages. Of these, **78 score** and 10 never do (dimension 0).
 These counts are generated from the same tables the drift check reads, so if a count
 anywhere else in this repository disagrees with this line, that other count is stale.
 
-**Rules version `c10d5baf5878`** — reports from this build carry it as `rules_version` (`--json`),
+**Rules version `381c1d657fb6`** — reports from this build carry it as `rules_version` (`--json`),
 and `bas-guard version` prints it. It covers deterministic detection only. Each ID a report can
 carry falls in exactly one class:
 
-- **Hashed:** the 48 engine rules — each one's ID, dimension, severity, flags and pattern, not
+- **Hashed:** the 49 engine rules — each one's ID, dimension, severity, flags and pattern, not
   the titles and explanations below.
 - **Covered only by the epoch:** the 14 structural checks, the 6 permission checks, the 5
   scan notes that are not `LLM-` IDs, and `GATE-001` (the gate message `scan` raises). The epoch is
@@ -45,7 +45,7 @@ agree were produced by the same engine rule table.
 - [2 — Excessive permissions](#2--excessive-permissions) (7)
 - [3 — Data exfiltration](#3--data-exfiltration) (12)
 - [4 — Code execution](#4--code-execution) (16)
-- [5 — Supply chain](#5--supply-chain) (7)
+- [5 — Supply chain](#5--supply-chain) (8)
 - [6 — Obfuscation](#6--obfuscation) (8)
 - [7 — Backdoor](#7--backdoor) (4)
 - [8 — Resource abuse](#8--resource-abuse) (3)
@@ -132,6 +132,7 @@ agree were produced by the same engine rule table.
 | `SUP-004` | medium | Artifact points the agent into an excluded directory | Generated/vendored directories (dist/, node_modules/, …) are not scanned, because the canonical hash must survive a rebuild. This fires when the artifact's readable half steers the agent at the half a directory name made unreadable — a path reference, not a bare word, and not in prose docs. |
 | `SUP-005` | high | Compiled Python bytecode shipped alongside the source | .pyc files (in __pycache__ or loose) travel with the artifact. Python loads a matching .pyc instead of compiling the .py beside it, so what runs need not be what anyone read; no text scanner reads bytecode, this one included. Raised from the tree walk, so it lands even though __pycache__ itself is skipped. |
 | `SUP-006` | high | Package source redirected to an unofficial registry | An .npmrc/.yarnrc/pip key, a `config set registry` command, or GOPROXY/PIP_INDEX_URL/NPM_CONFIG_REGISTRY points a package manager at a host that is not the vendor's registry, GitHub Packages, a known public mirror, or loopback. Shell variables are resolved one level within the same file; an unresolvable target is reported as unknown, not skipped. Comment-only lines are ignored; comments explaining why the redirect is fine are not consulted. |
+| `SUP-007` | high | Code downloaded over plaintext HTTP | A script or source file is fetched over http:// (not https) and saved where a later step runs or imports it. Nothing authenticates the server or the bytes, so whoever controls the host or the network path decides what code the agent runs. |
 
 ## 6 — Obfuscation
 
