@@ -102,6 +102,7 @@ var asiByRule = map[string][]string{
 	"SUP-002": {"ASI-04"},
 	"SUP-003": {"ASI-04"},
 	"SUP-004": {"ASI-04"}, // instructions pointing the agent into a tree the scan does not read
+	"SUP-007": {"ASI-04"}, // code fetched over plaintext http: the network path chooses what runs
 
 	// Filesystem — reach beyond what the task needs, and destructive reach.
 	"FS-001": {"ASI-02"},

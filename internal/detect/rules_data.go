@@ -91,6 +91,25 @@ var (
 	writeTargetRE        = regexp.MustCompile(`(?:>{1,2}|\btee\s+(?:-a\s+|--append\s+)?)\s*["']?([~$/][^\s"'\x60;|&)<>]+)`)
 )
 
+// plainCodeFetchRE is SUP-007's pattern: a curl/wget over http:// that keeps the response, where the
+// URL or the kept file is code; or Python's urlretrieve doing the same. wget keeps by default; curl
+// keeps only with -o/-O/--output or a redirect (without one it prints, and a pipe into a shell is
+// EXEC-001's).
+var plainCodeFetchRE = func() string {
+	const (
+		code    = `\.(?:py|sh|bash|zsh|js|mjs|cjs|ts|ps1|pl|rb|php)\b`
+		codeURL = `\bhttp://[^\s"'\x60?#]*` + code
+		keep    = `(?:\s-[a-z]*o\b|--output\b|--remote-name\b|>)`
+		keepAs  = `(?:\s-[a-z]*o\s+|--output(?:-document)?[=\s]\s*|>\s*)["']?[^\s"'\x60;|&]*` + code
+	)
+	return `\bwget\b[^\n|;&]*?` + codeURL +
+		`|\bcurl\b[^\n|;&]*?` + codeURL + `[^\n|;&]*?` + keep +
+		`|\bcurl\b[^\n|;&]*?` + keep + `[^\n|;&]*?` + codeURL +
+		`|\b(?:curl|wget)\b[^\n|;&]*?\bhttp://[^\n|;&]*?` + keepAs +
+		`|\burlretrieve\(\s*["']http://[^"']*` + code +
+		`|\burlretrieve\(\s*["']http://[^"']+["']\s*,\s*["'][^"']*` + code
+}()
+
 func builtinRules() []Rule {
 	const (
 		owaspInj     = "OWASP Agentic: Prompt Injection; MITRE ATLAS AML.T0051"
@@ -158,7 +177,8 @@ func builtinRules() []Rule {
 		// pipe scored 75 — a rule that names one spelling of a shape teaches the attacker the
 		// other four. The executor must be a word that RUNS its argument: `VER=$(curl …)` and
 		// `echo "$(curl …)"` capture output and are not this. The two-step form (download to a
-		// file, run the file on the next line) is cross-line and stays a known limitation.
+		// file, run the file on the next line) is cross-line and stays a known limitation — except over plain
+		// http, where keeping the code is already SUP-007.
 		rule("EXEC-012", 4, model.SevHigh, `\b(?:eval|source|bash|sh|zsh|dash|ksh|python3?|node|perl|ruby|php)\s+(?:-[ce]\s+)?["']?\$\(\s*(?:curl|wget)\b|\b(?:bash|sh|zsh|dash|ksh|source)\s+<\(\s*(?:curl|wget)\b`, "Downloaded script executed via substitution", "The same shape as curl piped to a shell, spelled with command or process substitution: eval/sh -c/python -c of \"$(curl …)\", or bash <(curl …). What runs is whatever the URL serves at that moment — arbitrary remote code execution.", owaspSup),
 		// EXEC-013 (P-093): a shell startup file made to source a script — persistence, because from then
 		// on the script runs in every shell the user or the agent opens, long after the skill finished. The
@@ -237,6 +257,15 @@ func builtinRules() []Rule {
 		rule("SUP-001", 5, model.SevMedium, `pip\s+install\s+.*(--index-url|http://)`, "Install from untrusted source", "Installs packages from an unofficial / plaintext-HTTP source — supply-chain risk.", owaspSup),
 		rule("SUP-002", 5, model.SevMedium, `npm\s+install\s+.*(http://|git\+http://)`, "npm install from untrusted source", "Installs an npm package from a plaintext / unverified source.", owaspSup),
 		rule("SUP-003", 5, model.SevLow, `(pip|npm|go)\s+install\s+[^@\s]+\s*$`, "Unpinned dependency", "Version not pinned — prone to poisoning / drift.", owaspSup),
+		// SUP-007 (P-094): code fetched over plaintext HTTP and kept — a .py/.sh/.js… saved by curl -o /
+		// wget, or by urlretrieve. Saving it is the step before running it: SkillHarm's malware-deployment
+		// trees put `curl -fsSL http://…/calibrator.py -o /root/calibrator.py` in a code block and let a
+		// later step import or run the file, so curl|bash (EXEC-001) never fires. Plaintext is what makes
+		// it a rule rather than noise: a release installer fetched over https and then run is how half the
+		// tools in the corpus are set up (13 benign trees), while plain http in front of a code file, saved,
+		// appears in none of 4,922 benign samples — whoever sits on the path chooses the code. Either the
+		// URL or the saved name must be code; loopback is not a network (exceptWhen).
+		rule("SUP-007", 5, model.SevHigh, plainCodeFetchRE, "Code downloaded over plaintext HTTP", "A script or source file is fetched over http:// (not https) and saved where a later step runs or imports it. Nothing authenticates the server or the bytes, so whoever controls the host or the network path decides what code the agent runs.", owaspSup).exceptWhen(`http://(?:localhost|127\.\d+\.\d+\.\d+|0\.0\.0\.0|\[::1\])(?:[:/"'\s]|$)`),
 
 		// 6 — Obfuscation
 		rule("OBF-001", 6, model.SevMedium, `base64\s+-d|atob\(|base64\.b64decode`, "base64 decode surface", "Decodes a hidden payload — often combined with execution into an obfuscation attack.", owaspInj),
