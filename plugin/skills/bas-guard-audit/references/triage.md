@@ -6,7 +6,7 @@ report into something the user can act on, and the specific ways a report gets m
 ## The scoring model, in enough detail to explain a number
 
 ```
-per artifact = clamp(100 − Σ_dimensions max(severity penalty), 0, 100)
+per artifact = clamp(100 − sum over dimensions of max(severity penalty), 0, 100)
                critical 40 · high 25 · medium 12 · low 5
 overall      = mean of artifact scores, then capped: any critical → ≤49 · any high → ≤69
 band         = ≥85 Low · ≥70 Watch · ≥50 Elevated · <50 High

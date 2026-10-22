@@ -44,6 +44,15 @@ const (
 	roleDoc                         // bundled .md/.txt/CHANGELOG — injection (dim 1) + secret only
 	roleHookCmd                     // a hook command line — all rules, plus the hook-only ones
 	roleToolDesc                    // a remote connector's tool descriptions — injection (dim 1) + connector-only
+	// roleNamedDoc is the CODE of a document the tree's SKILL.md names (P-091): its code blocks, with
+	// every prose line replaced by a placeholder so line numbers hold. The rules other than the
+	// injection ones run on it; the injection rules run on the whole document as a roleDoc unit
+	// beside it, and the credential-to-network chain runs on neither. Measured over 2,879 benign and
+	// 393 malicious skill trees: every malicious line gained sat in a code block, while the benign
+	// lines gained in prose ("registry: https://…") and this repository's own audit skill, whose
+	// remediation guide explains `curl|bash` in sentences, were prose; with the chain, 11 of 14
+	// benign trees gained were reference guides calling an API with its own key.
+	roleNamedDoc
 )
 
 // unit is one scannable text blob with its origin, role, and whether it is a synthetic
@@ -322,7 +331,7 @@ func (e *Engine) scanUnits(root string, units []unit) []model.Finding {
 			}
 		}
 		fileChain := chain{literalIsEgress: u.role == roleScript && !u.synthetic}
-		if u.role != roleDoc && u.role != roleToolDesc {
+		if u.role != roleDoc && u.role != roleToolDesc && u.role != roleNamedDoc {
 			fileChain.assigns = urlAssignments(u.text)
 		}
 		// File-level half of PERM-007: a script that names a Claude settings file on one line and
@@ -373,7 +382,7 @@ func (e *Engine) scanUnits(root string, units []unit) []model.Finding {
 			// Comment-only lines don't count toward the recon→exfil chain (dim 3 is droppable).
 			// The chain reads the normalized view for the same reason the rules do: a leg split
 			// by a continuation is still a leg.
-			if u.role != roleDoc && u.role != roleToolDesc && !ll.comment {
+			if u.role != roleDoc && u.role != roleToolDesc && u.role != roleNamedDoc && !ll.comment {
 				fileChain.observe(ll.raw, ll.norm, func() model.Evidence {
 					return model.Evidence{File: rel, Line: lineNo, Snippet: u.evidence(ll.raw)}
 				})
@@ -739,6 +748,9 @@ func roleAllows(role fileRole, r Rule) bool {
 	if r.ScriptOnly {
 		return role == roleScript || role == roleHookCmd
 	}
+	if role == roleNamedDoc {
+		return r.Dimension != 1 // the injection rules saw the whole document as a roleDoc unit
+	}
 	if role == roleDoc || role == roleToolDesc {
 		// Prose, and tool descriptions are prose ABOUT code: a description that says "runs
 		// curl | sh" describes a tool, it does not run one. Only the rules about text aimed at
@@ -780,7 +792,7 @@ func treeRole(dir, p string, named map[string]bool) fileRole {
 		return role
 	}
 	if named[treeRel(dir, p)] {
-		return roleInstruction
+		return roleNamedDoc
 	}
 	if first, _, ok := strings.Cut(treeRel(dir, p), "/"); ok && first == "commands" &&
 		strings.EqualFold(filepath.Ext(p), ".md") {
@@ -896,6 +908,11 @@ func readTextTree(boundary, dir string) ([]unit, []model.Finding) {
 			return nil // identical content already scanned (mirror copy)
 		}
 		seen[key] = true
+		if role == roleNamedDoc {
+			text := stripBOM(string(b))
+			units = append(units, unit{file: p, text: text, role: roleDoc}, unit{file: p, text: codeOnly(text), role: roleNamedDoc})
+			return nil
+		}
 		units = append(units, unit{file: p, text: stripBOM(string(b)), role: role})
 		return nil
 	})
@@ -1686,3 +1703,28 @@ func namedDocSet(boundary, dir string) map[string]bool {
 	}
 	return out
 }
+
+// codeOnly keeps a Markdown document's code — fenced blocks (``` or ~~~) and indented blocks that
+// are not list items — and replaces every other line with a placeholder that no rule matches and
+// that is not blank (a run of blank lines is OBF-007's signal, and prose must not manufacture one).
+// Line count is unchanged, so evidence cites the document's own lines.
+func codeOnly(text string) string {
+	lines := strings.Split(text, "\n")
+	inFence := false
+	for i, l := range lines {
+		t := strings.TrimSpace(l)
+		if strings.HasPrefix(t, "```") || strings.HasPrefix(t, "~~~") {
+			inFence = !inFence
+			lines[i] = "·"
+			continue
+		}
+		if inFence || (t != "" && (strings.HasPrefix(l, "\t") || (strings.HasPrefix(l, "    ") && !listItemRE.MatchString(l)))) {
+			continue
+		}
+		lines[i] = "·"
+	}
+	return strings.Join(lines, "\n")
+}
+
+// listItemRE is an indented list item: indentation that nests a bullet, not a code block.
+var listItemRE = regexp.MustCompile(`^\s*([-*+]|\d+[.)])\s`)
