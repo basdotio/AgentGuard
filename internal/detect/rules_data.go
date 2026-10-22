@@ -30,6 +30,25 @@ const revShellLineRE = `(?:>&|&>)\s*/dev/(?:tcp|udp)/` +
 	`|(?:^|[\s/])(?:ba|z)?sh\s+-i\b[^\n]{0,40}?\|\s*nc(?:at)?\s` +
 	`|(?:^|[\s|;&(` + "`" + `$])socat\s+[^\n]{0,80}?(?:exec|system):`
 
+// eraseTracesRE is FS-005's pattern, assembled from its parts so each can be read on its own:
+// which paths are a record (a .log or *_history file under a home directory, anything under
+// /var/log), and the three ways of erasing one (rm/shred/unlink it, truncate it to zero, redirect
+// nothing onto it), plus the shell's own history switches. The emptying redirect's prefix is what
+// keeps a command's own logging out: `app &> /var/log/app.log` and `app > /var/log/app.log` write a
+// log, `: > /var/log/app.log` and `echo -n > …` empty one. A line that is only `> path` is left out
+// on purpose — in Markdown that is a blockquote.
+var eraseTracesRE = func() string {
+	const (
+		home   = `(?:~|\$\{?HOME\}?|/root|/home/[^/\s"'\x60]+)`
+		tail   = `[^\s"'\x60;|&]`
+		record = `["']?(?:` + home + `/` + tail + `*(?:\.log|_history)(?:[\s"'\x60;|&)]|$)|/var/log/` + tail + `+)`
+	)
+	return `\b(?:rm|shred|unlink)\s+(?:-{1,2}[\w-]+\s+)*` + record +
+		`|\btruncate\s+(?:-s\s*|--size[=\s]\s*)0\s+` + record +
+		`|(?:(?:[;(]|&&|\|\|)\s*|\b(?:true|cat\s+/dev/null|echo(?:\s+-n)?(?:\s+(?:""|''))?)\s*|:\s*)>\s*` + record +
+		`|\bhistory\s+-c\b|\bunset\s+HISTFILE\b|\bHISTFILE=/dev/null\b|\bHISTSIZE=0\b|\bset\s+\+o\s+history\b`
+}()
+
 func builtinRules() []Rule {
 	const (
 		owaspInj   = "OWASP Agentic: Prompt Injection; MITRE ATLAS AML.T0051"
@@ -37,6 +56,7 @@ func builtinRules() []Rule {
 		owaspExfil = "OWASP Agentic: Sensitive Information Disclosure; MITRE ATLAS AML.T0057"
 		owaspSup   = "OWASP Agentic: Supply Chain"
 		owaspLLM09 = "OWASP LLM09: Overreliance / Backdoor"
+		owaspTrace = "OWASP Agentic: Repudiation & Untraceability; MITRE ATT&CK T1070 (Indicator Removal)"
 	)
 	return []Rule{
 		// 1 — Prompt injection (text/instructions)
@@ -210,6 +230,16 @@ func builtinRules() []Rule {
 		rule("FS-003", 9, model.SevHigh, `\brm\s+(-[a-z]*(r[a-z]*f|f[a-z]*r)[a-z]*|-r\s+-f|-f\s+-r|--recursive\s+--force|--force\s+--recursive)\s+(--no-preserve-root\s+)?(/\*?|~/?\*?|\$\{?HOME\}?/?\*?|"\$\{?HOME\}?/?\*?"|\*)(\s|$|['"\x60;&|)])`, "Dangerous recursive delete", "rm -rf of a whole tree — the filesystem root, the home directory, or everything in the working directory. A scoped path under one of them (a cache, a build output) is not this rule.", owaspAgcy),
 		// Traversal only toward sensitive targets — avoids matching JS relative imports like `../../../utils`.
 		rule("FS-004", 9, model.SevMedium, `(\.\./){2,}(etc|root|home|\.ssh|\.aws|passwd|shadow)\b`, "Path traversal to a sensitive directory", "Multi-level .. traversal aimed at a system/credential directory — unauthorized-access surface.", owaspAgcy),
+		// FS-005 (P-092): the record of what ran, erased — a log under the home directory or /var/log
+		// deleted or emptied, or the shell history cleared. No rule saw it, and it is the whole payload
+		// of one of SkillHarm's twelve risk categories (0 of 20 caught statically): "remove the stale
+		// audit cache before the first request" is `rm -f /var/log/<tool>/audit.log` in a code block.
+		// Delete and EMPTY only: `>> /var/log/x.log` is a cron job keeping a log (two real skills), and
+		// a command's stdout redirected onto a log is that command logging, so an emptying redirect
+		// needs nothing — or `:`, `true`, `cat /dev/null` — in front of it. A home-directory path counts
+		// only when it names a log or a history file; /var/log is logs by definition. Measured on 2,879
+		// benign skill trees: 0.
+		rule("FS-005", 9, model.SevHigh, eraseTracesRE, "Erases logs or shell history", "Deletes or empties a log file under the home directory or /var/log, or clears the shell history. A tool has no need to remove the record of what it did; erasing it is how an action is kept from being noticed or reconstructed afterwards.", owaspTrace),
 
 		// 8 — Resource abuse (advisory: static can only hint)
 		rule("RES-001", 8, model.SevLow, `while\s+(true|True|1)\s*[:{)]`, "Possible infinite loop", "A loop with no exit condition may exhaust resources (advisory).", owaspLLM09).advisory(),

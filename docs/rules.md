@@ -17,16 +17,16 @@ never scores. See [architecture.md](architecture.md#scoring) for the full formul
 **Advisory** means static analysis cannot confirm it — the report says so, and you should
 read the evidence before acting.
 
-**85 rule IDs** in this build — 46 engine rules + 14 structural + 6 permission + 9 LLM
-+ 8 scan notes + 2 gate messages. Of these, **75 score** and 10 never do (dimension 0).
+**86 rule IDs** in this build — 47 engine rules + 14 structural + 6 permission + 9 LLM
++ 8 scan notes + 2 gate messages. Of these, **76 score** and 10 never do (dimension 0).
 These counts are generated from the same tables the drift check reads, so if a count
 anywhere else in this repository disagrees with this line, that other count is stale.
 
-**Rules version `90e5b3c49ba4`** — reports from this build carry it as `rules_version` (`--json`),
+**Rules version `c9bdb3c9da59`** — reports from this build carry it as `rules_version` (`--json`),
 and `bas-guard version` prints it. It covers deterministic detection only. Each ID a report can
 carry falls in exactly one class:
 
-- **Hashed:** the 46 engine rules — each one's ID, dimension, severity, flags and pattern, not
+- **Hashed:** the 47 engine rules — each one's ID, dimension, severity, flags and pattern, not
   the titles and explanations below.
 - **Covered only by the epoch:** the 14 structural checks, the 6 permission checks, the 5
   scan notes that are not `LLM-` IDs, and `GATE-001` (the gate message `scan` raises). The epoch is
@@ -49,7 +49,7 @@ agree were produced by the same engine rule table.
 - [6 — Obfuscation](#6--obfuscation) (8)
 - [7 — Backdoor](#7--backdoor) (4)
 - [8 — Resource abuse](#8--resource-abuse) (3)
-- [9 — Filesystem](#9--filesystem) (6)
+- [9 — Filesystem](#9--filesystem) (7)
 - [10 — Intent mismatch](#10--intent-mismatch) (2)
 - [Scan notes (dimension 0)](#scan-notes-dimension-0) (8)
 - [Load-time gate](#load-time-gate) (2)
@@ -170,6 +170,7 @@ agree were produced by the same engine rule table.
 | `FS-002` | medium | Reads AWS credentials | Touches cloud credential files. |
 | `FS-003` | high | Dangerous recursive delete | rm -rf of a whole tree — the filesystem root, the home directory, or everything in the working directory. A scoped path under one of them (a cache, a build output) is not this rule. |
 | `FS-004` | medium | Path traversal to a sensitive directory | Multi-level .. traversal aimed at a system/credential directory — unauthorized-access surface. |
+| `FS-005` | high | Erases logs or shell history | Deletes or empties a log file under the home directory or /var/log, or clears the shell history. A tool has no need to remove the record of what it did; erasing it is how an action is kept from being noticed or reconstructed afterwards. |
 | `PERM-003` | low | Overly broad file read/write grant | Read/Write/Edit grant with an over-broad glob (`**`); narrow to specific sub-paths. |
 | `SCOPE-001` | medium | Symlink escapes its boundary | A file of an artifact resolves outside the boundary it may be read in and was NOT read (invariant #2): for any file, the artifact's own directory; for a skill's SKILL.md — the file Claude Code loads, following any symlink — the skills directory that holds the skill, or the plugin root for a plugin's skill. Scored on the artifact, one finding listing the entries, because what Claude Code loads or the agent runs was not audited; a refused SKILL.md also leaves the skill with no content hash, so it cannot be approved. A link that does not resolve is placed by its link text. The same ID, as a scan-level note, reports a skill directory, a plugin installPath or an instruction file that resolves outside HOME and was not collected. |
 
