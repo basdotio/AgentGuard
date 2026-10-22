@@ -483,6 +483,24 @@ var (
 		`|/dev/tcp/|` + cmdPos + `(dig|nslookup|nc|ncat|socat|telnet|scp|sftp|rsync|sendmail|ssh)\s)`)
 	urlLiteralRE = regexp.MustCompile(`(?i)https?://`)
 
+	// networkCapableRE (P-095) asks whether a script CAN send at all: an outbound action, or a
+	// network client imported, required or constructed anywhere in the file. It gates urlLiteralRE:
+	// a URL literal is the visible half of a call whose client the verb list may not know — but only
+	// if the file has a client. In a file with none the URL is text: a usage string ("支持: https://
+	// www.douyin.com/…"), a secret scanner's webhook regex, an SVG namespace, a docs link in an error
+	// message. Of 522 benign high EXFIL-001/003 findings in the corpus, 217 sat in such files. The list
+	// is wider than networkActionRE on purpose — Node's `https.request`, `httpx`, a raw socket — because
+	// a client the action list does not know is exactly what the literal rule exists for.
+	networkCapableRE = regexp.MustCompile(networkActionRE.String() + // its leading (?i) covers the whole alternation
+
+		`|\brequire\(\s*["'](?:node:)?(?:https?|http2|net|tls|dgram|axios|node-fetch|got|undici|superagent|request|ky|ws)["']` +
+		`|\bfrom\s+["'](?:node:)?(?:https?|http2|net|tls|dgram|axios|node-fetch|got|undici|superagent|ky|ws)["']` +
+		`|\bimport\s*\(\s*["'](?:node:)?(?:https?|http2|net|tls|axios|node-fetch|got|undici)["']` +
+		`|\bimport\s+(?:requests|httpx|aiohttp|urllib3?|httplib2|grequests|http\.client|socket|websockets?|pycurl|smtplib|ftplib|telnetlib|paramiko)\b` +
+		`|\bfrom\s+(?:requests|httpx|aiohttp|urllib3?|httplib2|http|socket|websockets?|smtplib|ftplib|paramiko)[\w.]*\s+import\b` +
+		`|\b(?:https?|http2)\.(?:request|get)\(|\bXMLHttpRequest\b|\bnew\s+WebSocket\(|\bsendBeacon\(|\bnet\.(?:connect|createConnection|Dial)\(` +
+		`|\bsocket\.(?:socket|create_connection)\(|\bNet::HTTP\b|\bopen-uri\b|\bInvoke-(?:WebRequest|RestMethod)\b|\bNet\.WebClient\b|(?:^|[\s;|&(])(?:iwr|irm)\s`)
+
 	// encodeRE is the third leg: data made unreadable on its way OUT. Note the direction —
 	// every OBF rule in the rule set above watches decoding (a payload coming IN); nothing
 	// watched encoding, which is exactly the step "exfiltrate obfuscated" needs.

@@ -1,0 +1,20 @@
+# Written by baselines/cmd/baseline. Read baselines/README.md before citing any
+# figure produced alongside this file.
+#
+# measured by agent-guard's own adapter (agent-guard baselines/adapter/aguard), threshold "high" chosen by us, placement: by content, into a fake home; unplaceable trees are handed to `check` directly
+
+tool: aguard
+tool_version: bas-guard v0.30.1-0.20261022101510-9d8b9609a8fa+dirty (commit 9d8b960-dirty, built 2026-10-22T10:15:10Z) · reputation entries=18 · rules=381c1d657fb6 · judge-prompt=b851dfd5412b · judge-excerpt=9
+threshold: high
+uploads_samples: false
+uploads_samples_basis: 'invariant #1, enforced by TestZeroDial_OnlyTheJudgeConnects (cmd/bas-guard/zero_dial_test.go): aguard sends no request except from the explicitly opted-in LLM judge (scan --llm, check --llm, llm test), which a baseline run does not enable unless -aguard-extra-args passes --llm — and then run.yaml replaces this line with one written for that run.'
+corpus_commit: 6d7aa48e
+started_at: 2026-10-22T10:16:30.62263Z
+adapter: agent-guard baselines/adapter/aguard
+placement: by content, into a fake home; unplaceable trees are handed to `check` directly
+provisional: false
+counts:
+    scored: 1799
+    no_verdict: 0
+    error: 0
+work_list_size: 1799

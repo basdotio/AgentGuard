@@ -330,7 +330,8 @@ func (e *Engine) scanUnits(root string, units []unit) []model.Finding {
 				findings = append(findings, f)
 			}
 		}
-		fileChain := chain{literalIsEgress: u.role == roleScript && !u.synthetic}
+		// A URL literal is egress only in a real script that can send (P-095): see networkCapableRE.
+		fileChain := chain{literalIsEgress: u.role == roleScript && !u.synthetic && networkCapable(u, commentLines)}
 		if u.role != roleDoc && u.role != roleToolDesc && u.role != roleNamedDoc {
 			fileChain.assigns = urlAssignments(u.text)
 		}
@@ -485,6 +486,18 @@ func (e *Engine) scanUnits(root string, units []unit) []model.Finding {
 		})
 	}
 	return findings
+}
+
+// networkCapable reports whether any code line of the unit names a way to send (networkCapableRE).
+// It reads the interpreter's view (logicalLines' norm, then raw) like every leg does, so a client
+// split by quotes or a continuation still counts; comment-only lines do not — a comment cannot send.
+func networkCapable(u unit, commentLines map[int]bool) bool {
+	for _, ll := range logicalLines(langForFile(u.file), u.text, commentLines) {
+		if !ll.comment && (networkCapableRE.MatchString(ll.norm) || networkCapableRE.MatchString(ll.raw)) {
+			return true
+		}
+	}
+	return false
 }
 
 // traceName is one name FS-005's file-level half saw a log path assigned to: the pattern that
