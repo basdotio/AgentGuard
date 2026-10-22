@@ -186,6 +186,17 @@ var hookCategoryTokens = map[string]*regexp.Regexp{
 	"credential":          regexp.MustCompile(`(?i)\.(ssh|aws|netrc|npmrc|pypirc|gnupg|kube|docker)\b|keychain|credential|secret|token|api[_-]?key|password|passwd|\.env\b|/etc/(passwd|shadow)`),
 }
 
+// hookMediumShapes are the hook commands that weigh medium on the capability pass whatever the
+// model calls them (P-090). A package runner is npx, bunx, `pnpm dlx`/`exec` or `yarn dlx`/`exec`.
+var hookMediumShapes = []*regexp.Regexp{
+	// a moving dist-tag: every run fetches whatever was published under it last
+	regexp.MustCompile(`(?i)\b(npx|bunx|pnpm\s+(dlx|exec)|yarn\s+(dlx|exec))(\s+(-y|--yes))?\s+[@\w./-]+@(alpha|beta|next|latest|canary|rc)\b`),
+	// a well-known formatter or linter
+	regexp.MustCompile(`(?i)\b(npx|bunx|pnpm\s+(dlx|exec)|yarn\s+(dlx|exec))(\s+(-y|--yes))?\s+(prettier|oxfmt|oxlint|eslint|@biomejs/biome|biome|dprint|stylelint|markdownlint(-cli2)?)\b`),
+	// pulling a repository
+	regexp.MustCompile(`(?i)\bgit\s+(pull|fetch)\b`),
+}
+
 // localURL is a URL on this machine: for `network` it is stripped before the tokens are looked
 // for, so "http://localhost:3000/hook" alone shows nothing.
 var localURL = regexp.MustCompile(`(?i)(https?|wss?)://(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:\d+)?`)
@@ -215,6 +226,17 @@ func categoryShown(m Mode, artifact, cat, sent, quoted string) bool {
 		text := sent
 		if cat == "network" {
 			text = localURL.ReplaceAllString(text, "")
+		}
+		if cat == "network" || cat == "install" {
+			// P-090: three shapes the maintainer ruled medium, not high, after reading the
+			// hooks the judge flagged on the benign pool: a package runner fetching a moving
+			// dist-tag (`npx claude-flow@alpha`), a package runner running a well-known formatter
+			// or linter (`npx prettier --write`), and a `git pull`/`git fetch`. Each is stripped
+			// before the tokens are looked for; anything else in the command — curl, an install,
+			// a URL, an unknown package run through npx — still shows the category.
+			for _, re := range hookMediumShapes {
+				text = re.ReplaceAllString(text, "")
+			}
 		}
 		return re.MatchString(text)
 	case m == ModeInjection && cat == "credential-read" && strings.HasPrefix(artifact, string(model.KindConnector)+":"):
