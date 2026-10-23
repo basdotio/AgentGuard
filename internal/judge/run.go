@@ -221,6 +221,15 @@ func groundedFinding(t task, v Verdict) (verdict, barrier *model.Finding, droppe
 				// on one pass; the connector pass's own-service control is categoryShown's.
 				f.Severity = model.SevMedium
 				f.Why += " [category not shown by the text: credential-read (the credential's own service)]"
+			} else if cat == "credential-read" && t.req.Mode == ModeServer && !unitOverreaches(units, s.file) {
+				// P-098: an MCP server is configured with credentials — os.getenv("STRIPE_API_KEY"), a
+				// settings object, load_dotenv() — and reading them is how it logs in. Three votes called
+				// that a credential read on 46 of the 63 benign servers the judge alone flagged; the
+				// malicious ones read the environment whole, /etc/passwd, another process's environ or the
+				// metadata service. The file the quote landed in names none of those, and sends no
+				// credential to a host it spells out that is not the credential's own, so medium.
+				f.Severity = model.SevMedium
+				f.Why += " [category not shown by the text: credential-read (only the server's own configuration)]"
 			} else if cat == "credential-read" && t.req.Mode == ModeInjection && quoteGoesHome(units, s.file, s.text) {
 				// P-089: the same question on the text an agent reads. A SKILL.md's example that puts
 				// OPENAI_API_KEY in the Authorization header of a call to api.openai.com is how the
@@ -1149,6 +1158,18 @@ func quoteGoesHome(units []sourceUnit, file, quoted string) bool {
 		}
 	}
 	return false
+}
+
+// unitOverreaches reports whether the behaviour unit a quote landed in was built from a file that
+// reaches for a credential beyond its own configuration (sourceUnit.overreach). A quote in no
+// behaviour unit answers true: nothing shows it is only the server's own configuration.
+func unitOverreaches(units []sourceUnit, file string) bool {
+	for _, u := range units {
+		if u.file == file && !u.collapsed {
+			return u.overreach
+		}
+	}
+	return true
 }
 
 func unitGoesHome(units []sourceUnit, file string) bool {
