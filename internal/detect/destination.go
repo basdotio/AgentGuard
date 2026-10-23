@@ -212,6 +212,77 @@ func CredentialGoesHome(path, text string) bool {
 	return c.destConsistent()
 }
 
+// overreachRE is a credential source no server owns: another program's secrets on disk (SSH keys,
+// cloud and container credentials, .netrc), the system's account and network files, another
+// process's environment or anything else under /proc and /sys, a cloud metadata service, the user
+// database, the keychain, a browser's cookie store, a hidden file in a world-writable temp directory
+// (where a stolen credential is kept). Reading its OWN configuration — os.getenv("STRIPE_API_KEY"), a settings object,
+// load_dotenv() — is what an MCP server is configured with and is none of these.
+var overreachRE = regexp.MustCompile(`(?i)\.ssh/|\.aws/credentials|\bid_(?:rsa|ed25519|ecdsa|dsa)\b|authorized_keys|\.kube/config|\.docker/config\.json|\.git-credentials|\.netrc\b` +
+	`|/etc/(?:passwd|shadow|gshadow|sudoers|group|hosts|resolv\.conf|hostname)\b|/proc/|/sys/|/environ\b|/(?:tmp|var/tmp|dev/shm)/\.` +
+	`|169\.254\.169\.254|metadata\.google\.internal|/latest/meta-data|\bgetpw(?:all|nam|uid)\b|/var/log/` +
+	`|\bsecurity\s+find-(?:generic|internet)-password|\bkeychain\b|/Cookies\b|Login Data`)
+
+// CredentialOverreach reports whether a file reaches for a credential beyond its own configuration
+// (P-098): any code line names an overreachRE source, or enumerates the whole environment — every
+// key, the way EXFIL-004 means it, not the child-process copy (`{...process.env, X}`,
+// `os.environ.copy()` handed to a subprocess) that the credential leg already exempts. It is the
+// server pass's question for `credential-read`: on 543 benign server trees, 46 of the 63 the judge
+// alone flagged high were a server reading its own key or password to log in to its own service;
+// on Cisco's 127 malicious servers the credential reads were the environment, /etc/passwd,
+// /proc/<pid>/environ and the metadata service. Over the whole file, like CredentialGoesHome: the
+// quote is often a function's signature and the path it reads is a constant elsewhere in the file.
+func CredentialOverreach(path, text string) bool {
+	comments := commentOnlyLines(langForFile(path), text)
+	for _, ll := range logicalLines(langForFile(path), text, comments) {
+		if ll.comment {
+			continue
+		}
+		for _, v := range [2]string{ll.norm, ll.raw} {
+			if overreachRE.MatchString(v) {
+				return true
+			}
+			whole := envWholeRE.MatchString(v) || envDumpShellRE.MatchString(v)
+			childCopy := envChildCopyRE.MatchString(v) || strings.Contains(v, "environ.copy()")
+			if whole && !(childCopy && !envLeavesRE.MatchString(v)) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// credNameRE is a credential named in code without an environment read — `settings.password`,
+// `config["api_key"]` — which the chain's credential leg does not count. CredentialSentElsewhere
+// counts it, because a settings object is how a server holds the secret it would send.
+var credNameRE = regexp.MustCompile(`(?i)\b\w*(?:password|passwd|secret|token|api_?key|apikey|private_?key|credential)\w*\b`)
+
+// CredentialSentElsewhere reports whether a file reads a credential and sends to a destination it
+// spells out that is not that credential's service — the theft shape EXFIL-001's destination check
+// keeps high (P-061). A credential is the chain's credential leg or a credNameRE name anywhere in the
+// file. A credential with no service in its name (`settings.password`) has no
+// service to match, so any spelled-out off-box host counts as elsewhere. A destination built at run
+// time is not elsewhere here: unreadable is P-074's ground, and P-098 does not reopen it.
+func CredentialSentElsewhere(path, text string) bool {
+	comments := commentOnlyLines(langForFile(path), text)
+	c := chain{literalIsEgress: true, assigns: urlAssignments(text)}
+	for _, ll := range logicalLines(langForFile(path), text, comments) {
+		if ll.comment {
+			continue
+		}
+		c.observe(ll.raw, ll.norm, func() model.Evidence { return model.Evidence{} })
+	}
+	if !(c.cred || credNameRE.MatchString(text)) || !c.net {
+		return false
+	}
+	for _, h := range c.destHosts {
+		if !hostMatchesService(h, c.credService) {
+			return true
+		}
+	}
+	return false
+}
+
 // FileText is one file of an artifact, by its path relative to the artifact root.
 type FileText struct{ Path, Text string }
 

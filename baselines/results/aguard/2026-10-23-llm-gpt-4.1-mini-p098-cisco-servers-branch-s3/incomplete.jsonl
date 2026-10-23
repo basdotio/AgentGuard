@@ -1,0 +1,1 @@
+{"sample":"mal-mcp-ci-template_command_injection","path":"corpus/malicious/mcp/ci-template_command_injection","class":"malicious","surface":["mcp"],"severity":"high"}

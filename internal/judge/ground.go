@@ -56,6 +56,13 @@ type sourceUnit struct {
 	// api.weather.com from a key going anywhere; the static chain over the whole file can, and
 	// on the server pass a `credential-read` grounded in such a file weighs medium.
 	goesHome bool
+	// overreach is set on a behaviour unit whose FULL file reaches for a credential beyond its own
+	// configuration — another program's secrets, system files, another process's or the whole
+	// environment, a metadata service (detect.CredentialOverreach, P-098) — or sends a credential to
+	// a host it spells out that is not the credential's service (detect.CredentialSentElsewhere). On the server pass a
+	// `credential-read` grounded in a file with none of that is the server reading what it is
+	// configured with, and weighs medium.
+	overreach bool
 	// lineMap, when set, gives the 1-based ORIGINAL line of each line of text. Condensed
 	// excerpts (excerpt.go: blank runs collapsed, comments dropped, head+tail kept) are no
 	// longer contiguous with the file, so firstLine arithmetic would cite the wrong place —

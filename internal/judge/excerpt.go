@@ -551,7 +551,7 @@ func behaviorExcerpt(dir string, eg egress) (string, []sourceUnit) {
 		}
 		red, lm = capHeadTail(red, lm, room)
 		units = append(units, sourceUnit{file: detect.Redact(rel), text: red, firstLine: 1, lineMap: lm,
-			goesHome: detect.CredentialGoesHome(rel, string(raw))})
+			goesHome: detect.CredentialGoesHome(rel, string(raw)), overreach: detect.CredentialOverreach(rel, string(raw)) || detect.CredentialSentElsewhere(rel, string(raw))})
 		total += len(header) + len(red) + 2
 		return nil
 	})

@@ -1,0 +1,12 @@
+{"sample":"mal-mcp-dd-npm-fixthis-exchange-exfil","verdict":"benign","severity":"medium"}
+{"sample":"mal-mcp-dd-npm-inscada-telemetry-exfil","verdict":"malicious","severity":"high","dimensions":["exfiltration"]}
+{"sample":"mal-mcp-dd-npm-lanyer640-runcommand-revshell","verdict":"malicious","severity":"high","dimensions":["backdoor"]}
+{"sample":"mal-mcp-dd-npm-namecheap-affiliate-injection","verdict":"malicious","severity":"high","dimensions":["exfiltration"]}
+{"sample":"mal-mcp-dd-npm-todo-wallet-exfil","verdict":"benign"}
+{"sample":"mal-mcp-mcptox-explicit-hijack","verdict":"malicious","severity":"high","dimensions":["injection"]}
+{"sample":"mal-mcp-mcptox-implicit-ambient","verdict":"malicious","severity":"high","dimensions":["injection"]}
+{"sample":"mal-mcp-mcptox-parameter-tamper","verdict":"malicious","severity":"high","dimensions":["exfiltration","injection"]}
+{"sample":"mal-mcp-ts-arbitrary-file-write","verdict":"benign"}
+{"sample":"mal-mcp-ts-cloud-metadata-probe","verdict":"benign"}
+{"sample":"mal-mcp-ts-resource-exhaustion","verdict":"benign"}
+{"sample":"mal-mcp-ts-tool-body-dynamic-exec","verdict":"benign","severity":"medium"}
