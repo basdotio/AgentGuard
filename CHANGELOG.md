@@ -17,7 +17,23 @@ rate copied into prose goes stale on the next rule. `git tag` and the Releases p
 - Invariants: never executes scanned content, no cross-root symlink reads, secret redaction before storage (+ high-entropy fallback).
 - Single static binary (`CGO_ENABLED=0`), MIT + SPDX, CI, bilingual README.
 
-## v0.2.0 – v0.31.0
+## v0.2.0 – v0.32.0
+
+**v0.32.0 (2026-10-23) — fewer false alarms on MCP server source: the judge no longer calls a server reading its own
+configuration a credential theft, and a URL parser is not a network client.**
+
+No flag, exit code or JSON field changed. `rules` moves (`ecc901cb9f1f` → `717ada4c680b`): fewer `EXFIL-001`/`-003`.
+`judge-prompt` (`b851dfd5412b`) and `judge-excerpt` (9) are the same as in v0.31.0. An approval is keyed on content, not
+on the rules; `bas-guard scan` reads everything under the new ones.
+
+- **The judge, on MCP server source (`check <dir>` with `--llm`):** a `credential-read` finding weighs medium when the
+  server only reads what it is configured with — `os.getenv("STRIPE_API_KEY")`, a settings object, `load_dotenv()` — to
+  log in to its own service. It stays high when the same file reaches for anything beyond that (another program's
+  secrets, system or `/proc`/`/sys` files, the whole environment, a cloud metadata service, the user database, the
+  keychain, a browser's cookies, a hidden file in a temp directory), or sends a credential to a host it names that is
+  not that credential's service (P-098).
+- **Static, everywhere:** `from urllib.parse import quote` is not a network request, and `"https://"` with no host
+  after it is not a destination; neither completes the exfiltration chain any more (P-099).
 
 **v0.31.0 (2026-10-22) — four static shapes no rule saw, a third fewer false exfiltration chains, and three judge
 findings that were high on ordinary text now weigh medium.**
