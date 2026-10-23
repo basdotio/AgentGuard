@@ -1,0 +1,530 @@
+# `corpus score` output, verbatim. Do not paraphrase it: the scorer's
+# refusals (a count where a rate would mislead, collected kept apart from constructed,
+# the uncovered tally) are the point, and retyping loses them.
+#
+# measured by agent-guard's own adapter (agent-guard baselines/adapter/aguard), threshold "high" chosen by us, placement: by content, into a fake home; unplaceable trees are handed to `check` directly
+# tool=aguard version=bas-guard v0.30.1-0.20261022102932-4f7840a63469+dirty (commit 4f7840a-dirty, built 2026-10-22T10:29:32Z) · reputation entries=18 · rules=ecc901cb9f1f · judge-prompt=b851dfd5412b · judge-excerpt=9 threshold=high corpus=6d7aa48e at 2026-10-22T10:42:03Z
+
+corpus     5074 labels — 549 malicious, 4506 benign, 19 hard-negative
+coverage   3275 of 5074 scored; 1799 had no verdict
+           an unscored sample is not a pass — recall below is over the scored subset only
+           the unscored, by source — a whole source missing is either a
+           deliberate exclusion or a runner dropping a shape; both need saying:
+               5 of 5     DataDog/malicious-software-packages-dataset  (the entire source)
+             353 of 353   automatelab-mcp-tools  (the entire source)
+             127 of 127   cisco-mcp-scanner-evals  (the entire source)
+              36 of 36    fastmcp-examples  (the entire source)
+               5 of 5     fevziegeyurtsevenler/prompt-injection-corpus  (the entire source)
+            1185 of 1584  harvested
+              14 of 14    mcp-archived-servers  (the entire source)
+               7 of 7     mcp-reference-servers  (the entire source)
+              10 of 10    promoted-hard-negative  (the entire source)
+              32 of 32    python-sdk-examples  (the entire source)
+               5 of 5     reconstruction:connector  (the entire source)
+               5 of 5     reconstruction:hooks  (the entire source)
+               2 of 2     reconstruction:instruction  (the entire source)
+               3 of 3     reconstruction:mcp  (the entire source)
+               6 of 6     reconstruction:permission  (the entire source)
+               4 of 12    synthetic-malicious
+
+detection — recall per dimension, split by what the samples rest on:
+  wild        the artifact existed because somebody made it for real. ONLY these
+              can back a claim about the world.
+  fixture     a third party wrote it as a test case — coverage of THEIR shapes.
+  constructed we wrote it — coverage of OURS.
+  The three never merge. Adding them produces a number that means nothing.
+  dimension        evidence          n   result
+  backdoor         constructed       1   caught 1 of 1 (coverage of chosen shapes, not a rate)
+  backdoor         fixture          24   caught 10 of 24 (n too small for a rate; ±19 pts)
+  execution        fixture          40   caught 18 of 40 (n too small for a rate; ±15 pts)
+  execution        wild              9   caught 8 of 9 (n too small for a rate; ±32 pts)
+  exfiltration     constructed       9   caught 8 of 9 (coverage of chosen shapes, not a rate)
+  exfiltration     fixture          57   40%  [29, 53]  (23/57)
+  exfiltration     wild              7   caught 3 of 7 (n too small for a rate; ±32 pts)
+  filesystem       fixture         102   21%  [14, 29]  (21/102)
+  injection        fixture          83   30%  [21, 41]  (25/83)
+  injection        wild              5   caught 2 of 5 (n too small for a rate; ±37 pts)
+  permission       fixture          25   caught 7 of 25 (n too small for a rate; ±20 pts)
+  permission       wild              2   caught 0 of 2 (n too small for a rate; ±66 pts)
+  reconnaissance   fixture           4   caught 0 of 4 (n too small for a rate; ±49 pts)
+  resource-abuse   fixture          26   caught 1 of 26 (n too small for a rate; ±15 pts)
+  supply-chain     fixture          17   caught 9 of 17 (n too small for a rate; ±22 pts)
+  supply-chain     wild              2   caught 1 of 2 (n too small for a rate; ±41 pts)
+
+  per source — a rate over one source is a rate ABOUT that source, not the world:
+  NVIDIA/SkillSpector               5   caught 1 of 5 (n too small for a rate; ±42 pts)
+  datadog-ai-skills                22   caught 11 of 22 (n too small for a rate; ±19 pts)
+  reconstruction:skills             2   caught 2 of 2 (n too small for a rate; ±66 pts)
+  skill-safety-bench                9   caught 0 of 9 (n too small for a rate; ±30 pts)
+  skillcraft-audit                 42   74%  [59, 85]  (31/42)
+  skillharm                       240   19%  [14, 24]  (45/240)
+  skillsgoat                       65   38%  [28, 51]  (25/65)
+  synthetic-malicious               8   caught 7 of 8 (n too small for a rate; ±35 pts)
+
+flag rate on the benign pool — an estimate, reported per source:
+  benign here means `somebody runs this`, on an `assumed` basis — these are flags,
+  not confirmed false positives. Read one before you count it as an error.
+  harvested                       399   13%  [10, 16]  (51/399)
+  skillet-wild                    474   4%  [3, 7]  (21/474)
+  skillmd-138k                   1996   4%  [3, 4]  (71/1996)
+  skillsgoat                       10   caught 3 of 10 (n too small for a rate; ±30 pts)
+  reviewed subset: 23 of the benign pool has been read by a person; 8 flag(s) landed there.
+  those 8 ARE confirmed false positives. The rest of the flags above remain unadjudicated.
+
+hard negatives — the precision probe, a census, never pooled with the estimate above:
+  flagged 0 of 3 (0%) — each one a confirmed false positive: these were read
+
+attribution — of caught malicious with a read-basis dimension, was the KIND named:
+  43 of 77 correct (56%, [45, 66])
+
+1799 uncovered sample(s):
+  ben-conn-adamayoung-tmdb-mcp  ben-conn-adamgell-cmtraceopen-mcp  ben-conn-agiflow-claude-instrument-mcp  ben-conn-aidalinfo-open-rcode-mcp
+  ben-conn-airtable-skills-mcp  ben-conn-akiojin-unity-editor-mcp-mcp  ben-conn-akiojin-unity-mcp-server-mcp  ben-conn-aksharahegde-nuxt-glow-mcp
+  ben-conn-algorand-devrel-algorand-agent-skills-mcp  ben-conn-alibaizhanov-mengram-mcp  ben-conn-antoinebou12-uml-mcp-mcp  ben-conn-ardakilic-lilt-mcp
+  ben-conn-astrabert-workflows-acp-mcp  ben-conn-autumn-library-winow-mcp  ben-conn-aws-samples-sample-agentic-value-accelerator-mcp  ben-conn-betagouv-anssi-portail-mcp
+  ben-conn-bitrise-io-bitrise-workflow-editor-mcp  ben-conn-bradtraversy-devstash-mcp  ben-conn-calvinw-strudel-llm-docs-mcp  ben-conn-cartesiancs-cartcut-mcp
+  ben-conn-catalystbyzoho-agent-skills-mcp  ben-conn-channingwalton-typeclassopedia-mcp  ben-conn-chef-chef-mcp  ben-conn-civictechdc-cib-mango-tree-mcp
+  ben-conn-cognicore-dev-cognicore-env-mcp  ben-conn-commercetools-ui-kit-mcp  ben-conn-connectry-io-connectrylab-architect-cert-mcp-mcp  ben-conn-datadog-dd-sdk-android-mcp
+  ben-conn-developerz-ai-wurk-mcp  ben-conn-dmdufresne-abelara-database-stub-mcp  ben-conn-doist-todoist-mcp-mcp  ben-conn-duhu2000-financial-services-qcc-mcp
+  ben-conn-dyzdyz010-ex-mmo-cluster-mcp  ben-conn-elvisun-newsjack-mcp  ben-conn-enigmatry-entry-angular-building-blocks-mcp  ben-conn-enigmatry-entry-building-blocks-mcp
+  ben-conn-ernestoespinosajr-claude-context-engine-mcp  ben-conn-faw01-create-mf2-app-mcp  ben-conn-georgekhananaev-claude-skills-vault-mcp  ben-conn-getlarge-nestjs-tools-mcp
+  ben-conn-gregrickaby-viewer-for-reddit-mcp  ben-conn-growerp-growerp-mcp  ben-conn-haru-redmine-ai-helper-mcp  ben-conn-hcompai-computer-use-agents-demos-mcp
+  ben-conn-hivellm-vectorizer-mcp  ben-conn-howiehu-ddd-architecture-samples-mcp  ben-conn-huskyauto-visionclaw-agent-public-release-mcp  ben-conn-hydai-ff14-tw-mcp
+  ben-conn-hzrd149-nostrudel-mcp  ben-conn-iflabx-agentifui-mcp  ben-conn-ikuwow-dotfiles-mcp  ben-conn-influxdata-docs-v2-mcp
+  ben-conn-jakemannix-yaucca-mcp  ben-conn-johndpope-vasa-1-hack-mcp  ben-conn-khan-wonder-blocks-mcp  ben-conn-khaphanspace-gonhanh-org-mcp
+  ben-conn-kiegroup-j2cl-tools-mcp  ben-conn-kornia-bubbaloop-mcp  ben-conn-kotlin-kotlinx-rpc-mcp  ben-conn-kubewarden-sbomscanner-mcp
+  ben-conn-kumaran-is-claude-code-onboarding-mcp  ben-conn-laraxot-laravelpizza-com-mcp  ben-conn-leboncoin-spark-web-mcp  ben-conn-lowtidebuild-public-equity-research-mcp
+  ben-conn-lucy971326-edith-mcp  ben-conn-maintainerr-maintainerr-mcp  ben-conn-markifact-markifact-mcp-mcp  ben-conn-masumi-network-citadel-mcp
+  ben-conn-microsoft-powerplatform-vscode-mcp  ben-conn-microsoft-recipe-tool-mcp  ben-conn-minhnv0807-ai-business-skills-mcp  ben-conn-morinokami-astro-mcp-mcp
+  ben-conn-motleyai-motleycrew-mcp  ben-conn-motwakorb-enhancedchannelmanager-mcp  ben-conn-mrcalderon3d-everything-game-dev-code-mcp  ben-conn-namastexlabs-automagik-spark-mcp
+  ben-conn-navikt-sykepengesoknad-frontend-mcp  ben-conn-ndesv21-socialclaw-mcp  ben-conn-ng-galien-maket-mcp  ben-conn-nick-pape-grackle-mcp
+  ben-conn-ocx-sh-ocx-mcp  ben-conn-oneprojectorg-common-mcp  ben-conn-opendcai-dataflow-webui-mcp  ben-conn-paldom-databricks-apps-fastapi-starter-mcp
+  ben-conn-paymobaccept-paymob-ai-integration-skill-mcp  ben-conn-paypal-ai-toolkit-mcp  ben-conn-phantom-phantom-agent-kit-mcp  ben-conn-pioneershub-pyconde-talks-mcp
+  ben-conn-proyecto26-projectx-mcp  ben-conn-psake-powershellbuild-mcp  ben-conn-randsum-randsum-mcp  ben-conn-replicate-skills-mcp
+  ben-conn-rootlyhq-rootly-mcp-server-mcp  ben-conn-rossoctl-operator-mcp  ben-conn-ryoppippi-chatgpt-heatmap-mcp  ben-conn-ryoppippi-pkg-to-jsr-mcp
+  ben-conn-saschb2b-okf-studio-mcp  ben-conn-shepsci-kaggle-skill-mcp  ben-conn-smilyorg-photofield-mcp  ben-conn-softinio-scalanews-mcp
+  ben-conn-sophymarine-openregistry-mcp  ben-conn-spacehendrix-clauder-mcp  ben-conn-starling-browser-dotty-mcp  ben-conn-superamped-ai-marketing-skills-mcp
+  ben-conn-tae0y-real-estate-mcp-mcp  ben-conn-tarekmo0-hunterstick-mcp  ben-conn-taurheim-scrobblify-mcp  ben-conn-teya-engineering-lemonade-design-system-mcp
+  ben-conn-timgluz-teeline-mcp  ben-conn-timothywarner-org-claude-architect-mcp  ben-conn-timothywarner-org-claude-code-mcp  ben-conn-tobilg-caddy-duckdb-module-mcp
+  ben-conn-tobilg-duckdb-tileserver-mcp  ben-conn-tribbloid-spookystuff-mcp  ben-conn-vobase-vobase-mcp  ben-conn-writer-cerebro-mcp
+  ben-conn-xh-hoist-core-mcp  ben-conn-xh-hoist-react-mcp  ben-conn-xpinjection-test-driven-spring-boot-mcp  ben-conn-yhy0-chying-agent-mcp
+  ben-conn-yiwang3-afterframe-mcp  ben-hook-10legs-freelance-developer-harness-settings  ben-hook-3-deacon-enlisted-settings  ben-hook-adam-s-intercept-settings
+  ben-hook-aiddbot-aiddbot-settings  ben-hook-aizenvoltprime-damocles-settings  ben-hook-alexfazio-plankton-settings  ben-hook-alibaba-tron-one-agent-settings
+  ben-hook-alireza29675-teamctl-settings  ben-hook-apra-labs-aprapipes-settings  ben-hook-asiflow-claude-nexus-hyper-agent-team-light-settings  ben-hook-aspegio-nelson-settings
+  ben-hook-ather-techie-slateflow-settings  ben-hook-avibebuilder-claude-prime-settings  ben-hook-awizemann-harness-settings  ben-hook-ayutaz-piper-plus-settings
+  ben-hook-azalio-map-framework-settings  ben-hook-bemindlabs-bmt-monorepo-template-settings  ben-hook-ben-manes-caffeine-settings  ben-hook-bh213-hx-multianim-settings
+  ben-hook-bioinfo-slopless-settings  ben-hook-boardkit-orchestrator-settings  ben-hook-bradautomates-second-brain-settings  ben-hook-brolag-neural-claude-code-settings
+  ben-hook-btucker-selkie-settings  ben-hook-c0dezli-claude-code-personal-assistant-settings  ben-hook-caldis-react-zmage-settings  ben-hook-caomeiyouren-momei-settings
+  ben-hook-carlos-dominguez-faber-claude-code-tune-kit-settings  ben-hook-carlrannaberg-claudekit-settings  ben-hook-cassler-awesome-claude-code-setup-settings  ben-hook-circuit-synth-kicad-sch-api-settings
+  ben-hook-clima-ensemblekalmanprocesses-jl-settings  ben-hook-clxzl-claude-code-best-practice-cn-settings  ben-hook-codingagentsystem-cas-settings  ben-hook-commercetools-merchant-center-application-kit-settings
+  ben-hook-commercetools-ui-kit-settings  ben-hook-comp-a-a-s-compaas-settings  ben-hook-corvidae-coding-projects-openclaudia-settings  ben-hook-corvidae-coding-projects-thermite-settings
+  ben-hook-craigjmidwinter-getvect-settings  ben-hook-cyberash-dev-veche-settings  ben-hook-daffy0208-ai-dev-standards-settings  ben-hook-daniloc-coherence-settings
+  ben-hook-daniloc-mnemion-settings  ben-hook-datadog-java-profiler-settings  ben-hook-dataplat-dbatools-settings  ben-hook-dave-london-pare-settings
+  ben-hook-dcramer-peated-settings  ben-hook-dollspace-gay-chainlink-settings  ben-hook-dontfuckmycode-dfmc-settings  ben-hook-dragynrain-roguesignalprotocol-settings
+  ben-hook-drona23-claude-token-efficient-settings  ben-hook-dshakes-compass-settings  ben-hook-dwmkerr-dotfiles-settings  ben-hook-echovic-boss-skill-settings
+  ben-hook-eser-aya-is-settings  ben-hook-everyone-needs-a-copilot-claude-copilot-settings  ben-hook-factorial-io-scotty-settings  ben-hook-fc-fuz-claude-code-governance-settings
+  ben-hook-fitlab-ai-agent-infra-settings  ben-hook-gaebalai-claude-consultant-kr-settings  ben-hook-generaltranslation-gt-settings  ben-hook-gkotian-gautam-linux-settings
+  ben-hook-goondocks-co-open-agent-kit-settings  ben-hook-gossipcat-ai-gossipcat-ai-settings  ben-hook-gracefullight-docusaurus-plugins-settings  ben-hook-greatsumini-cc-system-settings
+  ben-hook-gunnarguy-openintelligence-settings  ben-hook-hcompai-computer-use-agents-demos-settings  ben-hook-henryalouf-ruflow-settings  ben-hook-hermeticormus-libreuiux-claude-code-settings
+  ben-hook-hmans-beans-settings  ben-hook-hulupeep-specflow-settings  ben-hook-ianscott313-miniverse-settings  ben-hook-indexedlabs-pydantic-ai-gepa-settings
+  ben-hook-iongion-container-desktop-settings  ben-hook-iota-uz-iota-sdk-settings  ben-hook-issmirnov-dotfiles-settings  ben-hook-jamesjlundin-full-stack-web-and-mobile-template-settings
+  ben-hook-jasonraimondi-ts-oauth2-server-settings  ben-hook-jayminwest-mulch-settings  ben-hook-jetxu-llm-docmason-settings  ben-hook-jiyuan-tan-causalsmith-settings
+  ben-hook-jlevy-rust-porting-playbook-settings  ben-hook-jlevy-strif-settings  ben-hook-jlevy-tbd-settings  ben-hook-jordanhubbard-nanolang-settings
+  ben-hook-julep-ai-steadytext-settings  ben-hook-juyterman1000-entroly-settings  ben-hook-kalypsokichu-code-kalypso-claude-workflow-settings  ben-hook-kbwen-agent-virtual-office-settings
+  ben-hook-kennyjpowers-claude-flow-settings  ben-hook-keshavsuki-recall-stack-settings  ben-hook-kimyx0207-meta-kim-settings  ben-hook-kochetkov-ma-allure-server-settings
+  ben-hook-koolamusic-claudefiles-settings  ben-hook-koukyosyumei-h5i-db-settings  ben-hook-kube-logging-logging-operator-settings  ben-hook-kube-logging-telemetry-controller-settings
+  ben-hook-kubuszok-sge-settings  ben-hook-kunaltulsidasani-claude-reimagined-settings  ben-hook-l33tdawg-sage-settings  ben-hook-letitbk-claude-academic-setup-settings
+  ben-hook-lexler-claude-code-user-reminders-settings  ben-hook-lghupan-cc-automode-settings  ben-hook-li-zhixin-claude-ignore-settings  ben-hook-liriansu-opus-liriansu-opus-settings
+  ben-hook-listener-he-java-harness-agent-settings  ben-hook-m-xlsea-ruoyi-plus-soybean-settings  ben-hook-m98-fluent-settings  ben-hook-ma08-botfiles-settings
+  ben-hook-macanderson-stella-examples-settings  ben-hook-mag123c-toktrack-settings  ben-hook-majorcontext-moat-settings  ben-hook-mambo-wang-codewiki-plus-settings
+  ben-hook-marcosd4h-deepextractruntime-settings  ben-hook-mattgierhart-prd-driven-context-engineering-settings  ben-hook-mattgyverlee-flextoolsmcp-settings  ben-hook-matthewdcage-llm-swarm-router-settings
+  ben-hook-maxwell2732-claudecode-research-harness-workflow-settings  ben-hook-mindspore-ai-hyper-parallel-settings  ben-hook-minorun365-my-claude-code-settings-settings  ben-hook-mrocklin-dask-array-settings
+  ben-hook-mrwaip-svelte-rs-settings  ben-hook-nabondance-trailhead-banner-settings  ben-hook-natea-exomind-settings  ben-hook-nokonoko1203-claude-code-settings-settings
+  ben-hook-nth5693-gemini-kit-settings  ben-hook-nwiizo-cargo-coupling-settings  ben-hook-opencue-gitguardex-settings  ben-hook-outfitter-dev-blz-settings
+  ben-hook-parcadei-continuousclaudev4-7-settings  ben-hook-paulpreibisch-agentvibes-settings  ben-hook-pegasi-ai-reins-settings  ben-hook-pgplex-pgschema-settings
+  ben-hook-plusai-solutions-ai-scrum-master-template-settings  ben-hook-pmgraham-claude-agents-settings  ben-hook-po4yka-ripdpi-settings  ben-hook-poshan0126-dotclaude-settings
+  ben-hook-positronic-robotics-positronic-settings  ben-hook-proffesor-for-testing-agentic-qe-settings  ben-hook-proffesor-for-testing-sentinel-api-testing-settings  ben-hook-quarto-dev-q2-settings
+  ben-hook-realpapaya-vizcode-settings  ben-hook-recomposesh-recompose-settings  ben-hook-refcell-claude-settings  ben-hook-regent-vcs-re-gent-settings
+  ben-hook-rupakm-leslie-settings  ben-hook-s60yucca-mnemos-settings  ben-hook-samplvs-zero-operators-settings  ben-hook-samply-blaze-settings
+  ben-hook-sepehrbayat-sepcc-settings  ben-hook-serialx-vibecore-settings  ben-hook-shahshrey-unclaw-settings  ben-hook-shanraisshan-codex-cli-best-practice-settings
+  ben-hook-shanraisshan-gemini-cli-best-practice-settings  ben-hook-shipfoxhq-shipfox-settings  ben-hook-simple10-agents-observe-settings  ben-hook-sonar-solutions-sonar-golc-settings
+  ben-hook-spacehendrix-clauder-settings  ben-hook-squirrelsoft-dev-dev-settings  ben-hook-sseshachala-conductai-settings  ben-hook-superuser-pal-awesome-second-brain-settings
+  ben-hook-sushichan044-cc-hooks-ts-settings  ben-hook-swiftfulthinking-swiftfulstarterproject-settings  ben-hook-syedsaif666-lgtm-settings  ben-hook-tatargabor-set-core-settings
+  ben-hook-techdelight-daedalus-settings  ben-hook-thebnbrkr-agora-code-settings  ben-hook-tomdwipo-claude-soul-settings  ben-hook-tonyc726-china-administrative-division-settings
+  ben-hook-torad-labs-splice-settings  ben-hook-tradeblocks-org-tradeblocks-settings  ben-hook-travisjneuman-claude-settings  ben-hook-udecode-plate-playground-template-settings
+  ben-hook-unclejobs-ai-blog-posting-auto-settings  ben-hook-varun29ankus-shodh-memory-settings  ben-hook-vasu31dev-playwright-ts-lib-settings  ben-hook-vmihalis-hacker-bob-settings
+  ben-hook-wanghao9610-star-settings  ben-hook-wbrown-janus-datalog-settings  ben-hook-wesammustafa-claude-code-everything-you-need-to-know-setting  ben-hook-willdady-platypus-settings
+  ben-hook-x-school-academy-skill-pilot-settings  ben-hook-xdamman-replaylastgoal-settings  ben-hook-yuluo-yx-use-settings  ben-hook-yzhao062-anywhere-agents-settings
+  ben-hook-z3z1ma-dbt-core-interface-settings  ben-mcp-am-0xmonaco-mcp-server  ben-mcp-am-12306-mcp  ben-mcp-am-aashari-mcp-server-atlassian-bitbucket
+  ben-mcp-am-aashari-mcp-server-atlassian-confluence  ben-mcp-am-aashari-mcp-server-atlassian-jira  ben-mcp-am-aegis-scan-mcp-server  ben-mcp-am-agent-hansa-mcp
+  ben-mcp-am-agent-infra-mcp-server-browser  ben-mcp-am-agent-passport-system-mcp  ben-mcp-am-agent-recall-mcp  ben-mcp-am-agentdeskai-browser-tools-mcp
+  ben-mcp-am-agentmail-mcp  ben-mcp-am-agentmemory-mcp  ben-mcp-am-agentschat-mcp  ben-mcp-am-agestra
+  ben-mcp-am-ahmetbarut-mcp-database-server  ben-mcp-am-alchemy-mcp-server  ben-mcp-am-angelogiacco-elevenlabs-mcp-server  ben-mcp-am-antv-mcp-server-chart
+  ben-mcp-am-aputime-mcp  ben-mcp-am-arabold-docs-mcp-server  ben-mcp-am-arcadia-finance-mcp-server  ben-mcp-am-assistant-ui-mcp-docs-server
+  ben-mcp-am-attio-mcp  ben-mcp-am-automatalabs-mcp-server-playwright  ben-mcp-am-automatelab-ai-seo-mcp  ben-mcp-am-automatelab-n8n-mcp
+  ben-mcp-am-auxiliar-mcp  ben-mcp-am-avallon-labs-mcp  ben-mcp-am-bangdao-ai-acw-tools  ben-mcp-am-bbox-mcp-server
+  ben-mcp-am-bharathvaj-whois-mcp  ben-mcp-am-bitbonsai-mcpvault  ben-mcp-am-bitwarden-mcp-server  ben-mcp-am-browser-devtools-mcp
+  ben-mcp-am-browsermcp-mcp  ben-mcp-am-bugsnag-mcp-server  ben-mcp-am-buywhere-mcp-server  ben-mcp-am-cachly-dev-mcp-server
+  ben-mcp-am-caffeineai-mcp  ben-mcp-am-cap-js-mcp-server  ben-mcp-am-chaimi-keep-mcp  ben-mcp-am-chakra-ui-react-mcp
+  ben-mcp-am-chinchillaenterprises-mcp-lambda-cron  ben-mcp-am-chinchillaenterprises-mcp-stripe  ben-mcp-am-chrome-devtools-mcp  ben-mcp-am-chrusic-todoist-mcp-server-extended
+  ben-mcp-am-circleci-mcp-server-circleci  ben-mcp-am-claude-flow  ben-mcp-am-claude-flow-cli  ben-mcp-am-claude-video-vision
+  ben-mcp-am-cleocode-mcp-adapter  ben-mcp-am-clinicaltrialsgov-mcp-server  ben-mcp-am-cloudbase-cloudbase-mcp  ben-mcp-am-cls-mcp-server
+  ben-mcp-am-coda-mcp  ben-mcp-am-codacy-codacy-mcp  ben-mcp-am-codeloop-mcp-server  ben-mcp-am-codewikitap
+  ben-mcp-am-codex-mcp-server  ben-mcp-am-cogmemai-mcp  ben-mcp-am-coinbase-cds-mcp-server  ben-mcp-am-context-mode
+  ben-mcp-am-contextium-mcp-server  ben-mcp-am-contextlint-mcp-server  ben-mcp-am-contextplus  ben-mcp-am-currents-mcp
+  ben-mcp-am-cyanheads-arxiv-mcp-server  ben-mcp-am-cyanheads-calculator-mcp-server  ben-mcp-am-cyanheads-git-mcp-server  ben-mcp-am-cyanheads-pubchem-mcp-server
+  ben-mcp-am-cyanheads-pubmed-mcp-server  ben-mcp-am-dangahagan-weather-mcp  ben-mcp-am-dataforseo-mcp-server  ben-mcp-am-depscope-mcp
+  ben-mcp-am-diagrammo-dgmo-mcp  ben-mcp-am-dikshitrj-quickfill-mcp  ben-mcp-am-doitintl-doit-mcp-server  ben-mcp-am-dollhousemcp-mcp-server
+  ben-mcp-am-domain-search-mcp  ben-mcp-am-drawio-mcp  ben-mcp-am-driflyte-mcp-server  ben-mcp-am-duckduckgo-mcp-server
+  ben-mcp-am-efficient-gitlab-mcp-server  ben-mcp-am-ehrocks-fe-mcp-server  ben-mcp-am-elliotding-ai-agent-mcp  ben-mcp-am-eslint-mcp
+  ben-mcp-am-eternalai-org-mcp-server  ben-mcp-am-european-parliament-mcp-server  ben-mcp-am-exa-mcp-server  ben-mcp-am-exaudeus-workrail
+  ben-mcp-am-excalidraw-mcp  ben-mcp-am-extentos-mcp-server  ben-mcp-am-fabriqa-ai-youtube-transcript-mcp  ben-mcp-am-fdic-mcp-server
+  ben-mcp-am-fetcher-mcp  ben-mcp-am-figma-console-mcp  ben-mcp-am-firefox-devtools-mcp  ben-mcp-am-forgecraft-mcp
+  ben-mcp-am-fre4x-arxiv  ben-mcp-am-fre4x-fred  ben-mcp-am-fre4x-gemini  ben-mcp-am-fre4x-inspector-bridge
+  ben-mcp-am-fre4x-yahoo-finance  ben-mcp-am-fsb-mcp-server  ben-mcp-am-garrettheath4-sendgrid-mcp  ben-mcp-am-gcp-mcp
+  ben-mcp-am-gemini-mcp-tool  ben-mcp-am-gezhe-mcp-server  ben-mcp-am-gitee-mcp-gitee  ben-mcp-am-github-computer-use-mcp
+  ben-mcp-am-gleanwork-local-mcp-server  ben-mcp-am-godot-mcp-server  ben-mcp-am-google-cloud-cloud-run-mcp  ben-mcp-am-google-cloud-observability-mcp
+  ben-mcp-am-google-cloud-storage-mcp  ben-mcp-am-google-searchconsole-mcp  ben-mcp-am-graphlit-mcp-server  ben-mcp-am-growth-mcp
+  ben-mcp-am-guardvibe  ben-mcp-am-guillehr2-excel-mcp-server  ben-mcp-am-h-ear-mcp-server  ben-mcp-am-hanna84-mcp-writing
+  ben-mcp-am-harusame64-desktop-touch-mcp  ben-mcp-am-henkey-postgres-mcp-server  ben-mcp-am-heor-agent-mcp  ben-mcp-am-heroku-mcp-server
+  ben-mcp-am-heroui-react-mcp  ben-mcp-am-hisma-server-puppeteer  ben-mcp-am-hive-intelligence  ben-mcp-am-hn-mcp
+  ben-mcp-am-hostinger-api-mcp  ben-mcp-am-hostsmith-mcp-server  ben-mcp-am-hovecapital-read-only-mysql-mcp-server  ben-mcp-am-hugeicons-mcp-server
+  ben-mcp-am-iflow-mcp-outlook-calendar-mcp  ben-mcp-am-igniteui-theming  ben-mcp-am-internet-archive-mcp  ben-mcp-am-intlayer-mcp
+  ben-mcp-am-ios-simulator-mcp  ben-mcp-am-iris-eval-mcp-server  ben-mcp-am-ironbee-ai-devtools  ben-mcp-am-izumisy-mcp-universal-db-client
+  ben-mcp-am-jaypie-mcp  ben-mcp-am-jianruidutong-obsidian-mcp  ben-mcp-am-john8844-jira-mcp-server  ben-mcp-am-jpisnice-shadcn-ui-mcp-server
+  ben-mcp-am-js-reverse-mcp  ben-mcp-am-jschuller-perplexity-mcp  ben-mcp-am-jtalk22-slack-mcp  ben-mcp-am-just-every-mcp-read-website-fast
+  ben-mcp-am-just-every-mcp-screenshot-website-fast  ben-mcp-am-k8ika0s-mcp-tmux  ben-mcp-am-kirkdeam-puppeteer-mcp-server  ben-mcp-am-knip-mcp
+  ben-mcp-am-korean-law-mcp  ben-mcp-am-kosyak-evm-mcp-server  ben-mcp-am-kubb-mcp  ben-mcp-am-kurihiro0119-datadog-mcp-server
+  ben-mcp-am-langsmith-mcp-server  ben-mcp-am-leviai-publicfinance-mcp  ben-mcp-am-linktr-ee-arbor-mcp  ben-mcp-am-local-mcp
+  ben-mcp-am-lousy-agents-mcp  ben-mcp-am-lsp-mcp-server  ben-mcp-am-magicuidesign-mcp  ben-mcp-am-malicious-mcp-server
+  ben-mcp-am-mandujs-mcp  ben-mcp-am-mantine-mcp-server  ben-mcp-am-mapbox-mcp-server  ben-mcp-am-markitdown-mcp-npx
+  ben-mcp-am-mastergo-magic-mcp  ben-mcp-am-mastra-mcp-docs-server  ben-mcp-am-mcp-apps-kusto-mcp-server  ben-mcp-am-mcp-deepwiki
+  ben-mcp-am-mcp-dev-cli  ben-mcp-am-mcp-echo-server  ben-mcp-am-mcp-fetch-server  ben-mcp-am-mcp-google-drive
+  ben-mcp-am-mcp-grafana-npx  ben-mcp-am-mcp-graphql  ben-mcp-am-mcp-hello-world  ben-mcp-am-mcp-image
+  ben-mcp-am-mcp-local-rag  ben-mcp-am-mcp-mermaid  ben-mcp-am-mcp-searxng  ben-mcp-am-mcp-server-code-runner
+  ben-mcp-am-mcp-server-discord  ben-mcp-am-mcp-server-docker  ben-mcp-am-mcp-server-linear  ben-mcp-am-mcp-server-madeonsol
+  ben-mcp-am-mcp-server-mysql  ben-mcp-am-mcp-server-sqlite  ben-mcp-am-mcp-ssh-manager  ben-mcp-am-mcp-swiss
+  ben-mcp-am-mcp-wayback-machine  ben-mcp-am-mcpbrowser  ben-mcp-am-metmuseum-mcp  ben-mcp-am-metro-mcp
+  ben-mcp-am-microsoft-clarity-mcp-server  ben-mcp-am-microsoft-devbox-mcp  ben-mcp-am-microsoft-github-copilot-app-modernization-mcp-server  ben-mcp-am-midscene-android-mcp
+  ben-mcp-am-mistflow-ai-mcp  ben-mcp-am-mobilenext-mobile-mcp  ben-mcp-am-model-graph-tools-mcp-server  ben-mcp-am-modelcontextprotocol-server-brave-search
+  ben-mcp-am-modelcontextprotocol-server-everything  ben-mcp-am-modelcontextprotocol-server-filesystem  ben-mcp-am-modelcontextprotocol-server-github  ben-mcp-am-modelcontextprotocol-server-gitlab
+  ben-mcp-am-modelcontextprotocol-server-google-maps  ben-mcp-am-modelcontextprotocol-server-memory  ben-mcp-am-modelcontextprotocol-server-puppeteer  ben-mcp-am-modelcontextprotocol-server-sequential-thinking
+  ben-mcp-am-modelcontextprotocol-server-slack  ben-mcp-am-moflo  ben-mcp-am-moneyforward-i-admina-mcp-server  ben-mcp-am-moralisweb3-api-mcp-server
+  ben-mcp-am-morningljn-mnemo  ben-mcp-am-mova-mcp  ben-mcp-am-mpp32-mcp-server  ben-mcp-am-mseep-git-mcp-server
+  ben-mcp-am-mssql-mcp-server  ben-mcp-am-mui-mcp  ben-mcp-am-myoperator-mcp  ben-mcp-am-n24q02m-better-godot-mcp
+  ben-mcp-am-n8n-mcp  ben-mcp-am-narrarium-mcp-server  ben-mcp-am-negokaz-excel-mcp-server  ben-mcp-am-netlify-mcp
+  ben-mcp-am-neurynae-toolcairn-mcp  ben-mcp-am-next-ai-drawio-mcp-server  ben-mcp-am-next-devtools-mcp  ben-mcp-am-nexus-agents
+  ben-mcp-am-nexusforgetools-eu-finance  ben-mcp-am-ng-primitives-mcp  ben-mcp-am-nookplot-mcp  ben-mcp-am-nordsym-apiclaw
+  ben-mcp-am-notcrippledgod-uk-business-intelligence-mcp  ben-mcp-am-notebooklm-mcp  ben-mcp-am-notionhq-notion-mcp-server  ben-mcp-am-notprolands-ast-grep-mcp
+  ben-mcp-am-nova-mind-cloud-pdf-parser-mcp  ben-mcp-am-npm-search-mcp-server  ben-mcp-am-nx-mcp  ben-mcp-am-o3r-mcp
+  ben-mcp-am-obsidian-github-mcp  ben-mcp-am-octocode-mcp  ben-mcp-am-odgrim-mcp-datetime  ben-mcp-am-ohah-react-native-mcp-server
+  ben-mcp-am-okx-ai-okx-trade-mcp  ben-mcp-am-ollama-intern-mcp  ben-mcp-am-ollama-mcp-server  ben-mcp-am-onesub-mcp-server
+  ben-mcp-am-openapi-mcp-server  ben-mcp-am-openbnb-mcp-server-airbnb  ben-mcp-am-openephemeris-mcp-server  ben-mcp-am-openfinclaw-cli
+  ben-mcp-am-origintrail-official-dkg-mcp  ben-mcp-am-package-registry-mcp  ben-mcp-am-padenot-firefox-devtools-mcp  ben-mcp-am-perplexity-ai-mcp-server
+  ben-mcp-am-phantom-mcp-server  ben-mcp-am-pinecone-database-mcp  ben-mcp-am-piotr-agier-google-drive-mcp  ben-mcp-am-planu-cli
+  ben-mcp-am-playwright-mcp  ben-mcp-am-playwright-mcp-645b26c3  ben-mcp-am-pmxt-mcp  ben-mcp-am-poisedhq-dearuser-mcp
+  ben-mcp-am-postfast-mcp  ben-mcp-am-pretext-pdf-mcp  ben-mcp-am-prism-mcp-server  ben-mcp-am-professional-wiki-mediawiki-mcp-server
+  ben-mcp-am-puppeteer-mcp-server  ben-mcp-am-qase-mcp-server  ben-mcp-am-r-huijts-strava-mcp-server  ben-mcp-am-railway-mcp-server
+  ben-mcp-am-regle-mcp-server  ben-mcp-am-remotion-mcp  ben-mcp-am-resend-mcp  ben-mcp-am-respira-wordpress-mcp-server
+  ben-mcp-am-robinmordasiewicz-f5xc-terraform-mcp  ben-mcp-am-robloxstudio-mcp  ben-mcp-am-ruflo  ben-mcp-am-run402-mcp
+  ben-mcp-am-ryanmarc-youtube-summarizer-mcp-server  ben-mcp-am-sap-ux-fiori-mcp-server  ben-mcp-am-sbb-mcp  ben-mcp-am-screenpipe-mcp
+  ben-mcp-am-seed-design-docs-mcp  ben-mcp-am-seldonframe-mcp  ben-mcp-am-sellable-mcp  ben-mcp-am-shadcn-ui-mcp-server
+  ben-mcp-am-shopify-dev-mcp  ben-mcp-am-siemens-element-mcp  ben-mcp-am-siemens-ix-mcp-angular  ben-mcp-am-siemens-ix-mcp-react
+  ben-mcp-am-sinco-lab-mcp-youtube-transcript  ben-mcp-am-skew-labs-mcp  ben-mcp-am-skillsmith-mcp-server  ben-mcp-am-smartbear-mcp
+  ben-mcp-am-socraticode  ben-mcp-am-softeria-ms-365-mcp-server  ben-mcp-am-spartanode-mcp  ben-mcp-am-staticn0va-wigolo
+  ben-mcp-am-stock-scanner-mcp  ben-mcp-am-structured-world-gitlab-mcp  ben-mcp-am-superblocksteam-mcp-server  ben-mcp-am-sveltejs-mcp
+  ben-mcp-am-sverklo  ben-mcp-am-sylphlab-pdf-reader-mcp  ben-mcp-am-sylphx-pdf-reader-mcp  ben-mcp-am-taiga-ui-mcp
+  ben-mcp-am-tailwindcss-mcp-server  ben-mcp-am-tankpkg-mcp-server  ben-mcp-am-targetprocess-mcp-server  ben-mcp-am-task-master-ai
+  ben-mcp-am-tavily-mcp  ben-mcp-am-tbrgeek-spotify-mcp-server  ben-mcp-am-terraform-mcp-server  ben-mcp-am-tesseract-mcp
+  ben-mcp-am-testsprite-testsprite-mcp  ben-mcp-am-tocharianou-mcp-server-kibana  ben-mcp-am-token-pilot  ben-mcp-am-tokenizin-mcp-npx-fetch
+  ben-mcp-am-tokrepo-mcp-server  ben-mcp-am-tosspayments-integration-guide-mcp  ben-mcp-am-touchdesigner-mcp-server  ben-mcp-am-transloadit-mcp-server
+  ben-mcp-am-tsmztech-mcp-server-salesforce  ben-mcp-am-ttpears-gitlab-mcp-server  ben-mcp-am-ue-mcp  ben-mcp-am-ui5-mcp-server
+  ben-mcp-am-unclick-mcp-server  ben-mcp-am-upstash-context7-mcp  ben-mcp-am-variflight-ai-variflight-mcp  ben-mcp-am-velvetmonkey-flywheel-memory
+  ben-mcp-am-vizejs-musea-mcp-server  ben-mcp-am-warp-agent-mcp  ben-mcp-am-weppy-roblox-mcp  ben-mcp-am-wikipedia-mcp
+  ben-mcp-am-wikipedia-mcp-server  ben-mcp-am-winor30-mcp-server-datadog  ben-mcp-am-wonderwhy-er-desktop-commander  ben-mcp-am-worldbank-mcp
+  ben-mcp-am-xrpl-utilities-mcp  ben-mcp-am-yawlabs-mcp-compliance  ben-mcp-am-yjzf-mcp-server-yjzf  ben-mcp-am-yoonion-mimi-seed-mcp
+  ben-mcp-am-zindex-ai-mcp  ben-mcp-am-zsc-glitch-knowledge-keeper-mcp  ben-mcp-arch-aws-kb-retrieval-server  ben-mcp-arch-brave-search
+  ben-mcp-arch-everart  ben-mcp-arch-gdrive  ben-mcp-arch-git  ben-mcp-arch-github
+  ben-mcp-arch-gitlab  ben-mcp-arch-google-maps  ben-mcp-arch-postgres  ben-mcp-arch-puppeteer
+  ben-mcp-arch-redis  ben-mcp-arch-sentry  ben-mcp-arch-slack  ben-mcp-arch-sqlite
+  ben-mcp-fm-apps  ben-mcp-fm-atproto_mcp  ben-mcp-fm-auth  ben-mcp-fm-code_mode
+  ben-mcp-fm-complex_inputs  ben-mcp-fm-config_server  ben-mcp-fm-custom_tool_serializer_decorator  ben-mcp-fm-desktop
+  ben-mcp-fm-diagnostics  ben-mcp-fm-echo  ben-mcp-fm-elicitation  ben-mcp-fm-fastmcp_config
+  ben-mcp-fm-fastmcp_config_demo  ben-mcp-fm-filesystem-provider  ben-mcp-fm-get_file  ben-mcp-fm-in_memory_proxy_example
+  ben-mcp-fm-memory  ben-mcp-fm-mount_example  ben-mcp-fm-namespace_activation  ben-mcp-fm-persistent_state
+  ben-mcp-fm-prompts_as_tools  ben-mcp-fm-providers  ben-mcp-fm-resources_as_tools  ben-mcp-fm-run_with_tracing
+  ben-mcp-fm-screenshot  ben-mcp-fm-search  ben-mcp-fm-simple_echo  ben-mcp-fm-skills
+  ben-mcp-fm-smart_home  ben-mcp-fm-tags_example  ben-mcp-fm-task_elicitation  ben-mcp-fm-tasks
+  ben-mcp-fm-testing_demo  ben-mcp-fm-text_me  ben-mcp-fm-tool_result_echo  ben-mcp-fm-versioning
+  ben-mcp-gh-0-soft-manus-mcp-manus-mcp  ben-mcp-gh-0x7556-wolfshell  ben-mcp-gh-0xciel-roblox-exploiting-mcp  ben-mcp-gh-0xintuition-intuition-mcp-server
+  ben-mcp-gh-0xprajapati-zerodha-trade-mcp  ben-mcp-gh-10stardust01-lastsearch-information-verifier  ben-mcp-gh-1124823599331l-boop-pd01-printer-mcp  ben-mcp-gh-12458-wolfram-mcp
+  ben-mcp-gh-1gr14-agents-party-src  ben-mcp-gh-1parado-android-rpa  ben-mcp-gh-20000419-fauxnix-src  ben-mcp-gh-312-dev-rocketmoney-mcp-src
+  ben-mcp-gh-34892002-bilibili-mcp-js  ben-mcp-gh-7shi-mcp-wait-py  ben-mcp-gh-82deutschmark-chlorpromazine-mcp  ben-mcp-gh-aahl-ai-trading
+  ben-mcp-gh-aaryanmadan54-tracelens-mcp-tracelens  ben-mcp-gh-abdulmunimjemal-codescope-mcp-src  ben-mcp-gh-abelsr-docmost-mcp-oss-docmost-mcp-oss  ben-mcp-gh-abelsr-plane-mcp-oss-plane-mcp
+  ben-mcp-gh-abhaysingh71-expense-tracker-mcp-server  ben-mcp-gh-abhiadhikari-provmcp-provmcp  ben-mcp-gh-abhirampai-weather-mcp-app  ben-mcp-gh-acoyfellow-firestore-mcp-kit-src
+  ben-mcp-gh-acoyfellow-pantry-src  ben-mcp-gh-acoyfellow-unsurf-src  ben-mcp-gh-adamgustavsson-claimsmcp  ben-mcp-gh-adrianmastronardi-aid-sdlc
+  ben-mcp-gh-adspower-local-api-mcp-python  ben-mcp-gh-afiodorov-imdb-sql  ben-mcp-gh-aigo666-mcp-framework-mcp-tool  ben-mcp-gh-aiinfrastructure-dingtalk-mcp-server-src
+  ben-mcp-gh-aipotheosis-labs-aci-mcp-aci-mcp  ben-mcp-gh-ajlandaeta-usda-fastmcp-101-solutions  ben-mcp-gh-ajobi-uhc-seer-mcps  ben-mcp-gh-akorengoldnlm-fastmcp-101-solutions
+  ben-mcp-gh-akshay5995-mcp-oauth-gateway-demo  ben-mcp-gh-albemiglio-mcp-data-shaper  ben-mcp-gh-alefiengo-fastapi-tools-mcp-server  ben-mcp-gh-alefiengo-spring-boot-tools-mcp-server
+  ben-mcp-gh-alejandro-ao-mcp-server-example  ben-mcp-gh-alephtheagent-memecp-memecp  ben-mcp-gh-alexboscolo954-aiops-sre-agent-aiops-agent  ben-mcp-gh-alexplds-spira-mcp-server-spira-mcp
+  ben-mcp-gh-alexraio-sap-business-objects-mcp  ben-mcp-gh-algonacci-mcp-excel  ben-mcp-gh-algonacci-mcp-wikipedia  ben-mcp-gh-alibaizhanov-mengram-api
+  ben-mcp-gh-allsmog-mcp-pentest  ben-mcp-gh-alphadeepai-integrum-integrum  ben-mcp-gh-amery2010-nextjs-mcp-server-src  ben-mcp-gh-an1lam-fatebook-mcp
+  ben-mcp-gh-ancientshi-generalagentos-gaos-bench  ben-mcp-gh-andrewvly-fastmcp-101-solutions  ben-mcp-gh-andyluu98-vn-mcp-blender-vn-mcp-blender  ben-mcp-gh-angelkurten-keel-keel
+  ben-mcp-gh-anil-matcha-seedance-2-5-mcp  ben-mcp-gh-anil-matcha-seedance-2-mcp  ben-mcp-gh-ankit-verma-209171-android-docs-mcp-src  ben-mcp-gh-anothermeatsack-evidence-gate-evidence-gate
+  ben-mcp-gh-anqinou-art-nagibridge  ben-mcp-gh-anshchhikara001-mcp-guard-gateway  ben-mcp-gh-anthonychu-chatgpt-app-weather-functions-selfhosted  ben-mcp-gh-anton-kulyk-mcp-server-vulnwatch-vulnwatch-mcp
+  ben-mcp-gh-aox-llc-ai-gateway-proxy  ben-mcp-gh-apenugon-haskell-hackage-mcp  ben-mcp-gh-aptro-superset-mcp  ben-mcp-gh-aptro-zerodha-mcp
+  ben-mcp-gh-aquarius-wing-actor-critic-thinking-mcp  ben-mcp-gh-aringad-fattureincloud-mcp  ben-mcp-gh-arthong1-agent-search-agent-reach-plus  ben-mcp-gh-arvindrk-extract-design-system-src
+  ben-mcp-gh-ashishmahapatro17-lab-owl-mcp-research-crew-mcp-server  ben-mcp-gh-astrabert-tysva-scripts  ben-mcp-gh-atara57769-mcp-system-info  ben-mcp-gh-atengk-mcp-server-rabbitmq-mcp-server-rabbitmq
+  ben-mcp-gh-atengk-mcp-server-traffic-inspector-mcp-server-traffic-inspector  ben-mcp-gh-atharvagupta2003-mcp-stripe-src  ben-mcp-gh-atiilla-whiterabbit-mcp  ben-mcp-gh-atishere-mcp-server-rag-mcp-rag
+  ben-mcp-gh-atlas-authorization-pca-python-fastmcp  ben-mcp-gh-atomchung-garmin-agent-tools-garmin-agent-tools  ben-mcp-gh-atomsai-contextdb-contextdb  ben-mcp-gh-atrocityexecution-fastmcp-101
+  ben-mcp-gh-atrocityexecution-fastmcp-101-solutions  ben-mcp-gh-aturlov-alta-fabric-mcp  ben-mcp-gh-austinkelsay-nostr-mcp-server  ben-mcp-gh-austinwise-mcp2ws
+  ben-mcp-gh-authbits-webmcp  ben-mcp-gh-average-user-887-boardview-mcp  ben-mcp-gh-avinash-jetwani-jevmem-src  ben-mcp-gh-awwaiid-mcp-server-taskwarrior
+  ben-mcp-gh-axgord-claude-workflow-src  ben-mcp-gh-ayqwerty-profesia-mcp-profesia-mcp  ben-mcp-gh-azhy34-safe-google-ads-mcp  ben-mcp-gh-azizmazrou-ews-mcp-src
+  ben-mcp-gh-azure-samples-azure-ai-vision-face-api-mcp-server-src  ben-mcp-gh-azure-samples-healthcare-agent-orchestrator-src  ben-mcp-gh-azw27-aihot-mcp  ben-mcp-gh-badhansen-notion-mcp-src
+  ben-mcp-gh-baojiachen0214-web-rooter-tools  ben-mcp-gh-basitalisandhu-agent-security-skills-src  ben-mcp-gh-bcperry-controller-mcp  ben-mcp-gh-berkaycelk-wikipeatia-mcp
+  ben-mcp-gh-berry-13-code-interpreter-mcp  ben-mcp-gh-bhawsarathrva-mcp-server  ben-mcp-gh-bigy2012-website-analyzer-src  ben-mcp-gh-bilel-eljaamii-cwe-search-mcp
+  ben-mcp-gh-binabik-ai-mcp-rosbags-src  ben-mcp-gh-blackjack200-mcp-bevy-buddy-src  ben-mcp-gh-blazewild-travel-guru  ben-mcp-gh-blocsoc-iitr-nexus-src
+  ben-mcp-gh-bloomfilter-labs-mcp-server-bloomfilter-src  ben-mcp-gh-bnovarini-cnpj-mcp-cnpj-mcp  ben-mcp-gh-bonanip512-dataversemcpserver  ben-mcp-gh-boxlite-ai-boxlite-mcp
+  ben-mcp-gh-bradleygolden-hexdocs-mcp  ben-mcp-gh-bradraylucas-eng-mcp-notes-server  ben-mcp-gh-braincrew-lab-mcp-usecase-case1  ben-mcp-gh-braklo-kataster-mcp-kataster-mcp
+  ben-mcp-gh-brebuilds-mcp-clickup-bre  ben-mcp-gh-bruce1508-bb-cli-mcp  ben-mcp-gh-brunoocastro-small-size-league-mcp  ben-mcp-gh-bsahane-okf-mcp-server-src
+  ben-mcp-gh-bsmi021-pil-agent-plugin-scripts  ben-mcp-gh-byronz1z-localoctop-localoctop  ben-mcp-gh-calvinw-fastmcp-template  ben-mcp-gh-camdenclark-anki-mcp-server-src
+  ben-mcp-gh-cantian-ai-bazi-mcp-src  ben-mcp-gh-captainsafia-stitch-src  ben-mcp-gh-cdmx-in-itop-mcp  ben-mcp-gh-cdoan1-fm-mcp
+  ben-mcp-gh-cevatkerim-unsplash-mcp  ben-mcp-gh-ceyeborg-synology-mcp-server-src  ben-mcp-gh-chalie-ai-taskie-mcp  ben-mcp-gh-chan4kum-arxivlens-mcp-arxivlens
+  ben-mcp-gh-chartrambiz-diamcp  ben-mcp-gh-chatterboxio-chatterboxio-mcp-server-src  ben-mcp-gh-chendi-shi-byte-agent-platform-byte-agent  ben-mcp-gh-chengjiale150-copt-mcp
+  ben-mcp-gh-chenlinyang-mcp-server-mysql  ben-mcp-gh-cheolwanpark-snippets-src  ben-mcp-gh-choplin-jira-cli-mcp-src  ben-mcp-gh-chrismannina-pubmed-mcp-src
+  ben-mcp-gh-christian-schlichtherle-grafana-mcp  ben-mcp-gh-christianclaudio-mcp-server-taxcode-taxcode-mcp  ben-mcp-gh-chunkydotdev-bldbl-mcp-src  ben-mcp-gh-chuongmep-mcp-revit-sample-au2025
+  ben-mcp-gh-chuxintec-grea-grea  ben-mcp-gh-clacroix0-fastmcp-101-solutions  ben-mcp-gh-clickhouse-nerve-mcp-server  ben-mcp-gh-clidyn-eurus-eurus
+  ben-mcp-gh-closedladder-grok-lab-bridge  ben-mcp-gh-cluefinch-mcp-server-mcp-search  ben-mcp-gh-cmaujean-codebase-mcp  ben-mcp-gh-cmoraes10-loci-mcp-server
+  ben-mcp-gh-comoc-toio-mcp  ben-mcp-gh-conechoai-nchan-mcp-transport-httmcp  ben-mcp-gh-coreyhahn-vivado-mcp  ben-mcp-gh-corneliusvane8-seedance-2-0-python-sdk
+  ben-mcp-gh-crate-cratedb-mcp-cratedb-mcp  ben-mcp-gh-crtdaniele-mcp-k8s-manager  ben-mcp-gh-crtdaniele-mcp-medium-accelerator  ben-mcp-gh-cyber-sami-obsidian-guarded-mcp
+  ben-mcp-gh-cyber-sami-trello-guardrails-mcp  ben-mcp-gh-cynicalheart-mcp-started-guide  ben-mcp-gh-cyreslab-ai-urlhaus-mcp-server  ben-mcp-gh-daantheoden-aras-claude-agent-src
+  ben-mcp-gh-dabaigoose-mcp-wechat-adb-server  ben-mcp-gh-daftpunkwav-cn-websearch-mcp-src  ben-mcp-gh-dan1t0-gophish-mcp  ben-mcp-gh-danielmeppiel-oracle-mcp-server
+  ben-mcp-gh-danielpeter-99-calcom-mcp  ben-mcp-gh-danilop-mcp2lambda  ben-mcp-gh-das-analyst-adk-humanizer-agent-linguistic-tools  ben-mcp-gh-datawiz168-mcp-snowflake-service
+  ben-mcp-gh-davanstrien-hub-semantic-search-mcp  ben-mcp-gh-daveremy-oura-mcp-src  ben-mcp-gh-davidgao7-web-search-mcp-lmstudio  ben-mcp-gh-day50-dev-mansnip
+  ben-mcp-gh-daynierr-max-tradingview-mcp-src  ben-mcp-gh-dayoooun-korea-stats-mcp-api  ben-mcp-gh-de-code-py-conf-mcp-py-conf-mcp  ben-mcp-gh-deanward-hal-src
+  ben-mcp-gh-deathlabs-cookiecutter-copilotkit-langchain-fastmcp-django-postgres-co  ben-mcp-gh-deathlabs-cookiecutter-copilotkit-langchain-fastmcp-django-postgres-sq  ben-mcp-gh-deepaleph-jevreel-jevreel  ben-mcp-gh-deepbluedynamics-nemesis8-mcp
+  ben-mcp-gh-delimit-ai-delimit-mcp-server-scripts  ben-mcp-gh-dendrolabs-sonic-kb-src  ben-mcp-gh-deventerprisesoftware-scrapi-mcp  ben-mcp-gh-devpatel25-biginterview-mcp-resumeai-mcp
+  ben-mcp-gh-dgonzalezgonzalez-mustang-tone-agent-mustang  ben-mcp-gh-dhaneshgore-openmcp-gateway-downstream  ben-mcp-gh-diegorafs-chrome-devtools-mcp-src  ben-mcp-gh-digitalrocket-biz-google-ads-mcp-v20-src
+  ben-mcp-gh-dithilli-fontlab-mcp-server-src  ben-mcp-gh-ditto190-mcapp-ai-starter-src  ben-mcp-gh-dmesh-io-lexoffice-mcp  ben-mcp-gh-docker-hub-mcp-src
+  ben-mcp-gh-drewburchfield-obsidian-graph-src  ben-mcp-gh-drmogie-arr-mcp-arr-mcp  ben-mcp-gh-drmogie-docker-mcp-docker-mcp  ben-mcp-gh-drmogie-nginx-proxy-manager-mcp-nginx-proxy-manager-mcp
+  ben-mcp-gh-dropbox-witchcraft-ts  ben-mcp-gh-dss-ai-invoice-ninja-mcp-in-mcp  ben-mcp-gh-dumplingai-mcp-server-dumplingai-src  ben-mcp-gh-dwgeneral-draw-architecture-mcp
+  ben-mcp-gh-eas4ai-code-graph-mcp-code-graph-mcp  ben-mcp-gh-easychen-keynote-mcp-src  ben-mcp-gh-eddmpython-dartlab-mcp  ben-mcp-gh-effieklimi-ensembl-mcp-server
+  ben-mcp-gh-eliranwong-agentmake-docs  ben-mcp-gh-enclave-labs-inc-ontos-runtime  ben-mcp-gh-enemyrr-mcp-server-pagespeed  ben-mcp-gh-eniayomi-gcp-mcp
+  ben-mcp-gh-enrique-dealba-mcp  ben-mcp-gh-eoc-llm-tooling-mcp-call-orchestrator-proxy-mcp-call-orchestrator-prox  ben-mcp-gh-erhwenkuo-mcp-searxng  ben-mcp-gh-ertugrul59-tradingview-chart-mcp
+  ben-mcp-gh-ethan-li222-shaniu-agent-scripts  ben-mcp-gh-ethci-lab-mcp-server-mysql  ben-mcp-gh-everettjf-mcpxcode  ben-mcp-gh-ewanni-api-agent-mcp-api-agent-mcp
+  ben-mcp-gh-excoriate-mcp-terragrunt-docs  ben-mcp-gh-executeautomation-mcp-database-server  ben-mcp-gh-fabianwilliams-graph-search-mcp-src  ben-mcp-gh-fahmiaziz98-simple-mcp
+  ben-mcp-gh-faizan21-analyst-expense-tracker-mcp-server  ben-mcp-gh-fanfan-yu-mcp-test  ben-mcp-gh-faraazahmad-graphsense-src  ben-mcp-gh-fastmachinelearning-nac-opt-mcp
+  ben-mcp-gh-fastomop-omcp-omcp  ben-mcp-gh-fbossiere-junglebridge-mcp-junglebridge-mcp  ben-mcp-gh-fdrechsler-mcp-server-idapro  ben-mcp-gh-feder-cr-invisible-playwright-mcp-mcp
+  ben-mcp-gh-felores-gdrive-mcp-server  ben-mcp-gh-felpsdev-jev-classifier-src  ben-mcp-gh-fengin-search-server-search  ben-mcp-gh-fewsats-fewsats-python
+  ben-mcp-gh-fferjani94-enterprise-ai-workflow-agent-mcp-server  ben-mcp-gh-fidelismm-shipstores-shipstores  ben-mcp-gh-fidemfides-fastmcp-101-solutions  ben-mcp-gh-fiedlermarius-sbox-mcp-documentation-src
+  ben-mcp-gh-finite-sample-rmcp-core  ben-mcp-gh-fkesheh-code-context-mcp  ben-mcp-gh-fokrulanthro16-eng-autosecops-greensentinel-agent-mcp  ben-mcp-gh-fvilarinho-mcp-servers-bin
+  ben-mcp-gh-g0t4-mcp-server-commands-src  ben-mcp-gh-gangaramd-ai-systems-highlights  ben-mcp-gh-garland3-fastmcp-obo-examples  ben-mcp-gh-gauravfs-14-lit-mcp
+  ben-mcp-gh-gcorroto-mcp-s2s-asterisk  ben-mcp-gh-gcorroto-mcp-svn  ben-mcp-gh-geethika-chigurupati-payments-mcp-server-payments-mcp  ben-mcp-gh-gelato1337-qual-analysis-mcp-tools-qls
+  ben-mcp-gh-genaiwithms-twitter-mcp-src  ben-mcp-gh-generality-labs-llm-prices-src  ben-mcp-gh-georgeqle-agentic-mcp-foundation-agentic-mcp-foundation  ben-mcp-gh-gianlucasquarcia-fastmcp-typer
+  ben-mcp-gh-github-community-gitam-mcp-tools-lab-mcp-tools-lab  ben-mcp-gh-glasgowm148-nvidia-mcp-nvidia-mcp  ben-mcp-gh-glommer-codemogger-src  ben-mcp-gh-gmen1057-headhunter-mcp-server
+  ben-mcp-gh-gnucleus-text-to-cad-mcp  ben-mcp-gh-godsboy-lossless-code-mcp  ben-mcp-gh-gourraguis-glasses-mcp-src  ben-mcp-gh-grantweston-google-ads-mcp-complete-src
+  ben-mcp-gh-guaardvark-guaardvark-mcp  ben-mcp-gh-guillochon-mlb-api-mcp  ben-mcp-gh-guohaoyu1688-bilingual-glossary-bilingual-glossary  ben-mcp-gh-guohaoyu1688-pdf-table-extract-pdf-table-extract
+  ben-mcp-gh-guohaoyu1688-personal-data-hub-personal-data-hub  ben-mcp-gh-gura105-operational-ontology-src  ben-mcp-gh-gyliu513-langx101-auth  ben-mcp-gh-habedi-omni-lpr-omni-lpr
+  ben-mcp-gh-hackerlibs-code-hacker  ben-mcp-gh-hainanzhao-mcp-gitlab-jira-src  ben-mcp-gh-halleylabs-faultline-src  ben-mcp-gh-hanhsienlei-au-opendata-mcp-au-opendata-mcp
+  ben-mcp-gh-hardik-id-azure-resource-graph-mcp-server-src  ben-mcp-gh-haresh-sai06-homerelay-homerelay  ben-mcp-gh-harrierpigeon-solidworks-mcp-server  ben-mcp-gh-hassanxs-fatima-voice-studio-studio
+  ben-mcp-gh-hats-protocol-hats-mcp-server  ben-mcp-gh-helenkwok-openbim-mcp  ben-mcp-gh-helloahad661-pixel-nova-mcp-toolkit  ben-mcp-gh-hellozhangran-obsidian-mcp-python
+  ben-mcp-gh-hemanth-mcp-elicitation  ben-mcp-gh-hemanthhemanth1834-bit-crewai-mcp-lesson-03  ben-mcp-gh-hereisswapnil-reddit-mcp  ben-mcp-gh-hesreallyhim-diy-tools-mcp
+  ben-mcp-gh-heurist-network-heurist-mesh-mcp-server-mesh-mcp-server  ben-mcp-gh-hexablob-ismalicious-fastmcp-examples  ben-mcp-gh-heystarlink-lan-a2a-node-src  ben-mcp-gh-hi-im-connect-mobilerun-mcp-mobilerun-mcp
+  ben-mcp-gh-highriseliving777-noor-mcp-server  ben-mcp-gh-hireshbrem-prompt-engineer-mcp-server  ben-mcp-gh-hjxxlogic-fsdb-mcp  ben-mcp-gh-hrudu-dev-daily-uplift-sms
+  ben-mcp-gh-htkuan-mcp-composer-src  ben-mcp-gh-huangxinping-huggingface-daily-paper-mcp  ben-mcp-gh-hud-evals-hud-python-patches  ben-mcp-gh-hung-ngm-coles-woolworths-mcp-server
+  ben-mcp-gh-husniadil-mcp-image-placeholder  ben-mcp-gh-huutrungle2001-omnibrowser-v2-omni  ben-mcp-gh-hwwang06-powerpoint-mcp-server  ben-mcp-gh-hypermodel-labs-mcp-server-auto-commit
+  ben-mcp-gh-hyprcat-mac-cua-app  ben-mcp-gh-ia-programming-youtube-mcp  ben-mcp-gh-idan2468d-proptech-multi-agent-mcp-servers  ben-mcp-gh-ifuryst-rednote-mcp-src
+  ben-mcp-gh-igor-aji333-fastmcp-101-solutions  ben-mcp-gh-infantedward-simple-mcp-demo  ben-mcp-gh-inkdropapp-mcp-server-src  ben-mcp-gh-inoguerols-verifactu-src
+  ben-mcp-gh-insung8150-agentwebsearch-mcp  ben-mcp-gh-intellectronica-ez-mcp  ben-mcp-gh-into-the-night-deep-research-mcp  ben-mcp-gh-intrect-io-lyra-browser-uat
+  ben-mcp-gh-intuitivephella-mcp-evolution-api-src  ben-mcp-gh-isaacphi-mcp-gdrive  ben-mcp-gh-isagoge-labs-leanwarp-sdk-leanwarp-cloud  ben-mcp-gh-ishandutta2007-code-knowledge-graph-src
+  ben-mcp-gh-isorun-sdk-src  ben-mcp-gh-issamlaradji-cool-ai-scripts  ben-mcp-gh-itd24-homeagents-mcp-servers-qdrant  ben-mcp-gh-itshyao-proxyless-llm-websearch-mcp
+  ben-mcp-gh-j0jng-book-rag-mcp-servers  ben-mcp-gh-jackhp-mcp-youtube-transcribe  ben-mcp-gh-jakedahn-deno2-playwright-mcp-server  ben-mcp-gh-jalacloud-mcp-cti-otx
+  ben-mcp-gh-jandoer0-mcp-todo-routers  ben-mcp-gh-janmejai2002-gutcheck-gutcheck  ben-mcp-gh-javaprogrammerlb-zoom-mcp-server  ben-mcp-gh-javillegasna-filesystem-src
+  ben-mcp-gh-jazz-min-ai-data-visualizer  ben-mcp-gh-jblkbot-fastmcp-101-solutions  ben-mcp-gh-jbsh371-remote-mcp-5steps  ben-mcp-gh-jemade-mcp-server-personal-mcp
+  ben-mcp-gh-jerhadf-linear-mcp-server  ben-mcp-gh-jesse-merhi-rag-anything-mcp  ben-mcp-gh-jfrog-mcp-jfrog  ben-mcp-gh-jiezeng2004-design-dsh-chatgpt-bridge-src
+  ben-mcp-gh-jlov7-mcp-continuation-replay-reference  ben-mcp-gh-joebuildsstuff-mcp-jina-ai  ben-mcp-gh-joelhooks-pdf-brain-src  ben-mcp-gh-johnaadams122-local-model-mcp
+  ben-mcp-gh-johnnyinlee-lol-client-mcp  ben-mcp-gh-jonacarbi-suno-multi-mcp-suno-mcp  ben-mcp-gh-jonocx-strava-mcp  ben-mcp-gh-jordank88-capability-gateway
+  ben-mcp-gh-jorgesislema-powerbi-mcp-server-src  ben-mcp-gh-joseanu-codex-from-chatgpt-src  ben-mcp-gh-joshmsmith-temporal-multi-agent-order-repair  ben-mcp-gh-jotaderodriguez-bonsai-mcp
+  ben-mcp-gh-jovanhsu-mcp-neo4j-memory-server-src  ben-mcp-gh-jpdev2022-jlink-mcp-stm32h7s3-stm32-jlink-mcp  ben-mcp-gh-jpoindexter-design-md-extractor-src  ben-mcp-gh-jtekt-annual-leave-calendar
+  ben-mcp-gh-juniper-junos-mcp-server  ben-mcp-gh-justalab-co-ens-mcp-server  ben-mcp-gh-jwyman100-fastmcp-101-solutions  ben-mcp-gh-k-dense-ai-lab-instrument-mcps-labmcp
+  ben-mcp-gh-kaihackney-scale-agentenv-mobilerun-server  ben-mcp-gh-kajirita2002-esa-mcp-server  ben-mcp-gh-kajirita2002-honeycomb-mcp-server  ben-mcp-gh-kalypsokichu-code-talkhuman-mcp-api
+  ben-mcp-gh-kanade2511-xgd-mcp  ben-mcp-gh-kanren3-windbg-mcp-src  ben-mcp-gh-karthik9375-ai-credit-underwriting-engine-using-fastmcp-langgraph  ben-mcp-gh-kazuph-github-pera1-workers-src
+  ben-mcp-gh-kazuph-mcp-fetch  ben-mcp-gh-kazuph-mcp-gmail-gas  ben-mcp-gh-kazuph-mcp-pocket  ben-mcp-gh-kazuph-mcp-screenshot
+  ben-mcp-gh-kazuph-mcp-taskmanager  ben-mcp-gh-kbb99-mcp-registry-server  ben-mcp-gh-keatonmeek-homelab-mcp-app  ben-mcp-gh-keith-cappello-volpe-fastmcp-101-solutions
+  ben-mcp-gh-kenjihikmatullah-productboard-mcp-src  ben-mcp-gh-kenneives-design-token-bridge-mcp-src  ben-mcp-gh-keonho-kim-opendart-mcp  ben-mcp-gh-kibooooku-docagent-uml-mcp-docagent
+  ben-mcp-gh-kid-joker-npm-deprecated-check-src  ben-mcp-gh-kingabzpro-fastmcp-project  ben-mcp-gh-kiran1689-storyblok-mcp-server  ben-mcp-gh-kirill-markin-example-mcp-server-mcp-simple-tool
+  ben-mcp-gh-kiycoh-silica-core-ui  ben-mcp-gh-klavis-ai-klavis-slack  ben-mcp-gh-koaning-dice-mcp  ben-mcp-gh-kontext-security-browser-use-mcp-server-server
+  ben-mcp-gh-krasun-notes-mcp-src  ben-mcp-gh-ksimback-hermes-atlas-mcp-src  ben-mcp-gh-kta41-godot-visual-mcp-server  ben-mcp-gh-kukapay-blockbeats-mcp
+  ben-mcp-gh-kukapay-crypto-sentiment-mcp  ben-mcp-gh-kukapay-cryptopanic-mcp-server  ben-mcp-gh-kukapay-dune-analytics-mcp  ben-mcp-gh-kukapay-eips-mcp
+  ben-mcp-gh-kukapay-hyperliquid-info-mcp  ben-mcp-gh-kukapay-hyperliquid-whalealert-mcp  ben-mcp-gh-kukapay-nearby-search-mcp  ben-mcp-gh-kukapay-opcua-mcp
+  ben-mcp-gh-kukapay-pumpswap-mcp  ben-mcp-gh-kukapay-twitter-username-changes-mcp  ben-mcp-gh-kukapay-whattimeisit-mcp  ben-mcp-gh-kumoproductions-mcp-aftereffects-src
+  ben-mcp-gh-kuwafu-mcp-file-agent-src  ben-mcp-gh-kwanleefrmvi-mcp-rag-server  ben-mcp-gh-laith0003-ux-skill-mcp  ben-mcp-gh-lastsearch-hq-lastsearch-api
+  ben-mcp-gh-lauragift21-support-agent-src  ben-mcp-gh-lavaxzyh-ads-mcp  ben-mcp-gh-lend-a-tailor-ai-fastmcp-101-solutions  ben-mcp-gh-leonardodg-insta-kb-mcp-server
+  ben-mcp-gh-leonardogilrodriguez-mcp-tmdb  ben-mcp-gh-lethain-systems-mcp  ben-mcp-gh-lf112-mermaid-validator-mcp  ben-mcp-gh-liftkkkk-classic-nlp-mcp-classic-nlp-mcp
+  ben-mcp-gh-lightning-ai-litserve-litserve  ben-mcp-gh-ling87-bang-travelmind-servers  ben-mcp-gh-lior-ps-multi-llm-cross-check-mcp-server  ben-mcp-gh-liqiongyu-xueqiu-mcp
+  ben-mcp-gh-litmusautomation-litmus-mcp-server-src  ben-mcp-gh-liubingjun1207-nsight-agent-nsight-agent  ben-mcp-gh-liuenzecs-vendi-score-mcp-tools  ben-mcp-gh-ljw1004-mini-agent
+  ben-mcp-gh-llmnetops-mcp-llmnetops-mcp-llmnetops  ben-mcp-gh-local-falcon-mcp  ben-mcp-gh-loveacup-vision-mcp-server-src  ben-mcp-gh-lsantos2000-fastmcp-demo
+  ben-mcp-gh-lsh3435-chart-mcp-server  ben-mcp-gh-lstm-kirigaya-usermcp  ben-mcp-gh-luiguouy-video-transcription-skill-src  ben-mcp-gh-luisrincon23-sec-mcp-easy-mcp-template
+  ben-mcp-gh-lukaszzychal-google-mcp-tools  ben-mcp-gh-lukeage-python-pip-mcp  ben-mcp-gh-lukemendels-fastmcp-101-solutions  ben-mcp-gh-lumi-node-drydock-drydock
+  ben-mcp-gh-lumile-promptopia-mcp-src  ben-mcp-gh-lupingqaq-ntobjmanager-mcp  ben-mcp-gh-luxalgo-trade-relay-src  ben-mcp-gh-lyse-labs-ds-pilot-src
+  ben-mcp-gh-m-ahmed-elbeskeri-ultimatecodermcp  ben-mcp-gh-m-r-abedini-altium-mcp-suite-server  ben-mcp-gh-madviking-headless-pm-mcp  ben-mcp-gh-mahinika-magicavoxel-mcp
+  ben-mcp-gh-make87-apps-freenove-4wd-driver-app  ben-mcp-gh-maplezhang123-douyin-mcp-server-douyin-mcp-server  ben-mcp-gh-mark-oori-mcpserve  ben-mcp-gh-martennnnn-mcp-criticmarkup-server
+  ben-mcp-gh-marthakelly-mcp-template  ben-mcp-gh-mason369-ai-rvc-rvc-mcp  ben-mcp-gh-masterfabric-one-hundered-days-mcp  ben-mcp-gh-mathbeal-avenir-mcp-avenir-mcp
+  ben-mcp-gh-mattzcarey-hono-mcp-server-src  ben-mcp-gh-maximilianromer-onion-search-mcp  ben-mcp-gh-mbratkowski-deweloperuch-mcp-mcp  ben-mcp-gh-mcc0nnell-talkpipe-mcp
+  ben-mcp-gh-mcmd-mcp-demo-src  ben-mcp-gh-melvinkl-mcp-weather-src  ben-mcp-gh-memel06-mnemonio-src  ben-mcp-gh-mengl588-superbiz-agent-mcp-servers
+  ben-mcp-gh-menma4ever-llm-training-stack-mcp  ben-mcp-gh-merterbak-grok-mcp-src  ben-mcp-gh-mfiume-ga4gh-agentic-harness-benchmark-benchmark  ben-mcp-gh-microck-semrush-web-mcp-semrush-web-mcp
+  ben-mcp-gh-mifunedev-mcp-sse  ben-mcp-gh-mikerhodes-rapport  ben-mcp-gh-minhalvp-android-mcp-server  ben-mcp-gh-mkummer225-google-sheets-mcp
+  ben-mcp-gh-mlit-data-platform-mlit-dpf-mcp-src  ben-mcp-gh-mobus-ai-mobus-src  ben-mcp-gh-mochasettai-mcp-server-example  ben-mcp-gh-modern-python-modern-di-fastmcp-examples
+  ben-mcp-gh-mohamedmahmoud8801-mohamed-agentic-terminal-mcp-app  ben-mcp-gh-mohan-c0des-mcp-alexa  ben-mcp-gh-moikdev-mercari-jp-mcp  ben-mcp-gh-monadical-sas-zulip-mcp
+  ben-mcp-gh-morio-mtrue-health-commodity-tender-agent-mcp-server  ben-mcp-gh-mouhamadalmounayar-mcp-confluence  ben-mcp-gh-mpandudc-idx-market-mcp-idx-market-data-mcp  ben-mcp-gh-mpolinowski-mcp-servers-file-access-python-mcp
+  ben-mcp-gh-mrityunjay-tiwari-ui-registry-mcp-src  ben-mcp-gh-mrmps-web-retrieval-research-sdk-web-retrieval-research  ben-mcp-gh-msysh-remote-mcp-server-demo-with-agentcore  ben-mcp-gh-muffinfrost-elsewhere-mcp
+  ben-mcp-gh-mumunha-mcp-evolution-whatsapp-api-src  ben-mcp-gh-mustafasidd05-collab-preflight-preflight  ben-mcp-gh-muwei-ta-rea-mcp-rea-mcp  ben-mcp-gh-mybuddymichael-youtube-transcript-mcp
+  ben-mcp-gh-mykalmachon-outlook-mcp-server  ben-mcp-gh-mzxrai-mcp-openai  ben-mcp-gh-nacgarg-bazel-mcp-server  ben-mcp-gh-nadimtuhin-ytranscript-src
+  ben-mcp-gh-najeeb-ai-bots-mcp-grammar-coach  ben-mcp-gh-najeeb-ai-bots-mcp-speech-coach  ben-mcp-gh-namin-dafny-mcp  ben-mcp-gh-nayshins-mcp-server-ccxt-src
+  ben-mcp-gh-netizen4-bit-reach-direct-mcp  ben-mcp-gh-neurofusionai-fibo-mcp  ben-mcp-gh-nextra-studio-nextra-rhinogh-nextra-gh  ben-mcp-gh-nezaralzien-manager-full-mcp-manager-full-mcp
+  ben-mcp-gh-nihar-sarkar-chai  ben-mcp-gh-nihar-sarkar-dbwhisper-app  ben-mcp-gh-nimblebraininc-mcp-bookmarks-mcp-bookmarks  ben-mcp-gh-ninjahawk-hollow-agentos-mcp
+  ben-mcp-gh-nisarg1212-ledgerflow-mcp-mcp-server  ben-mcp-gh-nitrorcr-gread-src  ben-mcp-gh-nixvarghese01-k8s-ai-agent-platform-calendar  ben-mcp-gh-nngochai2-gitlab-mcp-gitlab-mcp
+  ben-mcp-gh-nobanks-qloo-mcp-qloo-mcp  ben-mcp-gh-noboru-i-nature-remo-mcp-server  ben-mcp-gh-nodite-rednote-mcp-src  ben-mcp-gh-noopstudios-interactive-feedback-mcp
+  ben-mcp-gh-noskillish-bankmcp-src  ben-mcp-gh-nsantra-rag-mcp-server  ben-mcp-gh-nurawiguna-mcp-harbor-src  ben-mcp-gh-nvidia-context-aware-rag-service
+  ben-mcp-gh-nxrobins-ashby-mcp-ashby  ben-mcp-gh-nyudenkov-openapi-mcp-proxy  ben-mcp-gh-oakstack-askg-mcp  ben-mcp-gh-oleksiypenkov-toolbench-calculator
+  ben-mcp-gh-olk-design-pattern-mcp-src  ben-mcp-gh-omeryasirkucuk-amx-mcp  ben-mcp-gh-omkar-ramesh-github-mcp-server  ben-mcp-gh-onloopdev-spark-triage-triage-mcp
+  ben-mcp-gh-onurpolat05-n8n-assistant  ben-mcp-gh-openai-sample-deep-research-mcp  ben-mcp-gh-openbmb-ultrarag-ultrarag  ben-mcp-gh-openbnb-org-mcp-server-airbnb
+  ben-mcp-gh-opendatamcp-opendatamcp-odmcp  ben-mcp-gh-openfate-ai-openfate-mcp-src  ben-mcp-gh-openlinksoftware-mcp-odbc-server-src  ben-mcp-gh-oraichain-ragflow-mcp
+  ben-mcp-gh-orgito1015-kademcp  ben-mcp-gh-orgsofthq-jsr  ben-mcp-gh-osmanuygar-sqlatte-api  ben-mcp-gh-osmarbetancourt-hetzner-mcp-src
+  ben-mcp-gh-p-funk-fegis-fegis  ben-mcp-gh-pabilandokarenpv-camp-run-with-hermes-agent-mcp-server  ben-mcp-gh-padimato-outlook-mcp  ben-mcp-gh-paiyutsutw-splunk-soar-mcp-toolkit-soar-mcp
+  ben-mcp-gh-paritosh8-ai-agenticev-rca-src  ben-mcp-gh-patrickpalmer-mayamcp-src  ben-mcp-gh-paulinetheitgirl-fastmcp-clientserver-quickstart  ben-mcp-gh-paulthorson-agentic-governance-adversarial-mcp
+  ben-mcp-gh-pazuzu1w-ubuntu-mcp-server  ben-mcp-gh-peless-claude-thread-continuity  ben-mcp-gh-peng-shawn-mermaid-mcp-server  ben-mcp-gh-peschinskiy-yandex-maps-mcp
+  ben-mcp-gh-pharaoh-2727-mcp-file-server  ben-mcp-gh-pinkpixel-dev-npm-helper-mcp  ben-mcp-gh-pioneer113-mcp-152fz-anonymizer  ben-mcp-gh-pipe-cd-docs-mcp-server-src
+  ben-mcp-gh-pironjulien-antigravity-computer-use-client  ben-mcp-gh-pixverseai-pixverse-mcp-src  ben-mcp-gh-plug-openapi-nhplug-mcp-src  ben-mcp-gh-plumycat-mcp-create-enhanced
+  ben-mcp-gh-pokutuna-mcp-chrome-tabs-src  ben-mcp-gh-porespellar-zer0fit  ben-mcp-gh-pplferreira-mcp-cep  ben-mcp-gh-pranav-vijayananth-brightspace-mcp-server
+  ben-mcp-gh-pranesh-2005-mcp-client  ben-mcp-gh-prashantsedhain-mongo-db-mcp  ben-mcp-gh-prefectlabs-fastmcp-101-solutions  ben-mcp-gh-prince889035-sys-homeresolve-backend
+  ben-mcp-gh-prismatic-io-prism-mcp-src  ben-mcp-gh-productaivn-wq-agent-native-g-helper-cli-anything-g-helper  ben-mcp-gh-puppyone-ai-puppyone-cloud-mcp-service  ben-mcp-gh-pylegifrance-mcp-server-legifrance-src
+  ben-mcp-gh-q23-mailbox-mcp-src  ben-mcp-gh-qiniu-qiniu-mcp-server-mcp-server  ben-mcp-gh-quickchatai-quickchat-ai-mcp-src  ben-mcp-gh-r0ysue-r0idamcp
+  ben-mcp-gh-rafaelcartenet-mcp-databricks-server  ben-mcp-gh-rajendra-pd-joshi-mcp-expense-tracker-mcp  ben-mcp-gh-ralstonraphael-moodle-mcp-moodle-mcp  ben-mcp-gh-ramakrishnan24689-agent365-mcpapp
+  ben-mcp-gh-ramubala-mcpserver  ben-mcp-gh-ranch-hand-robotics-rde-urdf-src  ben-mcp-gh-raohai-lunar-calendar-mcp  ben-mcp-gh-rashmirrout-staticsight-src
+  ben-mcp-gh-rashmirrout-staticsight-staticsight  ben-mcp-gh-ratnoub-mcp-llmnetops-mcp-llmnetops  ben-mcp-gh-razvanmacovei-k8s-multicluster-mcp  ben-mcp-gh-rcolin-poc-mcp-server
+  ben-mcp-gh-rebekahx23-chime  ben-mcp-gh-ref-tools-ref-tools-mcp  ben-mcp-gh-remyguercio-tailscale-mcp-echo  ben-mcp-gh-renl-mcp-rag-local
+  ben-mcp-gh-rinadelph-domain-mcp  ben-mcp-gh-rinardnick-mcp-terminal  ben-mcp-gh-rjmoggach-simple-mcp-server  ben-mcp-gh-rmrf2020-decision-mind
+  ben-mcp-gh-rnepal2-metricairn-metricairn-mcp  ben-mcp-gh-roadwy-cve-search-mcp  ben-mcp-gh-robertdinterman-usda-fastmcp-101-solutions  ben-mcp-gh-robspectre-mvf1-mvf1
+  ben-mcp-gh-roddutra-agent-mcp-gateway-src  ben-mcp-gh-rohans2-mcp-google-sheets  ben-mcp-gh-romessau-readonly-sql-mcp-readonly-sql-mcp  ben-mcp-gh-ronit-019-expense-tracker-mcp-server
+  ben-mcp-gh-rosseboe-opcua-mcp  ben-mcp-gh-rpg-478-codex-chatgpt-bridge-src  ben-mcp-gh-rtuin-mcp-mermaid-validator-src  ben-mcp-gh-runesleo-tg-reader-mcp
+  ben-mcp-gh-rushman1417-the-arbiter-tools  ben-mcp-gh-ruvnet-quantum-magnetic-navigation-mcp  ben-mcp-gh-ry-ops-fortigate-mcp-server-fortigate-mcp  ben-mcp-gh-ryan0204-github-repo-mcp
+  ben-mcp-gh-s-r-e-e-r-a-j-astra-mcp-astra-mcp  ben-mcp-gh-saadsh15-fastmcp-sqlite-server  ben-mcp-gh-sachin-panayil-fastmcp-101  ben-mcp-gh-sachin-panayil-fastmcp-101-solutions
+  ben-mcp-gh-sachin2400-enterprise-mcp-gateway  ben-mcp-gh-safayet9009-fastmcp-demo-server  ben-mcp-gh-sagar-tamang-chatgpt-browser-mcp  ben-mcp-gh-saimudunuri04-mcp-agent-toolkit-mcp-toolkit
+  ben-mcp-gh-saintdoresh-crypto-trader-mcp-claudedesktop  ben-mcp-gh-saintdoresh-yfinance-trader-mcp-claudedesktop  ben-mcp-gh-sairajiv-13-clinical-trials-mcp-server-clinical-trials-mcp  ben-mcp-gh-salesforce-misc-localmcplib-localmcp
+  ben-mcp-gh-samartha-siddhartha-chatgpt-mcp-tunnel-starter  ben-mcp-gh-sammorrowdrums-mcp-python-starter-mcp-starter  ben-mcp-gh-sammyjoseph999-bird-count-intake-agent  ben-mcp-gh-samsignal-legal-mcp-server-legal-mcp
+  ben-mcp-gh-samuelcaldas-openapi-mcp-server-openapi-mcp-server  ben-mcp-gh-samuraigpt-muapi-mcp-server  ben-mcp-gh-sanqiuyef-mcp-office-writer-mcp-office-writer  ben-mcp-gh-santos-404-mcp-server-sqlite
+  ben-mcp-gh-sanyagupta31-expensetrackermcpserver  ben-mcp-gh-sarfata-agents-chat-src  ben-mcp-gh-sarfata-signal-galaxy-src  ben-mcp-gh-sarva-20-heimdall-mcp
+  ben-mcp-gh-sasteks-fastmcp-101-solutions  ben-mcp-gh-satishvenkataraman-fastmcp-101-solutions  ben-mcp-gh-savantskie-persistent-ai-memory  ben-mcp-gh-scads-dra-mcp
+  ben-mcp-gh-scorzeth-anki-mcp-server  ben-mcp-gh-sdiehl-mcp-on-vercel  ben-mcp-gh-sdnick484-mcp-server-sofabaton-sofabaton-mcp  ben-mcp-gh-securityfortech-secops-mcp
+  ben-mcp-gh-sekharmalla-affinity-mcp-server  ben-mcp-gh-sepinetam-aer-mcp  ben-mcp-gh-seym0n-tiktok-mcp  ben-mcp-gh-shaneholloman-mcp-knowledge-graph
+  ben-mcp-gh-shawhint-yt-mcp  ben-mcp-gh-shenghaiwang-xcodebuild-mcpxcodebuild  ben-mcp-gh-shibig666-qmyz-mcp  ben-mcp-gh-shu-silc-osc-canvas-chaoxing-silc-mcp-canvas-insearch-mcp
+  ben-mcp-gh-shyangar-mcp-witness-examples  ben-mcp-gh-sibilleb-aap-enterprise-mcp-server  ben-mcp-gh-siddhant-k-code-memory-journal-mcp-server  ben-mcp-gh-sidu-mcp-app-sample
+  ben-mcp-gh-sikeymael-custom-mcp-servers  ben-mcp-gh-simongwatts-skills-to-extensions  ben-mcp-gh-simonmie-vconsole-mcp-src  ben-mcp-gh-simran200322-practo-healthcare-capstone-mcp
+  ben-mcp-gh-sinanerdinc-opet-mcp  ben-mcp-gh-sircharan-zerodha-mcp-trading  ben-mcp-gh-sirtenzin-autumn-mcp-server  ben-mcp-gh-sjanax01-weather-mcp-server
+  ben-mcp-gh-skawamoto0-ditherig-mcp  ben-mcp-gh-sktelecom-sk-ai-summit-2025-claude-code-builder-hackathon  ben-mcp-gh-solangii-upbit-mcp-server  ben-mcp-gh-solari21-mcp-linkedin
+  ben-mcp-gh-sonpiaz-hidrix-tools  ben-mcp-gh-sontallive-mcp-server-python-template  ben-mcp-gh-sowapolo425-art-personal-os-personal-os  ben-mcp-gh-sp12345678911-fastapi-mcp-template
+  ben-mcp-gh-spideynolove-sequential-thinking-mcp-v2  ben-mcp-gh-splunk-splunk-sdk-python-ai  ben-mcp-gh-sqleo-fastapi-agent-mcp  ben-mcp-gh-square-square-mcp-server
+  ben-mcp-gh-srigi-mcp-google-images-search-src  ben-mcp-gh-srikrishnavansi-gatehouse-igaming  ben-mcp-gh-srinath1510-alltrails-mcp-server  ben-mcp-gh-stackloklabs-model-context-shell
+  ben-mcp-gh-stadiamaps-stadiamaps-mcp-server-ts-src  ben-mcp-gh-starefossen-spond-no-match-mcp  ben-mcp-gh-stepan-cloud-claude-moysklad-mcp  ben-mcp-gh-stewitch-nowplayingapi
+  ben-mcp-gh-sulaiman013-powerbi-expert-app-src  ben-mcp-gh-surendranb-core-web-vitals-mcp-core-web-vitals-mcp  ben-mcp-gh-surendranb-llm-crawler-audit-llm-crawler-audit  ben-mcp-gh-suryansh-23-hyperlane-mcp-src
+  ben-mcp-gh-suyashkumar102-time-machine-codex-mcp  ben-mcp-gh-synohara-supercollider-mcp-src  ben-mcp-gh-syucream-lightdash-mcp-server-src  ben-mcp-gh-tadata-org-fastapi-mcp-fastapi-mcp
+  ben-mcp-gh-talismanic-cleanuri-url-shortener-mcp  ben-mcp-gh-techrraj-mcpserverfortuteraiagent  ben-mcp-gh-teddyzxcv-ntfy-mcp-src  ben-mcp-gh-tencentedgeone-edgeone-makers-mcp
+  ben-mcp-gh-teoobarca-perplexity-mcp-src  ben-mcp-gh-tereza-vac-agentvault  ben-mcp-gh-tesla0225-mcp-create  ben-mcp-gh-testusuke-gpt-research-mcp
+  ben-mcp-gh-tetrascience-ts-lib-ui-kit-api  ben-mcp-gh-tfukaza-bassfish-src  ben-mcp-gh-th3nolo-openrouter-mcp-src  ben-mcp-gh-thebasedcapital-brainbox-src
+  ben-mcp-gh-thefiredev-cloud-eufy-camera-mcp-eufy-cam-mcp  ben-mcp-gh-theyahia-chestnyznak-mcp-src  ben-mcp-gh-thiagohmdornelas-mcp-finance-server  ben-mcp-gh-thlurte-sql-mcp-server
+  ben-mcp-gh-tidewave-ai-tidewave-js-src  ben-mcp-gh-timorthi-garage61-race-engineer-mcp  ben-mcp-gh-tkeela14-fastmcp-101-solutions  ben-mcp-gh-tlevin1-edgar-mcp-edgar-mcp
+  ben-mcp-gh-tlmgo-prompt4  ben-mcp-gh-tobiasosdev-citecheck-src  ben-mcp-gh-tomatio13-mcp-server-tavily-src  ben-mcp-gh-tommelt-hpc-mcp-src
+  ben-mcp-gh-toolframe-toolframe-fastmcp-toolframe-fastmcp  ben-mcp-gh-tranhuucanh-mcp-shellkeeper  ben-mcp-gh-tritlo-lsp-mcp  ben-mcp-gh-tstockham96-engram-src
+  ben-mcp-gh-tuhindutta-news-agent-mcp-server  ben-mcp-gh-tusharjain-19-deploy-mcp-src  ben-mcp-gh-tusm11-fathom-fathom  ben-mcp-gh-twolven-mcp-server-puppeteer-py
+  ben-mcp-gh-ty13r-substack-mcp-plus-src  ben-mcp-gh-tyayers-agentic-portal-quickstart  ben-mcp-gh-tyler-r-kendrick-mcp-server-agent-app  ben-mcp-gh-uburuntu-vas3k-mcp-src
+  ben-mcp-gh-ukkz-claude-ts-mcps-src  ben-mcp-gh-umangnine-onenote-mcp  ben-mcp-gh-umarjaum-clinical-calc-mcp-clinical-calc-mcp  ben-mcp-gh-umer-2612-mcp-eval-gate-sdk-1x-vs-2x
+  ben-mcp-gh-unusual-whales-unusual-whales-official-mcp-src  ben-mcp-gh-upstash-memo  ben-mcp-gh-useveto-node-src  ben-mcp-gh-vanapala-adithya-varma-mcp-gmail
+  ben-mcp-gh-vcfvct-misc-mcp  ben-mcp-gh-vertile-ai-next-mcp-server  ben-mcp-gh-verygoodplugins-streamdeck-mcp  ben-mcp-gh-vikashloomba-mcp-server-playwright
+  ben-mcp-gh-vinay3254-second-brain-mcp  ben-mcp-gh-vinnividivicci-wave-mcp  ben-mcp-gh-vivek-viswam-rv-arxiv-researcher  ben-mcp-gh-vladvrx-midimcp-midimcp
+  ben-mcp-gh-volkgg-openfused-src  ben-mcp-gh-vortexjer-pc-control-pc-control  ben-mcp-gh-vtomilin-mermaider-src  ben-mcp-gh-vvkmnn-claude-historian-mcp-src
+  ben-mcp-gh-vyasriday-fastmcp-mcp  ben-mcp-gh-w2xi-v-rapper-mcp  ben-mcp-gh-wangkuangkuang-jev-mcp-server-jev-mcp-server  ben-mcp-gh-warroyo-agentminder-ansible-demo-app
+  ben-mcp-gh-weatherpal-ai-mcp-handle-confluence  ben-mcp-gh-weatherpal-ai-mcp-handle-figma  ben-mcp-gh-webcoderz-mcp-geo  ben-mcp-gh-weekitmo-mcp-godot-rag
+  ben-mcp-gh-weigu77-deepseek-scout-mcp-deepseek-scout-mcp  ben-mcp-gh-wellaios-dev-tool-googlemap-python  ben-mcp-gh-wenb1n-dev-smartdb-mcp-core  ben-mcp-gh-werister-notelab-notelab
+  ben-mcp-gh-westsource-agentctxsync-mcp  ben-mcp-gh-whenmoon-afk-claude-memory-mcp-src  ben-mcp-gh-whoevenam-photonics-printer-mcp  ben-mcp-gh-whybothercoding-ableton-mcp-server-src
+  ben-mcp-gh-wojtyniak-mcp-mcp  ben-mcp-gh-wolverin0-scholar-mcp-mcp  ben-mcp-gh-wozibile5555-max-ai-fishing-game-main-tutusagi-mpp26-6-27  ben-mcp-gh-xcollantes-free-stock-images-mcp-src
+  ben-mcp-gh-xianminx-mcp-server-flomo  ben-mcp-gh-xiaolaa2-midi-file-mcp-src  ben-mcp-gh-xinthink-reader-mcp-server  ben-mcp-gh-yamanoku-aria-validate-mcp-server
+  ben-mcp-gh-yamanoku-connpass-user-mcp-server  ben-mcp-gh-yashpawar6849-kubernetes-assistant-with-mcp-server  ben-mcp-gh-yashsham-lifeflow-local-mcp-servers  ben-mcp-gh-yashsham-lifeflow-mcp-servers
+  ben-mcp-gh-yashsham-lifeflow-remote-mcp  ben-mcp-gh-yashshingvi-databricks-genie-mcp  ben-mcp-gh-yeikiu-mcp-forge-mcp-forge  ben-mcp-gh-yimajo-mcp-server-chatgpt-mac-app
+  ben-mcp-gh-ynnekf-mcp-server  ben-mcp-gh-yokingma-one-search-mcp-src  ben-mcp-gh-yokingma-time-mcp-src  ben-mcp-gh-yoshiko-pg-o3-search-mcp
+  ben-mcp-gh-youcanautomate-yca-ai-driven-mobile-automation  ben-mcp-gh-youssefselk-devsec-agent-bench-tools  ben-mcp-gh-yyf1337-mcp-transaction-driver-deploy  ben-mcp-gh-z9905080-mcp-slack
+  ben-mcp-gh-zanetworker-mcp-docling  ben-mcp-gh-zcaceres-claudem-ipsum-src  ben-mcp-gh-zcking-mcp-server-unifi  ben-mcp-gh-zeikar-kimcp
+  ben-mcp-gh-zeplin-mcp-server-src  ben-mcp-gh-zhaohb-deskmate-mcp  ben-mcp-gh-zhizhuodemao-js-reverse-mcp-src  ben-mcp-gh-zixuantemp-flarevm-mcp-flarevm-mcp
+  ben-mcp-gh-zs-andy-lms-cli-src  ben-mcp-gh-zxs731-raspberry-ai-voice-mcp-deepseek  ben-mcp-ref-everything  ben-mcp-ref-fetch
+  ben-mcp-ref-filesystem  ben-mcp-ref-git  ben-mcp-ref-memory  ben-mcp-ref-sequentialthinking
+  ben-mcp-ref-time  ben-mcp-sdk-basic_prompt  ben-mcp-sdk-basic_resource  ben-mcp-sdk-basic_tool
+  ben-mcp-sdk-completion  ben-mcp-sdk-direct_call_tool_result  ben-mcp-sdk-direct_execution  ben-mcp-sdk-elicitation
+  ben-mcp-sdk-everything-server  ben-mcp-sdk-images  ben-mcp-sdk-lifespan_example  ben-mcp-sdk-mcpserver_quickstart
+  ben-mcp-sdk-notifications  ben-mcp-sdk-oauth_server  ben-mcp-sdk-pagination_example  ben-mcp-sdk-sampling
+  ben-mcp-sdk-simple-auth  ben-mcp-sdk-simple-pagination  ben-mcp-sdk-simple-prompt  ben-mcp-sdk-simple-resource
+  ben-mcp-sdk-simple-streamablehttp  ben-mcp-sdk-simple-streamablehttp-stateless  ben-mcp-sdk-simple-tool  ben-mcp-sdk-sse-polling-demo
+  ben-mcp-sdk-streamable_config  ben-mcp-sdk-streamable_http_basic_mounting  ben-mcp-sdk-streamable_http_host_mounting  ben-mcp-sdk-streamable_http_multiple_servers
+  ben-mcp-sdk-streamable_http_path_config  ben-mcp-sdk-streamable_starlette_mount  ben-mcp-sdk-structured-output-lowlevel  ben-mcp-sdk-structured_output
+  ben-mcp-sdk-tool_progress  ben-perm-aignostics-python-sdk-settings  ben-perm-airplaneian-skywatch-ptz-control-settings  ben-perm-alumnium-hq-alumnium-settings
+  ben-perm-anhonestboy-agentflow-settings  ben-perm-api-platform-demo-settings  ben-perm-arc42-arc42-generator-settings  ben-perm-barkain-claude-code-workflow-orchestration-settings
+  ben-perm-beamoint-claudex-settings  ben-perm-bjsi-incremental-everything-settings  ben-perm-brabos-ai-code-addiction-settings  ben-perm-braintrustdata-braintrust-sdk-javascript-settings
+  ben-perm-cheminfo-font-settings  ben-perm-clidey-dory-settings  ben-perm-codeoutin-claude-code-agency-settings  ben-perm-coreycole-datastarui-settings
+  ben-perm-datadog-system-tests-settings  ben-perm-dfetch-org-dfetch-settings  ben-perm-drobins25-craft-settings  ben-perm-dynatrace-oss-dynatrace-snowflake-observability-agent-settin
+  ben-perm-etspaceman-scalacheck-faker-settings  ben-perm-forketyfork-architect-settings  ben-perm-gadget-inc-silo-settings  ben-perm-getsentry-skills-settings
+  ben-perm-haru-redmine-ai-helper-settings  ben-perm-haru-redmine-tokyo-theme-settings  ben-perm-ivanmurzak-unity-mcp-settings  ben-perm-j5ik2o-takt-sdd-settings
+  ben-perm-jahands-prompts-settings  ben-perm-jdillon-vscode-beads-settings  ben-perm-jenreh-appkit-settings  ben-perm-joseairosa-recall-settings
+  ben-perm-kklimuk-docx-cli-settings  ben-perm-krkn-chaos-website-settings  ben-perm-krystianjonca-lnai-settings  ben-perm-lennardv2-vscode-window-color-settings
+  ben-perm-ljw1004-oneplay-settings  ben-perm-loevgaard-syliusbrandplugin-settings  ben-perm-meltylabs-chorus-settings  ben-perm-mercadopago-mercadopago-claude-marketplace-settings
+  ben-perm-meta-secret-meta-secret-core-settings  ben-perm-midcodehub-miaocut-settings  ben-perm-midt-bg-sigma-settings  ben-perm-miolamio-agent-runtime-settings
+  ben-perm-mixseek-mixseek-quant-insight-settings  ben-perm-miyatti777-ai-plc-settings  ben-perm-nao1215-mobilepkg-settings  ben-perm-ncaq-auto-sudoedit-settings
+  ben-perm-ncaq-ublacklistrule-settings  ben-perm-newt239-ginga-ui-settings  ben-perm-nextgenpowertoys-rtf-markdown-editor-settings  ben-perm-nicepkg-vsync-settings
+  ben-perm-nixrajput-portfolio-nextjs-settings  ben-perm-nuwave-lighthouse-settings  ben-perm-ornlneutronimaging-bm3dornl-settings  ben-perm-patchorbit-domscribe-settings
+  ben-perm-pax8labs-pax8-cta-settings  ben-perm-peternaf-digmore-settings  ben-perm-railyard-dev-railguard-settings  ben-perm-rickbutterfield-blockpreview-settings
+  ben-perm-rlee203-cardputeros-settings  ben-perm-runpod-flash-settings  ben-perm-sap-tutorials-tutorials-ims-settings  ben-perm-schildep-verified-polygon-intersection-settings
+  ben-perm-sean-galloway-rtldesignsherpa-settings  ben-perm-sebgur-sdev-python-settings  ben-perm-serpro69-ktchn8s-settings  ben-perm-small-db-small-db-settings
+  ben-perm-smithy-lang-smithy-java-settings  ben-perm-snowcatsmoking-snowcatweb-settings  ben-perm-thomaslazar-inkshelf-settings  ben-perm-tigicion-dao-code-settings
+  ben-perm-tinovyatkin-amazon-bedrock-copilot-chat-settings  ben-perm-toolprint-awesome-mcp-personas-settings  ben-perm-toolprint-just-mcp-settings  ben-perm-unslop-xyz-noodles-settings
+  ben-perm-vasylenko-bear-notes-mcp-settings  ben-perm-w3nq14-vulnmonitor-settings  ben-perm-yoebuild-yoe-settings  hn-conn-starrocks
+  hn-hook-anneheartrecord  hn-hook-imcvampire  hn-hook-rubree-deny-list  hn-instr-defensive-refusal
+  hn-instr-fz-data-exfiltration  hn-instr-fz-direct-injection  hn-instr-fz-indirect-injection  hn-instr-fz-jailbreak-persona
+  hn-instr-fz-turkish-morphological  hn-mcp-agentcash  hn-mcp-alibabacloud  hn-mcp-am
+  hn-mcp-ateai  hn-perm-feiskyer  hn-perm-unity-credential-deny-list  mal-conn-mcp-autorun-bypass
+  mal-conn-mcp-command-payload  mal-conn-mcpoison-post-approval-swap  mal-conn-self-register-mcp  mal-conn-tool-rugpull
+  mal-hook-authorized-keys-persist  mal-hook-git-config-exec-hook  mal-hook-pretooluse-autoapprove  mal-hook-sessionstart-rce
+  mal-hook-userpromptsubmit-perm-rewrite  mal-instr-injection-literal  mal-mcp-ci-act_as_role_injection  mal-mcp-ci-admin_privilege_escalation
+  mal-mcp-ci-api_key_harvesting_environment  mal-mcp-ci-api_token_config_exfiltration  mal-mcp-ci-arbitrary_file_copy_sensitive_data  mal-mcp-ci-arbitrary_file_deletion_recursive
+  mal-mcp-ci-arbitrary_file_write_system_overwrite  mal-mcp-ci-archive_extraction_zip_slip_attack  mal-mcp-ci-base64_decode_execute_obfuscation  mal-mcp-ci-behavior_redirection_endpoint_manipulation
+  mal-mcp-ci-browser_history_exfiltration  mal-mcp-ci-cache_poisoning_result_manipulation  mal-mcp-ci-cheetah_template_injection  mal-mcp-ci-clipboard_monitoring_exfiltration
+  mal-mcp-ci-cloud_metadata_credential_extraction  mal-mcp-ci-command_injection_grep  mal-mcp-ci-compile_execute_bytecode_manipulation  mal-mcp-ci-conditional_behavior_privileged_users
+  mal-mcp-ci-context_poisoning_privilege_injection  mal-mcp-ci-contradictory_description_validation_bypass  mal-mcp-ci-cpu_exhaustion_attack  mal-mcp-ci-credential_harvesting_local_storage
+  mal-mcp-ci-cron_job_multiple_schedules  mal-mcp-ci-curl_command_injection  mal-mcp-ci-database_exfiltration_chunking  mal-mcp-ci-directory_traversal_write_path_manipulation
+  mal-mcp-ci-disk_space_exhaustion_attack  mal-mcp-ci-django_template_injection_custom_tags  mal-mcp-ci-dns_rebinding_attack  mal-mcp-ci-dns_tunneling_c2_communication
+  mal-mcp-ci-docker_secrets_registry_exfiltration  mal-mcp-ci-dynamic_import_arbitrary_module  mal-mcp-ci-dynamic_lambda_function_execution  mal-mcp-ci-environment_secrets_exfiltration
+  mal-mcp-ci-environment_variable_enumeration  mal-mcp-ci-environment_variable_trigger_multi_condition  mal-mcp-ci-file_descriptor_exhaustion  mal-mcp-ci-file_exfiltration_with_encoding
+  mal-mcp-ci-file_permission_manipulation_privilege_escalation  mal-mcp-ci-file_permissions_suid_bit_manipulation  mal-mcp-ci-file_protocol_ssrf_local_file  mal-mcp-ci-filesystem_mount_information_access
+  mal-mcp-ci-fork_bomb_process_exhaustion  mal-mcp-ci-format_method_injection_attribute_access  mal-mcp-ci-format_string_injection  mal-mcp-ci-fstring_injection_dynamic_eval
+  mal-mcp-ci-git_repository_data_exfiltration  mal-mcp-ci-goal_subversion_objective_replacement  mal-mcp-ci-hidden_metadata_filter_bypass  mal-mcp-ci-hidden_system_instructions
+  mal-mcp-ci-importlib_dynamic_module_loading  mal-mcp-ci-instruction_override_safety_bypass  mal-mcp-ci-internal_service_port_scanning  mal-mcp-ci-jailbreak_mode_context_manipulation
+  mal-mcp-ci-jinja2_autoescape_disabled  mal-mcp-ci-jinja2_ssti_dynamic_template  mal-mcp-ci-ldap_injection_dynamic_filter  mal-mcp-ci-localhost_metadata_service_access
+  mal-mcp-ci-log_tampering_evidence_removal  mal-mcp-ci-magic_string_backdoor  mal-mcp-ci-mako_template_injection_email  mal-mcp-ci-malicious_tool_registration_auto_invoke
+  mal-mcp-ci-memory_exhaustion_attack  mal-mcp-ci-multi_cloud_credentials_exfiltration  mal-mcp-ci-multi_feature_web_shell  mal-mcp-ci-multi_layer_obfuscated_backdoor
+  mal-mcp-ci-multi_mechanism_persistence  mal-mcp-ci-multi_method_container_escape  mal-mcp-ci-multi_method_reverse_shell  mal-mcp-ci-multi_technique_sandbox_escape
+  mal-mcp-ci-mustache_template_injection_partials  mal-mcp-ci-nested_ignore_trust_escalation  mal-mcp-ci-network_bandwidth_exhaustion  mal-mcp-ci-network_configuration_access
+  mal-mcp-ci-nosql_injection_mongodb  mal-mcp-ci-os_system_injection_archives  mal-mcp-ci-output_manipulation_system_mods  mal-mcp-ci-override_instruction_injection
+  mal-mcp-ci-path_traversal_directory_enumeration  mal-mcp-ci-postmark_bcc_exfiltration  mal-mcp-ci-private_ip_range_scanning  mal-mcp-ci-privilege_escalation_system_file_mod
+  mal-mcp-ci-process_information_access  mal-mcp-ci-redirect_chain_internal_service  mal-mcp-ci-redirect_following_open_redirect  mal-mcp-ci-regex_dos_redos_attack
+  mal-mcp-ci-response_poisoning_content_injection  mal-mcp-ci-result_poisoning_data_injection  mal-mcp-ci-rootkit_installation  mal-mcp-ci-routing_table_arp_cache_access
+  mal-mcp-ci-safety_bypass_emergency_access  mal-mcp-ci-security_feature_disabling  mal-mcp-ci-security_policy_bypass_rule_manipulation  mal-mcp-ci-session_hijacking_token_manipulation
+  mal-mcp-ci-shell_injection_network_diagnostics  mal-mcp-ci-sql_injection_dynamic_query  mal-mcp-ci-ssh_key_certificate_exfiltration  mal-mcp-ci-ssh_key_injection_multi_user
+  mal-mcp-ci-ssrf_url_manipulation_internal_network  mal-mcp-ci-stack_exhaustion_infinite_recursion  mal-mcp-ci-state_persistence_malicious_config  mal-mcp-ci-stealth_logging_interaction_tracking
+  mal-mcp-ci-string_template_injection_config  mal-mcp-ci-subprocess_shell_command_injection  mal-mcp-ci-symlink_attack_file_access_bypass  mal-mcp-ci-symlink_manipulation_privilege_escalation
+  mal-mcp-ci-system_file_access_enumeration  mal-mcp-ci-system_hardware_information_access  mal-mcp-ci-system_log_access  mal-mcp-ci-system_prompt_manipulation_override
+  mal-mcp-ci-system_prompt_override  mal-mcp-ci-template_command_injection  mal-mcp-ci-thread_exhaustion_attack  mal-mcp-ci-time_based_conditional_activation
+  mal-mcp-ci-timestamp_manipulation_anti_forensics  mal-mcp-ci-tornado_template_injection_web  mal-mcp-ci-trigger_based_malicious_behavior  mal-mcp-ci-unix_socket_docker_exploitation
+  mal-mcp-ci-unrestricted_eval_code_injection  mal-mcp-ci-unrestricted_exec_arbitrary_code  mal-mcp-ci-unsafe_pickle_deserialization  mal-mcp-ci-user_account_enumeration
+  mal-mcp-ci-user_database_access  mal-mcp-ci-workflow_tampering_step_injection  mal-mcp-ci-xpath_injection_dynamic_query  mal-mcp-ci-yaml_unsafe_load_code_execution
+  mal-mcp-ci-zip_bomb_decompression_attack  mal-mcp-dd-npm-fixthis-exchange-exfil  mal-mcp-dd-npm-inscada-telemetry-exfil  mal-mcp-dd-npm-lanyer640-runcommand-revshell
+  mal-mcp-dd-npm-namecheap-affiliate-injection  mal-mcp-dd-npm-todo-wallet-exfil  mal-mcp-mcptox-explicit-hijack  mal-mcp-mcptox-implicit-ambient
+  mal-mcp-mcptox-parameter-tamper  mal-mcp-ts-arbitrary-file-write  mal-mcp-ts-cloud-metadata-probe  mal-mcp-ts-resource-exhaustion
+  mal-mcp-ts-tool-body-dynamic-exec  mal-perm-agent-bypass-permissions  mal-perm-allowed-tools-backtick  mal-perm-baseurl-redirect
+  mal-perm-disable-own-guardrail  mal-perm-mcp-env-hijack  mal-perm-wildcard-autoapprove

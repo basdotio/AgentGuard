@@ -138,3 +138,4 @@ always drift. A state change is one `git mv`; the file name stays the same, and 
 | [096](complete/096-release-0.31.0.md) | Release record v0.31.0: P-087, P-089..P-095 | The maintainer said "发31" (2026-10-22) | PR #122; v0.31.0 |
 | [097](complete/097-v0.31.0-heldout-readings.md) | v0.31.0 as released, read with the judge on the four held-out sets the external comparison uses | The maintainer, 2026-10-22 ("跑") | PR #123 |
 | [098](complete/098-server-credential-overreach.md) | On the server pass, a `credential-read` in a file that reaches for nothing beyond the server's own configuration, and sends no credential to a spelled-out foreign host, weighs medium | The maintainer, 2026-10-22 (the judge's 63 benign-server false positives) | PR #124 |
+| [099](complete/099-a-parser-is-not-a-client.md) | `urllib.parse` is not a network client, and a URL literal needs a host | The maintainer, 2026-10-23 (the static half of the benign-server false positives) | PR #125 |
