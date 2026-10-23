@@ -57,6 +57,10 @@ No malicious or hard-negative sample's `EXFIL-*` findings changed. On the 543 be
 the judge, folding P-098's live run (`2026-10-23-llm-gpt-4.1-mini-p098-benign-servers-branch-s3`) with each static
 result, 124 → 110 (22.8% → 20.3%).
 
+On 697 benign MCP server trees no measurement had touched (the corpus's re-harvest of 2026-10-21, minus P-059's 547;
+`results/aguard/2026-10-23-p099-mcp-heldout-{main,changed}`): 94 → 94. Neither narrowed shape carries a high finding
+there; the gain is on the development trees only.
+
 ## Work items
 
 | W | In one sentence | Commit message (no sha; a rebase changes it) |

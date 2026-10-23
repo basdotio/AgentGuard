@@ -36,6 +36,7 @@
 | [025](025-credentials-json-not-a-credential.md) | `.credentials.json` 不被认作凭据：import Claude Code 自己的凭据文件会被读取 | 安全缺陷 | 中 | 未修复 |
 | [026](026-clean-undo-relative-skill-md-link.md) | `SKILL.md` 是相对软链的 skill 能被 clean 隔离，却撤销不了 | 功能缺陷 | 中 | 未修复 |
 | [027](027-judge-label-redacts-hyphenated-names.md) | 长连字符 skill 名字被高熵兜底规则当成密钥：判官说明里两个不同的 skill 都叫 `skill:<REDACTED>` | 报告缺陷 | 低 | **已修复**（P-085：标签不再过 `Redact`） |
+| [028](028-server-declared-remote-execution-rejected.md) | 服务器趟的 remote-execution 在"工具自己声明了执行"时降档:实测否决(恶意 -10、良性 -2) | 检测精度 | — | **不规划**(前提实测不成立)|
 
 ## 判定口径
 
