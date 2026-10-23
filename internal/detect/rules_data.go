@@ -479,9 +479,17 @@ var (
 	// https://api.example.com"), and counting it made every API-configuration example an
 	// exfiltration chain: 137 of 186 benign chain hits on the corpus had no action at all, while
 	// 23 of 30 malicious ones did. chain.egress picks by role; nothing else reads these directly.
-	networkActionRE = regexp.MustCompile(`(?i)(curl\s|wget\s|fetch\(|requests\.(get|post)|http\.(get|post)|net/http|urllib|axios` +
+	//
+	// `urllib` is its sending half only (P-099): `urllib.request`, Python 2's `urllib.urlopen`, `urllib2`,
+	// `urllib3`, `from urllib import request`. `urllib.parse` quotes and splits strings and sends
+	// nothing, and the bare word made `from urllib.parse import quote` a network leg in 13 of 67 benign
+	// server trees whose only high finding was EXFIL-001.
+	networkActionRE = regexp.MustCompile(`(?i)(curl\s|wget\s|fetch\(|requests\.(get|post)|http\.(get|post)|net/http|axios` +
+		`|urllib\.(?:request|urlopen|urlretrieve)\b|\burllib[23]\b|\bfrom\s+urllib\s+import\s+[^\n]*\b(?:request|urlopen|urlretrieve)\b|\bimport\s+urllib\s*$` +
 		`|/dev/tcp/|` + cmdPos + `(dig|nslookup|nc|ncat|socat|telnet|scp|sftp|rsync|sendmail|ssh)\s)`)
-	urlLiteralRE = regexp.MustCompile(`(?i)https?://`)
+	// A URL literal needs something after the scheme (P-099): `startswith("https://")` and "must start
+	// with https://" name no destination. A template host (`f"https://{instance}/…"`) still counts.
+	urlLiteralRE = regexp.MustCompile(`(?i)https?://[^\s"'\x60)\]>,;]`)
 
 	// networkCapableRE (P-095) asks whether a script CAN send at all: an outbound action, or a
 	// network client imported, required or constructed anywhere in the file. It gates urlLiteralRE:
